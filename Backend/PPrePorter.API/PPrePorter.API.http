@@ -1,0 +1,6 @@
+@PPrePorter.API_HostAddress = http://localhost:5228
+
+GET {{PPrePorter.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

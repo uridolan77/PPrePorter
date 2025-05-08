@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+option csharp_namespace = "PPrePorter.gRPC.Core";
+
+package pythonml;
+
+// Service definition for PythonML operations
+service PythonMLService {
+  // Process data using ML model
+  rpc ProcessData (ProcessRequest) returns (ProcessResponse);
+  
+  // Process data using ML model with streaming response
+  rpc ProcessDataStream (ProcessRequest) returns (stream ProcessResponseChunk);
+  
+  // Train ML model with provided data
+  rpc TrainModel (TrainRequest) returns (TrainResponse);
+  
+  // Train ML model with streaming data
+  rpc TrainModelStream (stream TrainRequestChunk) returns (TrainResponse);
+  
+  // Get model information and capabilities
+  rpc GetModelInfo (ModelInfoRequest) returns (ModelInfoResponse);
+  
+  // List available models
+  rpc ListModels (ListModelsRequest) returns (ListModelsResponse);
+  
+  // Change model stage
+  rpc ChangeModelStage (ModelStageRequest) returns (ModelStageResponse);
+  
+  // Check service health
+  rpc CheckHealth (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request message for processing data
+message ProcessRequest {
+  string input_data = 1;
+  string model_name = 2;
+  map<string, string> parameters = 3;
+  string version = 4;
+  string stage = 5;
+}
+
+// Response message for data processing
+message ProcessResponse {
+  string result = 1;
+  bool success = 2;
+  string error_message = 3;
+  float confidence_score = 4;
+  map<string, string> metadata = 5;
+}
+
+// Streaming response chunk for data processing
+message ProcessResponseChunk {
+  string result_chunk = 1;
+  bool is_last_chunk = 2;
+  bool success = 3;
+  string error_message = 4;
+  int32 chunk_id = 5;
+  int32 total_chunks = 6;
+  float confidence_score = 7;
+  map<string, string> metadata = 8;
+}
+
+// Request for streaming data processing
+message ProcessStreamRequest {
+  string input_data = 1;
+  string model_name = 2;
+  map<string, string> parameters = 3;
+  string version = 4;
+  string stage = 5;
+}
+
+// Request message for training a model
+message TrainRequest {
+  string training_data = 1;
+  string model_name = 2;
+  map<string, string> hyperparameters = 3;
+  bool validate = 4;
+  string framework = 5;
+  string initial_stage = 6;
+}
+
+// Response message for model training
+message TrainResponse {
+  bool success = 1;
+  string model_id = 2;
+  string error_message = 3;
+  map<string, float> metrics = 4;
+  string version = 5;
+  string stage = 6;
+}
+
+// Request chunk for streaming model training
+message TrainRequestChunk {
+  string training_data_chunk = 1;
+  bool is_last_chunk = 2;
+  int32 chunk_id = 3;
+  int32 total_chunks = 4;
+  string model_name = 5;
+  bool validate = 6;
+  string framework = 7;
+  string initial_stage = 8;
+  map<string, string> hyperparameters = 9;
+}
+
+// Stream request for training a model
+message TrainStreamRequest {
+  string training_data_chunk = 1;
+  bool is_last_chunk = 2;
+  int32 chunk_id = 3;
+  int32 total_chunks = 4;
+  string model_name = 5;
+  bool validate = 6;
+  string framework = 7;
+  string initial_stage = 8;
+  map<string, string> hyperparameters = 9;
+}
+
+// Request for getting model information
+message ModelInfoRequest {
+  string model_name = 1;
+  string version = 2;
+  string stage = 3;
+}
+
+// Response with model information
+message ModelInfoResponse {
+  string model_name = 1;
+  string version = 2;
+  string description = 3;
+  repeated string supported_operations = 4;
+  map<string, string> properties = 5;
+  string framework = 6;
+  string stage = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  repeated string available_versions = 10;
+  map<string, string> stage_versions = 11;
+}
+
+// Request for listing available models
+message ListModelsRequest {
+  string framework_filter = 1;
+  string stage_filter = 2;
+  string name_filter = 3;
+  bool include_all_versions = 4;
+}
+
+// Response with list of models
+message ListModelsResponse {
+  repeated ModelSummary models = 1;
+}
+
+// Model summary information
+message ModelSummary {
+  string model_name = 1;
+  string version = 2;
+  string description = 3;
+  string framework = 4;
+  string stage = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// Request for changing model stage
+message ModelStageRequest {
+  string model_name = 1;
+  string version = 2;
+  string current_stage = 3;
+  string new_stage = 4;
+}
+
+// Response after changing model stage
+message ModelStageResponse {
+  bool success = 1;
+  string error_message = 2;
+  string model_name = 3;
+  string version = 4;
+  string previous_stage = 5;
+  string new_stage = 6;
+}
+
+// Health check request message
+message HealthCheckRequest {
+  // Optional component to check
+  string component = 1;
+}
+
+// Health check response
+message HealthCheckResponse {
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  Status status = 1;
+  string message = 2;
+}
