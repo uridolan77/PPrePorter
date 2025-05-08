@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PPrePorter.Core.Interfaces;
 
 namespace PPrePorter.Core.Services
@@ -34,10 +35,8 @@ namespace PPrePorter.Core.Services
             if (string.IsNullOrWhiteSpace(connectionStringTemplate))
             {
                 return connectionStringTemplate;
-            }
-
-            // Check if this connection string template has already been resolved and cached
-            if (_connectionStringCache.TryGetValue(connectionStringTemplate, out string cachedConnectionString))
+            }            // Check if this connection string template has already been resolved and cached
+            if (_connectionStringCache.TryGetValue(connectionStringTemplate, out string? cachedConnectionString) && cachedConnectionString != null)
             {
                 _logger.LogDebug("Using cached resolved connection string");
                 return cachedConnectionString;
@@ -63,14 +62,13 @@ namespace PPrePorter.Core.Services
                 string secretName = match.Groups[2].Value;
                 string cacheKey = $"{vaultName}:{secretName}";
 
-                _logger.LogDebug("Resolving placeholder: {Placeholder} (Vault: {VaultName}, Secret: {SecretName})", placeholder, vaultName, secretName);
-
-                string secretValue;
+                _logger.LogDebug("Resolving placeholder: {Placeholder} (Vault: {VaultName}, Secret: {SecretName})", placeholder, vaultName, secretName);                string secretValue;
                 
                 // Try to get the secret value from the cache first
-                if (_secretCache.TryGetValue(cacheKey, out secretValue))
+                if (_secretCache.TryGetValue(cacheKey, out string? cachedSecretValue) && cachedSecretValue != null)
                 {
                     _logger.LogDebug("Using cached secret for '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
+                    secretValue = cachedSecretValue;
                 }
                 else
                 {

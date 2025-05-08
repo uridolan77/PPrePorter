@@ -1,19 +1,17 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PPrePorter.Core.Models.Reports;
-using PPrePorter.API.Features.Reports.Models;
+using PPrePorter.Domain.Entities.PPReporter;
 
 namespace PPrePorter.Core.Interfaces
 {
-    public interface IReportService
+    public interface IReportServiceApi
     {
         Task<ReportResultDto> GenerateReportAsync(ReportRequestDto request, string userId);
         Task<ReportResultDto> GetReportAsync(string reportId, string userId);
         Task<ExportResultDto> ExportReportAsync(string reportId, string format, User user);
         Task<List<GeneratedReport>> GetRecentReportsAsync(string userId, int limit = 10);
-    }
-
-    public interface IReportConfigurationService
+    }    public interface IReportConfigurationService
     {
         Task<List<ReportTemplate>> GetAvailableReportTemplatesAsync(User user);
         Task<List<ReportConfiguration>> GetSavedConfigurationsAsync(string userId);

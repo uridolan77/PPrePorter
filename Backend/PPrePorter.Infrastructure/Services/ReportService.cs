@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using PPrePorter.API.Features.Reports.Models;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Models.Reports;
+using PPrePorter.Domain.Entities.PPReporter;
 using System.Text.Json;
 using System.IO;
 using OfficeOpenXml;
@@ -15,7 +15,8 @@ using System.Drawing;
 
 namespace PPrePorter.Infrastructure.Services
 {
-    public class ReportService : IReportService
+    // Fix of ReportService to handle type conversion between int and string IDs
+    public class ReportService : IReportServiceApi
     {
         private readonly IPPRePorterDbContext _dbContext;
         private readonly IUserContextService _userContextService;
@@ -48,7 +49,7 @@ namespace PPrePorter.Infrastructure.Services
                 // Create report record
                 var report = new GeneratedReport
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    // Let EF Core handle the ID assignment
                     UserId = userId,
                     TemplateId = request.TemplateId,
                     Status = "Processing",
@@ -61,9 +62,9 @@ namespace PPrePorter.Infrastructure.Services
                 
                 try
                 {
-                    // Get template
+                    // Get template - convert id to string for comparison
                     var template = await _dbContext.ReportTemplates
-                        .FirstOrDefaultAsync(t => t.Id == request.TemplateId);
+                        .FirstOrDefaultAsync(t => t.Id.ToString() == request.TemplateId);
                     
                     if (template == null)
                     {
@@ -89,8 +90,10 @@ namespace PPrePorter.Infrastructure.Services
                         ? request.SelectedColumns 
                         : columns;
                     
-                    // Prepare dynamic SQL based on template and filters
-                    var (data, columnMetadata) = await ExecuteReportQueryAsync(template, request);
+                    // Prepare dynamic SQL based on template and filters - fixed tuple type inference
+                    var executionResult = await ExecuteReportQueryAsync(template, request);
+                    var data = executionResult.Item1;
+                    var columnMetadata = executionResult.Item2;
                     
                     // Update report
                     report.Status = "Completed";
@@ -108,7 +111,7 @@ namespace PPrePorter.Infrastructure.Services
                     
                     var result = new ReportResultDto
                     {
-                        ReportId = report.Id,
+                        ReportId = report.Id.ToString(),
                         Name = report.Name,
                         Status = report.Status,
                         CreatedAt = report.CreatedAt,
@@ -163,8 +166,15 @@ namespace PPrePorter.Infrastructure.Services
         {
             try
             {
+                // Convert reportId from string to int for comparison
+                int reportIdInt;
+                if (!int.TryParse(reportId, out reportIdInt))
+                {
+                    return null; // Invalid ID format
+                }
+                
                 var report = await _dbContext.GeneratedReports
-                    .FirstOrDefaultAsync(r => r.Id == reportId && r.UserId == userId);
+                    .FirstOrDefaultAsync(r => r.Id == reportIdInt && r.UserId == userId);
                 
                 if (report == null)
                 {
@@ -178,11 +188,11 @@ namespace PPrePorter.Infrastructure.Services
                 if (report.Status == "Completed" && report.Data == null)
                 {
                     var template = await _dbContext.ReportTemplates
-                        .FirstOrDefaultAsync(t => t.Id == report.TemplateId);
+                        .FirstOrDefaultAsync(t => t.Id.ToString() == report.TemplateId);
                     
-                    var (data, columnMetadata) = await ExecuteReportQueryAsync(template, request);
-                    report.Data = data;
-                    report.Columns = columnMetadata;
+                    var executionResult = await ExecuteReportQueryAsync(template, request);
+                    report.Data = executionResult.Item1;
+                    report.Columns = executionResult.Item2;
                 }
                 
                 // Map to DTO
@@ -192,7 +202,7 @@ namespace PPrePorter.Infrastructure.Services
                 
                 return new ReportResultDto
                 {
-                    ReportId = report.Id,
+                    ReportId = report.Id.ToString(),
                     Name = report.Name,
                     Status = report.Status,
                     CreatedAt = report.CreatedAt,
@@ -230,8 +240,15 @@ namespace PPrePorter.Infrastructure.Services
         {
             try
             {
+                // Convert reportId from string to int for comparison
+                int reportIdInt;
+                if (!int.TryParse(reportId, out reportIdInt))
+                {
+                    return null; // Invalid ID format
+                }
+                
                 var report = await _dbContext.GeneratedReports
-                    .FirstOrDefaultAsync(r => r.Id == reportId && r.UserId == user.Id);
+                    .FirstOrDefaultAsync(r => r.Id == reportIdInt && r.UserId == user.Id.ToString());
                 
                 if (report == null)
                 {
@@ -261,11 +278,11 @@ namespace PPrePorter.Infrastructure.Services
                 if (report.Status == "Completed" && report.Data == null)
                 {
                     var template = await _dbContext.ReportTemplates
-                        .FirstOrDefaultAsync(t => t.Id == report.TemplateId);
+                        .FirstOrDefaultAsync(t => t.Id.ToString() == report.TemplateId);
                     
-                    var (data, columnMetadata) = await ExecuteReportQueryAsync(template, request);
-                    report.Data = data;
-                    report.Columns = columnMetadata;
+                    var executionResult = await ExecuteReportQueryAsync(template, request);
+                    report.Data = executionResult.Item1;
+                    report.Columns = executionResult.Item2;
                 }
                 
                 if (report.Data == null || !report.Data.Any())
@@ -306,9 +323,9 @@ namespace PPrePorter.Infrastructure.Services
                 var expiresAt = DateTime.UtcNow.AddDays(7); // Files expire after 7 days
                 var export = new ReportExport
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    // Let EF Core handle the ID assignment
                     ReportId = reportId,
-                    UserId = user.Id,
+                    UserId = user.Id.ToString(),
                     Format = format,
                     FilePath = filePath,
                     FileName = fileName,
@@ -355,7 +372,7 @@ namespace PPrePorter.Infrastructure.Services
 
         #region Helper Methods
 
-        private async Task<(List<Dictionary<string, object>> Data, List<ColumnMetadata> Columns)> ExecuteReportQueryAsync(
+        private async Task<(List<Dictionary<string, object>>, List<ColumnMetadata>)> ExecuteReportQueryAsync(
             ReportTemplate template, 
             ReportRequestDto request)
         {
@@ -389,9 +406,11 @@ namespace PPrePorter.Infrastructure.Services
             ReportTemplate template, 
             ReportRequestDto request)
         {
+            // Add an await operation to satisfy the compiler warning
+            await Task.Yield();
+            
             // Simulated data generation based on template type
             // In a real implementation, this would execute database queries
-            
             var result = new List<Dictionary<string, object>>();
             var random = new Random();
             
@@ -487,7 +506,6 @@ namespace PPrePorter.Infrastructure.Services
                 }
                 
                 var value = row[filter.Field];
-                
                 switch (filter.Operator)
                 {
                     case "equals":
@@ -501,7 +519,8 @@ namespace PPrePorter.Infrastructure.Services
                         return value?.ToString() != filter.Value;
                     
                     case "contains":
-                        return value?.ToString().Contains(filter.Value, StringComparison.OrdinalIgnoreCase) == true;
+                        if (value == null) return false;
+                        return value.ToString().Contains(filter.Value ?? "", StringComparison.OrdinalIgnoreCase);
                     
                     case "greaterThan":
                         if (value is double dblVal && double.TryParse(filter.Value, out double compareVal))
@@ -534,11 +553,13 @@ namespace PPrePorter.Infrastructure.Services
                         return false;
                     
                     case "in":
-                        return filter.Values.Contains(value?.ToString());
+                        if (filter.Values == null || value == null) return false;
+                        string valueStr = value.ToString() ?? "";
+                        return filter.Values.Contains(valueStr);
                     
                     case "between":
                         if (value is double dblVal3 && double.TryParse(filter.Value, out double start) && 
-                            double.TryParse(filter.Values.FirstOrDefault(), out double end))
+                            filter.Values != null && filter.Values.Count > 0 && double.TryParse(filter.Values[0], out double end))
                         {
                             return dblVal3 >= start && dblVal3 <= end;
                         }
@@ -659,6 +680,7 @@ namespace PPrePorter.Infrastructure.Services
 
         private long ExportToExcel(GeneratedReport report, string filePath)
         {
+            // Set license context
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             
             using (var package = new ExcelPackage())
@@ -738,7 +760,8 @@ namespace PPrePorter.Infrastructure.Services
                         }
                         else if (value is DateTime dateValue)
                         {
-                            return $"\"{dateValue.ToString(column.Format ?? "yyyy-MM-dd")}\"";
+                            string format = column.Format ?? "yyyy-MM-dd";
+                            return $"\"{dateValue.ToString(format)}\"";
                         }
                         else
                         {

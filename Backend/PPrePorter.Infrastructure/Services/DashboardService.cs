@@ -540,15 +540,13 @@ namespace PPrePorter.Infrastructure.Services
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
-                }
-
-                // Initialize result
+                }                // Initialize result
                 var result = new ContextualDataExplorerResult
                 {
                     ExplorationContext = request.ExplorationContext,
                     DrillDownKey = request.DrillDownKey,
                     DrillDownLevel = request.DrillDownLevel,
-                    DataPoints = new List<DataPoint>(),
+                    DataPoints = new List<ExplorerDataPoint>(),
                     Aggregations = new Dictionary<string, decimal>(),
                     Annotations = new List<DataAnnotation>(),
                     Insights = new List<DataInsight>()

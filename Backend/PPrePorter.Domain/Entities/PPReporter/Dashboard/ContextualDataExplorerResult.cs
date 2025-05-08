@@ -8,9 +8,8 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public string ExplorationContext { get; set; }
         public string DrillDownKey { get; set; }
         public int? DrillDownLevel { get; set; }
-        
-        // Primary result data
-        public List<DataPoint> DataPoints { get; set; }
+          // Primary result data
+        public List<ExplorerDataPoint> DataPoints { get; set; }
         
         // Context-specific aggregations
         public Dictionary<string, decimal> Aggregations { get; set; }
@@ -22,11 +21,9 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public PredictiveModelingResult PredictiveResults { get; set; }
         
         // Annotations and insights
-        public List<DataAnnotation> Annotations { get; set; }
+        public List<ExplorerDataAnnotation> Annotations { get; set; }
         public List<DataInsight> Insights { get; set; }
-    }
-
-    public class DataPoint
+    }    public class ExplorerDataPoint
     {
         public string Label { get; set; }
         public Dictionary<string, object> Dimensions { get; set; }
@@ -69,9 +66,7 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public Dictionary<string, object> Dimensions { get; set; }
         public Dictionary<string, decimal> Metrics { get; set; }
         public decimal? ConfidenceInterval { get; set; }
-    }
-
-    public class DataAnnotation
+    }    public class ExplorerDataAnnotation
     {
         public string Id { get; set; }
         public string Title { get; set; }
