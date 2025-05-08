@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Infrastructure.Extensions;
 
 namespace PPrePorter.Infrastructure.Services
 {
@@ -41,16 +42,12 @@ namespace PPrePorter.Infrastructure.Services
             {
                 _logger.LogWarning("User identifier claim not found in the current HttpContext");
                 throw new InvalidOperationException("User is not authenticated");
-            }
-
-            try
+            }            try
             {
                 // Get user details from the database
                 var user = await _dbContext.Users
-                    .Include(u => u.UserRole)
-                    .FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (user == null)
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));                if (user == null)
                 {
                     _logger.LogWarning("User with ID {UserId} not found in database", userId);
                     throw new InvalidOperationException($"User with ID {userId} not found");
@@ -58,10 +55,10 @@ namespace PPrePorter.Infrastructure.Services
 
                 return new UserContext
                 {
-                    Id = user.Id,
+                    Id = userId,  // Use the string ID from the claim
                     Username = user.Username,
                     Email = user.Email,
-                    Role = user.UserRole?.Name
+                    Role = user.Role?.Name
                 };
             }
             catch (Exception ex)

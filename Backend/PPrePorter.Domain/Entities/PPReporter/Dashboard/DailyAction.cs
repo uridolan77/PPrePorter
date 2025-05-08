@@ -2,7 +2,8 @@ using System;
 
 namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
 {
-    public class DailyAction
+    // Renamed to avoid conflict with DailyAction in the parent namespace
+    public class DashboardDailyAction
     {
         public int ID { get; set; }
         public DateTime Date { get; set; }

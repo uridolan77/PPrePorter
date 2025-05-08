@@ -1,4 +1,5 @@
 using PPrePorter.Domain.Common;
+using System;
 
 namespace PPrePorter.Domain.Entities.PPReporter
 {
@@ -14,6 +15,10 @@ namespace PPrePorter.Domain.Entities.PPReporter
         public string PaymentMethod { get; set; }
         public string TransactionDetails { get; set; }
         public string TransactionSubDetails { get; set; }
+        
+        // This property is used for ID in the queries
+        public int PlayerID { get => PlayerId; }
+        public int TransactionID { get => Id; }
         
         public virtual Player Player { get; set; }
     }

@@ -47,8 +47,8 @@ namespace PPrePorter.Domain.Extensions
             return explorerDataPoints.Select(dp => dp.ToDataPoint()).ToList();
         }
 
-        // Convert a DataAnnotation to an ExplorerDataAnnotation
-        public static ExplorerDataAnnotation ToExplorerDataAnnotation(this DataAnnotation annotation)
+        // Convert a DashboardDataAnnotation to an ExplorerDataAnnotation
+        public static ExplorerDataAnnotation ToExplorerDataAnnotation(this DashboardDataAnnotation annotation)
         {
             if (annotation == null) return null;
             return new ExplorerDataAnnotation
@@ -64,11 +64,11 @@ namespace PPrePorter.Domain.Extensions
             };
         }
 
-        // Convert an ExplorerDataAnnotation to a DataAnnotation
-        public static DataAnnotation ToDataAnnotation(this ExplorerDataAnnotation explorerAnnotation)
+        // Convert an ExplorerDataAnnotation to a DashboardDataAnnotation
+        public static DashboardDataAnnotation ToDashboardDataAnnotation(this ExplorerDataAnnotation explorerAnnotation)
         {
             if (explorerAnnotation == null) return null;
-            return new DataAnnotation
+            return new DashboardDataAnnotation
             {
                 Id = explorerAnnotation.Id,
                 Title = explorerAnnotation.Title,
@@ -81,18 +81,18 @@ namespace PPrePorter.Domain.Extensions
             };
         }
 
-        // Convert a list of DataAnnotations to a list of ExplorerDataAnnotations
-        public static List<ExplorerDataAnnotation> ToExplorerDataAnnotations(this IEnumerable<DataAnnotation> annotations)
+        // Convert a list of DashboardDataAnnotations to a list of ExplorerDataAnnotations
+        public static List<ExplorerDataAnnotation> ToExplorerDataAnnotations(this IEnumerable<DashboardDataAnnotation> annotations)
         {
             if (annotations == null) return null;
             return annotations.Select(a => a.ToExplorerDataAnnotation()).ToList();
         }
 
-        // Convert a list of ExplorerDataAnnotations to a list of DataAnnotations
-        public static List<DataAnnotation> ToDataAnnotations(this IEnumerable<ExplorerDataAnnotation> explorerAnnotations)
+        // Convert a list of ExplorerDataAnnotations to a list of DashboardDataAnnotations
+        public static List<DashboardDataAnnotation> ToDashboardDataAnnotations(this IEnumerable<ExplorerDataAnnotation> explorerAnnotations)
         {
             if (explorerAnnotations == null) return null;
-            return explorerAnnotations.Select(a => a.ToDataAnnotation()).ToList();
+            return explorerAnnotations.Select(a => a.ToDashboardDataAnnotation()).ToList();
         }
     }
 }

@@ -33,12 +33,10 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public string Description { get; set; }
         public double ConfidenceScore { get; set; } // 0-1 score of pattern confidence
         public bool IsSignificant { get; set; }
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Represents a single data point in a time series
     /// </summary>
-    public class DataPoint
+    public class TrendDataPoint
     {
         public DateTime Date { get; set; }
         public string MetricKey { get; set; }

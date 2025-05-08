@@ -22,11 +22,10 @@ namespace PPrePorter.Infrastructure.Services
         public async Task<List<int>> GetAccessibleWhiteLabelIdsAsync(string userId)
         {
             try
-            {
-                // Get the user's role from the database
+            {                // Get the user's role from the database
                 var user = await _dbContext.Users
-                    .Include(u => u.UserRole)
-                    .FirstOrDefaultAsync(u => u.Id == userId);
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
 
                 if (user == null)
                 {
@@ -35,7 +34,7 @@ namespace PPrePorter.Infrastructure.Services
                 }
 
                 // Determine accessible white labels based on user role
-                if (user.UserRole.Name == "Admin")
+                if (user.Role.Name == "Admin")
                 {
                     // Admins can access all white labels
                     var allLabels = await _dbContext.WhiteLabels
@@ -44,33 +43,29 @@ namespace PPrePorter.Infrastructure.Services
                         
                     _logger.LogInformation("Admin user {UserId} has access to all {Count} white labels", userId, allLabels.Count);
                     return allLabels;
-                }
-                else if (user.UserRole.Name == "Partner")
-                {
-                    // Partners can access specific white labels assigned to them
+                }                else if (user.Role.Name == "Partner")
+                {                    // Partners can access specific white labels assigned to them
                     var partnerLabels = await _dbContext.UserWhiteLabels
-                        .Where(uwl => uwl.UserId == userId)
+                        .Where(uwl => uwl.UserId == int.Parse(userId))
                         .Select(uwl => uwl.WhiteLabelId)
                         .ToListAsync();
                         
                     _logger.LogInformation("Partner user {UserId} has access to {Count} white labels", userId, partnerLabels.Count);
                     return partnerLabels;
                 }
-                else if (user.UserRole.Name == "Subpartner")
-                {
-                    // Subpartners typically have access to a single white label
+                else if (user.Role.Name == "Subpartner")
+                {                    // Subpartners typically have access to a single white label
                     var subpartnerLabel = await _dbContext.UserWhiteLabels
-                        .Where(uwl => uwl.UserId == userId)
+                        .Where(uwl => uwl.UserId == int.Parse(userId))
                         .Select(uwl => uwl.WhiteLabelId)
                         .FirstOrDefaultAsync();
-                        
-                    _logger.LogInformation("Subpartner user {UserId} has access to white label {LabelId}", userId, subpartnerLabel);
+                          _logger.LogInformation("Subpartner user {UserId} has access to white label {LabelId}", userId, subpartnerLabel);
                     return new List<int> { subpartnerLabel };
                 }
                 else
                 {
                     // Default case - no access
-                    _logger.LogWarning("User {UserId} with role {Role} does not have access to any white labels", userId, user.UserRole.Name);
+                    _logger.LogWarning("User {UserId} with role {Role} does not have access to any white labels", userId, user.Role.Name);
                     return new List<int>();
                 }
             }

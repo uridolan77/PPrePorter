@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Exceptions;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
+using PPrePorter.Domain.Extensions;
+using PPrePorter.Infrastructure.Models;
 
 namespace PPrePorter.Infrastructure.Services
 {
@@ -353,11 +356,9 @@ namespace PPrePorter.Infrastructure.Services
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
-                }
-
-                // Build query
+                }                // Build query
                 var query = from game in _dbContext.Games
-                            join gameAct in _dbContext.DailyActionsGames on game.GameID equals gameAct.GameID
+                            join gameAct in _dbContext.DailyActionsGames on game.GameId equals gameAct.GameId
                             join player in _dbContext.Players on gameAct.PlayerID equals player.PlayerID
                             where gameAct.GameDate.Date == today
                             && whiteLabelIds.Contains(player.CasinoID)
@@ -468,8 +469,7 @@ namespace PPrePorter.Infrastructure.Services
                 }
 
                 // Get recent transactions
-                var recentTransactions = await query
-                    .OrderByDescending(x => x.t.TransactionDate)
+                var recentTransactions = await query                    .OrderByDescending(x => x.t.TransactionDate)
                     .Take(20)
                     .Select(x => new RecentTransactionItem
                     {
@@ -548,7 +548,7 @@ namespace PPrePorter.Infrastructure.Services
                     DrillDownLevel = request.DrillDownLevel,
                     DataPoints = new List<ExplorerDataPoint>(),
                     Aggregations = new Dictionary<string, decimal>(),
-                    Annotations = new List<DataAnnotation>(),
+                    Annotations = new List<ExplorerDataAnnotation>(),
                     Insights = new List<DataInsight>()
                 };
 
@@ -571,18 +571,18 @@ namespace PPrePorter.Infrastructure.Services
                         // Default to summary exploration
                         await ProcessSummaryExplorationAsync(request, result, whiteLabelIds, startDate, endDate);
                         break;
-                }
-
-                // Generate trend analysis if enabled
+                }                // Generate trend analysis if enabled
                 if (request.Dimensions?.Contains("time") == true || request.Dimensions?.Count > 0)
                 {
-                    result.TrendInfo = await GenerateTrendAnalysisAsync(result.DataPoints, request);
+                    var dataPoints = result.DataPoints.ToDataPoints();
+                    result.TrendInfo = await GenerateTrendAnalysisAsync(dataPoints, request);
                 }
 
                 // Apply predictive modeling if requested
                 if (request.EnablePredictiveModeling && request.ScenarioParameters?.Count > 0)
                 {
-                    result.PredictiveResults = await GeneratePredictiveModelingResultsAsync(request, result.DataPoints);
+                    var dataPoints = result.DataPoints.ToDataPoints();
+                    result.PredictiveResults = await GeneratePredictiveModelingResultsAsync(request, dataPoints);
                 }
 
                 // Generate insights
@@ -640,17 +640,19 @@ namespace PPrePorter.Infrastructure.Services
                     _ => "day" // Default to daily
                 };
 
-                var revenueData = await GetRevenueDataByTimeAsync(query, timeGrouping, request.Metrics);
-                
-                foreach (var item in revenueData)
+                var revenueData = await GetRevenueDataByTimeAsync(query, timeGrouping, request.Metrics);                  foreach (var item in revenueData)
                 {
-                    result.DataPoints.Add(new DataPoint
+                    // Create a DashboardDataPoint to avoid ambiguity
+                    var dataPoint = new DashboardDataPoint
                     {
                         Label = item.Key,
                         Timestamp = item.Timestamp,
                         Dimensions = new Dictionary<string, object> { { "time", item.Key } },
                         Metrics = item.Metrics
-                    });
+                    };
+                    
+                    // Convert to ExplorerDataPoint and add to result
+                    result.DataPoints.Add(dataPoint.ToExplorerDataPoint());
                 }
 
                 // Calculate aggregations
@@ -681,86 +683,89 @@ namespace PPrePorter.Infrastructure.Services
                     var yearlyData = await query
                         .GroupBy(da => da.Date.Year)
                         .Select(g => new
-                        {
-                            Year = g.Key,
-                            Revenue = GetTotalRevenue(g, null),
-                            Bets = GetTotalBets(g, null),
-                            Wins = GetTotalWins(g, null),
+                        {                            Year = g.Key,
+                            Revenue = GetTotalRevenue(g, string.Empty),
+                            Bets = GetTotalBets(g, string.Empty),
+                            Wins = GetTotalWins(g, string.Empty),
                             Deposits = g.Sum(da => da.Deposits ?? 0),
                             Cashouts = g.Sum(da => da.PaidCashouts ?? 0)
                         })
                         .OrderBy(x => x.Year)
-                        .ToListAsync();
-
-                    foreach (var item in yearlyData)
+                        .ToListAsync();                    foreach (var item in yearlyData)
                     {
-                        var metrics = new Dictionary<string, decimal>();
+                        var yearlyMetrics = new Dictionary<string, decimal>();
                         
                         if (metricsList.Contains("revenue"))
-                            metrics["revenue"] = item.Revenue;
+                            yearlyMetrics["revenue"] = item.Revenue;
                         
                         if (metricsList.Contains("bets"))
-                            metrics["bets"] = item.Bets;
+                            yearlyMetrics["bets"] = item.Bets;
                         
                         if (metricsList.Contains("wins"))
-                            metrics["wins"] = item.Wins;
+                            yearlyMetrics["wins"] = item.Wins;
                         
                         if (metricsList.Contains("deposits"))
-                            metrics["deposits"] = item.Deposits;
-                        
-                        if (metricsList.Contains("cashouts"))
-                            metrics["cashouts"] = item.Cashouts;
+                            yearlyMetrics["deposits"] = item.Deposits;
+                          if (metricsList.Contains("cashouts"))
+                            yearlyMetrics["cashouts"] = item.Cashouts;
 
                         result.Add(new RevenueDataItem
                         {
                             Key = item.Year.ToString(),
                             Timestamp = new DateTime(item.Year, 1, 1),
-                            Metrics = metrics
+                            Metrics = yearlyMetrics
                         });
                     }
                     break;
                 
-                case "month":
-                    var monthlyData = await query
+                case "month":                    var monthlyData = await query
                         .GroupBy(da => new { Year = da.Date.Year, Month = da.Date.Month })
                         .Select(g => new
                         {
                             Year = g.Key.Year,
                             Month = g.Key.Month,
-                            Revenue = GetTotalRevenue(g, null),
-                            Bets = GetTotalBets(g, null),
-                            Wins = GetTotalWins(g, null),
+                            Revenue = g.Sum(da => 
+                                ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) + 
+                                ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) + 
+                                ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) + 
+                                ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0))),
+                            Bets = g.Sum(da => 
+                                (da.BetsCasino ?? 0) + 
+                                (da.BetsSport ?? 0) + 
+                                (da.BetsLive ?? 0) + 
+                                (da.BetsBingo ?? 0)),
+                            Wins = g.Sum(da => 
+                                (da.WinsCasino ?? 0) + 
+                                (da.WinsSport ?? 0) + 
+                                (da.WinsLive ?? 0) + 
+                                (da.WinsBingo ?? 0)),
                             Deposits = g.Sum(da => da.Deposits ?? 0),
                             Cashouts = g.Sum(da => da.PaidCashouts ?? 0)
                         })
                         .OrderBy(x => x.Year)
                         .ThenBy(x => x.Month)
-                        .ToListAsync();
-
-                    foreach (var item in monthlyData)
+                        .ToListAsync();                    foreach (var item in monthlyData)
                     {
-                        var metrics = new Dictionary<string, decimal>();
+                        var itemMetrics = new Dictionary<string, decimal>();
                         
                         if (metricsList.Contains("revenue"))
-                            metrics["revenue"] = item.Revenue;
+                            itemMetrics["revenue"] = item.Revenue;
                         
                         if (metricsList.Contains("bets"))
-                            metrics["bets"] = item.Bets;
+                            itemMetrics["bets"] = item.Bets;
                         
                         if (metricsList.Contains("wins"))
-                            metrics["wins"] = item.Wins;
+                            itemMetrics["wins"] = item.Wins;
                         
                         if (metricsList.Contains("deposits"))
-                            metrics["deposits"] = item.Deposits;
+                            itemMetrics["deposits"] = item.Deposits;
                         
                         if (metricsList.Contains("cashouts"))
-                            metrics["cashouts"] = item.Cashouts;
-
-                        result.Add(new RevenueDataItem
+                            itemMetrics["cashouts"] = item.Cashouts;                        result.Add(new RevenueDataItem
                         {
                             Key = $"{item.Year}-{item.Month:D2}",
                             Timestamp = new DateTime(item.Year, item.Month, 1),
-                            Metrics = metrics
+                            Metrics = itemMetrics
                         });
                     }
                     break;
@@ -771,15 +776,26 @@ namespace PPrePorter.Infrastructure.Services
                     break;
                 
                 case "day":
-                default:
-                    var dailyData = await query
+                default:                    var dailyData = await query
                         .GroupBy(da => da.Date.Date)
                         .Select(g => new
                         {
                             Date = g.Key,
-                            Revenue = GetTotalRevenue(g, null),
-                            Bets = GetTotalBets(g, null),
-                            Wins = GetTotalWins(g, null),
+                            Revenue = g.Sum(da => 
+                                ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) + 
+                                ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) + 
+                                ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) + 
+                                ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0))),
+                            Bets = g.Sum(da => 
+                                (da.BetsCasino ?? 0) + 
+                                (da.BetsSport ?? 0) + 
+                                (da.BetsLive ?? 0) + 
+                                (da.BetsBingo ?? 0)),
+                            Wins = g.Sum(da => 
+                                (da.WinsCasino ?? 0) + 
+                                (da.WinsSport ?? 0) + 
+                                (da.WinsLive ?? 0) + 
+                                (da.WinsBingo ?? 0)),
                             Deposits = g.Sum(da => da.Deposits ?? 0),
                             Cashouts = g.Sum(da => da.PaidCashouts ?? 0)
                         })
@@ -788,28 +804,28 @@ namespace PPrePorter.Infrastructure.Services
 
                     foreach (var item in dailyData)
                     {
-                        var metrics = new Dictionary<string, decimal>();
+                        var itemMetrics = new Dictionary<string, decimal>();
                         
                         if (metricsList.Contains("revenue"))
-                            metrics["revenue"] = item.Revenue;
+                            itemMetrics["revenue"] = item.Revenue;
                         
                         if (metricsList.Contains("bets"))
-                            metrics["bets"] = item.Bets;
+                            itemMetrics["bets"] = item.Bets;
                         
                         if (metricsList.Contains("wins"))
-                            metrics["wins"] = item.Wins;
+                            itemMetrics["wins"] = item.Wins;
                         
                         if (metricsList.Contains("deposits"))
-                            metrics["deposits"] = item.Deposits;
+                            itemMetrics["deposits"] = item.Deposits;
                         
                         if (metricsList.Contains("cashouts"))
-                            metrics["cashouts"] = item.Cashouts;
+                            itemMetrics["cashouts"] = item.Cashouts;
 
                         result.Add(new RevenueDataItem
                         {
                             Key = item.Date.ToString("yyyy-MM-dd"),
                             Timestamp = item.Date,
-                            Metrics = metrics
+                            Metrics = itemMetrics
                         });
                     }
                     break;

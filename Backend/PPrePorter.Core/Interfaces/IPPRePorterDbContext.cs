@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.Core.Models.Reports;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PPrePorter.Core.Interfaces
 {

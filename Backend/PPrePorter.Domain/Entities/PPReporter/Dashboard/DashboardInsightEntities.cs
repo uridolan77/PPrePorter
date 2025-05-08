@@ -41,12 +41,10 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public string PotentialCause { get; set; }
         public bool IsPositive { get; set; } // Whether the anomaly is beneficial
         public Dictionary<string, object> AdditionalData { get; set; }
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Represents a user-created annotation on dashboard data
     /// </summary>
-    public class DataAnnotation
+    public class InsightDataAnnotation
     {
         public int Id { get; set; }
         public string UserId { get; set; }

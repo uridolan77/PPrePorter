@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Core.Models.Reports;
 using PPrePorter.Domain.Entities.PPReporter;
 
 namespace PPrePorter.Infrastructure.Data
@@ -17,12 +18,20 @@ namespace PPrePorter.Infrastructure.Data
         {
             _connectionStringResolver = connectionStringResolver;
             _connectionStringTemplate = connectionStringTemplate;
-        }
-
-        public DbSet<User> Users { get; set; }
+        }        public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<UserPreference> UserPreferences { get; set; }
+        public DbSet<DailyAction> DailyActions { get; set; }
+        public DbSet<WhiteLabel> WhiteLabels { get; set; }
+        public DbSet<UserWhiteLabel> UserWhiteLabels { get; set; }
+        public DbSet<Game> Games { get; set; }
+        public DbSet<DailyActionGame> DailyActionsGames { get; set; }
+        public DbSet<Player> Players { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<ReportTemplate> ReportTemplates { get; set; }
+        public DbSet<GeneratedReport> GeneratedReports { get; set; }
+        public DbSet<ReportExport> ReportExports { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
