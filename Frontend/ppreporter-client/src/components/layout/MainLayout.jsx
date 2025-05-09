@@ -87,6 +87,7 @@ const MainLayout = () => {
     { text: 'Reports', icon: <AssessmentIcon />, path: '/reports',
       subItems: [
         { text: 'Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions' },
+        { text: 'Advanced Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions/advanced' },
         { text: 'Player Reports', icon: <PersonIcon />, path: '/reports/players' },
         { text: 'Financial', icon: <BarChartIcon />, path: '/reports/financial' },
         { text: 'Performance', icon: <TimelineIcon />, path: '/reports/performance' },

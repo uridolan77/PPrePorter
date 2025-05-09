@@ -17,6 +17,15 @@ class DailyActionsService extends ApiService {
   }
 
   /**
+   * Get daily actions report data with comprehensive filtering
+   * @param {Object} filters - Comprehensive filter parameters
+   * @returns {Promise<Object>} - Filtered report data
+   */
+  async getFilteredData(filters) {
+    return this.post(API_ENDPOINTS.DAILY_ACTIONS.FILTER, filters);
+  }
+
+  /**
    * Get metadata for daily actions report (brands, countries, etc.)
    * @returns {Promise<Object>} - Metadata
    */
@@ -43,6 +52,20 @@ class DailyActionsService extends ApiService {
     return this.post(
       API_ENDPOINTS.DAILY_ACTIONS.EXPORT,
       { filters, format },
+      { responseType: 'blob' }
+    );
+  }
+
+  /**
+   * Export filtered daily actions report
+   * @param {Object} filters - Comprehensive filter parameters
+   * @param {string} format - Export format (csv, xlsx, pdf)
+   * @returns {Promise<Blob>} - Report file as blob
+   */
+  async exportFilteredReport(filters, format = 'csv') {
+    return this.post(
+      `${API_ENDPOINTS.DAILY_ACTIONS.FILTER}/export`,
+      { ...filters, format },
       { responseType: 'blob' }
     );
   }

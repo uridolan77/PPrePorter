@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Options;
+using OfficeOpenXml;
 using PPrePorter.API.Features.Authentication.Models;
 using PPrePorter.API.Features.Authentication.Services;
 using PPrePorter.API.Features.Configuration;
@@ -20,6 +21,10 @@ using PPrePorter.DailyActionsDB;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure EPPlus license
+// For EPPlus version 8 and later
+ExcelPackage.License.SetNonCommercialPersonal("PPrePorter");
 
 // Add services to the container.
 // Configure Swagger/OpenAPI

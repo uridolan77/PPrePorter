@@ -54,6 +54,9 @@ namespace PPrePorter.DailyActionsDB
                        .AddInterceptors(noLockInterceptor);
             });
 
+            // Register memory cache if not already registered
+            services.AddMemoryCache();
+
             // Register original services
             services.AddScoped<IDailyActionsService, DailyActionsService>();
             services.AddScoped<IWhiteLabelService, MockWhiteLabelService>(); // Using mock service

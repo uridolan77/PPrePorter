@@ -18,35 +18,48 @@ namespace PPrePorter.DailyActionsDB.Interfaces
         /// <param name="whiteLabelId">Optional white label ID filter</param>
         /// <returns>List of daily actions</returns>
         Task<IEnumerable<DailyAction>> GetDailyActionsAsync(DateTime startDate, DateTime endDate, int? whiteLabelId = null);
-        
+
+        /// <summary>
+        /// Get daily actions with comprehensive filtering
+        /// </summary>
+        /// <param name="filter">Filter parameters</param>
+        /// <returns>Filtered daily actions response</returns>
+        Task<DailyActionResponseDto> GetFilteredDailyActionsAsync(DailyActionFilterDto filter);
+
+        /// <summary>
+        /// Get metadata for daily actions report
+        /// </summary>
+        /// <returns>Metadata for filters and options</returns>
+        Task<DailyActionMetadataDto> GetDailyActionsMetadataAsync();
+
         /// <summary>
         /// Get a specific daily action by ID
         /// </summary>
         /// <param name="id">Daily action ID</param>
         /// <returns>Daily action or null if not found</returns>
         Task<DailyAction?> GetDailyActionByIdAsync(int id);
-        
+
         /// <summary>
         /// Add a new daily action
         /// </summary>
         /// <param name="dailyAction">Daily action to add</param>
         /// <returns>Added daily action</returns>
         Task<DailyAction> AddDailyActionAsync(DailyAction dailyAction);
-        
+
         /// <summary>
         /// Update an existing daily action
         /// </summary>
         /// <param name="dailyAction">Daily action to update</param>
         /// <returns>Updated daily action</returns>
         Task<DailyAction> UpdateDailyActionAsync(DailyAction dailyAction);
-        
+
         /// <summary>
         /// Delete a daily action
         /// </summary>
         /// <param name="id">Daily action ID</param>
         /// <returns>True if deleted, false if not found</returns>
         Task<bool> DeleteDailyActionAsync(int id);
-        
+
         /// <summary>
         /// Get summary metrics for a specific date range
         /// </summary>
@@ -56,7 +69,7 @@ namespace PPrePorter.DailyActionsDB.Interfaces
         /// <returns>Summary metrics</returns>
         Task<DailyActionsSummary> GetSummaryMetricsAsync(DateTime startDate, DateTime endDate, int? whiteLabelId = null);
     }
-    
+
     /// <summary>
     /// Summary metrics for daily actions
     /// </summary>

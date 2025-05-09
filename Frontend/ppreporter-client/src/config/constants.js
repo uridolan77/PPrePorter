@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   DAILY_ACTIONS: {
     GET_DATA: '/reports/daily-actions/data',
     GET_METADATA: '/reports/daily-actions/metadata',
+    FILTER: '/reports/daily-actions/filter',
     NL_QUERY: '/reports/daily-actions/query',
     EXPORT: '/reports/daily-actions/export',
     SAVE_CONFIG: '/reports/configurations/save',

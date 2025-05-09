@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -137,13 +138,24 @@ const DailyActionsPage = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Daily Actions Report
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          View and analyze daily player activities, deposits, and gaming revenue
-        </Typography>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            Daily Actions Report
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            View and analyze daily player activities, deposits, and gaming revenue
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          component={RouterLink}
+          to="/reports/daily-actions/advanced"
+          startIcon={<FilterListIcon />}
+        >
+          Advanced Report
+        </Button>
       </Box>
 
       {/* Filters */}

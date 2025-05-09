@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using PPrePorter.DailyActionsDB.Models;
 
 namespace PPrePorter.DailyActionsDB.Data
@@ -11,6 +12,12 @@ namespace PPrePorter.DailyActionsDB.Data
         public DailyActionsDbContext(DbContextOptions<DailyActionsDbContext> options)
             : base(options)
         {
+            // Configure SQL Server to use NOLOCK hints by default
+            var sqlServerOptions = this.GetService<SqlServerDbContextOptionsBuilder>();
+            if (sqlServerOptions != null)
+            {
+                sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            }
         }
 
         // Game-related entities

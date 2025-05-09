@@ -18,6 +18,9 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
+// Report pages
+import DailyActionsAdvancedPage from './pages/reports/DailyActionsAdvancedPage';
+
 // Dashboard pages
 // import DashboardPage from './pages/Dashboard'; // Using Redux, commenting out for now
 import SimpleDashboard from './pages/SimpleDashboard';
@@ -86,6 +89,7 @@ function App() {
                 {/* Reports Routes */}
                 <Route path="/reports" element={<SimpleDashboard />} />
                 <Route path="/reports/daily-actions" element={<DailyActionsPage />} />
+                <Route path="/reports/daily-actions/advanced" element={<DailyActionsAdvancedPage />} />
                 <Route path="/reports/*" element={<SimpleDashboard />} />
 
                 {/* Analytics Routes */}
