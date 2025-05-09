@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Grid,
@@ -12,7 +12,9 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Skeleton,
+  Paper
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -24,14 +26,17 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 // Utilities
-import { formatCurrency, formatNumber, formatPercentage } from '../../../utils/formatters';
+import { formatCurrency, formatNumber, formatPercentage, formatDate } from '../../../utils/formatters';
 
 // Common components
 import Card from '../../common/Card';
 import KPICard from '../../common/KPICard';
 import EmptyState from '../../common/EmptyState';
+import LoadingOverlay from '../../common/LoadingOverlay';
+import ErrorBoundary from '../../common/ErrorBoundary';
 
 // Dashboard components
 import CasinoRevenueChart from '../CasinoRevenueChart';
@@ -50,21 +55,22 @@ import {
 const PerformanceTab = ({
   dashboardData,
   isLoading,
+  error,
   theme = useTheme()
 }) => {
   // State for chart type and time period
   const [chartType, setChartType] = useState('line');
   const [timePeriod, setTimePeriod] = useState('week');
 
-  // Chart colors
-  const COLORS = [
+  // Chart colors - memoized to prevent recreation on each render
+  const COLORS = useMemo(() => [
     theme.palette.primary.main,
     theme.palette.secondary.main,
     theme.palette.success.main,
     theme.palette.error.main,
     theme.palette.warning.main,
     theme.palette.info.main
-  ];
+  ], [theme.palette]);
 
   // Handle chart type change
   const handleChartTypeChange = (event, newChartType) => {
@@ -78,47 +84,63 @@ const PerformanceTab = ({
     setTimePeriod(event.target.value);
   };
 
-  // Revenue data for charts
-  const revenueData = dashboardData?.charts?.revenueByDay || [
-    { day: 'Mon', value: 2100 },
-    { day: 'Tue', value: 2400 },
-    { day: 'Wed', value: 1800 },
-    { day: 'Thu', value: 2200 },
-    { day: 'Fri', value: 2600 },
-    { day: 'Sat', value: 3100 },
-    { day: 'Sun', value: 2500 }
-  ];
+  // Memoize revenue data for charts
+  const revenueData = useMemo(() => {
+    return dashboardData?.charts?.revenueByDay || [
+      { day: 'Mon', value: 2100 },
+      { day: 'Tue', value: 2400 },
+      { day: 'Wed', value: 1800 },
+      { day: 'Thu', value: 2200 },
+      { day: 'Fri', value: 2600 },
+      { day: 'Sat', value: 3100 },
+      { day: 'Sun', value: 2500 }
+    ];
+  }, [dashboardData?.charts?.revenueByDay]);
 
-  // Player distribution data for charts
-  const playerDistributionData = dashboardData?.charts?.playersByGame || [
-    { game: 'Poker', value: 450 },
-    { game: 'Slots', value: 380 },
-    { game: 'Roulette', value: 240 },
-    { game: 'Blackjack', value: 190 },
-    { game: 'Baccarat', value: 165 }
-  ];
+  // Memoize player distribution data for charts
+  const playerDistributionData = useMemo(() => {
+    return dashboardData?.charts?.playersByGame || [
+      { game: 'Poker', value: 450 },
+      { game: 'Slots', value: 380 },
+      { game: 'Roulette', value: 240 },
+      { game: 'Blackjack', value: 190 },
+      { game: 'Baccarat', value: 165 }
+    ];
+  }, [dashboardData?.charts?.playersByGame]);
 
-  // KPI data
-  const kpiData = dashboardData?.kpis || {
-    averageSessionTime: 45,
-    conversionRate: 3.2,
-    churnRate: 5.7,
-    revenuePerUser: 87.5
-  };
+  // Memoize KPI data
+  const kpiData = useMemo(() => {
+    return dashboardData?.kpis || {
+      averageSessionTime: 45,
+      conversionRate: 3.2,
+      churnRate: 5.7,
+      revenuePerUser: 87.5
+    };
+  }, [dashboardData?.kpis]);
 
-  // Format currency for display
-  const formatCurrency = (value) => {
-    return value ? `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00';
-  };
-
-  // Prepare revenue data for the chart
-  const prepareRevenueData = () => {
+  // Prepare revenue data for the chart - memoized to prevent recalculation
+  const preparedRevenueData = useMemo(() => {
     // Convert the revenueData to the format expected by CasinoRevenueChart
-    return (dashboardData?.charts?.revenueByDay || []).map(item => ({
+    return revenueData.map(item => ({
       date: item.day,
       revenue: item.value
     }));
-  };
+  }, [revenueData]);
+
+  // Handle error state
+  if (error) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
+        <Typography variant="h6" color="error" gutterBottom>
+          Error Loading Performance Data
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {error.message || "An unexpected error occurred. Please try again later."}
+        </Typography>
+      </Box>
+    );
+  }
 
   // Render player distribution chart
   const renderPlayerDistributionChart = () => {
@@ -156,71 +178,84 @@ const PerformanceTab = ({
   };
 
   return (
-    <Box>
-      {/* Performance Metrics Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5">
-            Performance Metrics
-          </Typography>
-          <Box>
-            <Tooltip title="Download report">
-              <IconButton size="small" sx={{ mr: 1 }}>
-                <DownloadIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Settings">
-              <IconButton size="small">
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+    <ErrorBoundary fallback={<EmptyState message="Something went wrong loading the performance data" icon={<ErrorOutlineIcon />} />}>
+      <Box>
+        {/* Performance Metrics Section */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5">
+              Performance Metrics
+            </Typography>
+            <Box>
+              <Tooltip title="Download report">
+                <IconButton size="small" sx={{ mr: 1 }}>
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Settings">
+                <IconButton size="small">
+                  <SettingsIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Card
+                title="Revenue Trends"
+                actions={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                      <InputLabel id="time-period-label">Period</InputLabel>
+                      <Select
+                        labelId="time-period-label"
+                        id="time-period-select"
+                        value={timePeriod}
+                        label="Period"
+                        onChange={handleTimePeriodChange}
+                      >
+                        <MenuItem value="day">Day</MenuItem>
+                        <MenuItem value="week">Week</MenuItem>
+                        <MenuItem value="month">Month</MenuItem>
+                        <MenuItem value="quarter">Quarter</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                }
+              >
+                {isLoading && revenueData.length === 0 ? (
+                  <Box sx={{ p: 3 }}>
+                    <Skeleton variant="rectangular" height={300} />
+                  </Box>
+                ) : (
+                  <CasinoRevenueChart
+                    data={preparedRevenueData}
+                    isLoading={isLoading}
+                  />
+                )}
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card title="Player Distribution by Game">
+                {isLoading && playerDistributionData.length === 0 ? (
+                  <Box sx={{ p: 3 }}>
+                    <Skeleton variant="rectangular" height={300} />
+                  </Box>
+                ) : (
+                  <TopGamesChart
+                    data={playerDistributionData}
+                    isLoading={isLoading}
+                    valueKey="value"
+                    nameKey="game"
+                    showTotal={false}
+                    chartType="pie"
+                    emptyStateMessage="No player distribution data available"
+                  />
+                )}
+              </Card>
+            </Grid>
+          </Grid>
         </Box>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card
-              title="Revenue Trends"
-              actions={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <InputLabel id="time-period-label">Period</InputLabel>
-                    <Select
-                      labelId="time-period-label"
-                      id="time-period-select"
-                      value={timePeriod}
-                      label="Period"
-                      onChange={handleTimePeriodChange}
-                    >
-                      <MenuItem value="day">Day</MenuItem>
-                      <MenuItem value="week">Week</MenuItem>
-                      <MenuItem value="month">Month</MenuItem>
-                      <MenuItem value="quarter">Quarter</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-              }
-            >
-              <CasinoRevenueChart
-                data={prepareRevenueData()}
-                isLoading={isLoading}
-              />
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card title="Player Distribution by Game">
-              <TopGamesChart
-                data={dashboardData?.charts?.playersByGame || []}
-                isLoading={isLoading}
-                valueKey="value"
-                nameKey="game"
-                showTotal={false}
-                chartType="pie"
-                emptyStateMessage="No player distribution data available"
-              />
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
 
       {/* KPI Section */}
       <Box sx={{ mb: 4 }}>
@@ -236,6 +271,7 @@ const PerformanceTab = ({
               value={`${kpiData.averageSessionTime} min`}
               icon={<TimelineIcon />}
               loading={isLoading}
+              description="Average time users spend in a single session"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -244,6 +280,7 @@ const PerformanceTab = ({
               value={`${kpiData.conversionRate}%`}
               icon={<TrendingUpIcon />}
               loading={isLoading}
+              description="Percentage of visitors who register"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -252,6 +289,8 @@ const PerformanceTab = ({
               value={`${kpiData.churnRate}%`}
               icon={<TrendingDownIcon />}
               loading={isLoading}
+              description="Percentage of users who stop using the platform"
+              isInverse={true}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -260,11 +299,13 @@ const PerformanceTab = ({
               value={formatCurrency(kpiData.revenuePerUser)}
               icon={<AttachMoneyIcon />}
               loading={isLoading}
+              description="Average revenue generated per active user"
             />
           </Grid>
         </Grid>
       </Box>
-    </Box>
+      </Box>
+    </ErrorBoundary>
   );
 };
 
