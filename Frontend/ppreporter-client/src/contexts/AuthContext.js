@@ -42,7 +42,16 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const result = await authService.login(credentials);
-      setUser(result.user);
+
+      // Create user object from response data
+      const userData = {
+        username: result.username,
+        fullName: result.fullName,
+        role: result.role,
+        permissions: result.permissions
+      };
+
+      setUser(userData);
       return result;
     } catch (err) {
       setError(err.message || 'Login failed');
@@ -112,7 +121,8 @@ export const AuthProvider = ({ children }) => {
    * @returns {boolean} - Authentication status
    */
   const isAuthenticated = () => {
-    return !!user;
+    // Check both the user state and the token in localStorage
+    return !!user && authService.isAuthenticated();
   };
 
   // Context value

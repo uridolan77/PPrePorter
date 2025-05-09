@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Box,
   Drawer,
@@ -51,38 +52,39 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+  const { logout } = useAuth();
+
   // State for mobile drawer
   const [mobileOpen, setMobileOpen] = useState(false);
-  
+
   // State for user menu
   const [anchorEl, setAnchorEl] = useState(null);
   const userMenuOpen = Boolean(anchorEl);
-  
+
   // Handle drawer toggle
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
-  
+
   // Handle user menu open
   const handleUserMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
-  
+
   // Handle user menu close
   const handleUserMenuClose = () => {
     setAnchorEl(null);
   };
-  
+
   // Check if a route is active
   const isActiveRoute = (path) => {
     return location.pathname.startsWith(path);
   };
-  
+
   // Navigation items
   const mainNavItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Reports', icon: <AssessmentIcon />, path: '/reports', 
+    { text: 'Reports', icon: <AssessmentIcon />, path: '/reports',
       subItems: [
         { text: 'Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions' },
         { text: 'Player Reports', icon: <PersonIcon />, path: '/reports/players' },
@@ -94,15 +96,18 @@ const MainLayout = () => {
     { text: 'Analytics', icon: <AutoGraphIcon />, path: '/analytics' },
     { text: 'Configuration', icon: <TuneIcon />, path: '/configuration' }
   ];
-  
+
   // User menu items
   const userMenuItems = [
     { text: 'Profile', icon: <AccountCircleIcon />, action: () => navigate('/profile') },
     { text: 'Settings', icon: <SettingsIcon />, action: () => navigate('/settings') },
     { text: 'Help', icon: <HelpIcon />, action: () => navigate('/help') },
-    { text: 'Logout', icon: <LogoutIcon />, action: () => console.log('Logout') }
+    { text: 'Logout', icon: <LogoutIcon />, action: () => {
+      logout();
+      navigate('/login');
+    }}
   ];
-  
+
   // Create the navigation drawer content
   const drawerContent = (
     <>
@@ -119,15 +124,15 @@ const MainLayout = () => {
         {mainNavItems.map((item) => (
           <React.Fragment key={item.text}>
             <ListItem disablePadding>
-              <ListItemButton 
+              <ListItemButton
                 onClick={() => {
                   if (item.path) navigate(item.path);
                   if (isMobile) setMobileOpen(false);
                 }}
                 selected={isActiveRoute(item.path)}
-                sx={{ 
-                  borderRadius: '0 20px 20px 0', 
-                  mx: 1, 
+                sx={{
+                  borderRadius: '0 20px 20px 0',
+                  mx: 1,
                   pl: 2,
                   '&.Mui-selected': {
                     bgcolor: 'rgba(25, 118, 210, 0.08)',
@@ -143,7 +148,7 @@ const MainLayout = () => {
                 <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
-            
+
             {/* Render sub-items if they exist */}
             {item.subItems && isActiveRoute(item.path) && (
               <List disablePadding>
@@ -155,9 +160,9 @@ const MainLayout = () => {
                         if (isMobile) setMobileOpen(false);
                       }}
                       selected={location.pathname === subItem.path}
-                      sx={{ 
+                      sx={{
                         pl: 7,
-                        borderRadius: '0 20px 20px 0', 
+                        borderRadius: '0 20px 20px 0',
                         mx: 1,
                         '&.Mui-selected': {
                           bgcolor: 'rgba(25, 118, 210, 0.08)',
@@ -167,15 +172,15 @@ const MainLayout = () => {
                         }
                       }}
                     >
-                      <ListItemIcon sx={{ 
-                        minWidth: 36, 
+                      <ListItemIcon sx={{
+                        minWidth: 36,
                         color: location.pathname === subItem.path ? 'primary.main' : 'inherit'
                       }}>
                         {subItem.icon}
                       </ListItemIcon>
-                      <ListItemText 
-                        primary={subItem.text} 
-                        primaryTypographyProps={{ 
+                      <ListItemText
+                        primary={subItem.text}
+                        primaryTypographyProps={{
                           fontSize: '0.875rem',
                           fontWeight: location.pathname === subItem.path ? 'medium' : 'normal'
                         }}
@@ -218,8 +223,8 @@ const MainLayout = () => {
           <Box sx={{ flexGrow: 1 }}>
             {/* Breadcrumbs or page title could go here */}
             <Typography variant="h6" color="text.primary">
-              {location.pathname.includes('daily-actions') ? 'Daily Actions Report' : 
-               location.pathname.includes('players') ? 'Players Report' : 
+              {location.pathname.includes('daily-actions') ? 'Daily Actions Report' :
+               location.pathname.includes('players') ? 'Players Report' :
                'Dashboard'}
             </Typography>
           </Box>
@@ -296,8 +301,8 @@ const MainLayout = () => {
             </Box>
             <Divider />
             {userMenuItems.map((item) => (
-              <MenuItem 
-                key={item.text} 
+              <MenuItem
+                key={item.text}
                 onClick={item.action}
                 sx={{ py: 1 }}
               >

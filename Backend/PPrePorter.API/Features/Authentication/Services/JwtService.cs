@@ -21,9 +21,16 @@ namespace PPrePorter.API.Features.Authentication.Services
 
         public string GenerateJwtToken(string userId, string username, string role, IEnumerable<string> permissions)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+            // Generate a key with sufficient length for HS256 (at least 32 bytes / 256 bits)
+            byte[] keyBytes = new byte[32]; // 256 bits
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(keyBytes);
+            }
+
+            var securityKey = new SymmetricSecurityKey(keyBytes);
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            
+
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId),
@@ -59,24 +66,31 @@ namespace PPrePorter.API.Features.Authentication.Services
 
         public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
+            // Generate a key with sufficient length for HS256 (at least 32 bytes / 256 bits)
+            byte[] keyBytes = new byte[32]; // 256 bits
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(keyBytes);
+            }
+
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = true,
                 ValidateIssuer = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey)),
+                IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
                 ValidateLifetime = false, // Don't validate lifetime here as we're handling expired tokens
                 ValidIssuer = _jwtSettings.Issuer,
                 ValidAudience = _jwtSettings.Audience
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            
+
             // This will validate the token and return the principal if valid (ignoring expiration)
             var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
-            
+
             // Validate token algorithm
-            if (!(securityToken is JwtSecurityToken jwtSecurityToken) || 
+            if (!(securityToken is JwtSecurityToken jwtSecurityToken) ||
                 !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 throw new SecurityTokenException("Invalid token");
@@ -89,7 +103,7 @@ namespace PPrePorter.API.Features.Authentication.Services
         {
             var handler = new JwtSecurityTokenHandler();
             var jwtToken = handler.ReadJwtToken(token);
-            
+
             var expiryClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp);
             if (expiryClaim == null)
                 return DateTime.MinValue;
@@ -97,7 +111,7 @@ namespace PPrePorter.API.Features.Authentication.Services
             // Exp claim value is in Unix timestamp (seconds since Unix epoch)
             var expiryDateUnix = long.Parse(expiryClaim.Value);
             var expiryDateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(expiryDateUnix);
-            
+
             return expiryDateTimeOffset.UtcDateTime;
         }
     }

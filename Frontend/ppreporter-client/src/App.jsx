@@ -74,10 +74,23 @@ function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
               {/* Protected Routes with MainLayout */}            <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
+                {/* Dashboard Routes */}
                 <Route path="/dashboard" element={<SimpleDashboard />} />
                 <Route path="/dashboard/redux" element={<DashboardSimple />} />
                 <Route path="/dashboard/api" element={<ApiDashboard />} />
                 <Route path="/dashboard/contextual-explanation" element={<TestContextualExplanation />} />
+
+                {/* Reports Routes */}
+                <Route path="/reports" element={<SimpleDashboard />} />
+                <Route path="/reports/*" element={<SimpleDashboard />} />
+
+                {/* Analytics Routes */}
+                <Route path="/analytics" element={<SimpleDashboard />} />
+                <Route path="/analytics/*" element={<SimpleDashboard />} />
+
+                {/* Configuration Routes */}
+                <Route path="/configuration" element={<SimpleDashboard />} />
+                <Route path="/configuration/*" element={<SimpleDashboard />} />
               </Route>
             </Route>
 

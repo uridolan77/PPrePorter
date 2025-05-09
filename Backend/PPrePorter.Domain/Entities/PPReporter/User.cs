@@ -15,9 +15,9 @@ namespace PPrePorter.Domain.Entities.PPReporter
         public int RoleId { get; set; }
         public virtual Role Role { get; set; }
         public virtual ICollection<UserPreference> Preferences { get; set; }
-        
+
         // Properties for refresh token functionality
-        public string RefreshToken { get; set; }
+        public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 }

@@ -45,7 +45,8 @@ import TrendAnalysis from '../TrendAnalysis';
 
 import {
   PieChart, Pie, Cell,
-  Legend, ResponsiveContainer
+  Legend, ResponsiveContainer,
+  Tooltip as RechartsTooltip
 } from 'recharts';
 
 /**
@@ -56,21 +57,24 @@ const PerformanceTab = ({
   dashboardData,
   isLoading,
   error,
-  theme = useTheme()
+  theme
 }) => {
+  // Use theme from props or get it from useTheme hook
+  const defaultTheme = useTheme();
+  const currentTheme = theme || defaultTheme;
   // State for chart type and time period
   const [chartType, setChartType] = useState('line');
   const [timePeriod, setTimePeriod] = useState('week');
 
   // Chart colors - memoized to prevent recreation on each render
   const COLORS = useMemo(() => [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.error.main,
-    theme.palette.warning.main,
-    theme.palette.info.main
-  ], [theme.palette]);
+    currentTheme.palette.primary.main,
+    currentTheme.palette.secondary.main,
+    currentTheme.palette.success.main,
+    currentTheme.palette.error.main,
+    currentTheme.palette.warning.main,
+    currentTheme.palette.info.main
+  ], [currentTheme.palette]);
 
   // Handle chart type change
   const handleChartTypeChange = (event, newChartType) => {

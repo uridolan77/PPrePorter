@@ -34,7 +34,7 @@ import StarIcon from '@mui/icons-material/Star';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, RadarChart, Radar, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis
@@ -44,41 +44,44 @@ import {
  * Games Tab component for the API Dashboard
  * Displays game analytics, performance metrics, and game list
  */
-const GamesTab = ({ 
-  dashboardData, 
+const GamesTab = ({
+  dashboardData,
   isLoading,
-  theme = useTheme()
+  theme
 }) => {
+  // Use theme from props or get it from useTheme hook
+  const defaultTheme = useTheme();
+  const currentTheme = theme || defaultTheme;
   // State for pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  
+
   // Chart colors
   const COLORS = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.error.main,
-    theme.palette.warning.main,
-    theme.palette.info.main
+    currentTheme.palette.primary.main,
+    currentTheme.palette.secondary.main,
+    currentTheme.palette.success.main,
+    currentTheme.palette.error.main,
+    currentTheme.palette.warning.main,
+    currentTheme.palette.info.main
   ];
-  
+
   // Handle page change
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-  
+
   // Handle rows per page change
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-  
+
   // Format currency for display
   const formatCurrency = (value) => {
     return value ? `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00';
   };
-  
+
   // Game category distribution data
   const gameCategoryData = [
     { name: 'Slots', value: 45 },
@@ -87,7 +90,7 @@ const GamesTab = ({
     { name: 'Live Casino', value: 10 },
     { name: 'Specialty', value: 5 }
   ];
-  
+
   // Game performance data
   const gamePerformanceData = [
     { name: 'Engagement', game1: 80, game2: 90, game3: 70 },
@@ -96,7 +99,7 @@ const GamesTab = ({
     { name: 'Popularity', game1: 70, game2: 85, game3: 75 },
     { name: 'Growth', game1: 75, game2: 70, game3: 90 }
   ];
-  
+
   // Game list data
   const gameListData = dashboardData?.topGames || [
     { id: 1, name: 'Poker Pro', revenue: 3200.56, players: 432, rating: 4.5, category: 'Poker' },
@@ -105,30 +108,30 @@ const GamesTab = ({
     { id: 4, name: 'Roulette King', revenue: 1900.45, players: 289, rating: 4.0, category: 'Table Games' },
     { id: 5, name: 'Baccarat Elite', revenue: 1450.67, players: 218, rating: 3.8, category: 'Table Games' }
   ];
-  
+
   // Featured games data
   const featuredGamesData = [
-    { 
-      id: 1, 
-      name: 'Poker Pro', 
+    {
+      id: 1,
+      name: 'Poker Pro',
       description: 'The ultimate poker experience with multiple game modes and tournaments.',
       image: 'https://via.placeholder.com/300x150',
       category: 'Poker',
       rating: 4.5,
       players: 432
     },
-    { 
-      id: 2, 
-      name: 'Slots Royale', 
+    {
+      id: 2,
+      name: 'Slots Royale',
       description: 'Exciting slot machine game with progressive jackpots and bonus rounds.',
       image: 'https://via.placeholder.com/300x150',
       category: 'Slots',
       rating: 4.7,
       players: 356
     },
-    { 
-      id: 3, 
-      name: 'Blackjack Masters', 
+    {
+      id: 3,
+      name: 'Blackjack Masters',
       description: 'Classic blackjack with advanced features and realistic gameplay.',
       image: 'https://via.placeholder.com/300x150',
       category: 'Table Games',
@@ -136,7 +139,7 @@ const GamesTab = ({
       players: 387
     }
   ];
-  
+
   return (
     <Box>
       {/* Featured Games Section */}
@@ -145,8 +148,8 @@ const GamesTab = ({
           <Typography variant="h5">
             Featured Games
           </Typography>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             startIcon={<AddIcon />}
             size="small"
           >
@@ -168,17 +171,17 @@ const GamesTab = ({
                     {game.name}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Chip 
-                      label={game.category} 
-                      size="small" 
-                      color="primary" 
-                      sx={{ mr: 1 }} 
+                    <Chip
+                      label={game.category}
+                      size="small"
+                      color="primary"
+                      sx={{ mr: 1 }}
                     />
-                    <Rating 
-                      value={game.rating} 
-                      precision={0.5} 
-                      size="small" 
-                      readOnly 
+                    <Rating
+                      value={game.rating}
+                      precision={0.5}
+                      size="small"
+                      readOnly
                     />
                   </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -198,7 +201,7 @@ const GamesTab = ({
           ))}
         </Grid>
       </Box>
-      
+
       {/* Game Analytics Section */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -268,26 +271,26 @@ const GamesTab = ({
                     <PolarGrid />
                     <PolarAngleAxis dataKey="name" />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                    <Radar 
-                      name="Poker Pro" 
-                      dataKey="game1" 
-                      stroke={theme.palette.primary.main} 
-                      fill={theme.palette.primary.main} 
-                      fillOpacity={0.6} 
+                    <Radar
+                      name="Poker Pro"
+                      dataKey="game1"
+                      stroke={theme.palette.primary.main}
+                      fill={theme.palette.primary.main}
+                      fillOpacity={0.6}
                     />
-                    <Radar 
-                      name="Slots Royale" 
-                      dataKey="game2" 
-                      stroke={theme.palette.secondary.main} 
-                      fill={theme.palette.secondary.main} 
-                      fillOpacity={0.6} 
+                    <Radar
+                      name="Slots Royale"
+                      dataKey="game2"
+                      stroke={theme.palette.secondary.main}
+                      fill={theme.palette.secondary.main}
+                      fillOpacity={0.6}
                     />
-                    <Radar 
-                      name="Blackjack Masters" 
-                      dataKey="game3" 
-                      stroke={theme.palette.success.main} 
-                      fill={theme.palette.success.main} 
-                      fillOpacity={0.6} 
+                    <Radar
+                      name="Blackjack Masters"
+                      dataKey="game3"
+                      stroke={theme.palette.success.main}
+                      fill={theme.palette.success.main}
+                      fillOpacity={0.6}
                     />
                     <Legend />
                     <RechartsTooltip />
@@ -298,7 +301,7 @@ const GamesTab = ({
           </Grid>
         </Grid>
       </Box>
-      
+
       {/* Game List Section */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -332,27 +335,27 @@ const GamesTab = ({
                         <TableRow key={game.id}>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <VideogameAssetIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                              <VideogameAssetIcon sx={{ mr: 1, color: currentTheme.palette.primary.main }} />
                               <Typography variant="body1">
                                 {game.name}
                               </Typography>
                             </Box>
                           </TableCell>
                           <TableCell>
-                            <Chip 
-                              label={game.category} 
-                              size="small" 
-                              color="primary" 
+                            <Chip
+                              label={game.category}
+                              size="small"
+                              color="primary"
                               variant="outlined"
                             />
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Rating 
-                                value={game.rating} 
-                                precision={0.5} 
-                                size="small" 
-                                readOnly 
+                              <Rating
+                                value={game.rating}
+                                precision={0.5}
+                                size="small"
+                                readOnly
                               />
                               <Typography variant="body2" sx={{ ml: 1 }}>
                                 ({game.rating})

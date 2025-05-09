@@ -21,22 +21,36 @@ export const register = async (userData) => {
  * @returns {Promise} - API response with user data and token
  */
 export const login = async (credentials) => {  try {
-    const response = await apiClient.post('/auth/login', credentials);
+    // Make sure we're sending the right format to the API
+    const loginData = {
+      username: credentials.username || credentials.email, // Support both username and email
+      password: credentials.password
+    };
+
+    const response = await apiClient.post('/auth/login', loginData);
     // Store token and user data
     if (response.data.token) {
       localStorage.setItem(config.auth.tokenKey, response.data.token);
-      
+
       // Store refresh token if available
       if (response.data.refreshToken) {
         localStorage.setItem(config.auth.refreshTokenKey, response.data.refreshToken);
       }
-      
+
       // Store expiry if available
       if (response.data.expiresAt) {
         localStorage.setItem(config.auth.tokenExpiryKey, response.data.expiresAt);
       }
-      
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      // Create user object from response data
+      const user = {
+        username: response.data.username,
+        fullName: response.data.fullName,
+        role: response.data.role,
+        permissions: response.data.permissions
+      };
+
+      localStorage.setItem('user', JSON.stringify(user));
     }
     return response.data;
   } catch (error){
@@ -64,7 +78,9 @@ export const loginWithMicrosoft = async () => {
  * Log out user and clear storage
  */
 export const logout = () => {
-  localStorage.removeItem('token');
+  localStorage.removeItem(config.auth.tokenKey);
+  localStorage.removeItem(config.auth.refreshTokenKey);
+  localStorage.removeItem(config.auth.tokenExpiryKey);
   localStorage.removeItem('user');
 };
 
@@ -82,7 +98,7 @@ export const getCurrentUser = () => {
  * @returns {boolean} - True if user is authenticated
  */
 export const isAuthenticated = () => {
-  return !!localStorage.getItem('token');
+  return !!localStorage.getItem(config.auth.tokenKey);
 };
 
 /**

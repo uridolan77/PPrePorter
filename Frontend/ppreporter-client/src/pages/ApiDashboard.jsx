@@ -3,31 +3,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   Box,
   Container,
-  Grid,
-  Typography,
-  Paper,
   CircularProgress,
   Button,
   Alert,
-  useTheme,
-  Tab,
-  Tabs,
-  IconButton,
-  Tooltip,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  FormControl,
-  InputLabel,
-  Select
+  Typography,
+  useTheme
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import TuneIcon from '@mui/icons-material/Tune';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import ClearIcon from '@mui/icons-material/Clear';
-import BugReportIcon from '@mui/icons-material/BugReport';
 import { format, subDays, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -44,11 +26,10 @@ import {
   generateErrorData
 } from '../utils/testDataGenerator';
 
-// Tab components
-import OverviewTab from '../components/dashboard/tabs/OverviewTab';
-import PerformanceTab from '../components/dashboard/tabs/PerformanceTab';
-import PlayersTab from '../components/dashboard/tabs/PlayersTab';
-import GamesTab from '../components/dashboard/tabs/GamesTab';
+// Dashboard components
+import DashboardHeader from '../components/dashboard/DashboardHeader';
+import DashboardTabs from '../components/dashboard/DashboardTabs';
+import TestPanel from '../components/dashboard/TestPanel';
 
 /**
  * API Dashboard component that connects to the backend API
@@ -436,147 +417,26 @@ const ApiDashboard = () => {
         </Alert>
       )}
 
-      {/* Welcome Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 4,
-          bgcolor: theme.palette.primary.main,
-          color: 'white',
-          borderRadius: 2
-        }}
-      >
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={8}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Welcome, {user?.firstName || 'User'}!
-            </Typography>
-            <Typography variant="body1">
-              Here's an overview of your PP Reporter performance. Use the dashboard to monitor key metrics and gain insights.
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleFilterMenuClick}
-                startIcon={<FilterListIcon />}
-                sx={{
-                  bgcolor: 'white',
-                  color: theme.palette.primary.main,
-                  '&:hover': {
-                    bgcolor: theme.palette.grey[100]
-                  }
-                }}
-                aria-label="Open filter menu"
-              >
-                Filter
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleRefresh}
-                startIcon={<RefreshIcon />}
-                sx={{
-                  bgcolor: 'white',
-                  color: theme.palette.primary.main,
-                  '&:hover': {
-                    bgcolor: theme.palette.grey[100]
-                  }
-                }}
-                aria-label="Refresh dashboard data"
-              >
-                Refresh
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleToggleTestPanel}
-                startIcon={<BugReportIcon />}
-                sx={{
-                  bgcolor: 'white',
-                  color: theme.palette.primary.main,
-                  '&:hover': {
-                    bgcolor: theme.palette.grey[100]
-                  }
-                }}
-                aria-label="Toggle test panel"
-              >
-                Test
-              </Button>
-
-              {/* Filter Menu */}
-              <Menu
-                anchorEl={filterMenuAnchor}
-                open={Boolean(filterMenuAnchor)}
-                onClose={handleFilterMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                <MenuItem onClick={handleToggleFilters}>
-                  <ListItemIcon>
-                    <TuneIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Advanced Filters</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleFilterReset}>
-                  <ListItemIcon>
-                    <ClearIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Reset Filters</ListItemText>
-                </MenuItem>
-              </Menu>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+      {/* Dashboard Header */}
+      <DashboardHeader
+        user={user}
+        onRefresh={handleRefresh}
+        onToggleFilters={handleToggleFilters}
+        onFilterReset={handleFilterReset}
+        onToggleTestPanel={handleToggleTestPanel}
+        filterMenuAnchor={filterMenuAnchor}
+        onFilterMenuClick={handleFilterMenuClick}
+        onFilterMenuClose={handleFilterMenuClose}
+        showTestPanel={showTestPanel}
+      />
 
       {/* Test Panel */}
       {showTestPanel && (
-        <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" component="h2">
-              Test Data Scenarios
-            </Typography>
-            <Tooltip title="Close test panel">
-              <IconButton onClick={handleToggleTestPanel} size="small" aria-label="Close test panel">
-                <ClearIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Select a test scenario to simulate different data conditions and test the dashboard's behavior.
-          </Typography>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel id="test-scenario-label">Test Scenario</InputLabel>
-            <Select
-              labelId="test-scenario-label"
-              id="test-scenario-select"
-              value={testScenario}
-              label="Test Scenario"
-              onChange={handleTestScenarioChange}
-              aria-label="Select test scenario"
-            >
-              <MenuItem value="normal">Normal Data</MenuItem>
-              <MenuItem value="empty">Empty Data</MenuItem>
-              <MenuItem value="partial">Partial Data</MenuItem>
-              <MenuItem value="large">Large Dataset</MenuItem>
-              <MenuItem value="error">Error State</MenuItem>
-              <MenuItem value="loading">Loading State</MenuItem>
-            </Select>
-          </FormControl>
-          <Typography variant="body2" color="text.secondary">
-            Current scenario: <strong>{testScenario}</strong>
-          </Typography>
-        </Paper>
+        <TestPanel
+          testScenario={testScenario}
+          onTestScenarioChange={handleTestScenarioChange}
+          onClose={handleToggleTestPanel}
+        />
       )}
 
       {/* Date Range Picker */}
@@ -605,160 +465,18 @@ const ApiDashboard = () => {
       )}
 
       {/* Dashboard Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          aria-label="dashboard tabs"
-          role="tablist"
-        >
-          <Tab
-            label="Overview"
-            id="tab-0"
-            aria-controls="tabpanel-0"
-            tabIndex={activeTab === 0 ? 0 : -1}
-          />
-          <Tab
-            label="Performance"
-            id="tab-1"
-            aria-controls="tabpanel-1"
-            tabIndex={activeTab === 1 ? 0 : -1}
-          />
-          <Tab
-            label="Players"
-            id="tab-2"
-            aria-controls="tabpanel-2"
-            tabIndex={activeTab === 2 ? 0 : -1}
-          />
-          <Tab
-            label="Games"
-            id="tab-3"
-            aria-controls="tabpanel-3"
-            tabIndex={activeTab === 3 ? 0 : -1}
-          />
-        </Tabs>
-      </Box>
-
-      {/* Tab Content */}
-      <TabPanel value={activeTab} index={0} label="Dashboard Overview">
-        <OverviewTab
-          dashboardData={dashboardData}
-          isLoading={isLoading}
-          error={error}
-          theme={theme}
-        />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={1} label="Performance Metrics">
-        <PerformanceTab
-          dashboardData={dashboardData}
-          isLoading={isLoading}
-          error={error}
-          theme={theme}
-        />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={2} label="Player Analytics">
-        <PlayersTab
-          dashboardData={dashboardData}
-          isLoading={isLoading}
-          error={error}
-          theme={theme}
-        />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={3} label="Game Analytics">
-        <GamesTab
-          dashboardData={dashboardData}
-          isLoading={isLoading}
-          error={error}
-          theme={theme}
-        />
-      </TabPanel>
+      <DashboardTabs
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        dashboardData={dashboardData}
+        isLoading={isLoading}
+        error={error}
+        theme={theme}
+      />
     </Container>
   );
 };
 
-// Tab Panel Component
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
 
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`dashboard-tabpanel-${index}`}
-      aria-labelledby={`dashboard-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
-// Stat Card Component
-function StatCard({ title, value = 0, change = 0, period = '', icon, color, iconColor, isLoading, isCurrency = false }) {
-  // Handle null or undefined values
-  const safeValue = value !== null && value !== undefined ? value : 0;
-  const safeChange = change !== null && change !== undefined ? change : 0;
-  const safePeriod = period || 'vs last period';
-
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box
-            sx={{
-              backgroundColor: color,
-              borderRadius: '50%',
-              p: 1,
-              mr: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {React.cloneElement(icon, { sx: { color: iconColor } })}
-          </Box>
-          <Typography variant="h6" component="div">
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="h4" component="div" sx={{ mb: 1, fontWeight: 'bold' }}>
-          {isLoading
-            ? <CircularProgress size={20} />
-            : isCurrency
-              ? `$${safeValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-              : safeValue.toLocaleString()
-          }
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {safeChange > 0 ? (
-            <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5, fontSize: 20 }} />
-          ) : (
-            <TrendingDownIcon sx={{ color: 'error.main', mr: 0.5, fontSize: 20 }} />
-          )}
-          <Typography
-            variant="body2"
-            component="span"
-            sx={{
-              color: safeChange > 0 ? 'success.main' : 'error.main',
-              fontWeight: 'medium'
-            }}
-          >
-            {safeChange}%
-          </Typography>
-          <Typography variant="body2" component="span" sx={{ ml: 0.5, color: 'text.secondary' }}>
-            {safePeriod}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default ApiDashboard;

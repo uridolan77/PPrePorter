@@ -13,7 +13,7 @@ namespace PPrePorter.Infrastructure.Data
         public PPRePorterDbContext(
             DbContextOptions<PPRePorterDbContext> options,
             IConnectionStringResolverService connectionStringResolver,
-            string connectionStringTemplate) 
+            string connectionStringTemplate)
             : base(options)
         {
             _connectionStringResolver = connectionStringResolver;
@@ -79,7 +79,7 @@ namespace PPrePorter.Infrastructure.Data
             {
                 entity.ToTable("RolePermissions");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.PermissionName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.PermissionName).HasMaxLength(100);
                 entity.Property(e => e.IsAllowed).HasDefaultValue(false);
 
                 // Relationship with Role

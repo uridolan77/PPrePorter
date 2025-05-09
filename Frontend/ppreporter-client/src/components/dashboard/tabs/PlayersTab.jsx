@@ -31,7 +31,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
@@ -40,36 +40,39 @@ import {
  * Players Tab component for the API Dashboard
  * Displays player analytics, demographics, and player list
  */
-const PlayersTab = ({ 
-  dashboardData, 
+const PlayersTab = ({
+  dashboardData,
   isLoading,
-  theme = useTheme()
+  theme
 }) => {
+  // Use theme from props or get it from useTheme hook
+  const defaultTheme = useTheme();
+  const currentTheme = theme || defaultTheme;
   // State for pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  
+
   // Chart colors
   const COLORS = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.error.main,
-    theme.palette.warning.main,
-    theme.palette.info.main
+    currentTheme.palette.primary.main,
+    currentTheme.palette.secondary.main,
+    currentTheme.palette.success.main,
+    currentTheme.palette.error.main,
+    currentTheme.palette.warning.main,
+    currentTheme.palette.info.main
   ];
-  
+
   // Handle page change
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-  
+
   // Handle rows per page change
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-  
+
   // Player acquisition data
   const playerAcquisitionData = dashboardData?.playerRegistrations || [
     { date: '2023-05-01', count: 45 },
@@ -80,14 +83,14 @@ const PlayersTab = ({
     { date: '2023-05-06', count: 29 },
     { date: '2023-05-07', count: 33 }
   ];
-  
+
   // Player demographics data
   const playerDemographicsData = [
     { name: 'Male', value: 65 },
     { name: 'Female', value: 30 },
     { name: 'Other', value: 5 }
   ];
-  
+
   // Player age distribution data
   const playerAgeData = [
     { age: '18-24', count: 120 },
@@ -96,7 +99,7 @@ const PlayersTab = ({
     { age: '45-54', count: 150 },
     { age: '55+', count: 90 }
   ];
-  
+
   // Player list data
   const playerListData = dashboardData?.recentPlayers || [
     { id: 1, name: 'John Doe', registeredAt: '2023-05-01T08:30:00Z', status: 'active', country: 'USA' },
@@ -105,14 +108,14 @@ const PlayersTab = ({
     { id: 4, name: 'Lisa Brown', registeredAt: '2023-05-04T09:20:00Z', status: 'active', country: 'Australia' },
     { id: 5, name: 'Robert Wilson', registeredAt: '2023-05-05T16:10:00Z', status: 'pending', country: 'Germany' }
   ];
-  
+
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
-  
+
   // Get status color
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -126,7 +129,7 @@ const PlayersTab = ({
         return 'default';
     }
   };
-  
+
   // Get initials from name
   const getInitials = (name) => {
     if (!name) return '';
@@ -136,7 +139,7 @@ const PlayersTab = ({
       .join('')
       .toUpperCase();
   };
-  
+
   return (
     <Box>
       {/* Player Acquisition Section */}
@@ -169,22 +172,22 @@ const PlayersTab = ({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tickFormatter={formatDate} />
                 <YAxis />
-                <RechartsTooltip 
+                <RechartsTooltip
                   formatter={(value) => [value, 'New Players']}
                   labelFormatter={formatDate}
                 />
                 <Legend />
-                <Bar 
-                  dataKey="count" 
-                  name="New Players" 
-                  fill={theme.palette.primary.main} 
+                <Bar
+                  dataKey="count"
+                  name="New Players"
+                  fill={currentTheme.palette.primary.main}
                 />
               </BarChart>
             </ResponsiveContainer>
           )}
         </Paper>
       </Box>
-      
+
       {/* Player Demographics Section */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -244,10 +247,10 @@ const PlayersTab = ({
                     <YAxis />
                     <RechartsTooltip formatter={(value) => [value, 'Players']} />
                     <Legend />
-                    <Bar 
-                      dataKey="count" 
-                      name="Players" 
-                      fill={theme.palette.secondary.main} 
+                    <Bar
+                      dataKey="count"
+                      name="Players"
+                      fill={currentTheme.palette.secondary.main}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -256,15 +259,15 @@ const PlayersTab = ({
           </Grid>
         </Grid>
       </Box>
-      
+
       {/* Player List Section */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">
             Player List
           </Typography>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             startIcon={<PersonAddIcon />}
             size="small"
           >
@@ -296,7 +299,7 @@ const PlayersTab = ({
                         <TableRow key={player.id}>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Avatar sx={{ mr: 2, bgcolor: theme.palette.primary.main }}>
+                              <Avatar sx={{ mr: 2, bgcolor: currentTheme.palette.primary.main }}>
                                 {getInitials(player.name)}
                               </Avatar>
                               <Typography variant="body1">
@@ -306,8 +309,8 @@ const PlayersTab = ({
                           </TableCell>
                           <TableCell>{formatDate(player.registeredAt)}</TableCell>
                           <TableCell>
-                            <Chip 
-                              label={player.status} 
+                            <Chip
+                              label={player.status}
                               color={getStatusColor(player.status)}
                               size="small"
                             />

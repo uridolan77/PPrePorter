@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Container, 
+import {
+  Container,
   Box,
   Typography,
   Paper,
@@ -19,7 +19,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get the redirect path from location state, or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
 
@@ -30,14 +30,14 @@ const LoginPage = () => {
   const handleLogin = async (formData) => {
     setLoading(true);
     setError('');
-    
+
     try {
       await login({
-        email: formData.email,
+        username: formData.username,
         password: formData.password,
         rememberMe: formData.rememberMe
       });
-      
+
       // Navigate to the page user tried to visit or dashboard
       navigate(from, { replace: true });
     } catch (err) {
@@ -71,8 +71,8 @@ const LoginPage = () => {
   };
 
   return (
-    <Container 
-      component="main" 
+    <Container
+      component="main"
       maxWidth="xs"
       sx={{
         minHeight: '100vh',
@@ -91,18 +91,18 @@ const LoginPage = () => {
       >
         {/* Error Alert */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              width: '100%', 
-              mb: 3 
+          <Alert
+            severity="error"
+            sx={{
+              width: '100%',
+              mb: 3
             }}
           >
             {error}
           </Alert>
         )}
-        
-        <LoginForm 
+
+        <LoginForm
           onSubmit={handleLogin}
           onGoogleLogin={handleGoogleLogin}
           onMicrosoftLogin={handleMicrosoftLogin}
@@ -115,15 +115,15 @@ const LoginPage = () => {
           registerLink="/register"
           forgotPasswordLink="/forgot-password"
         />
-        
+
         {/* Terms & Support Section */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            mt: 4, 
-            p: 2, 
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 4,
+            p: 2,
             textAlign: 'center',
-            backgroundColor: 'transparent' 
+            backgroundColor: 'transparent'
           }}
         >
           <Typography variant="body2" color="text.secondary">

@@ -4,9 +4,14 @@ import authService from '../../services/authService';
 // Async thunks for authentication actions
 export const login = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ username, email, password }, { rejectWithValue }) => {
     try {
-      const response = await authService.login(email, password);
+      // Support both username and email
+      const credentials = {
+        username: username || email,
+        password
+      };
+      const response = await authService.login(credentials);
       return response;
     } catch (error) {
       return rejectWithValue(error.message || 'Login failed');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
+import {
+  Box,
   TextField,
   Button,
   Typography,
@@ -51,22 +51,22 @@ const LoginForm = ({
   logoUrl = '/logo.png'
 }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
     rememberMe: false
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  
+
   const handleChange = (e) => {
     const { name, value, checked } = e.target;
-    
+
     setFormData({
       ...formData,
       [name]: name === 'rememberMe' ? checked : value
     });
-    
+
     // Clear validation error when field is edited
     if (formErrors[name]) {
       setFormErrors({
@@ -75,34 +75,32 @@ const LoginForm = ({
       });
     }
   };
-  
+
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
-  
+
   const validate = () => {
     const errors = {};
-    
-    if (!formData.email) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
+
+    if (!formData.username) {
+      errors.username = 'Username is required';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       errors.password = 'Password must be at least 6 characters';
     }
-    
+
     return errors;
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     const errors = validate();
-    
+
     if (Object.keys(errors).length === 0) {
       if (onSubmit) {
         onSubmit(formData);
@@ -111,43 +109,43 @@ const LoginForm = ({
       setFormErrors(errors);
     }
   };
-  
+
   const handleGoogleLogin = () => {
     if (onGoogleLogin) {
       onGoogleLogin();
     }
   };
-  
+
   const handleMicrosoftLogin = () => {
     if (onMicrosoftLogin) {
       onMicrosoftLogin();
     }
   };
-  
+
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        maxWidth: 450, 
-        width: '100%', 
-        p: 4, 
-        borderRadius: 2 
+    <Paper
+      elevation={3}
+      sx={{
+        maxWidth: 450,
+        width: '100%',
+        p: 4,
+        borderRadius: 2
       }}
     >
-      <Box 
-        component="form" 
-        onSubmit={handleSubmit} 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: 3 
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3
         }}
       >
         {/* Logo and Title */}
         <Box sx={{ textAlign: 'center', mb: 2 }}>
-          <img 
-            src={logoUrl} 
-            alt="Logo" 
+          <img
+            src={logoUrl}
+            alt="Logo"
             style={{ height: 60, width: 'auto', marginBottom: 16 }}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
@@ -158,24 +156,24 @@ const LoginForm = ({
             Enter your credentials to access your account
           </Typography>
         </Box>
-        
+
         {/* Error Message */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
-        
-        {/* Email Field */}
+
+        {/* Username Field */}
         <TextField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
+          label="Username"
+          name="username"
+          type="text"
+          value={formData.username}
           onChange={handleChange}
           fullWidth
-          error={!!formErrors.email}
-          helperText={formErrors.email}
+          error={!!formErrors.username}
+          helperText={formErrors.username}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -183,11 +181,11 @@ const LoginForm = ({
               </InputAdornment>
             ),
           }}
-          placeholder="email@example.com"
+          placeholder="Enter your username"
           disabled={loading}
           required
         />
-        
+
         {/* Password Field */}
         <TextField
           label="Password"
@@ -219,7 +217,7 @@ const LoginForm = ({
           disabled={loading}
           required
         />
-        
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FormControlLabel
             control={
@@ -233,7 +231,7 @@ const LoginForm = ({
             }
             label="Remember me"
           />
-          
+
           {showForgotPassword && (
             <Link
               component={RouterLink}
@@ -245,7 +243,7 @@ const LoginForm = ({
             </Link>
           )}
         </Box>
-        
+
         {/* Submit Button */}
         <Button
           type="submit"
@@ -253,7 +251,7 @@ const LoginForm = ({
           fullWidth
           size="large"
           disabled={loading}
-          sx={{ 
+          sx={{
             py: 1.5,
             mt: 1
           }}
@@ -264,7 +262,7 @@ const LoginForm = ({
             'Sign In'
           )}
         </Button>
-        
+
         {/* Register Link */}
         {showRegister && (
           <Box sx={{ textAlign: 'center', mt: 1 }}>
@@ -282,7 +280,7 @@ const LoginForm = ({
             </Typography>
           </Box>
         )}
-        
+
         {/* Social Login Options */}
         {showSocialLogin && (
           <>
@@ -293,7 +291,7 @@ const LoginForm = ({
               </Typography>
               <Divider sx={{ flex: 1 }} />
             </Box>
-            
+
             <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
