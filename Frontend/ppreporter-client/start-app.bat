@@ -11,7 +11,7 @@ echo Installing dependencies...
 call npm install
 
 REM Set environment variables
-set REACT_APP_API_URL=http://localhost:5000/api
+set REACT_APP_API_URL=https://localhost:7075/api
 echo Set API URL to: %REACT_APP_API_URL%
 
 echo Starting the React application...

@@ -24,6 +24,19 @@ import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 
 import TestContextualExplanation from '../components/dashboard/TestContextualExplanation';
 import { useAuth } from '../contexts/AuthContext';
+import dashboardService from '../services/api/dashboardService';
+import { fetchDashboardData } from '../store/actions/dashboardActions';
+
+/**
+ * This component demonstrates Redux integration with React components.
+ * It uses useSelector to read from the Redux store and useDispatch to dispatch actions.
+ * 
+ * In a real application, we would:
+ * 1. Create Redux slices with createSlice from Redux Toolkit
+ * 2. Define proper actions and reducers in those slices
+ * 3. Create async thunks for API calls
+ * 4. Connect components to Redux with hooks like below
+ */
 
 // Mock data for initial dashboard view
 const mockData = {
@@ -66,62 +79,23 @@ const mockData = {
 };
 
 /**
- * A simplified dashboard page component
+ * A simplified dashboard page component with Redux integration
  */
 const SimpleDashboard = () => {
   const theme = useTheme();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [dashboardData, setDashboardData] = useState(null);
+  const dispatch = useDispatch();
   
+  // Get dashboard state from Redux store
+  const dashboardState = useSelector(state => state.dashboard || {});
+  const { loading = false, error = null, data: dashboardData = null } = dashboardState;
   // Load dashboard data
   useEffect(() => {
-    // Simulate API call with setTimeout
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      try {
-        // In a real application, this would be an API call
-        // await dashboardService.getDashboardStats()
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setDashboardData(mockData);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchDashboardData();
-  }, []);
-  
+    dispatch(fetchDashboardData());
+  }, [dispatch]);
   // Handle refresh
   const handleRefresh = () => {
-    setLoading(true);
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      // Generate slightly different mock data to simulate refresh
-      const refreshedData = {
-        ...mockData,
-        stats: {
-          ...mockData.stats,
-          revenue: {
-            ...mockData.stats.revenue,
-            value: mockData.stats.revenue.value * (1 + (Math.random() * 0.1 - 0.05)),
-            change: mockData.stats.revenue.change * (1 + (Math.random() * 0.2 - 0.1))
-          },
-          players: {
-            ...mockData.stats.players,
-            value: Math.round(mockData.stats.players.value * (1 + (Math.random() * 0.1 - 0.05))),
-            change: mockData.stats.players.change * (1 + (Math.random() * 0.2 - 0.1))
-          }
-        }
-      };
-      setDashboardData(refreshedData);
-      setLoading(false);
-    }, 1000);
+    dispatch(fetchDashboardData());
   };
   
   // Render loading state

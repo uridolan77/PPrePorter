@@ -11,7 +11,7 @@ Write-Host "Installing dependencies..." -ForegroundColor Yellow
 npm install
 
 # Set environment variables
-$env:REACT_APP_API_URL = "http://localhost:5000/api"
+$env:REACT_APP_API_URL = "https://localhost:7075/api"
 Write-Host "Set API URL to: $env:REACT_APP_API_URL" -ForegroundColor Green
 
 Write-Host "Starting the React application..." -ForegroundColor Green

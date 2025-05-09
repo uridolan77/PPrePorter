@@ -1,25 +1,23 @@
 import axios from 'axios';
-
-// Define the base API URL
-const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import config from '../../config/appConfig';
 
 // Create a base axios instance
 const apiClient = axios.create({
-  baseURL,
+  baseURL: config.api.baseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds timeout
+  timeout: config.api.timeout,
 });
 
 // Request interceptor for adding the auth token
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
+  (reqConfig) => {
+    const token = localStorage.getItem(config.auth.tokenKey);
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      reqConfig.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+    return reqConfig;
   },
   (error) => {
     return Promise.reject(error);
@@ -30,12 +28,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     return response;
-  },
-  (error) => {
+  },  (error) => {
     // Handle unauthorized errors (401)
     if (error.response && error.response.status === 401) {
       // Clear local storage
-      localStorage.removeItem('token');
+      localStorage.removeItem(config.auth.tokenKey);
+      localStorage.removeItem(config.auth.refreshTokenKey);
       localStorage.removeItem('user');
       
       // Redirect to login page if not already there

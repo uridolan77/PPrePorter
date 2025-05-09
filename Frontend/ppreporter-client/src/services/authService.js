@@ -1,4 +1,5 @@
 import apiClient from './api/apiClient';
+import config from '../config/appConfig';
 
 /**
  * User registration service
@@ -19,16 +20,26 @@ export const register = async (userData) => {
  * @param {Object} credentials - User login credentials
  * @returns {Promise} - API response with user data and token
  */
-export const login = async (credentials) => {
-  try {
+export const login = async (credentials) => {  try {
     const response = await apiClient.post('/auth/login', credentials);
     // Store token and user data
     if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem(config.auth.tokenKey, response.data.token);
+      
+      // Store refresh token if available
+      if (response.data.refreshToken) {
+        localStorage.setItem(config.auth.refreshTokenKey, response.data.refreshToken);
+      }
+      
+      // Store expiry if available
+      if (response.data.expiresAt) {
+        localStorage.setItem(config.auth.tokenExpiryKey, response.data.expiresAt);
+      }
+      
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
     return response.data;
-  } catch (error) {
+  } catch (error){
     throw error.message || { message: 'Login failed' };
   }
 };

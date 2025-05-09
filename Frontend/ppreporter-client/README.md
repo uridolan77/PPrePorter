@@ -8,6 +8,8 @@ PP Reporter is a web application that provides user authentication and a compreh
 - Interactive dashboard with key metrics visualization
 - Data insights and analysis
 - Responsive design for all device types
+- Contextual explanations of metrics
+- API integration with backend server
 
 ## Technologies Used
 - React.js
@@ -27,6 +29,7 @@ ppreporter-client/
 │   │   ├── common/          # Common UI components
 │   │   ├── dashboard/       # Dashboard-specific components
 │   │   └── layout/          # Layout components
+│   ├── config/              # Application configuration
 │   ├── contexts/            # React context providers
 │   ├── hooks/               # Custom React hooks
 │   ├── pages/               # Application pages
@@ -40,6 +43,9 @@ ppreporter-client/
 │   ├── utils/               # Utility functions
 │   ├── App.jsx              # Main application component
 │   └── index.js             # Application entry point
+├── docs/                    # Documentation
+│   ├── api-integration.md   # API integration documentation
+│   └── redux-implementation.md # Redux implementation docs
 ├── package.json             # Project dependencies
 ├── start-app.bat            # Windows batch script to start the app
 └── start-app.ps1            # PowerShell script to start the app
@@ -149,6 +155,55 @@ The dashboard provides various visualizations and insights:
 ### API Integration
 1. Add new API service functions in the services/api directory
 2. Use the apiClient for all API requests to ensure consistent error handling and authentication
+
+## Backend API Integration
+
+The application connects to a backend server running at `https://localhost:7075/api`. The API integration is structured as follows:
+
+### API Configuration
+
+The API base URL and other settings are centralized in `src/config/appConfig.js`:
+
+```javascript
+// API base configuration
+const config = {
+  api: {
+    baseUrl: process.env.REACT_APP_API_URL || 'https://localhost:7075/api',
+    timeout: 10000, // 10 seconds
+  },
+  // Other configuration...
+};
+```
+
+### Service Layer
+
+The application uses service modules to abstract API calls:
+
+- `dashboardService.js` - Handles dashboard metrics and reports
+- `contextualService.js` - Manages contextual explanations and insights
+- `authService.js` - Handles authentication
+
+### Redux Integration
+
+API calls are integrated with Redux using thunk middleware:
+
+```javascript
+// Example of a Redux thunk
+export const fetchDashboardData = () => {
+  return async (dispatch) => {
+    dispatch({ type: 'dashboard/fetchStart' });
+    
+    try {
+      // API calls...
+      dispatch({ type: 'dashboard/fetchSuccess', payload: data });
+    } catch (error) {
+      dispatch({ type: 'dashboard/fetchFailure', payload: error.message });
+    }
+  }
+};
+```
+
+For more details, see the [API Integration Documentation](./docs/api-integration.md).
 
 ## Troubleshooting
 - If you encounter CORS issues, ensure your API server is configured to allow requests from your client's origin

@@ -22,6 +22,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 // import DashboardPage from './pages/Dashboard'; // Using Redux, commenting out for now
 import SimpleDashboard from './pages/SimpleDashboard';
 import DashboardSimple from './pages/DashboardSimple';
+import ApiDashboard from './pages/ApiDashboard';
 import TestContextualExplanation from './components/dashboard/TestContextualExplanation';
 
 // Theme configuration
@@ -75,13 +76,14 @@ function App() {
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<SimpleDashboard />} />
                 <Route path="/dashboard/redux" element={<DashboardSimple />} />
+                <Route path="/dashboard/api" element={<ApiDashboard />} />
                 <Route path="/dashboard/contextual-explanation" element={<TestContextualExplanation />} />
               </Route>
             </Route>
-            
+
             {/* Default redirect to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
+
             {/* Catch all - redirect to login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

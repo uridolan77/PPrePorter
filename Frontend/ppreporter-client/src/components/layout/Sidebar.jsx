@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  Box, 
-  Drawer, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Divider,
   Collapse,
   useTheme
@@ -66,11 +66,17 @@ const Sidebar = ({ open, onClose }) => {
 
   // Sidebar navigation items
   const navItems = [
-    { 
-      label: 'Dashboard', 
-      icon: <DashboardIcon />, 
+    {
+      label: 'Dashboard',
+      icon: <DashboardIcon />,
       path: '/dashboard',
       active: isActive('/dashboard')
+    },
+    {
+      label: 'API Dashboard',
+      icon: <DashboardIcon />,
+      path: '/dashboard/api',
+      active: isActive('/dashboard/api')
     },
     {
       label: 'Reports',
@@ -103,27 +109,27 @@ const Sidebar = ({ open, onClose }) => {
       ],
       expanded: expandedItems.games
     },
-    { 
-      label: 'Insights', 
-      icon: <InsightsIcon />, 
+    {
+      label: 'Insights',
+      icon: <InsightsIcon />,
       path: '/insights',
       active: isActive('/insights')
     },
-    { 
-      label: 'Promotions', 
-      icon: <CampaignIcon />, 
+    {
+      label: 'Promotions',
+      icon: <CampaignIcon />,
       path: '/promotions',
       active: isActive('/promotions')
     },
-    { 
-      label: 'Settings', 
-      icon: <SettingsIcon />, 
+    {
+      label: 'Settings',
+      icon: <SettingsIcon />,
       path: '/settings',
       active: isActive('/settings')
     },
-    { 
-      label: 'Help', 
-      icon: <HelpIcon />, 
+    {
+      label: 'Help',
+      icon: <HelpIcon />,
       path: '/help',
       active: isActive('/help')
     },
@@ -132,9 +138,9 @@ const Sidebar = ({ open, onClose }) => {
   const drawer = (
     <Box>
       <Box sx={{ p: 2, height: 64, display: 'flex', alignItems: 'center' }}>
-        <img 
-          src="/logo.png" 
-          alt="ProgressPlay Logo" 
+        <img
+          src="/logo.png"
+          alt="ProgressPlay Logo"
           style={{ height: 40, width: 'auto' }}
           onError={(e) => { e.target.src = '/fallback-logo.png'; }}
         />
@@ -155,7 +161,7 @@ const Sidebar = ({ open, onClose }) => {
                 <List component="div" disablePadding>
                   {item.children.map((child) => (
                     <ListItem key={child.label} disablePadding>
-                      <ListItemButton 
+                      <ListItemButton
                         sx={{ pl: 4 }}
                         onClick={() => handleNavigate(child.path)}
                         selected={child.active}
@@ -170,7 +176,7 @@ const Sidebar = ({ open, onClose }) => {
             </React.Fragment>
           ) : (
             <ListItem key={item.label} disablePadding>
-              <ListItemButton 
+              <ListItemButton
                 onClick={() => handleNavigate(item.path)}
                 selected={item.active}
               >

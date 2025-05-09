@@ -26,6 +26,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import contextualService from '../../services/api/contextualService';
 
 /**
  * ContextualExplanation component provides explanations for metrics, trends, and anomalies
@@ -39,100 +40,118 @@ const ContextualExplanation = ({
   showDetailedView = false,
   onShowDetailedView,
   className
-}) => {
-  const theme = useTheme();
+}) => {  const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
   const [explanation, setExplanation] = useState(null);
-  
-  useEffect(() => {
+  const [explanationLoading, setExplanationLoading] = useState(false);
+    useEffect(() => {
     if (data && metric) {
       generateExplanation();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, metric, insightType]);
   
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
-  
-  const generateExplanation = () => {
-    // In a real implementation, this would call a backend service
-    // Here we're simulating with static explanations based on the insight type
-    
-    // Sample explanations that would typically come from a backend ML service
-    const explanations = {
-      trend: {
-        title: 'Trend Analysis',
-        content: `This ${metric.name} shows a ${getTrendDirection(data)} trend over the selected period. 
-                 ${getPerformanceInsight(data, metric)}`,
-        insights: [
-          `The average ${metric.name} is ${calculateAverage(data).toFixed(2)}${metric.unit || ''}`,
-          `This represents a ${calculateChange(data).toFixed(2)}% change from the previous period`,
-          `The trend indicates ${getBusinessImpact(data, metric)}`
-        ],
-        recommendations: [
-          `Consider ${getRecommendation(data, metric, 'trend')}`,
-          `Monitor this metric closely over the next reporting period`
-        ]
-      },
-      anomaly: {
-        title: 'Anomaly Detection',
-        content: `We've detected ${getAnomalyCount(data)} unusual data point(s) in your ${metric.name} metric. 
-                 ${getAnomalyInsight(data, metric)}`,
-        insights: [
-          `The anomalies occurred on ${getAnomalyDates(data)}`,
-          `These values deviate from the expected range by ${getDeviationAmount(data).toFixed(2)}%`,
-          `${getAnomalyImpact(data, metric)}`
-        ],
-        recommendations: [
-          `${getRecommendation(data, metric, 'anomaly')}`,
-          `Consider investigating factors that might have contributed to these anomalies`
-        ]
-      },
-      forecast: {
-        title: 'Forecast Analysis',
-        content: `Based on historical patterns, we project that your ${metric.name} will 
-                 ${getForecastDirection(data)} in the upcoming period.`,
-        insights: [
-          `The projected value for next month is ${getForecastValue(data).toFixed(2)}${metric.unit || ''}`,
-          `This represents a ${getForecastChange(data).toFixed(2)}% change from the current period`,
-          `Confidence in this prediction: ${getPredictionConfidence(data)}`
-        ],
-        recommendations: [
-          `${getRecommendation(data, metric, 'forecast')}`,
-          `Update your targets based on these projections`
-        ]
-      },
-      comparison: {
-        title: 'Comparative Analysis',
-        content: `Your ${metric.name} performance compared to industry benchmarks is 
-                 ${getComparisonResult(data, metric)}.`,
-        insights: [
-          `You are ${getPerformanceGap(data, metric).toFixed(2)}% ${getComparisonDirection(data)} the industry average`,
-          `You rank in the ${getPerformanceTier(data)} tier among similar businesses`,
-          `${getCompetitiveInsight(data, metric)}`
-        ],
-        recommendations: [
-          `${getRecommendation(data, metric, 'comparison')}`,
-          `Consider analyzing competitors' strategies in this area`
-        ]
-      },
-      correlation: {
-        title: 'Correlation Analysis',
-        content: `We've found a ${getCorrelationStrength(data)} correlation between ${metric.name} 
-                 and ${getCorrelatedMetric(data, metric)}.`,
-        insights: [
-          `Correlation coefficient: ${getCorrelationCoefficient(data).toFixed(2)}`,
-          `This suggests that ${getCorrelationMeaning(data, metric)}`,
-          `${getCorrelationInsight(data, metric)}`
-        ],
-        recommendations: [
-          `${getRecommendation(data, metric, 'correlation')}`,
-          `Consider this relationship when planning your strategies`
-        ]
-      }
-    };
-    
-    setExplanation(explanations[insightType] || explanations.trend);
+  const generateExplanation = async () => {
+    try {
+      const params = {
+        metric: metric,
+        data: data,
+        insightType: insightType
+      };
+      
+      // Set loading state
+      setExplanationLoading(true);
+      
+      // Call the API to get the contextual explanation
+      const response = await contextualService.getContextualExplanation(params);
+      setExplanation(response);
+      
+      // In case the API fails, we'll fall back to local calculation
+    } catch (error) {
+      console.error('Error fetching contextual explanation:', error);
+      
+      // Fallback to locally generated explanations
+      const explanations = {
+        trend: {
+          title: 'Trend Analysis',
+          content: `This ${metric.name} shows a ${getTrendDirection(data)} trend over the selected period. 
+                  ${getPerformanceInsight(data, metric)}`,
+          insights: [
+            `The average ${metric.name} is ${calculateAverage(data).toFixed(2)}${metric.unit || ''}`,
+            `This represents a ${calculateChange(data).toFixed(2)}% change from the previous period`,
+            `The trend indicates ${getBusinessImpact(data, metric)}`
+          ],
+          recommendations: [
+            `Consider ${getRecommendation(data, metric, 'trend')}`,
+            `Monitor this metric closely over the next reporting period`
+          ]
+        },
+        anomaly: {
+          title: 'Anomaly Detection',
+          content: `We've detected ${getAnomalyCount(data)} unusual data point(s) in your ${metric.name} metric. 
+                  ${getAnomalyInsight(data, metric)}`,
+          insights: [
+            `The anomalies occurred on ${getAnomalyDates(data)}`,
+            `These values deviate from the expected range by ${getDeviationAmount(data).toFixed(2)}%`,
+            `${getAnomalyImpact(data, metric)}`
+          ],
+          recommendations: [
+            `${getRecommendation(data, metric, 'anomaly')}`,
+            `Consider investigating factors that might have contributed to these anomalies`
+          ]
+        },
+        forecast: {
+          title: 'Forecast Analysis',
+          content: `Based on historical patterns, we project that your ${metric.name} will 
+                  ${getForecastDirection(data)} in the upcoming period.`,
+          insights: [
+            `The projected value for next month is ${getForecastValue(data).toFixed(2)}${metric.unit || ''}`,
+            `This represents a ${getForecastChange(data).toFixed(2)}% change from the current period`,
+            `Confidence in this prediction: ${getPredictionConfidence(data)}`
+          ],
+          recommendations: [
+            `${getRecommendation(data, metric, 'forecast')}`,
+            `Update your targets based on these projections`
+          ]
+        },
+        comparison: {
+          title: 'Comparative Analysis',
+          content: `Your ${metric.name} performance compared to industry benchmarks is 
+                  ${getComparisonResult(data, metric)}.`,
+          insights: [
+            `You are ${getPerformanceGap(data, metric).toFixed(2)}% ${getComparisonDirection(data)} the industry average`,
+            `You rank in the ${getPerformanceTier(data)} tier among similar businesses`,
+            `${getCompetitiveInsight(data, metric)}`
+          ],
+          recommendations: [
+            `${getRecommendation(data, metric, 'comparison')}`,
+            `Consider analyzing competitors' strategies in this area`
+          ]
+        },
+        correlation: {
+          title: 'Correlation Analysis',
+          content: `We've found a ${getCorrelationStrength(data)} correlation between ${metric.name} 
+                  and ${getCorrelatedMetric(data, metric)}.`,
+          insights: [
+            `Correlation coefficient: ${getCorrelationCoefficient(data).toFixed(2)}`,
+            `This suggests that ${getCorrelationMeaning(data, metric)}`,
+            `${getCorrelationInsight(data, metric)}`
+          ],
+          recommendations: [
+            `${getRecommendation(data, metric, 'correlation')}`,
+            `Consider this relationship when planning your strategies`
+          ]
+        }
+      };
+      
+      setExplanation(explanations[insightType] || explanations.trend);
+    } finally {
+      // Reset loading state
+      setExplanationLoading(false);
+    }
   };
   
   // Helper functions for generating dynamic content
@@ -523,8 +542,7 @@ const ContextualExplanation = ({
     
     return theme.palette.primary.main;
   };
-  
-  if (isLoading) {
+    if (isLoading || explanationLoading) {
     return (
       <Card className={className} variant="outlined">
         <CardContent>

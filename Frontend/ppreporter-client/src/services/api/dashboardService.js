@@ -142,6 +142,72 @@ const naturalLanguageQuery = async (query) => {
   }
 };
 
+/**
+ * Get metric trend data
+ * @param {Object} params - Query parameters
+ * @param {string} params.metricId - ID of the metric
+ * @param {string} params.timeRange - Time range to fetch data for
+ * @returns {Promise} Promise object with trend data
+ */
+const getMetricTrend = async (params) => {
+  try {
+    const response = await apiClient.get('/dashboard/metrics/trend', { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get anomalies for a specific metric
+ * @param {Object} params - Query parameters
+ * @param {string} params.metricId - ID of the metric
+ * @param {string} params.timeRange - Time range to fetch anomalies for
+ * @param {number} params.sensitivity - Sensitivity threshold for anomalies
+ * @returns {Promise} Promise object with anomaly data
+ */
+const getMetricAnomalies = async (params) => {
+  try {
+    const response = await apiClient.get('/dashboard/metrics/anomalies', { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get forecast for a specific metric
+ * @param {Object} params - Query parameters
+ * @param {string} params.metricId - ID of the metric
+ * @param {string} params.timeRange - Historical time range to base forecast on
+ * @param {number} params.forecastPeriods - Number of periods to forecast
+ * @returns {Promise} Promise object with forecast data
+ */
+const getMetricForecast = async (params) => {
+  try {
+    const response = await apiClient.get('/dashboard/metrics/forecast', { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get comparison data for a metric
+ * @param {Object} params - Query parameters
+ * @param {string} params.metricId - ID of the metric
+ * @param {string} params.compareWith - What to compare with (industry, competitors, etc.)
+ * @returns {Promise} Promise object with comparison data
+ */
+const getMetricComparison = async (params) => {
+  try {
+    const response = await apiClient.get('/dashboard/metrics/comparison', { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export default {
   getDashboardStats,
   getPlayerRegistrations,
@@ -152,5 +218,9 @@ export default {
   getKpiData,
   getDashboardPreferences,
   saveDashboardPreferences,
-  naturalLanguageQuery
+  naturalLanguageQuery,
+  getMetricTrend,
+  getMetricAnomalies,
+  getMetricForecast,
+  getMetricComparison
 };
