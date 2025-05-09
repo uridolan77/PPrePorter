@@ -5,7 +5,9 @@ using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
+using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Services;
+using System;
 using System.Threading.Tasks;
 
 namespace PPrePorter.DailyActionsDB
@@ -65,12 +67,21 @@ namespace PPrePorter.DailyActionsDB
             // Register memory cache if not already registered
             services.AddMemoryCache();
 
-            // Register original services
+            // Register repositories
+            services.AddScoped<IWhiteLabelRepository, WhiteLabelRepository>();
+            services.AddScoped<ICountryRepository, CountryRepository>();
+            services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+
+            // Register services
             services.AddScoped<IDailyActionsService, DailyActionsService>();
-            services.AddScoped<IWhiteLabelService, MockWhiteLabelService>(); // Using mock service
+            services.AddScoped<IWhiteLabelService, WhiteLabelService>();
+            services.AddScoped<ICountryService, CountryService>();
+            services.AddScoped<ICurrencyService, CurrencyService>();
 
             // Register simplified services
             services.AddScoped<IDailyActionsSimpleService, DailyActionsSimpleService>();
+
+            // Register additional metadata repositories and services as needed
 
             return services;
         }

@@ -15,9 +15,11 @@ namespace PPrePorter.API.Features.Reports.Controllers
     [Authorize]
     public class DailyActionsController(
         IDailyActionsService dailyActionsService,
+        IWhiteLabelService whiteLabelService,
         ILogger<DailyActionsController> logger) : ControllerBase
     {
         private readonly IDailyActionsService _dailyActionsService = dailyActionsService ?? throw new ArgumentNullException(nameof(dailyActionsService));
+        private readonly IWhiteLabelService _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
         private readonly ILogger<DailyActionsController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // JSON serializer options for export
@@ -42,12 +44,16 @@ namespace PPrePorter.API.Features.Reports.Controllers
                 // Get daily actions data
                 var dailyActions = await _dailyActionsService.GetDailyActionsAsync(start, end, whiteLabelId);
 
+                // Get white labels for mapping names
+                var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
+                var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Id, wl => wl.Name);
+
                 var result = dailyActions.Select(da => new
                 {
                     id = da.Id,
                     date = da.Date,
                     whiteLabelId = da.WhiteLabelID,
-                    whiteLabelName = "Unknown", // WhiteLabel navigation property is not available
+                    whiteLabelName = whiteLabelDict.TryGetValue(da.WhiteLabelID, out var name) ? name : "Unknown",
                     registrations = da.Registration,
                     ftd = da.FTD,
                     deposits = da.Deposits ?? 0,
@@ -147,12 +153,16 @@ namespace PPrePorter.API.Features.Reports.Controllers
                     return NotFound(new { message = $"Daily action with ID {id} not found" });
                 }
 
+                // Get white label name
+                var whiteLabel = await _whiteLabelService.GetWhiteLabelByIdAsync(dailyAction.WhiteLabelID);
+                var whiteLabelName = whiteLabel?.Name ?? "Unknown";
+
                 return Ok(new
                 {
                     id = dailyAction.Id,
                     date = dailyAction.Date,
                     whiteLabelId = dailyAction.WhiteLabelID,
-                    whiteLabelName = "Unknown", // WhiteLabel navigation property is not available
+                    whiteLabelName = whiteLabelName,
                     registrations = dailyAction.Registration,
                     ftd = dailyAction.FTD,
                     deposits = dailyAction.Deposits ?? 0,
@@ -364,6 +374,37 @@ namespace PPrePorter.API.Features.Reports.Controllers
             }
 
             return field;
+        }
+
+        /// <summary>
+        /// Test endpoint to verify that the WhiteLabelService is working correctly
+        /// </summary>
+        [HttpGet("test-white-labels")]
+        public async Task<IActionResult> TestWhiteLabels()
+        {
+            try
+            {
+                // Get all white labels
+                var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
+
+                // Return the white labels
+                return Ok(new
+                {
+                    count = whiteLabels.Count(),
+                    whiteLabels = whiteLabels.Select(wl => new
+                    {
+                        id = wl.Id,
+                        name = wl.Name,
+                        description = wl.Description,
+                        isActive = wl.IsActive
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error testing white labels");
+                return StatusCode(500, new { message = "An error occurred while testing white labels", error = ex.Message });
+            }
         }
     }
 }
