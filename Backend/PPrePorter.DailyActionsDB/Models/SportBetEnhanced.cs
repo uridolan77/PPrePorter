@@ -10,6 +10,11 @@ namespace PPrePorter.DailyActionsDB.Models
     [Table("SportBetsEnhanced")]
     public class SportBetEnhanced
     {
+        // This is a view or a query result, so we'll mark it as keyless in the DbContext
+        // If you need to define a key, uncomment the following:
+        // [Key]
+        // public long Id { get; set; }
+
         [Column(TypeName = "money")]
         public decimal? RelativeBet { get; set; }
 

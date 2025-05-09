@@ -54,24 +54,73 @@ namespace PPrePorter.DailyActionsDB.Data
                 try
                 {
                     // Use a more robust approach with regular expressions
+                    // Match FROM clause with table name in brackets
                     var regex = new System.Text.RegularExpressions.Regex(@"FROM\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "FROM [$1] WITH (NOLOCK)");
 
-                    // Handle JOIN clauses
+                    // Match FROM clause with table name without brackets (for derived tables)
+                    // Exclude function calls like OPENJSON, OPENXML, etc.
+                    regex = new System.Text.RegularExpressions.Regex(@"FROM\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
+                    command.CommandText = regex.Replace(command.CommandText, "FROM $1 WITH (NOLOCK)");
+
+                    // Handle JOIN clauses with table name in brackets
                     regex = new System.Text.RegularExpressions.Regex(@"JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "JOIN [$1] WITH (NOLOCK)");
 
-                    // Handle INNER JOIN clauses
+                    // Handle JOIN clauses with table name without brackets
+                    // Exclude function calls like OPENJSON, OPENXML, etc.
+                    regex = new System.Text.RegularExpressions.Regex(@"JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
+                    command.CommandText = regex.Replace(command.CommandText, "JOIN $1 WITH (NOLOCK)");
+
+                    // Handle INNER JOIN clauses with table name in brackets
                     regex = new System.Text.RegularExpressions.Regex(@"INNER\s+JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "INNER JOIN [$1] WITH (NOLOCK)");
 
-                    // Handle LEFT JOIN clauses
+                    // Handle INNER JOIN clauses with table name without brackets
+                    // Exclude function calls like OPENJSON, OPENXML, etc.
+                    regex = new System.Text.RegularExpressions.Regex(@"INNER\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
+                    command.CommandText = regex.Replace(command.CommandText, "INNER JOIN $1 WITH (NOLOCK)");
+
+                    // Handle LEFT JOIN clauses with table name in brackets
                     regex = new System.Text.RegularExpressions.Regex(@"LEFT\s+JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "LEFT JOIN [$1] WITH (NOLOCK)");
 
-                    // Handle RIGHT JOIN clauses
+                    // Handle LEFT JOIN clauses with table name without brackets
+                    // Exclude function calls like OPENJSON, OPENXML, etc.
+                    regex = new System.Text.RegularExpressions.Regex(@"LEFT\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
+                    command.CommandText = regex.Replace(command.CommandText, "LEFT JOIN $1 WITH (NOLOCK)");
+
+                    // Handle RIGHT JOIN clauses with table name in brackets
                     regex = new System.Text.RegularExpressions.Regex(@"RIGHT\s+JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "RIGHT JOIN [$1] WITH (NOLOCK)");
+
+                    // Handle RIGHT JOIN clauses with table name without brackets
+                    // Exclude function calls like OPENJSON, OPENXML, etc.
+                    regex = new System.Text.RegularExpressions.Regex(@"RIGHT\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
+                    command.CommandText = regex.Replace(command.CommandText, "RIGHT JOIN $1 WITH (NOLOCK)");
+
+                    // Special case for SQL functions with WITH clause - remove any NOLOCK hints that might have been added
+                    string[] sqlFunctions = { "OPENJSON", "OPENXML", "OPENROWSET", "OPENQUERY", "FREETEXTTABLE", "CONTAINSTABLE" };
+                    foreach (var function in sqlFunctions)
+                    {
+                        if (command.CommandText.Contains($"{function} WITH (NOLOCK)"))
+                        {
+                            command.CommandText = command.CommandText.Replace($"{function} WITH (NOLOCK)", function);
+                        }
+                    }
+
+                    // Fix any cases where WITH (NOLOCK) was added before WITH clause in functions
+                    // For example: "OPENJSON WITH (NOLOCK) WITH" -> "OPENJSON WITH"
+                    foreach (var function in sqlFunctions)
+                    {
+                        var pattern = $"{function} WITH \\(NOLOCK\\) WITH";
+                        var replacement = $"{function} WITH";
+                        command.CommandText = System.Text.RegularExpressions.Regex.Replace(
+                            command.CommandText,
+                            pattern,
+                            replacement,
+                            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    }
 
                     // Log the SQL transformation if it was modified
                     if (originalSql != command.CommandText)

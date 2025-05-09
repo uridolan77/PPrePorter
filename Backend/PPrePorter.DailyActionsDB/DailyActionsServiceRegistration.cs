@@ -28,9 +28,9 @@ namespace PPrePorter.DailyActionsDB
             string connectionStringTemplate = configuration.GetConnectionString(connectionStringName)
                 ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
-            // Create and register the NoLock interceptor with a logger
-            var loggerFactory = services.BuildServiceProvider().GetService<ILoggerFactory>();
-            var noLockInterceptor = new NoLockInterceptor(loggerFactory?.CreateLogger<NoLockInterceptor>());
+            // Temporarily disable the NoLock interceptor due to issues with OPENJSON
+            // var loggerFactory = services.BuildServiceProvider().GetService<ILoggerFactory>();
+            // var noLockInterceptor = new NoLockInterceptor(loggerFactory?.CreateLogger<NoLockInterceptor>());
 
             // Register DbContext factory to resolve connection string at runtime
             services.AddDbContext<DailyActionsDbContext>((serviceProvider, options) =>
@@ -39,8 +39,12 @@ namespace PPrePorter.DailyActionsDB
                 string resolvedConnectionString = Task.Run(async () =>
                     await connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)).Result;
 
-                options.UseSqlServer(resolvedConnectionString)
-                       .AddInterceptors(noLockInterceptor);
+                options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
+                {
+                    sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                    sqlServerOptions.EnableRetryOnFailure(3);
+                });
+                // Temporarily disabled: .AddInterceptors(noLockInterceptor);
             });
 
             // Register simplified DbContext with the same connection string resolution
@@ -50,8 +54,12 @@ namespace PPrePorter.DailyActionsDB
                 string resolvedConnectionString = Task.Run(async () =>
                     await connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)).Result;
 
-                options.UseSqlServer(resolvedConnectionString)
-                       .AddInterceptors(noLockInterceptor);
+                options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
+                {
+                    sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                    sqlServerOptions.EnableRetryOnFailure(3);
+                });
+                // Temporarily disabled: .AddInterceptors(noLockInterceptor);
             });
 
             // Register memory cache if not already registered

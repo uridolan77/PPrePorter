@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Data;
-using PPrePorter.DailyActionsDB.Extensions;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Models;
 using System;
@@ -47,8 +46,10 @@ namespace PPrePorter.DailyActionsDB.Services
                 var start = startDate.Date;
                 var end = endDate.Date.AddDays(1).AddTicks(-1);
 
-                // Build query
+                // Build query with NOLOCK hint
                 var query = _dbContext.DailyActions
+                    .AsNoTracking()
+                    .TagWith("WITH (NOLOCK)")
                     // .Include(da => da.WhiteLabel) // Commented out for now
                     .Where(da => da.Date >= start && da.Date <= end);
 
@@ -58,7 +59,7 @@ namespace PPrePorter.DailyActionsDB.Services
                     query = query.Where(da => da.WhiteLabelID == whiteLabelId.Value);
                 }
 
-                // Execute query
+                // Execute query - don't use WithNoLock() here since we're using the NoLockInterceptor
                 return await query.ToListAsync();
             }
             catch (Exception ex)
@@ -198,13 +199,46 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Build base query with NOLOCK hint
                 var query = _dbContext.DailyActions
                     .AsNoTracking()
-                    .WithNoLock()
+                    .TagWith("WITH (NOLOCK)")
                     .Where(da => da.Date >= start && da.Date <= end);
 
                 // Apply white label filter if specified
                 if (filter.WhiteLabelIds != null && filter.WhiteLabelIds.Count > 0)
                 {
-                    query = query.Where(da => filter.WhiteLabelIds.Contains(da.WhiteLabelID));
+                    // Use a different approach to avoid OPENJSON issues
+                    // Instead of using Contains which generates a subquery with OPENJSON,
+                    // we'll build an OR expression for each white label ID
+                    var whiteLabelIds = filter.WhiteLabelIds.ToArray();
+                    if (whiteLabelIds.Length == 1)
+                    {
+                        // Simple case - just one white label ID
+                        query = query.Where(da => da.WhiteLabelID == whiteLabelIds[0]);
+                    }
+                    else
+                    {
+                        // Multiple white label IDs - build a predicate
+                        var parameter = System.Linq.Expressions.Expression.Parameter(typeof(DailyAction), "da");
+                        var property = System.Linq.Expressions.Expression.Property(parameter, "WhiteLabelID");
+
+                        // Start with the first ID
+                        var equals = System.Linq.Expressions.Expression.Equal(
+                            property,
+                            System.Linq.Expressions.Expression.Constant(whiteLabelIds[0]));
+
+                        // Add the rest with OR
+                        for (int i = 1; i < whiteLabelIds.Length; i++)
+                        {
+                            var nextEquals = System.Linq.Expressions.Expression.Equal(
+                                property,
+                                System.Linq.Expressions.Expression.Constant(whiteLabelIds[i]));
+                            equals = System.Linq.Expressions.Expression.OrElse(equals, nextEquals);
+                        }
+
+                        // Create and apply the lambda expression
+                        var lambda = System.Linq.Expressions.Expression.Lambda<Func<DailyAction, bool>>(
+                            equals, parameter);
+                        query = query.Where(lambda);
+                    }
                 }
 
                 // Get total count before pagination
@@ -318,10 +352,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     Description = wl.Description
                 }).ToList();
 
-                // Get countries with NOLOCK hint
+                // Get countries
                 var countries = await _dbContext.Countries
                     .AsNoTracking()
-                    .WithNoLock()
+                    // Don't use WithNoLock() here since we're using the NoLockInterceptor
                     .Where(c => c.IsActive == true)
                     .OrderBy(c => c.CountryName)
                     .ToListAsync();
@@ -333,10 +367,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     IsoCode = c.IsoCode
                 }).ToList();
 
-                // Get currencies with NOLOCK hint
+                // Get currencies
                 var currencies = await _dbContext.Currencies
                     .AsNoTracking()
-                    .WithNoLock()
+                    // Don't use WithNoLock() here since we're using the NoLockInterceptor
                     .OrderBy(c => c.CurrencyName)
                     .ToListAsync();
 
@@ -348,10 +382,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     Symbol = c.CurrencySymbol
                 }).ToList();
 
-                // Get distinct values from players table with NOLOCK hint
+                // Get distinct values from players table
                 var players = await _dbContext.Players
                     .AsNoTracking()
-                    .WithNoLock()
+                    // Don't use WithNoLock() here since we're using the NoLockInterceptor
                     .ToListAsync();
 
                 var languages = players
@@ -429,7 +463,7 @@ namespace PPrePorter.DailyActionsDB.Services
                     Platforms = platforms.Where(p => p != null).Select(p => p!).ToList(),
                     Genders = genders.Where(g => g != null).Select(g => g!).ToList(),
                     Statuses = statuses.Where(s => s != null).Select(s => s!).ToList(),
-                    PlayerTypes = ["Real", "Fun"],
+                    PlayerTypes = new List<string> { "Real", "Fun" },
                     RegistrationPlayModes = registrationPlayModes.Where(r => r != null).Select(r => r!).ToList(),
                     Trackers = trackers.Where(t => t != null).Select(t => t!).ToList(),
                     GroupByOptions = groupByOptions

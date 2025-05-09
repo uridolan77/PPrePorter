@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Data.SqlClient;
 using PPrePorter.DailyActionsDB.Models;
 
 namespace PPrePorter.DailyActionsDB.Data
@@ -12,12 +13,8 @@ namespace PPrePorter.DailyActionsDB.Data
         public DailyActionsDbContext(DbContextOptions<DailyActionsDbContext> options)
             : base(options)
         {
-            // Configure SQL Server to use NOLOCK hints by default
-            var sqlServerOptions = this.GetService<SqlServerDbContextOptionsBuilder>();
-            if (sqlServerOptions != null)
-            {
-                sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-            }
+            // The SQL Server configuration is now handled in the AddDbContext call
+            // in DailyActionsServiceRegistration.cs
         }
 
         // Game-related entities
@@ -71,6 +68,11 @@ namespace PPrePorter.DailyActionsDB.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure SportBetEnhanced as a keyless entity
+            // This is likely a view or a query result that doesn't have a primary key in the database
+            // See: https://docs.microsoft.com/en-us/ef/core/modeling/keyless-entity-types
+            modelBuilder.Entity<SportBetEnhanced>().HasNoKey();
 
             // Configure DailyAction entity
             modelBuilder.Entity<DailyAction>(entity =>
