@@ -25,6 +25,9 @@ import DashboardSimple from './pages/DashboardSimple';
 import ApiDashboard from './pages/ApiDashboard';
 import TestContextualExplanation from './components/dashboard/TestContextualExplanation';
 
+// Report pages
+import DailyActionsPage from './pages/reports/DailyActionsPage';
+
 // Theme configuration
 const theme = createTheme({
   palette: {
@@ -82,6 +85,7 @@ function App() {
 
                 {/* Reports Routes */}
                 <Route path="/reports" element={<SimpleDashboard />} />
+                <Route path="/reports/daily-actions" element={<DailyActionsPage />} />
                 <Route path="/reports/*" element={<SimpleDashboard />} />
 
                 {/* Analytics Routes */}

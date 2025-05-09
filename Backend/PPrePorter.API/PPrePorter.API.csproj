@@ -20,6 +20,7 @@
     <ProjectReference Include="..\PPrePorter.Core\PPrePorter.Core.csproj" />
     <ProjectReference Include="..\PPrePorter.Infrastructure\PPrePorter.Infrastructure.csproj" />
     <ProjectReference Include="..\PPrePorter.SemanticLayer\PPrePorter.SemanticLayer.csproj" />
+    <ProjectReference Include="..\PPrePorter.DailyActionsDB\PPrePorter.DailyActionsDB.csproj" />
   </ItemGroup>
 
 </Project>

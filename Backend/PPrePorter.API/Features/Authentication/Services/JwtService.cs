@@ -21,13 +21,8 @@ namespace PPrePorter.API.Features.Authentication.Services
 
         public string GenerateJwtToken(string userId, string username, string role, IEnumerable<string> permissions)
         {
-            // Generate a key with sufficient length for HS256 (at least 32 bytes / 256 bits)
-            byte[] keyBytes = new byte[32]; // 256 bits
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(keyBytes);
-            }
-
+            // Use the configured secret key for signing
+            var keyBytes = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
             var securityKey = new SymmetricSecurityKey(keyBytes);
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -66,12 +61,8 @@ namespace PPrePorter.API.Features.Authentication.Services
 
         public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
-            // Generate a key with sufficient length for HS256 (at least 32 bytes / 256 bits)
-            byte[] keyBytes = new byte[32]; // 256 bits
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(keyBytes);
-            }
+            // Use the configured secret key for validation
+            var keyBytes = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
 
             var tokenValidationParameters = new TokenValidationParameters
             {
