@@ -12,6 +12,8 @@ using Polly.Retry;
 using PPrePorter.gRPC.Core.Configuration;
 using PPrePorter.gRPC.Core.Interfaces;
 using PPrePorter.gRPC.Core.Models;
+using PPrePorter.gRPC.Core.Models.Client;
+using PPrePorter.gRPC.Core.Models.Mappers;
 
 namespace PPrePorter.gRPC.Core
 {
@@ -162,9 +164,7 @@ namespace PPrePorter.gRPC.Core
                 _logger.LogError(ex, "Unexpected error processing data with model {ModelName}: {ErrorMessage}", modelName, ex.Message);
                 throw new PythonMLException($"Unexpected error processing data with model {modelName}: {ex.Message}", ex);
             }
-        }
-
-        /// <inheritdoc/>
+        }        /// <inheritdoc/>
         public async IAsyncEnumerable<ProcessResultChunk> ProcessDataStreamAsync(
             string inputData,
             string modelName,
@@ -179,67 +179,43 @@ namespace PPrePorter.gRPC.Core
             if (string.IsNullOrEmpty(modelName))
                 throw new ArgumentException("Model name cannot be null or empty.", nameof(modelName));
 
+            _logger.LogDebug("Streaming data processing with model: {ModelName}, version: {Version}, stage: {Stage}", 
+                modelName, version ?? "latest", stage ?? "any");
+
+            // Create the request
+            var request = new ProcessRequest
+            {
+                InputData = inputData,
+                ModelName = modelName
+            };
+
+            if (!string.IsNullOrEmpty(version))
+            {
+                request.Version = version;
+            }
+
+            if (!string.IsNullOrEmpty(stage))
+            {
+                request.Stage = stage;
+            }
+
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    request.Parameters.Add(param.Key, param.Value);
+                }
+            }            // Execute with retry policy - note this is used only for the initial call setup
+            AsyncServerStreamingCall<ProcessResponseChunk>? streamingCall = null;
+            
             try
             {
-                _logger.LogDebug("Streaming data processing with model: {ModelName}, version: {Version}, stage: {Stage}", 
-                    modelName, version ?? "latest", stage ?? "any");
-
-                var request = new ProcessStreamRequest
+                streamingCall = await _retryPolicy.ExecuteAsync(async () =>
                 {
-                    InputData = inputData,
-                    ModelName = modelName
-                };
-
-                if (!string.IsNullOrEmpty(version))
-                {
-                    request.Version = version;
-                }
-
-                if (!string.IsNullOrEmpty(stage))
-                {
-                    request.Stage = stage;
-                }
-
-                if (parameters != null)
-                {
-                    foreach (var param in parameters)
-                    {
-                        request.Parameters.Add(param.Key, param.Value);
-                    }
-                }
-
-                // Execute with retry policy - note this is used only for the initial call setup
-                AsyncServerStreamingCall<ProcessStreamResponse>? streamingCall = null;
-                
-                try
-                {
-                    streamingCall = await _retryPolicy.ExecuteAsync(async () =>
-                    {
-                        var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
-                        var headers = new Metadata();
-                        return _client.ProcessDataStream(request, headers, deadline, cancellationToken);
-                    });
-
-                    var responseStream = streamingCall.ResponseStream;
-                    await foreach (var response in responseStream.ReadAllAsync(cancellationToken))
-                    {
-                        yield return new ProcessResultChunk
-                        {
-                            ResultChunk = response.ResultChunk,
-                            IsLastChunk = response.IsLastChunk,
-                            Success = response.Success,
-                            ErrorMessage = response.ErrorMessage,
-                            ChunkId = response.ChunkId,
-                            TotalChunks = response.TotalChunks,
-                            ConfidenceScore = response.ConfidenceScore,
-                            Metadata = new Dictionary<string, string>(response.Metadata)
-                        };
-                    }
-                }
-                finally
-                {
-                    streamingCall?.Dispose();
-                }
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return _client.ProcessDataStream(request, headers, deadline, cancellationToken);
+                });
             }
             catch (RpcException ex)
             {
@@ -250,6 +226,30 @@ namespace PPrePorter.gRPC.Core
             {
                 _logger.LogError(ex, "Unexpected error streaming data processing with model {ModelName}: {ErrorMessage}", modelName, ex.Message);
                 throw new PythonMLException($"Unexpected error streaming data processing with model {modelName}: {ex.Message}", ex);
+            }
+
+            try
+            {
+                // This part needs to be outside the first try-catch because yield can't be inside a try with catch
+                var responseStream = streamingCall.ResponseStream;
+                await foreach (var response in responseStream.ReadAllAsync(cancellationToken))
+                {
+                    yield return new ProcessResultChunk
+                    {
+                        ResultChunk = response.ResultChunk,
+                        IsLastChunk = response.IsLastChunk,
+                        Success = response.Success,
+                        ErrorMessage = response.ErrorMessage,
+                        ChunkId = response.ChunkId,
+                        TotalChunks = response.TotalChunks,
+                        ConfidenceScore = response.ConfidenceScore,
+                        Metadata = new Dictionary<string, string>(response.Metadata)
+                    };
+                }
+            }
+            finally
+            {
+                streamingCall?.Dispose();
             }
         }
 
@@ -340,11 +340,10 @@ namespace PPrePorter.gRPC.Core
 
                 // Create a client-side streaming call
                 using var call = _client.TrainModelStream(new CallOptions(cancellationToken: cancellationToken));
-                
-                // Process and send each chunk
+                  // Process and send each chunk
                 await foreach (var chunk in trainingDataStream.WithCancellation(cancellationToken))
                 {
-                    var requestChunk = new TrainStreamRequest
+                    var requestChunk = new TrainRequestChunk
                     {
                         TrainingDataChunk = chunk.TrainingDataChunk,
                         IsLastChunk = chunk.IsLastChunk,
@@ -354,12 +353,11 @@ namespace PPrePorter.gRPC.Core
 
                     // Only send these fields in the first chunk
                     if (chunk.ChunkId == 0 || chunk.ChunkId == 1) // Allow for 0-based or 1-based indexing
-                    {
-                        if (!string.IsNullOrEmpty(chunk.ModelName))
+                    {                        if (!string.IsNullOrEmpty(chunk.ModelName))
                             requestChunk.ModelName = chunk.ModelName;
 
-                        if (chunk.Validate.HasValue)
-                            requestChunk.Validate = chunk.Validate.Value;
+                        // Bool is not nullable, so directly assign it
+                        requestChunk.Validate = chunk.Validate;
 
                         if (!string.IsNullOrEmpty(chunk.Framework))
                             requestChunk.Framework = chunk.Framework;
@@ -598,23 +596,21 @@ namespace PPrePorter.gRPC.Core
                 throw new ArgumentException("New stage cannot be null or empty.", nameof(newStage));
 
             try
-            {
-                _logger.LogDebug("Changing stage for model: {ModelName}, version: {Version}, new stage: {NewStage}", 
+            {                _logger.LogDebug("Changing stage for model: {ModelName}, version: {Version}, new stage: {NewStage}", 
                     modelName, version, newStage);
 
-                var request = new ChangeModelStageRequest
+                var request = new Models.Client.ChangeModelStageRequest
                 {
                     ModelName = modelName,
                     Version = version,
                     NewStage = newStage
-                };
-
-                // Execute with retry policy
+                };// Execute with retry policy
                 var response = await _retryPolicy.ExecuteAsync(async () =>
                 {
                     var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
                     var headers = new Metadata();
-                    return await _client.ChangeModelStageAsync(request, headers, deadline, cancellationToken);
+                    // Convert to ModelStageRequest before calling the gRPC client
+                    return await _client.ChangeModelStageAsync(request.ToProto(), headers, deadline, cancellationToken);
                 });
 
                 // Invalidate any cached model info for this model

@@ -48,11 +48,10 @@ namespace PPrePorter.PythonML.Extensions
                 services.Configure(configurePythonMLOptions);
             }
             else
-            {
-                services.Configure<PythonMLOptions>(options => { });
+            {            services.Configure<PythonMLOptions>(options => { });
             }
 
-            services.TryAddScoped<IPythonMLService, PythonMLService>();
+            services.TryAddScoped<IPythonMLService, PPrePorter.PythonML.Services.PythonMLService>();
             
             return services;
         }

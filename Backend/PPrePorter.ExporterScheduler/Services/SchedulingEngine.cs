@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Quartz.Impl;
+using Quartz.Spi;
 using PPrePorter.ExporterScheduler.Interfaces;
 using PPrePorter.ExporterScheduler.Models;
 
@@ -20,6 +21,12 @@ namespace PPrePorter.ExporterScheduler.Services
         private readonly ILogger<SchedulingEngine> _logger;
         private IScheduler _scheduler;
         
+        /// <summary>
+        /// Initializes a new instance of the SchedulingEngine class
+        /// </summary>
+        /// <param name="scheduleRepository">Repository for accessing schedule information</param>
+        /// <param name="serviceProvider">Service provider for resolving dependencies</param>
+        /// <param name="logger">Logger for the scheduling engine</param>
         public SchedulingEngine(
             IScheduleRepository scheduleRepository,
             IServiceProvider serviceProvider,
@@ -140,17 +147,14 @@ namespace PPrePorter.ExporterScheduler.Services
                 .WithIdentity($"trigger-{schedule.Id}", "export-triggers");
             
             switch (schedule.Frequency)
-            {
-                case ScheduleFrequency.Daily:
-                    triggerBuilder = triggerBuilder.WithDailyTimeIntervalSchedule(x => x
+            {                case ScheduleFrequency.Daily:                    triggerBuilder = triggerBuilder.WithDailyTimeIntervalSchedule(x => x
                         .OnEveryDay()
                         .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(
                             schedule.TimeOfDay.Hours, 
                             schedule.TimeOfDay.Minutes))
                         .InTimeZone(TimeZoneInfo.FindSystemTimeZoneById(schedule.TimeZone)));
                     break;
-                    
-                case ScheduleFrequency.Weekly:
+                      case ScheduleFrequency.Weekly:
                     triggerBuilder = triggerBuilder.WithSchedule(CronScheduleBuilder
                         .WeeklyOnDayAndHourAndMinute(
                             MapDayOfWeek(schedule.DayOfWeek.Value),
@@ -196,31 +200,43 @@ namespace PPrePorter.ExporterScheduler.Services
             };
         }
     }
-    
-    /// <summary>
+      /// <summary>
     /// Job factory that uses dependency injection to resolve job instances
     /// </summary>
     public class DependencyInjectionJobFactory : IJobFactory
     {
         private readonly IServiceProvider _serviceProvider;
         
+        /// <summary>
+        /// Initializes a new instance of the DependencyInjectionJobFactory class
+        /// </summary>
+        /// <param name="serviceProvider">The service provider used to resolve job instances</param>
         public DependencyInjectionJobFactory(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
         
+        /// <summary>
+        /// Creates a new job instance
+        /// </summary>
+        /// <param name="bundle">The trigger fired bundle containing job details</param>
+        /// <param name="scheduler">The scheduler</param>
+        /// <returns>A new job instance</returns>
         public IJob NewJob(TriggerFiredBundle bundle, IScheduler scheduler)
         {
             return _serviceProvider.GetRequiredService(bundle.JobDetail.JobType) as IJob;
         }
         
+        /// <summary>
+        /// Returns a job instance to the scheduler
+        /// </summary>
+        /// <param name="job">The job instance to return</param>
         public void ReturnJob(IJob job)
         {
             (job as IDisposable)?.Dispose();
         }
     }
-    
-    /// <summary>
+      /// <summary>
     /// Quartz job implementation that executes scheduled exports
     /// </summary>
     [DisallowConcurrentExecution]
@@ -230,16 +246,26 @@ namespace PPrePorter.ExporterScheduler.Services
         private readonly IExportJob _exportJob;
         private readonly ILogger<ExportScheduleJob> _logger;
         
+        /// <summary>
+        /// Initializes a new instance of the ExportScheduleJob class
+        /// </summary>
+        /// <param name="scheduleRepository">Repository for accessing schedule information</param>
+        /// <param name="exportJob">Service that performs the export operation</param>
+        /// <param name="logger">Logger for the export schedule job</param>
         public ExportScheduleJob(
             IScheduleRepository scheduleRepository,
             IExportJob exportJob,
             ILogger<ExportScheduleJob> logger)
         {
             _scheduleRepository = scheduleRepository;
-            _exportJob = exportJob;
-            _logger = logger;
+            _exportJob = exportJob;            _logger = logger;
         }
         
+        /// <summary>
+        /// Executes the scheduled job
+        /// </summary>
+        /// <param name="context">The execution context</param>
+        /// <returns>A task representing the job execution</returns>
         public async Task Execute(IJobExecutionContext context)
         {
             // Get schedule ID from job data

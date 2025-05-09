@@ -1,8 +1,12 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using PPrePorter.ExporterScheduler.Data;
 using PPrePorter.ExporterScheduler.Exporters;
 using PPrePorter.ExporterScheduler.Interfaces;
@@ -107,10 +111,14 @@ namespace PPrePorter.ExporterScheduler
     /// Hosted service that initializes and manages the scheduler
     /// </summary>
     public class SchedulerHostedService : Microsoft.Extensions.Hosting.BackgroundService
-    {
-        private readonly SchedulingEngine _schedulingEngine;
+    {        private readonly SchedulingEngine _schedulingEngine;
         private readonly ILogger<SchedulerHostedService> _logger;
         
+        /// <summary>
+        /// Initializes a new instance of the SchedulerHostedService class
+        /// </summary>
+        /// <param name="schedulingEngine">The scheduling engine that handles the scheduling logic</param>
+        /// <param name="logger">Logger for the scheduler hosted service</param>
         public SchedulerHostedService(
             SchedulingEngine schedulingEngine,
             ILogger<SchedulerHostedService> logger)
@@ -119,6 +127,11 @@ namespace PPrePorter.ExporterScheduler
             _logger = logger;
         }
         
+        /// <summary>
+        /// Executes the background service logic
+        /// </summary>
+        /// <param name="stoppingToken">Cancellation token to signal when the service should stop</param>
+        /// <returns>A task representing the background operation</returns>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Starting scheduler hosted service");

@@ -3,50 +3,55 @@ using System;
 namespace PPrePorter.SemanticLayer.Models.Entities
 {
     /// <summary>
-    /// Represents a filter for queries
+    /// Represents a filter in a query
     /// </summary>
     public class Filter : Entity
     {
         /// <summary>
-        /// Dimension to filter on
+        /// The field to filter on
         /// </summary>
-        public string Dimension { get; set; } = string.Empty;
+        public string Field { get; set; } = string.Empty;
         
         /// <summary>
-        /// Operator for the filter (e.g., equals, contains, greater than)
+        /// The operator for the filter (equals, contains, etc.)
         /// </summary>
-        public string? Operator { get; set; }
+        public string Operator { get; set; } = "=";
         
         /// <summary>
-        /// Value for the filter
+        /// The value to filter by
         /// </summary>
-        public object? Value { get; set; }
+        public object Value { get; set; } = string.Empty;
         
         /// <summary>
-        /// Whether the filter is negated
+        /// The display value of the filter for user interfaces
+        /// </summary>
+        public string DisplayValue { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Whether the filter is negated (e.g., "not equals")
         /// </summary>
         public bool IsNegated { get; set; }
     }
     
     /// <summary>
-    /// Mapped filter with database fields
+    /// Represents a mapped filter with database fields
     /// </summary>
-    public class MappedFilter
+    public class MappedFilter : Entity
     {
         /// <summary>
-        /// Database field to filter on
+        /// The database field to filter on
         /// </summary>
         public string DatabaseField { get; set; } = string.Empty;
         
         /// <summary>
-        /// Operator for the filter
+        /// The operator for the filter
         /// </summary>
-        public string? Operator { get; set; }
+        public string Operator { get; set; } = "=";
         
         /// <summary>
-        /// Value for the filter
+        /// The value to filter by
         /// </summary>
-        public object? Value { get; set; }
+        public object Value { get; set; } = string.Empty;
         
         /// <summary>
         /// Whether the filter is negated

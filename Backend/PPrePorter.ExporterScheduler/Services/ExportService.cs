@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PPrePorter.ExporterScheduler.Exporters;
 using PPrePorter.ExporterScheduler.Interfaces;
 using PPrePorter.ExporterScheduler.Models;
 
@@ -15,6 +16,12 @@ namespace PPrePorter.ExporterScheduler.Services
         private readonly IReportDataService _reportDataService;
         private readonly ILogger<ExportService> _logger;
         
+        /// <summary>
+        /// Initializes a new instance of the ExportService class
+        /// </summary>
+        /// <param name="exporterFactory">Factory for creating exporters based on the requested format</param>
+        /// <param name="reportDataService">Service for retrieving report data</param>
+        /// <param name="logger">Logger for the export service</param>
         public ExportService(
             ExporterFactory exporterFactory, 
             IReportDataService reportDataService,

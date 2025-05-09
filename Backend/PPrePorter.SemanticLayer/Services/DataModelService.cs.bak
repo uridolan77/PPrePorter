@@ -1,0 +1,153 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PPrePorter.SemanticLayer.Core;
+using PPrePorter.SemanticLayer.Gaming;
+using PPrePorter.SemanticLayer.Models.Configuration;
+using PPrePorter.SemanticLayer.Models.Database;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace PPrePorter.SemanticLayer.Services
+{
+    /// <summary>
+    /// Service for managing the data model
+    /// </summary>
+    public class DataModelService : IDataModelService
+    {
+        private readonly ILogger<DataModelService> _logger;
+        private readonly SemanticLayerConfig _config;
+        private DataModel _dataModel;
+        private readonly object _modelLock = new object();
+        private DateTime _lastRefreshTime = DateTime.MinValue;
+        
+        public DataModelService(
+            ILogger<DataModelService> logger,
+            IOptions<SemanticLayerConfig> config)
+        {
+            _logger = logger;
+            _config = config.Value;
+            
+            // Initialize with a default model
+            _dataModel = GamingDataModel.GetDefaultModel();
+            
+            _logger.LogInformation("Data model service initialized with default gaming model");
+        }
+        
+        /// <summary>
+        /// Gets the current data model
+        /// </summary>
+        public async Task<DataModel> GetDataModelAsync()
+        {
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel;
+        }
+        
+        /// <summary>
+        /// Gets a table from the data model
+        /// </summary>
+        public async Task<Table?> GetTableAsync(string tableName)
+        {
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return null;
+            }
+            
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel.Tables.FirstOrDefault(t => 
+                string.Equals(t.Name, tableName, StringComparison.OrdinalIgnoreCase));
+        }
+        
+        /// <summary>
+        /// Gets a view from the data model
+        /// </summary>
+        public async Task<View?> GetViewAsync(string viewName)
+        {
+            if (string.IsNullOrEmpty(viewName))
+            {
+                return null;
+            }
+            
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel.Views.FirstOrDefault(v => 
+                string.Equals(v.Name, viewName, StringComparison.OrdinalIgnoreCase));
+        }
+        
+        /// <summary>
+        /// Gets relationships for a table
+        /// </summary>
+        public async Task<List<Relationship>> GetRelationshipsAsync(string tableName)
+        {
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return new List<Relationship>();
+            }
+            
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel.Relationships.Where(r => 
+                string.Equals(r.SourceTable, tableName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r.TargetTable, tableName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        
+        /// <summary>
+        /// Refreshes the data model from the database
+        /// </summary>
+        public async Task RefreshDataModelAsync()
+        {
+            _logger.LogInformation("Refreshing data model");
+            
+            try
+            {
+                // Use lock to prevent multiple concurrent refreshes
+                lock (_modelLock)
+                {
+                    // For now, just use the default model
+                    // In a real implementation, you would query the database metadata here
+                    _dataModel = GamingDataModel.GetDefaultModel();
+                    _lastRefreshTime = DateTime.UtcNow;
+                }
+                
+                _logger.LogInformation("Data model refreshed successfully");
+                
+                // Simulate async operation
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing data model");
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// Determines if the model should be refreshed based on time since last refresh
+        /// </summary>
+        private bool ShouldRefreshModel()
+        {
+            // Refresh if the model is more than 1 hour old
+            return (DateTime.UtcNow - _lastRefreshTime).TotalHours > 1;
+        }
+    }
+}

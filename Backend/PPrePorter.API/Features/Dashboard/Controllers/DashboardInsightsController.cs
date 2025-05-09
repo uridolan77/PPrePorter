@@ -54,26 +54,26 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 _logger.LogInformation("Generating dashboard story for user {UserId}", currentUser.Id);
 
                 // First get all dashboard data
                 var dashboardData = await _dashboardService.GetDashboardDataAsync(request);
-                
+
                 // Generate comprehensive dashboard story
                 var story = await _insightGenerationService.GenerateDashboardStoryAsync(dashboardData);
-                
+
                 // Personalize insights if user has preferences
                 var userPreferences = await _personalizationService.GetUserPreferencesAsync(currentUser.Id);
                 if (userPreferences != null && story.KeyInsights.Count > 0)
                 {
                     story.KeyInsights = await _personalizationService.GetPersonalizedInsightsAsync(
-                        currentUser.Id, 
+                        currentUser.Id,
                         story.KeyInsights);
                 }
-                
+
                 return Ok(story);
             }
             catch (Exception ex)
@@ -91,12 +91,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var summary = await _dashboardService.GetDashboardSummaryAsync(request);
                 var insights = await _insightGenerationService.GenerateSummaryInsightsAsync(summary);
-                
+
                 return Ok(insights);
             }
             catch (Exception ex)
@@ -114,12 +114,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var revenueData = await _dashboardService.GetCasinoRevenueChartDataAsync(request);
                 var insights = await _insightGenerationService.GenerateRevenueInsightsAsync(revenueData);
-                
+
                 return Ok(insights);
             }
             catch (Exception ex)
@@ -137,12 +137,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var registrationData = await _dashboardService.GetPlayerRegistrationsChartDataAsync(request);
                 var insights = await _insightGenerationService.GenerateRegistrationInsightsAsync(registrationData);
-                
+
                 return Ok(insights);
             }
             catch (Exception ex)
@@ -160,12 +160,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var gameData = await _dashboardService.GetTopGamesDataAsync(request);
                 var insights = await _insightGenerationService.GenerateTopGamesInsightsAsync(gameData);
-                
+
                 return Ok(insights);
             }
             catch (Exception ex)
@@ -183,12 +183,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var transactionData = await _dashboardService.GetRecentTransactionsAsync(request);
                 var insights = await _insightGenerationService.GenerateTransactionInsightsAsync(transactionData);
-                
+
                 return Ok(insights);
             }
             catch (Exception ex)
@@ -202,17 +202,17 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         /// Get trend analysis for revenue data
         /// </summary>
         [HttpGet("revenue-trends")]
-        public async Task<IActionResult> GetRevenueTrends([FromQuery] DashboardRequest request, 
-            [FromQuery] TrendAnalysisOptions options = null)
+        public async Task<IActionResult> GetRevenueTrends([FromQuery] DashboardRequest request,
+            [FromQuery] TrendAnalysisOptions? options = null)
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var revenueData = await _dashboardService.GetCasinoRevenueChartDataAsync(request);
                 var analysis = await _trendAnalysisService.AnalyzeRevenueTrendsAsync(revenueData, options);
-                
+
                 return Ok(analysis);
             }
             catch (Exception ex)
@@ -226,17 +226,17 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         /// Get trend analysis for registration data
         /// </summary>
         [HttpGet("registration-trends")]
-        public async Task<IActionResult> GetRegistrationTrends([FromQuery] DashboardRequest request, 
-            [FromQuery] TrendAnalysisOptions options = null)
+        public async Task<IActionResult> GetRegistrationTrends([FromQuery] DashboardRequest request,
+            [FromQuery] TrendAnalysisOptions? options = null)
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var registrationData = await _dashboardService.GetPlayerRegistrationsChartDataAsync(request);
                 var analysis = await _trendAnalysisService.AnalyzeRegistrationTrendsAsync(registrationData, options);
-                
+
                 return Ok(analysis);
             }
             catch (Exception ex)
@@ -254,12 +254,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
                 var dashboardData = await _dashboardService.GetDashboardDataAsync(request);
                 var correlations = await _trendAnalysisService.AnalyzeMetricCorrelationsAsync(dashboardData);
-                
+
                 return Ok(correlations);
             }
             catch (Exception ex)
@@ -277,12 +277,12 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var explanation = await _contextualExplanationService.GetMetricExplanationAsync(
-                    metricKey, 
-                    currentUser.Role, 
-                    currentUser.ExperienceLevel);
-                
+                    metricKey,
+                    currentUser.Role,
+                    1); // Default experience level
+
                 return Ok(explanation);
             }
             catch (Exception ex)
@@ -300,11 +300,11 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var explanations = await _contextualExplanationService.GetSummaryMetricExplanationsAsync(
-                    currentUser.Role, 
-                    currentUser.ExperienceLevel);
-                
+                    currentUser.Role,
+                    1); // Default experience level
+
                 return Ok(explanations);
             }
             catch (Exception ex)
@@ -322,11 +322,11 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 annotation.UserId = currentUser.Id;
                 annotation.CreatedAt = DateTime.UtcNow;
                 annotation.ModifiedAt = DateTime.UtcNow;
-                
+
                 var savedAnnotation = await _dataAnnotationService.AddAnnotationAsync(annotation);
                 return Ok(savedAnnotation);
             }
@@ -345,9 +345,9 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var annotations = await _dataAnnotationService.GetAnnotationsForDateRangeAsync(startDate, endDate, currentUser.Id);
-                
+
                 return Ok(annotations);
             }
             catch (Exception ex)
@@ -383,9 +383,9 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var preferences = await _personalizationService.GetUserPreferencesAsync(currentUser.Id);
-                
+
                 return Ok(preferences);
             }
             catch (Exception ex)
@@ -403,10 +403,10 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 preferences.UserId = currentUser.Id;
                 preferences.LastUpdated = DateTime.UtcNow;
-                
+
                 await _personalizationService.SaveUserPreferencesAsync(currentUser.Id, preferences);
                 return Ok();
             }
@@ -425,10 +425,10 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 interaction.UserId = currentUser.Id;
                 interaction.Timestamp = DateTime.UtcNow;
-                
+
                 await _personalizationService.TrackUserInteractionAsync(currentUser.Id, interaction);
                 return Ok();
             }
@@ -447,11 +447,11 @@ namespace PPrePorter.API.Features.Dashboard.Controllers
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var recommendations = await _personalizationService.GetRecommendedComponentsAsync(
-                    currentUser.Id, 
+                    currentUser.Id,
                     currentUser.Role);
-                
+
                 return Ok(recommendations);
             }
             catch (Exception ex)

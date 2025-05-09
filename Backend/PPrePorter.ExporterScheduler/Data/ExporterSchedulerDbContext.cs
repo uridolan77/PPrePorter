@@ -32,18 +32,17 @@ namespace PPrePorter.ExporterScheduler.Data
             {
                 entity.ToTable("Schedules");
                 entity.HasKey(e => e.Id);
-                
-                // Configure complex type properties using JSON serialization
+                  // Configure complex type properties using JSON serialization
                 entity.Property(e => e.Filters)
                     .HasConversion(
-                        v => JsonSerializer.Serialize(v, null),
-                        v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, null))
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                        v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions)null))
                     .HasColumnType("nvarchar(max)");
                 
                 entity.Property(e => e.SelectedColumns)
                     .HasConversion(
-                        v => JsonSerializer.Serialize(v, null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, null))
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null))
                     .HasColumnType("nvarchar(max)");
                 
                 // Configure enum conversion

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PPrePorter.Core\PPrePorter.Core.csproj" />
     <ProjectReference Include="..\PPrePorter.Domain\PPrePorter.Domain.csproj" />
+    <ProjectReference Include="..\PPrePorter.NLP\PPrePorter.NLP.csproj" />
   </ItemGroup>
 
   <ItemGroup>

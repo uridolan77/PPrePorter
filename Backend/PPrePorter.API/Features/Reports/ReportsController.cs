@@ -37,9 +37,16 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
-                var templates = await _configService.GetAvailableReportTemplatesAsync(currentUser);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+                // Create a mock user for now
+                var user = new PPrePorter.Domain.Entities.PPReporter.User
+                {
+                    Id = int.Parse(currentUser.Id),
+                    Username = currentUser.Username
+                };
+
+                var templates = await _configService.GetAvailableReportTemplatesAsync(user);
+
                 return Ok(templates);
             }
             catch (Exception ex)
@@ -59,9 +66,16 @@ namespace PPrePorter.API.Features.Reports
                     return BadRequest(new { message = "Invalid report request" });
                 }
 
-                var currentUser = _userContextService.GetCurrentUser();
-                var result = await _reportService.GenerateReportAsync(request, currentUser.Id);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+                // Convert the request to parameters
+                var parameters = new Dictionary<string, object>();
+                foreach (var filter in request.Filters ?? new List<FilterCriteriaDto>())
+                {
+                    parameters[filter.Field] = filter.Value;
+                }
+
+                var result = await _reportService.GenerateReportAsync(request.TemplateId, parameters, currentUser.Id);
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -81,14 +95,14 @@ namespace PPrePorter.API.Features.Reports
                     return BadRequest(new { message = "Report ID is required" });
                 }
 
-                var currentUser = _userContextService.GetCurrentUser();
-                var report = await _reportService.GetReportAsync(reportId, currentUser.Id);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+                var report = await _reportService.GetGeneratedReportByIdAsync(reportId, currentUser.Id);
+
                 if (report == null)
                 {
                     return NotFound(new { message = "Report not found" });
                 }
-                
+
                 return Ok(report);
             }
             catch (Exception ex)
@@ -108,16 +122,16 @@ namespace PPrePorter.API.Features.Reports
                     return BadRequest(new { message = "Report ID is required" });
                 }
 
-                var currentUser = _userContextService.GetCurrentUser();
-                var result = await _reportService.ExportReportAsync(reportId, request.Format, currentUser);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+                var result = await _reportService.ExportReportAsync(reportId, request.Format, currentUser.Id);
+
                 if (result == null)
                 {
                     return NotFound(new { message = "Report not found" });
                 }
-                
-                // Return a temporary URL to the exported file
-                return Ok(new { fileUrl = result.FileUrl, fileName = result.FileName });
+
+                // Return the export result
+                return Ok(new { fileUrl = $"/api/reports/download/{result.Id}", fileName = result.FileName });
             }
             catch (Exception ex)
             {
@@ -125,15 +139,15 @@ namespace PPrePorter.API.Features.Reports
                 return StatusCode(500, new { message = "An error occurred while exporting the report" });
             }
         }
-        
+
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentReports([FromQuery] int limit = 10)
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
-                var reports = await _reportService.GetRecentReportsAsync(currentUser.Id, limit);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+                var reports = await _reportService.GetUserReportsAsync(currentUser.Id, limit);
+
                 return Ok(reports);
             }
             catch (Exception ex)

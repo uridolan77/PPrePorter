@@ -30,6 +30,16 @@ namespace PPrePorter.SemanticLayer.Models.Configuration
         public int DefaultCacheDurationMinutes { get; set; } = 15;
 
         /// <summary>
+        /// Gets or sets the SQL configuration
+        /// </summary>
+        public SqlConfig Sql { get; set; } = new SqlConfig();
+
+        /// <summary>
+        /// Gets or sets the cache configuration
+        /// </summary>
+        public CacheConfig Cache { get; set; } = new CacheConfig();
+
+        /// <summary>
         /// Gets or sets whether query caching is enabled
         /// </summary>
         public bool EnableQueryCaching { get; set; } = true;
@@ -38,12 +48,12 @@ namespace PPrePorter.SemanticLayer.Models.Configuration
         /// Gets or sets the mapping configuration for entities and database tables
         /// </summary>
         public EntityMappingConfig EntityMapping { get; set; } = new EntityMappingConfig();
-        
+
         /// <summary>
         /// Gets or sets the logging configuration for semantic layer operations
         /// </summary>
         public LoggingConfig Logging { get; set; } = new LoggingConfig();
-        
+
         /// <summary>
         /// Gets or sets the security configuration for semantic layer access
         /// </summary>
@@ -79,7 +89,7 @@ namespace PPrePorter.SemanticLayer.Models.Configuration
         /// Gets or sets the list of tables to exclude from the semantic layer
         /// </summary>
         public List<string> ExcludedTables { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// Gets or sets custom SQL expressions for complex metrics
         /// </summary>
@@ -131,7 +141,7 @@ namespace PPrePorter.SemanticLayer.Models.Configuration
         /// Gets or sets the list of roles with full access to all semantic layer entities
         /// </summary>
         public List<string> AdminRoles { get; set; } = new List<string> { "Administrator" };
-        
+
         /// <summary>
         /// Gets or sets the mapping of roles to accessible dimensions and metrics
         /// </summary>

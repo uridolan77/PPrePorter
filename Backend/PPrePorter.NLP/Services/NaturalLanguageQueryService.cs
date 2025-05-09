@@ -7,7 +7,7 @@ namespace PPrePorter.NLP.Services;
 /// <summary>
 /// Main facade service for Natural Language Processing in the PPrePorter application
 /// </summary>
-public class NaturalLanguageQueryService
+public class NaturalLanguageQueryService : INaturalLanguageQueryService
 {
     private readonly ILogger<NaturalLanguageQueryService> _logger;
     private readonly IEntityExtractionService _entityExtractionService;

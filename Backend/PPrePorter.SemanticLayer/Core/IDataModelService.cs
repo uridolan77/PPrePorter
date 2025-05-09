@@ -1,10 +1,11 @@
 using PPrePorter.SemanticLayer.Models.Database;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace PPrePorter.SemanticLayer.Core
 {
     /// <summary>
-    /// Service for managing the data model
+    /// Interface for services that provide data model information
     /// </summary>
     public interface IDataModelService
     {
@@ -14,28 +15,33 @@ namespace PPrePorter.SemanticLayer.Core
         Task<DataModel> GetDataModelAsync();
         
         /// <summary>
-        /// Refreshes the data model from the source
-        /// </summary>
-        Task<DataModel> RefreshDataModelAsync();
-        
-        /// <summary>
-        /// Gets a table by name
+        /// Gets a table from the data model
         /// </summary>
         Task<Table?> GetTableAsync(string tableName);
         
         /// <summary>
-        /// Gets a view by name
+        /// Gets a view from the data model
         /// </summary>
         Task<View?> GetViewAsync(string viewName);
         
         /// <summary>
-        /// Gets all related tables for a table
+        /// Gets relationships for a table
+        /// </summary>
+        Task<List<Relationship>> GetRelationshipsAsync(string tableName);
+        
+        /// <summary>
+        /// Gets tables related to the specified table
         /// </summary>
         Task<List<Table>> GetRelatedTablesAsync(string tableName);
         
         /// <summary>
-        /// Finds a path to join two tables
+        /// Finds a join path between two tables
         /// </summary>
-        Task<List<string>?> FindJoinPathAsync(string fromTable, string toTable);
+        Task<List<Relationship>> FindJoinPathAsync(string sourceTable, string targetTable);
+        
+        /// <summary>
+        /// Refreshes the data model from the database
+        /// </summary>
+        Task<DataModel> RefreshDataModelAsync();
     }
 }

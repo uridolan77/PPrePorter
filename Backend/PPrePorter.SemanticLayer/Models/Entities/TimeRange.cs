@@ -3,33 +3,23 @@ using System;
 namespace PPrePorter.SemanticLayer.Models.Entities
 {
     /// <summary>
-    /// Represents a time range for queries
+    /// Represents a time range in a query
     /// </summary>
-    public class TimeRange : Entity
+    public class TimeRange
     {
         /// <summary>
-        /// Start date of the time range
+        /// The relative time period (e.g., "last 30 days")
+        /// </summary>
+        public string RelativePeriod { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// The specific start date
         /// </summary>
         public DateTime? StartDate { get; set; }
         
         /// <summary>
-        /// End date of the time range
+        /// The specific end date
         /// </summary>
         public DateTime? EndDate { get; set; }
-        
-        /// <summary>
-        /// Time period description (e.g., last 7 days, current month)
-        /// </summary>
-        public string? Period { get; set; }
-        
-        /// <summary>
-        /// Relative time period (e.g., last week, previous month)
-        /// </summary>
-        public string? RelativePeriod { get; set; }
-        
-        /// <summary>
-        /// Whether to include the current period
-        /// </summary>
-        public bool IncludeCurrentPeriod { get; set; }
     }
 }

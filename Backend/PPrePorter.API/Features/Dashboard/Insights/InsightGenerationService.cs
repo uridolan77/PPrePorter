@@ -39,7 +39,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             {
                 var insights = new List<DashboardInsight>();
                 var anomalies = await _anomalyDetectionService.DetectSummaryAnomaliesAsync(summary);
-                
+
                 // Add key performance metrics insights
                 if (summary.Revenue > 0)
                 {
@@ -51,18 +51,18 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         "Revenue",
                         GetTrendDirection(summary.RevenueChange)
                     );
-                    
+
                     if (Math.Abs(summary.RevenueChange) >= 15)
                     {
                         revenueInsight.DetailedExplanation = $"This represents a significant {(summary.RevenueChange >= 0 ? "increase" : "decrease")} in revenue that warrants attention.";
-                        revenueInsight.RecommendedAction = summary.RevenueChange >= 0 
+                        revenueInsight.RecommendedAction = summary.RevenueChange >= 0
                             ? "Consider analyzing which games or promotions are driving this increase."
                             : "Investigate potential causes for the revenue decline and consider targeted promotions.";
                     }
-                    
+
                     insights.Add(revenueInsight);
                 }
-                
+
                 if (summary.Registrations > 0)
                 {
                     var registrationsInsight = CreateInsightFromMetric(
@@ -73,10 +73,10 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         "Registrations",
                         GetTrendDirection(summary.RegistrationsChange)
                     );
-                    
+
                     insights.Add(registrationsInsight);
                 }
-                
+
                 if (summary.FTD > 0)
                 {
                     var ftdInsight = CreateInsightFromMetric(
@@ -87,30 +87,30 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         "FTD",
                         GetTrendDirection(summary.FTDChange)
                     );
-                    
+
                     insights.Add(ftdInsight);
                 }
-                
+
                 // Add deposit/withdrawal ratio insight if both are present
                 if (summary.Deposits > 0 && summary.Cashouts > 0)
                 {
                     var ratio = Math.Round(summary.Deposits / summary.Cashouts, 2);
-                    string ratioDescription = ratio > 1.5 ? "healthy" : ratio > 1.0 ? "balanced" : "concerning";
-                    
+                    string ratioDescription = ratio > 1.5m ? "healthy" : ratio > 1.0m ? "balanced" : "concerning";
+
                     insights.Add(new DashboardInsight
                     {
                         Title = "Deposit to Withdrawal Ratio",
                         Description = $"The deposit to withdrawal ratio is {ratio} which is {ratioDescription}.",
                         Category = "Summary",
-                        Importance = ratio < 1.0 ? 8 : 5,
+                        Importance = ratio < 1.0m ? 8 : 5,
                         GeneratedAt = DateTime.UtcNow,
                         MetricKey = "DepositWithdrawalRatio",
-                        TrendDirection = ratio >= 1.0 ? "Positive" : "Negative",
+                        TrendDirection = ratio >= 1.0m ? "Positive" : "Negative",
                         InsightType = "Pattern",
-                        RecommendedAction = ratio < 1.0 ? "Review player withdrawal patterns and consider retention strategies." : null
+                        RecommendedAction = ratio < 1.0m ? "Review player withdrawal patterns and consider retention strategies." : null
                     });
                 }
-                
+
                 // Add insights from detected anomalies
                 foreach (var anomaly in anomalies.Where(a => a.Severity >= 3).Take(2))
                 {
@@ -128,7 +128,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         RecommendedAction = anomaly.PotentialCause
                     });
                 }
-                
+
                 return insights;
             }
             catch (Exception ex)
@@ -146,16 +146,16 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             try
             {
                 var insights = new List<DashboardInsight>();
-                
+
                 if (revenueData == null || revenueData.Count < 2)
                     return insights;
-                
+
                 // Detect anomalies in revenue data
                 var anomalies = await _anomalyDetectionService.DetectRevenueAnomaliesAsync(revenueData);
-                
+
                 // Analyze revenue trends
                 var trendAnalysis = await _trendAnalysisService.AnalyzeRevenueTrendsAsync(revenueData);
-                
+
                 // Add trend direction insight
                 insights.Add(new DashboardInsight
                 {
@@ -170,7 +170,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                     TrendDirection = GetTrendDirection(trendAnalysis.PercentageChange ?? 0),
                     InsightType = "Pattern"
                 });
-                
+
                 // Add insights from identified patterns
                 foreach (var pattern in trendAnalysis.IdentifiedPatterns.Where(p => p.IsSignificant).Take(2))
                 {
@@ -187,7 +187,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         DetailedExplanation = $"Pattern detected from {pattern.StartDate.ToShortDateString()} to {pattern.EndDate.ToShortDateString()} with a confidence score of {pattern.ConfidenceScore:P0}."
                     });
                 }
-                
+
                 // Add anomaly insights
                 foreach (var anomaly in anomalies.Where(a => a.Severity >= 3).Take(2))
                 {
@@ -205,7 +205,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         RecommendedAction = anomaly.PotentialCause
                     });
                 }
-                
+
                 // Add seasonality insight if detected
                 if (trendAnalysis.SeasonalityDetected && trendAnalysis.SeasonalCycleDays.HasValue)
                 {
@@ -223,7 +223,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         RecommendedAction = "Consider aligning promotional campaigns with expected seasonal peaks."
                     });
                 }
-                
+
                 return insights;
             }
             catch (Exception ex)
@@ -241,16 +241,16 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             try
             {
                 var insights = new List<DashboardInsight>();
-                
+
                 if (registrationData == null || registrationData.Count < 2)
                     return insights;
-                
+
                 // Detect anomalies in registration data
                 var anomalies = await _anomalyDetectionService.DetectRegistrationAnomaliesAsync(registrationData);
-                
+
                 // Analyze registration trends
                 var trendAnalysis = await _trendAnalysisService.AnalyzeRegistrationTrendsAsync(registrationData);
-                
+
                 // Add trend direction insight
                 if (trendAnalysis.PercentageChange.HasValue)
                 {
@@ -268,18 +268,18 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         InsightType = "Pattern"
                     });
                 }
-                
+
                 // Calculate conversion rate (FTD / Registrations)
                 var totalRegistrations = registrationData.Sum(d => d.Registrations);
                 var totalFTD = registrationData.Sum(d => d.FirstTimeDepositors);
-                
+
                 if (totalRegistrations > 0)
                 {
                     var conversionRate = (decimal)totalFTD / totalRegistrations * 100;
-                    string conversionQuality = conversionRate >= 25 ? "excellent" : 
-                                              conversionRate >= 15 ? "good" : 
+                    string conversionQuality = conversionRate >= 25 ? "excellent" :
+                                              conversionRate >= 15 ? "good" :
                                               conversionRate >= 10 ? "average" : "below average";
-                    
+
                     insights.Add(new DashboardInsight
                     {
                         Title = "Registration Conversion Rate",
@@ -293,7 +293,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         RecommendedAction = conversionRate < 15 ? "Consider optimizing the registration to deposit journey and welcome bonuses." : null
                     });
                 }
-                
+
                 // Add anomaly insights
                 foreach (var anomaly in anomalies.Where(a => a.Severity >= 3).Take(2))
                 {
@@ -311,7 +311,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         RecommendedAction = anomaly.PotentialCause
                     });
                 }
-                
+
                 return insights;
             }
             catch (Exception ex)
@@ -329,13 +329,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             try
             {
                 var insights = new List<DashboardInsight>();
-                
+
                 if (topGames == null || !topGames.Any())
                     return insights;
-                
+
                 // Detect anomalies in game performance
                 var anomalies = await _anomalyDetectionService.DetectGamePerformanceAnomaliesAsync(topGames);
-                
+
                 // Top game by revenue
                 var topGame = topGames.OrderByDescending(g => g.Revenue).FirstOrDefault();
                 if (topGame != null)
@@ -353,14 +353,14 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         DetailedExplanation = $"Provided by {topGame.Provider}, this game has generated significant revenue today."
                     });
                 }
-                
+
                 // Group games by provider and find top provider
                 var providerGroups = topGames
                     .GroupBy(g => g.Provider)
                     .Select(g => new { Provider = g.Key, Revenue = g.Sum(game => game.Revenue), Count = g.Count() })
                     .OrderByDescending(g => g.Revenue)
                     .ToList();
-                
+
                 if (providerGroups.Any())
                 {
                     var topProvider = providerGroups.First();
@@ -376,14 +376,14 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         InsightType = "Pattern"
                     });
                 }
-                
+
                 // Group games by type
                 var typeGroups = topGames
                     .GroupBy(g => g.GameType)
                     .Select(g => new { GameType = g.Key, Revenue = g.Sum(game => game.Revenue), Count = g.Count() })
                     .OrderByDescending(g => g.Revenue)
                     .ToList();
-                
+
                 if (typeGroups.Any())
                 {
                     var topType = typeGroups.First();
@@ -399,7 +399,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         InsightType = "Pattern"
                     });
                 }
-                
+
                 // Add anomaly insights
                 foreach (var anomaly in anomalies.Where(a => a.Severity >= 4).Take(2))
                 {
@@ -414,12 +414,12 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         TrendDirection = anomaly.IsPositive ? "Positive" : "Negative",
                         InsightType = "Anomaly",
                         DetailedExplanation = anomaly.PotentialCause,
-                        RecommendedAction = anomaly.IsPositive ? 
-                            "Consider featuring this game more prominently on the platform." : 
+                        RecommendedAction = anomaly.IsPositive ?
+                            "Consider featuring this game more prominently on the platform." :
                             "Investigate potential technical or player experience issues with this game."
                     });
                 }
-                
+
                 return insights;
             }
             catch (Exception ex)
@@ -437,20 +437,20 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             try
             {
                 var insights = new List<DashboardInsight>();
-                
+
                 if (transactions == null || !transactions.Any())
                     return insights;
-                
+
                 // Detect anomalies in transaction data
                 var anomalies = await _anomalyDetectionService.DetectTransactionAnomaliesAsync(transactions);
-                
+
                 // Group transactions by type
                 var transactionsByType = transactions
                     .GroupBy(t => t.TransactionType)
                     .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(t => t.Amount) })
                     .OrderByDescending(g => g.Amount)
                     .ToList();
-                
+
                 if (transactionsByType.Any())
                 {
                     var topType = transactionsByType.First();
@@ -466,14 +466,14 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         InsightType = "Pattern"
                     });
                 }
-                
+
                 // Group transactions by status
                 var transactionsByStatus = transactions
                     .GroupBy(t => t.Status)
                     .Select(g => new { Status = g.Key, Count = g.Count(), Percentage = (double)g.Count() / transactions.Count * 100 })
                     .OrderByDescending(g => g.Count)
                     .ToList();
-                
+
                 // Check for failed transactions
                 var failedTransactions = transactionsByStatus.FirstOrDefault(t => t.Status == "Failed");
                 if (failedTransactions != null && failedTransactions.Percentage > 5)
@@ -491,14 +491,14 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         RecommendedAction = "Investigate payment processing systems and player communication regarding failed transactions."
                     });
                 }
-                
+
                 // Group transactions by platform
                 var transactionsByPlatform = transactions
                     .GroupBy(t => t.Platform)
                     .Select(g => new { Platform = g.Key, Count = g.Count(), Percentage = (double)g.Count() / transactions.Count * 100 })
                     .OrderByDescending(g => g.Count)
                     .ToList();
-                
+
                 if (transactionsByPlatform.Count > 1)
                 {
                     var topPlatform = transactionsByPlatform.First();
@@ -514,7 +514,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         InsightType = "Pattern"
                     });
                 }
-                
+
                 // Add anomaly insights
                 foreach (var anomaly in anomalies.Where(a => a.Severity >= 4).Take(1))
                 {
@@ -531,7 +531,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         DetailedExplanation = anomaly.PotentialCause
                     });
                 }
-                
+
                 return insights;
             }
             catch (Exception ex)
@@ -550,14 +550,14 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             {
                 if (dashboardData == null)
                     throw new ArgumentNullException(nameof(dashboardData));
-                
+
                 // Generate insights for each section
                 var summaryInsights = await GenerateSummaryInsightsAsync(dashboardData.Summary);
                 var revenueInsights = await GenerateRevenueInsightsAsync(dashboardData.CasinoRevenue);
                 var registrationInsights = await GenerateRegistrationInsightsAsync(dashboardData.PlayerRegistrations);
                 var gameInsights = await GenerateTopGamesInsightsAsync(dashboardData.TopGames);
                 var transactionInsights = await GenerateTransactionInsightsAsync(dashboardData.RecentTransactions);
-                
+
                 // Combine all insights
                 var allInsights = summaryInsights
                     .Concat(revenueInsights)
@@ -565,13 +565,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                     .Concat(gameInsights)
                     .Concat(transactionInsights)
                     .ToList();
-                
+
                 // Get key insights (highest importance)
                 var keyInsights = allInsights
                     .OrderByDescending(i => i.Importance)
                     .Take(5)
                     .ToList();
-                
+
                 // Create dashboard story
                 var story = new DashboardStory
                 {
@@ -586,7 +586,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                     RiskAnalysis = GenerateRiskAnalysis(allInsights),
                     RecommendedActions = GenerateRecommendedActions(allInsights)
                 };
-                
+
                 return story;
             }
             catch (Exception ex)
@@ -604,9 +604,9 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 };
             }
         }
-        
+
         #region Helper Methods
-        
+
         private DashboardInsight CreateInsightFromMetric(string title, string description, string category, int importance, string metricKey, string trendDirection)
         {
             return new DashboardInsight
@@ -621,29 +621,29 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 InsightType = "Pattern"
             };
         }
-        
+
         private string FormatTrendDirection(decimal change)
         {
             return change >= 0 ? "up" : "down";
         }
-        
+
         private string GetTrendDirection(decimal change)
         {
             if (change > 0) return "Positive";
             if (change < 0) return "Negative";
             return "Neutral";
         }
-        
+
         private int GetImportanceFromChange(decimal change, int highThreshold, int lowThreshold)
         {
             var absChange = Math.Abs(change);
-            
+
             if (absChange >= 20) return highThreshold;
             if (absChange >= 10) return highThreshold - 1;
             if (absChange >= 5) return lowThreshold + 1;
             return lowThreshold;
         }
-        
+
         private List<DataAnomaly> GetSignificantAnomalies(List<DashboardInsight> insights)
         {
             return insights
@@ -662,49 +662,49 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 })
                 .ToList();
         }
-        
+
         private string GenerateStorySummary(DashboardSummary summary, List<DashboardInsight> keyInsights)
         {
-            string registrationsText = summary.RegistrationsChange >= 0 
-                ? $"increased by {summary.RegistrationsChange}%" 
+            string registrationsText = summary.RegistrationsChange >= 0
+                ? $"increased by {summary.RegistrationsChange}%"
                 : $"decreased by {Math.Abs(summary.RegistrationsChange)}%";
-                
-            string revenueText = summary.RevenueChange >= 0 
-                ? $"increased by {summary.RevenueChange}%" 
+
+            string revenueText = summary.RevenueChange >= 0
+                ? $"increased by {summary.RevenueChange}%"
                 : $"decreased by {Math.Abs(summary.RevenueChange)}%";
-                
-            string ftdText = summary.FTDChange >= 0 
-                ? $"increased by {summary.FTDChange}%" 
+
+            string ftdText = summary.FTDChange >= 0
+                ? $"increased by {summary.FTDChange}%"
                 : $"decreased by {Math.Abs(summary.FTDChange)}%";
-                
+
             return $"Today's summary shows that registrations have {registrationsText}, " +
                    $"first time depositors have {ftdText}, and revenue has {revenueText} compared to yesterday. " +
                    $"{(keyInsights.Any() ? "Key insights include: " + keyInsights.First().Description : "")}";
         }
-        
+
         private List<string> GenerateHighlights(DashboardData dashboardData, List<DashboardInsight> allInsights)
         {
             var highlights = new List<string>();
-            
+
             // Add revenue highlight
             if (dashboardData.Summary.Revenue > 0)
             {
                 highlights.Add($"Total revenue: £{dashboardData.Summary.Revenue:N2} ({(dashboardData.Summary.RevenueChange >= 0 ? "+" : "")}{dashboardData.Summary.RevenueChange}% vs yesterday)");
             }
-            
+
             // Add registrations highlight
             highlights.Add($"New registrations: {dashboardData.Summary.Registrations} ({(dashboardData.Summary.RegistrationsChange >= 0 ? "+" : "")}{dashboardData.Summary.RegistrationsChange}% vs yesterday)");
-            
+
             // Add FTD highlight
             highlights.Add($"First time depositors: {dashboardData.Summary.FTD} ({(dashboardData.Summary.FTDChange >= 0 ? "+" : "")}{dashboardData.Summary.FTDChange}% vs yesterday)");
-            
+
             // Add top game if available
             var topGame = dashboardData.TopGames?.OrderByDescending(g => g.Revenue).FirstOrDefault();
             if (topGame != null)
             {
                 highlights.Add($"Top performing game: {topGame.GameName} (£{topGame.Revenue:N2})");
             }
-            
+
             // Add insights highlights
             highlights.AddRange(
                 allInsights
@@ -713,21 +713,21 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                     .Take(2)
                     .Select(i => i.Description)
             );
-            
+
             return highlights;
         }
-        
+
         private string GenerateBusinessContext(DashboardSummary summary)
         {
-            var performanceIndicator = summary.RevenueChange >= 5 ? "strong" : 
-                                      summary.RevenueChange >= 0 ? "stable" : 
+            var performanceIndicator = summary.RevenueChange >= 5 ? "strong" :
+                                      summary.RevenueChange >= 0 ? "stable" :
                                       summary.RevenueChange >= -5 ? "slight underperformance" : "significant underperformance";
-                                      
+
             return $"Today's data shows {performanceIndicator} compared to yesterday across key metrics. " +
                    $"Player acquisition is {(summary.RegistrationsChange >= 0 ? "growing" : "declining")} and " +
                    $"monetization is {(summary.RevenueChange >= 0 ? "improving" : "declining")}.";
         }
-        
+
         private string GenerateOpportunityAnalysis(List<DashboardInsight> insights)
         {
             var opportunityInsights = insights
@@ -735,15 +735,15 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 .OrderByDescending(i => i.Importance)
                 .Take(2)
                 .ToList();
-                
+
             if (!opportunityInsights.Any())
             {
                 return "No significant opportunities identified based on current data.";
             }
-            
+
             return string.Join(" ", opportunityInsights.Select(i => i.Description));
         }
-        
+
         private string GenerateRiskAnalysis(List<DashboardInsight> insights)
         {
             var riskInsights = insights
@@ -751,15 +751,15 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 .OrderByDescending(i => i.Importance)
                 .Take(2)
                 .ToList();
-                
+
             if (!riskInsights.Any())
             {
                 return "No significant risks identified based on current data.";
             }
-            
+
             return string.Join(" ", riskInsights.Select(i => i.Description));
         }
-        
+
         private List<string> GenerateRecommendedActions(List<DashboardInsight> insights)
         {
             return insights
@@ -769,7 +769,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 .Select(i => i.RecommendedAction)
                 .ToList();
         }
-        
+
         #endregion
     }
 }

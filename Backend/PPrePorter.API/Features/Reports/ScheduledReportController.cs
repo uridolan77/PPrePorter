@@ -16,18 +16,16 @@ namespace PPrePorter.API.Features.Reports
     {
         private readonly IReportConfigurationService _configService;
         private readonly IUserContextService _userContextService;
-        private readonly IPPRePorterDbContext _dbContext;
+
         private readonly ILogger<ScheduledReportController> _logger;
 
         public ScheduledReportController(
             IReportConfigurationService configService,
             IUserContextService userContextService,
-            IPPRePorterDbContext dbContext,
             ILogger<ScheduledReportController> logger)
         {
             _configService = configService;
             _userContextService = userContextService;
-            _dbContext = dbContext;
             _logger = logger;
         }
 
@@ -36,9 +34,9 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var scheduledReports = await _configService.GetScheduledReportsAsync(currentUser.Id);
-                
+
                 return Ok(scheduledReports);
             }
             catch (Exception ex)
@@ -57,32 +55,28 @@ namespace PPrePorter.API.Features.Reports
                 {
                     return BadRequest(new { message = "Schedule name is required" });
                 }
-                
+
                 if (string.IsNullOrEmpty(scheduledReport.ConfigurationId))
                 {
                     return BadRequest(new { message = "Report configuration ID is required" });
                 }
-                
-                var currentUser = _userContextService.GetCurrentUser();
-                
+
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+
                 // Verify configuration exists and belongs to user
                 var configuration = await _configService.GetConfigurationByIdAsync(scheduledReport.ConfigurationId);
                 if (configuration == null || configuration.UserId != currentUser.Id)
                 {
                     return BadRequest(new { message = "Invalid configuration ID" });
                 }
-                
+
                 // Set user ID
                 scheduledReport.UserId = currentUser.Id;
-                
-                // Generate ID if not provided
-                if (string.IsNullOrEmpty(scheduledReport.Id))
-                {
-                    scheduledReport.Id = Guid.NewGuid().ToString();
-                }
-                
+
+                // Let the service handle ID generation
+
                 var result = await _configService.ScheduleReportAsync(scheduledReport);
-                
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -97,17 +91,17 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
-                
-                // Verify schedule exists and belongs to user
-                var existingSchedule = await _dbContext.ScheduledReports
-                    .FirstOrDefaultAsync(s => s.Id == scheduleId && s.UserId == currentUser.Id);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+
+                // Get the schedule from the service
+                var schedules = await _configService.GetScheduledReportsAsync(currentUser.Id);
+                var existingSchedule = schedules.FirstOrDefault(s => s.Id.ToString() == scheduleId);
+
                 if (existingSchedule == null)
                 {
                     return NotFound(new { message = "Scheduled report not found" });
                 }
-                
+
                 // Update properties
                 existingSchedule.Name = scheduledReport.Name;
                 existingSchedule.Frequency = scheduledReport.Frequency;
@@ -121,9 +115,9 @@ namespace PPrePorter.API.Features.Reports
                 existingSchedule.NotificationType = scheduledReport.NotificationType;
                 existingSchedule.NotificationDestination = scheduledReport.NotificationDestination;
                 existingSchedule.ExportFormat = scheduledReport.ExportFormat;
-                
+
                 await _configService.UpdateScheduledReportAsync(existingSchedule);
-                
+
                 return Ok(existingSchedule);
             }
             catch (Exception ex)
@@ -138,9 +132,9 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 await _configService.DeleteScheduledReportAsync(scheduleId, currentUser.Id);
-                
+
                 return Ok(new { message = "Scheduled report deleted successfully" });
             }
             catch (Exception ex)
@@ -155,19 +149,19 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
-                
-                // Verify schedule exists and belongs to user
-                var schedule = await _dbContext.ScheduledReports
-                    .FirstOrDefaultAsync(s => s.Id == scheduleId && s.UserId == currentUser.Id);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+
+                // Get the schedule from the service
+                var schedules = await _configService.GetScheduledReportsAsync(currentUser.Id);
+                var schedule = schedules.FirstOrDefault(s => s.Id.ToString() == scheduleId);
+
                 if (schedule == null)
                 {
                     return NotFound(new { message = "Scheduled report not found" });
                 }
-                
+
                 var executions = await _configService.GetReportExecutionsAsync(scheduleId, limit);
-                
+
                 return Ok(executions);
             }
             catch (Exception ex)

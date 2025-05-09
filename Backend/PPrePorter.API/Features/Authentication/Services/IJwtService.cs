@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+
 namespace PPrePorter.API.Features.Authentication.Services
 {
     public interface IJwtService

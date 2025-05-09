@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using PPrePorter.API.Features.Authentication.Models;
 using PPrePorter.API.Features.Authentication.Services;
 using PPrePorter.API.Middleware;
@@ -8,8 +9,9 @@ using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Services;
 using PPrePorter.Infrastructure.Data;
 using PPrePorter.Infrastructure.Services;
-using PPrePorter.API.Features.Dashboard.Services;
 using PPrePorter.API.Features.Dashboard.Insights;
+using PPrePorter.API.Features.Database;
+using PPrePorter.API.Features.Caching;
 using PPrePorter.NLP.Extensions;
 using PPrePorter.SemanticLayer.Extensions;
 using System.Text;
@@ -17,31 +19,42 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Configure Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "PPrePorter API",
+        Version = "v1",
+        Description = "API for PPrePorter application"
+    });
+});
 
-// Register the ConnectionStringResolverService
-builder.Services.AddScoped<IConnectionStringResolverService, ConnectionStringResolverService>();
+// Register the mock ConnectionStringResolverService for development
+builder.Services.AddScoped<IConnectionStringResolverService, MockConnectionStringResolverService>();
 
 // Temporary Azure Key Vault service implementation (to be replaced with actual implementation)
 builder.Services.AddScoped<IAzureKeyVaultService, DevelopmentAzureKeyVaultService>();
 
-// Configure database contexts
-string dailyActionsConnectionString = "data source=185.64.56.157;initial catalog=DailyActionsDB;persist security info=True;user id={azurevault:progressplaymcp-kv:DailyActionsDB--Username};password={azurevault:progressplaymcp-kv:DailyActionsDB--Password};";
-string ppReporterConnectionString = "Server=tcp:progressplay-server.database.windows.net,1433;Initial Catalog=ProgressPlayDB;Persist Security Info=False;User ID={azurevault:progressplaymcp-kv:ProgressPlayDBAzure--Username};Password={azurevault:progressplaymcp-kv:ProgressPlayDBAzure--Password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+// Configure database contexts with local development connection strings
+string dailyActionsConnectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=DailyActionsDB;Integrated Security=True;Connect Timeout=30;";
+string ppReporterConnectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=PPrePorterDB;Integrated Security=True;Connect Timeout=30;";
+
+// Register connection string templates
+builder.Services.AddSingleton(dailyActionsConnectionString);
+builder.Services.AddSingleton(ppReporterConnectionString);
 
 // Register DailyActionsDbContext
-builder.Services.AddDbContext<DailyActionsDbContext>((serviceProvider, options) =>
+builder.Services.AddDbContext<DailyActionsDbContext>(options =>
 {
-    var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
-    options.UseSqlServer(connectionStringResolver.ResolveConnectionStringAsync(dailyActionsConnectionString).Result);
+    options.UseSqlServer(dailyActionsConnectionString);
 });
 
 // Register PPRePorterDbContext
-builder.Services.AddDbContext<PPRePorterDbContext>((serviceProvider, options) =>
+builder.Services.AddDbContext<PPRePorterDbContext>(options =>
 {
-    var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
-    options.UseSqlServer(connectionStringResolver.ResolveConnectionStringAsync(ppReporterConnectionString).Result);
+    options.UseSqlServer(ppReporterConnectionString);
 });
 
 // Register interfaces
@@ -62,7 +75,7 @@ builder.Services.AddAuthentication(options =>
 {
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
     var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key is not configured");
-    
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -98,21 +111,19 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IDataFilterService, DataFilterService>();
 
+// Register caching service for development
+builder.Services.AddDistributedMemoryCache(); // Use in-memory cache for development
+builder.Services.AddScoped<ICachingService, MockCachingService>();
+
 // Register Data Storytelling related services
 builder.Services.AddScoped<IInsightGenerationService, InsightGenerationService>();
-builder.Services.AddScoped<IDataAnnotationService, DataAnnotationService>();
-builder.Services.AddScoped<IAnomalyDetectionService, AnomalyDetectionService>();
-builder.Services.AddScoped<IContextualExplanationService, ContextualExplanationService>();
-builder.Services.AddScoped<ITrendAnalysisService, TrendAnalysisService>();
-builder.Services.AddScoped<IDashboardPersonalizationService, DashboardPersonalizationService>();
 
-// Register Redis caching service
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "PPrePorter:";
-});
-builder.Services.AddScoped<ICachingService, RedisCachingService>();
+// Register mock implementations for development
+builder.Services.AddScoped<IDataAnnotationService, MockDataAnnotationService>();
+builder.Services.AddScoped<IAnomalyDetectionService, MockAnomalyDetectionService>();
+builder.Services.AddScoped<IContextualExplanationService, MockContextualExplanationService>();
+builder.Services.AddScoped<ITrendAnalysisService, MockTrendAnalysisService>();
+builder.Services.AddScoped<IDashboardPersonalizationService, MockDashboardPersonalizationService>();
 
 // Register the User Context Service
 builder.Services.AddHttpContextAccessor();
@@ -129,7 +140,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "PPrePorter API v1"));
 }
 
 app.UseHttpsRedirection();

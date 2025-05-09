@@ -1,0 +1,757 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Grpc.Core;
+using Grpc.Net.Client;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Retry;
+using PPrePorter.gRPC.Core.Configuration;
+using PPrePorter.gRPC.Core.Interfaces;
+using PPrePorter.gRPC.Core.Models;
+using PPrePorter.gRPC.Core.Models.Client;
+using PPrePorter.gRPC.Core.Models.Mappers;
+
+namespace PPrePorter.gRPC.Core
+{
+    /// <summary>
+    /// Implementation of the PythonML gRPC client.
+    /// </summary>
+    public class PythonMLClient : IPythonMLClient, IDisposable
+    {
+        private readonly PythonMLClientOptions _options;
+        private readonly ILogger<PythonMLClient> _logger;
+        private readonly IMemoryCache? _cache;
+        private readonly GrpcChannel _channel;
+        private readonly PythonMLService.PythonMLServiceClient _client;
+        private readonly AsyncRetryPolicy _retryPolicy;
+        private bool _disposed;
+
+        /// <summary>
+        /// Initializes a new instance of the PythonMLClient class.
+        /// </summary>
+        /// <param name="options">The client options.</param>
+        /// <param name="logger">The logger.</param>
+        /// <param name="cache">Optional memory cache.</param>
+        public PythonMLClient(
+            PythonMLClientOptions options,
+            ILogger<PythonMLClient> logger,
+            IMemoryCache? cache = null)
+        {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _cache = cache;
+
+            // Create the gRPC channel and client
+            var channelOptions = new GrpcChannelOptions
+            {
+                MaxReceiveMessageSize = 16 * 1024 * 1024, // 16 MB
+                MaxSendMessageSize = 16 * 1024 * 1024 // 16 MB
+            };
+
+            _channel = GrpcChannel.ForAddress(_options.ServiceAddress, channelOptions);
+            _client = new PythonMLService.PythonMLServiceClient(_channel);
+
+            // Configure the retry policy
+            _retryPolicy = Policy
+                .Handle<RpcException>(ex => IsTransientFailure(ex))
+                .WaitAndRetryAsync(
+                    _options.MaxRetryAttempts,
+                    retryAttempt => TimeSpan.FromMilliseconds(_options.InitialBackoffMs * Math.Pow(2, retryAttempt - 1)),
+                    onRetry: (exception, timeSpan, retryCount, context) =>
+                    {
+                        _logger.LogWarning(
+                            exception,
+                            "Error during gRPC call (Attempt {RetryCount} of {MaxRetryAttempts}). Retrying in {TimeSpan}...",
+                            retryCount,
+                            _options.MaxRetryAttempts,
+                            timeSpan);
+                    });
+        }
+
+        /// <inheritdoc/>
+        public async Task<ProcessResult> ProcessDataAsync(
+            string inputData,
+            string modelName,
+            Dictionary<string, string>? parameters = null,
+            string? version = null,
+            string? stage = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(inputData))
+                throw new ArgumentException("Input data cannot be null or empty.", nameof(inputData));
+
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentException("Model name cannot be null or empty.", nameof(modelName));
+
+            // Try to get from cache if enabled
+            var cacheKey = $"ProcessData_{modelName}_{version ?? "latest"}_{stage ?? "any"}_{ComputeHash(inputData)}_{ComputeHash(parameters)}";
+            if (_options.CacheOptions.Enabled && _cache != null &&
+                _cache.TryGetValue(cacheKey, out ProcessResult? cachedResult) && cachedResult != null)
+            {
+                _logger.LogDebug("Cache hit for process data request: {ModelName}", modelName);
+                return cachedResult;
+            }
+
+            try
+            {
+                _logger.LogDebug("Processing data with model: {ModelName}, version: {Version}, stage: {Stage}", 
+                    modelName, version ?? "latest", stage ?? "any");
+
+                var request = new ProcessRequest
+                {
+                    InputData = inputData,
+                    ModelName = modelName
+                };
+
+                if (!string.IsNullOrEmpty(version))
+                {
+                    request.Version = version;
+                }
+
+                if (!string.IsNullOrEmpty(stage))
+                {
+                    request.Stage = stage;
+                }
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        request.Parameters.Add(param.Key, param.Value);
+                    }
+                }
+
+                // Execute with retry policy
+                var response = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return await _client.ProcessDataAsync(request, headers, deadline, cancellationToken);
+                });
+
+                var result = new ProcessResult
+                {
+                    Result = response.Result,
+                    Success = response.Success,
+                    ErrorMessage = response.ErrorMessage,
+                    ConfidenceScore = response.ConfidenceScore,
+                    Metadata = new Dictionary<string, string>(response.Metadata)
+                };
+
+                // Cache the result if caching is enabled
+                if (_options.CacheOptions.Enabled && _cache != null && result.Success)
+                {
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(_options.CacheOptions.AbsoluteExpirationMinutes))
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(_options.CacheOptions.SlidingExpirationMinutes));
+
+                    _cache.Set(cacheKey, result, cacheOptions);
+                }
+
+                return result;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error processing data with model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Error processing data with model {modelName}: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error processing data with model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Unexpected error processing data with model {modelName}: {ex.Message}", ex);
+            }
+        }        /// <inheritdoc/>
+        public async IAsyncEnumerable<ProcessResultChunk> ProcessDataStreamAsync(
+            string inputData,
+            string modelName,
+            Dictionary<string, string>? parameters = null,
+            string? version = null, 
+            string? stage = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(inputData))
+                throw new ArgumentException("Input data cannot be null or empty.", nameof(inputData));
+
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentException("Model name cannot be null or empty.", nameof(modelName));
+
+            _logger.LogDebug("Streaming data processing with model: {ModelName}, version: {Version}, stage: {Stage}", 
+                modelName, version ?? "latest", stage ?? "any");
+
+            // Create the request
+            var request = new ProcessRequest
+            {
+                InputData = inputData,
+                ModelName = modelName
+            };
+
+            if (!string.IsNullOrEmpty(version))
+            {
+                request.Version = version;
+            }
+
+            if (!string.IsNullOrEmpty(stage))
+            {
+                request.Stage = stage;
+            }
+
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    request.Parameters.Add(param.Key, param.Value);
+                }
+            }            // Execute with retry policy - note this is used only for the initial call setup
+            AsyncServerStreamingCall<ProcessResponseChunk>? streamingCall = null;
+            
+            try
+            {
+                streamingCall = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return _client.ProcessDataStream(request, headers, deadline, cancellationToken);
+                });
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error streaming data processing with model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Error streaming data processing with model {modelName}: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error streaming data processing with model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Unexpected error streaming data processing with model {modelName}: {ex.Message}", ex);
+            }
+
+            try
+            {
+                // This part needs to be outside the first try-catch because yield can't be inside a try with catch
+                var responseStream = streamingCall.ResponseStream;
+                await foreach (var response in responseStream.ReadAllAsync(cancellationToken))
+                {
+                    yield return new ProcessResultChunk
+                    {
+                        ResultChunk = response.ResultChunk,
+                        IsLastChunk = response.IsLastChunk,
+                        Success = response.Success,
+                        ErrorMessage = response.ErrorMessage,
+                        ChunkId = response.ChunkId,
+                        TotalChunks = response.TotalChunks,
+                        ConfidenceScore = response.ConfidenceScore,
+                        Metadata = new Dictionary<string, string>(response.Metadata)
+                    };
+                }
+            }
+            finally
+            {
+                streamingCall?.Dispose();
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<TrainResult> TrainModelAsync(
+            string trainingData,
+            string modelName,
+            Dictionary<string, string>? hyperparameters = null,
+            bool validate = true,
+            string? framework = null,
+            string? initialStage = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(trainingData))
+                throw new ArgumentException("Training data cannot be null or empty.", nameof(trainingData));
+
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentException("Model name cannot be null or empty.", nameof(modelName));
+
+            try
+            {
+                _logger.LogDebug("Training model: {ModelName}, framework: {Framework}, initialStage: {InitialStage}", 
+                    modelName, framework ?? "default", initialStage ?? "development");
+
+                var request = new TrainRequest
+                {
+                    TrainingData = trainingData,
+                    ModelName = modelName,
+                    Validate = validate
+                };
+
+                if (!string.IsNullOrEmpty(framework))
+                {
+                    request.Framework = framework;
+                }
+
+                if (!string.IsNullOrEmpty(initialStage))
+                {
+                    request.InitialStage = initialStage;
+                }
+
+                if (hyperparameters != null)
+                {
+                    foreach (var param in hyperparameters)
+                    {
+                        request.Hyperparameters.Add(param.Key, param.Value);
+                    }
+                }
+
+                // Execute with retry policy
+                var response = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return await _client.TrainModelAsync(request, headers, deadline, cancellationToken);
+                });
+
+                var result = new TrainResult
+                {
+                    Success = response.Success,
+                    ModelId = response.ModelId,
+                    ErrorMessage = response.ErrorMessage,
+                    Metrics = new Dictionary<string, float>(response.Metrics)
+                };
+
+                return result;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error training model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Error training model {modelName}: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error training model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Unexpected error training model {modelName}: {ex.Message}", ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<TrainResult> TrainModelStreamAsync(
+            IAsyncEnumerable<TrainRequestChunk> trainingDataStream,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                _logger.LogDebug("Training model with streaming data");
+
+                // Create a client-side streaming call
+                using var call = _client.TrainModelStream(new CallOptions(cancellationToken: cancellationToken));
+                
+                // Process and send each chunk
+                await foreach (var chunk in trainingDataStream.WithCancellation(cancellationToken))
+                {
+                    var requestChunk = new TrainStreamRequest
+                    {
+                        TrainingDataChunk = chunk.TrainingDataChunk,
+                        IsLastChunk = chunk.IsLastChunk,
+                        ChunkId = chunk.ChunkId,
+                        TotalChunks = chunk.TotalChunks
+                    };
+
+                    // Only send these fields in the first chunk
+                    if (chunk.ChunkId == 0 || chunk.ChunkId == 1) // Allow for 0-based or 1-based indexing
+                    {
+                        if (!string.IsNullOrEmpty(chunk.ModelName))
+                            requestChunk.ModelName = chunk.ModelName;
+
+                        if (chunk.Validate.HasValue)
+                            requestChunk.Validate = chunk.Validate.Value;
+
+                        if (!string.IsNullOrEmpty(chunk.Framework))
+                            requestChunk.Framework = chunk.Framework;
+
+                        if (!string.IsNullOrEmpty(chunk.InitialStage))
+                            requestChunk.InitialStage = chunk.InitialStage;
+
+                        if (chunk.Hyperparameters != null)
+                        {
+                            foreach (var param in chunk.Hyperparameters)
+                            {
+                                requestChunk.Hyperparameters.Add(param.Key, param.Value);
+                            }
+                        }
+                    }
+
+                    await call.RequestStream.WriteAsync(requestChunk);
+                }
+
+                // Complete the request
+                await call.RequestStream.CompleteAsync();
+
+                // Get the response
+                var response = await call.ResponseAsync;
+
+                return new TrainResult
+                {
+                    Success = response.Success,
+                    ModelId = response.ModelId,
+                    ErrorMessage = response.ErrorMessage,
+                    Metrics = new Dictionary<string, float>(response.Metrics)
+                };
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error streaming training data: {ErrorMessage}", ex.Message);
+                throw new PythonMLException($"Error streaming training data: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error streaming training data: {ErrorMessage}", ex.Message);
+                throw new PythonMLException($"Unexpected error streaming training data: {ex.Message}", ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<ModelInfo> GetModelInfoAsync(
+            string modelName,
+            string? version = null,
+            string? stage = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentException("Model name cannot be null or empty.", nameof(modelName));
+
+            // Try to get from cache if enabled
+            var cacheKey = $"ModelInfo_{modelName}_{version ?? "latest"}_{stage ?? "any"}";
+            if (_options.CacheOptions.Enabled && _cache != null &&
+                _cache.TryGetValue(cacheKey, out ModelInfo? cachedResult) && cachedResult != null)
+            {
+                _logger.LogDebug("Cache hit for model info request: {ModelName}", modelName);
+                return cachedResult;
+            }
+
+            try
+            {
+                _logger.LogDebug("Getting info for model: {ModelName}, version: {Version}, stage: {Stage}", 
+                    modelName, version ?? "latest", stage ?? "any");
+
+                var request = new ModelInfoRequest
+                {
+                    ModelName = modelName
+                };
+
+                if (!string.IsNullOrEmpty(version))
+                {
+                    request.Version = version;
+                }
+
+                if (!string.IsNullOrEmpty(stage))
+                {
+                    request.Stage = stage;
+                }
+
+                // Execute with retry policy
+                var response = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return await _client.GetModelInfoAsync(request, headers, deadline, cancellationToken);
+                });
+
+                var result = new ModelInfo
+                {
+                    ModelName = response.ModelName,
+                    Version = response.Version,
+                    Description = response.Description,
+                    SupportedOperations = new List<string>(response.SupportedOperations),
+                    Properties = new Dictionary<string, string>(response.Properties),
+                    Framework = response.Framework,
+                    Stage = response.Stage,
+                    CreatedAt = response.CreatedAt,
+                    UpdatedAt = response.UpdatedAt,
+                    AvailableVersions = new List<string>(response.AvailableVersions)
+                };
+
+                // Parse stage versions
+                foreach (var entry in response.StageVersions)
+                {
+                    result.StageVersions[entry.Key] = entry.Value;
+                }
+
+                // Cache the result if caching is enabled
+                if (_options.CacheOptions.Enabled && _cache != null)
+                {
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(_options.CacheOptions.AbsoluteExpirationMinutes))
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(_options.CacheOptions.SlidingExpirationMinutes));
+
+                    _cache.Set(cacheKey, result, cacheOptions);
+                }
+
+                return result;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error getting info for model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Error getting info for model {modelName}: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error getting info for model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Unexpected error getting info for model {modelName}: {ex.Message}", ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<ModelSummary>> ListModelsAsync(
+            string? frameworkFilter = null,
+            string? stageFilter = null,
+            string? nameFilter = null,
+            CancellationToken cancellationToken = default)
+        {
+            // Try to get from cache if enabled
+            var cacheKey = $"ListModels_{frameworkFilter ?? "all"}_{stageFilter ?? "all"}_{nameFilter ?? "all"}";
+            if (_options.CacheOptions.Enabled && _cache != null &&
+                _cache.TryGetValue(cacheKey, out IReadOnlyList<ModelSummary>? cachedResult) && cachedResult != null)
+            {
+                _logger.LogDebug("Cache hit for list models request");
+                return cachedResult;
+            }
+
+            try
+            {
+                _logger.LogDebug("Listing models with filters - framework: {Framework}, stage: {Stage}, name: {Name}", 
+                    frameworkFilter ?? "all", stageFilter ?? "all", nameFilter ?? "all");
+
+                var request = new ListModelsRequest();
+                
+                if (!string.IsNullOrEmpty(frameworkFilter))
+                {
+                    request.FrameworkFilter = frameworkFilter;
+                }
+
+                if (!string.IsNullOrEmpty(stageFilter))
+                {
+                    request.StageFilter = stageFilter;
+                }
+
+                if (!string.IsNullOrEmpty(nameFilter))
+                {
+                    request.NameFilter = nameFilter;
+                }
+
+                // Execute with retry policy
+                var response = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return await _client.ListModelsAsync(request, headers, deadline, cancellationToken);
+                });
+
+                var result = new List<ModelSummary>();
+                foreach (var model in response.Models)
+                {
+                    result.Add(new ModelSummary
+                    {
+                        ModelName = model.ModelName,
+                        Version = model.Version,
+                        Description = model.Description,
+                        Framework = model.Framework,
+                        Stage = model.Stage,
+                        CreatedAt = model.CreatedAt,
+                        UpdatedAt = model.UpdatedAt
+                    });
+                }
+
+                // Cache the result if caching is enabled
+                if (_options.CacheOptions.Enabled && _cache != null)
+                {
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(_options.CacheOptions.AbsoluteExpirationMinutes))
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(_options.CacheOptions.SlidingExpirationMinutes));
+
+                    _cache.Set(cacheKey, result, cacheOptions);
+                }
+
+                return result;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error listing models: {ErrorMessage}", ex.Message);
+                throw new PythonMLException($"Error listing models: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error listing models: {ErrorMessage}", ex.Message);
+                throw new PythonMLException($"Unexpected error listing models: {ex.Message}", ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<ModelStageResult> ChangeModelStageAsync(
+            string modelName,
+            string version,
+            string newStage,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentException("Model name cannot be null or empty.", nameof(modelName));
+
+            if (string.IsNullOrEmpty(version))
+                throw new ArgumentException("Version cannot be null or empty.", nameof(version));
+
+            if (string.IsNullOrEmpty(newStage))
+                throw new ArgumentException("New stage cannot be null or empty.", nameof(newStage));
+
+            try
+            {
+                _logger.LogDebug("Changing stage for model: {ModelName}, version: {Version}, new stage: {NewStage}", 
+                    modelName, version, newStage);
+
+                var request = new ChangeModelStageRequest
+                {
+                    ModelName = modelName,
+                    Version = version,
+                    NewStage = newStage
+                };
+
+                // Execute with retry policy
+                var response = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return await _client.ChangeModelStageAsync(request, headers, deadline, cancellationToken);
+                });
+
+                // Invalidate any cached model info for this model
+                if (_options.CacheOptions.Enabled && _cache != null)
+                {
+                    var modelCacheKey = $"ModelInfo_{modelName}";
+                    _cache.Remove(modelCacheKey);
+                    
+                    // Also invalidate any potential model list caches
+                    var listCacheKey = "ListModels_";
+                    _cache.Remove(listCacheKey);
+                }
+
+                return new ModelStageResult
+                {
+                    Success = response.Success,
+                    ModelName = response.ModelName,
+                    Version = response.Version,
+                    PreviousStage = response.PreviousStage,
+                    NewStage = response.NewStage,
+                    ErrorMessage = response.ErrorMessage
+                };
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error changing stage for model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Error changing stage for model {modelName}: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error changing stage for model {ModelName}: {ErrorMessage}", modelName, ex.Message);
+                throw new PythonMLException($"Unexpected error changing stage for model {modelName}: {ex.Message}", ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<HealthStatus> CheckHealthAsync(
+            string? component = null,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                _logger.LogDebug("Checking health of Python ML service");
+
+                var request = new HealthCheckRequest();
+                if (!string.IsNullOrEmpty(component))
+                {
+                    request.Component = component;
+                }
+
+                // Execute with retry policy
+                var response = await _retryPolicy.ExecuteAsync(async () =>
+                {
+                    var deadline = DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds);
+                    var headers = new Metadata();
+                    return await _client.CheckHealthAsync(request, headers, deadline, cancellationToken);
+                });
+
+                var result = new HealthStatus
+                {
+                    Status = (HealthStatus.ServiceStatus)response.Status,
+                    Message = response.Message
+                };
+
+                return result;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "Error checking health of Python ML service: {ErrorMessage}", ex.Message);
+                return new HealthStatus
+                {
+                    Status = HealthStatus.ServiceStatus.NotServing,
+                    Message = $"Service unavailable: {ex.Message}"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error checking health of Python ML service: {ErrorMessage}", ex.Message);
+                return new HealthStatus
+                {
+                    Status = HealthStatus.ServiceStatus.Unknown,
+                    Message = $"Unexpected error: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Determines whether an RPC exception represents a transient failure.
+        /// </summary>
+        /// <param name="ex">The RPC exception.</param>
+        /// <returns>True if the exception represents a transient failure; otherwise, false.</returns>
+        private static bool IsTransientFailure(RpcException ex)
+        {
+            return ex.StatusCode == StatusCode.Unavailable ||
+                   ex.StatusCode == StatusCode.DeadlineExceeded ||
+                   ex.StatusCode == StatusCode.ResourceExhausted ||
+                   ex.StatusCode == StatusCode.Aborted ||
+                   ex.StatusCode == StatusCode.Internal;
+        }
+
+        /// <summary>
+        /// Computes a hash code for the given object.
+        /// </summary>
+        /// <param name="obj">The object to hash.</param>
+        /// <returns>A hash code for the object.</returns>
+        private static string ComputeHash(object? obj)
+        {
+            if (obj == null)
+                return "null";
+
+            return obj.GetHashCode().ToString();
+        }
+
+        /// <summary>
+        /// Disposes the resources used by the PythonMLClient.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes the resources used by the PythonMLClient.
+        /// </summary>
+        /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                _channel?.Dispose();
+            }
+
+            _disposed = true;
+        }
+    }
+}

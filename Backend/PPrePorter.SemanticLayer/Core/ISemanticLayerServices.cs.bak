@@ -1,0 +1,53 @@
+using PPrePorter.SemanticLayer.Models.Database;
+using PPrePorter.SemanticLayer.Models.Translation;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace PPrePorter.SemanticLayer.Core
+{
+    /// <summary>
+    /// Interface for cache services
+    /// </summary>
+    public interface ICacheService
+    {
+        /// <summary>
+        /// Gets a cached translation result
+        /// </summary>
+        Task<SqlTranslationResult?> GetCachedTranslationAsync(string cacheKey);
+        
+        /// <summary>
+        /// Adds a translation result to the cache
+        /// </summary>
+        Task CacheTranslationAsync(string cacheKey, SqlTranslationResult result);
+        
+        /// <summary>
+        /// Checks if a key exists in the cache
+        /// </summary>
+        Task<bool> ContainsKeyAsync(string cacheKey);
+        
+        /// <summary>
+        /// Removes a specific key from the cache
+        /// </summary>
+        Task RemoveAsync(string cacheKey);
+        
+        /// <summary>
+        /// Invalidates cache entries by pattern
+        /// </summary>
+        Task InvalidateByPatternAsync(string keyPattern);
+        
+        /// <summary>
+        /// Clears all cache entries
+        /// </summary>
+        Task ClearAllAsync();
+        
+        /// <summary>
+        /// Gets cache statistics
+        /// </summary>
+        Task<CacheStatistics> GetStatisticsAsync();
+        
+        /// <summary>
+        /// Generates a cache key from the query entities
+        /// </summary>
+        string GenerateCacheKey(QueryEntities entities);
+    }
+}

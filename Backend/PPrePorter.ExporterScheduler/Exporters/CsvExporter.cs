@@ -39,13 +39,12 @@ namespace PPrePorter.ExporterScheduler.Exporters
             
             using var memoryStream = new MemoryStream();
             using var writer = new StreamWriter(memoryStream);
-            
-            // Configure CSV writer settings
+              // Configure CSV writer settings
             var csvConfig = new CsvConfiguration(CultureInfo.GetCultureInfo(parameters.Locale))
             {
                 HasHeaderRecord = parameters.IncludeHeaders,
                 Delimiter = ",",
-                ShouldQuote = (field, context) => true // Quote all fields
+                ShouldQuote = field => true // Quote all fields
             };
             
             using var csv = new CsvWriter(writer, csvConfig);

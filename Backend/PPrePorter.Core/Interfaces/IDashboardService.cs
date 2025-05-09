@@ -12,5 +12,15 @@ namespace PPrePorter.Core.Interfaces
         Task<List<TopGameItem>> GetTopGamesDataAsync(DashboardRequest request);
         Task<List<RecentTransactionItem>> GetRecentTransactionsAsync(DashboardRequest request);
         Task<ContextualDataExplorerResult> GetContextualDataExplorerResultAsync(ContextualDataExplorerRequest request);
+
+        // Additional methods needed by controllers
+        Task<DashboardData> GetDashboardDataAsync(DashboardRequest request);
+        Task<List<PlayerJourneySankeyData>> GetPlayerJourneySankeyDataAsync(DashboardRequest request);
+        Task<HeatmapData> GetHeatmapDataAsync(DashboardRequest request);
+        Task<SegmentComparisonData> GetSegmentComparisonAsync(SegmentComparisonRequest request);
+        Task<List<MicroChartData>> GetMicroChartDataAsync(DashboardRequest request);
+        Task<DashboardPreferences> GetUserDashboardPreferencesAsync(string userId);
+        Task SaveUserDashboardPreferencesAsync(string userId, DashboardPreferences preferences);
+        Task<AccessibilityOptimizedData> GetAccessibilityOptimizedDataAsync(AccessibilityDataRequest request);
     }
 }

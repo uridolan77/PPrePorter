@@ -1,66 +1,49 @@
+using PPrePorter.SemanticLayer.Models.Translation;
 using System;
+using System.Threading.Tasks;
 
 namespace PPrePorter.SemanticLayer.Core
 {
     /// <summary>
-    /// Service for caching query results
+    /// Interface for caching service
     /// </summary>
     public interface ICacheService
     {
         /// <summary>
-        /// Gets a value from the cache
+        /// Gets a cached translation result by query
         /// </summary>
-        T? Get<T>(string key) where T : class;
-        
+        Task<SqlTranslationResult?> GetCachedTranslationAsync(string query);
+
         /// <summary>
-        /// Sets a value in the cache with an expiration time
+        /// Caches a translation result
         /// </summary>
-        void Set<T>(string key, T value, TimeSpan expiration) where T : class;
-        
+        Task CacheTranslationAsync(string query, SqlTranslationResult result);
+
         /// <summary>
-        /// Removes a value from the cache
+        /// Checks if a key exists in the cache
         /// </summary>
-        void Remove(string key);
-        
+        Task<bool> ContainsKeyAsync(string key);
+
         /// <summary>
-        /// Clears all items from the cache
+        /// Removes an item from the cache
         /// </summary>
-        void Clear();
-        
+        Task RemoveAsync(string key);
+
+        /// <summary>
+        /// Invalidates cache entries matching a pattern
+        /// </summary>
+        Task InvalidateByPatternAsync(string pattern);
+
+        /// <summary>
+        /// Clears all cache entries
+        /// </summary>
+        Task ClearAllAsync();
+
         /// <summary>
         /// Gets cache statistics
         /// </summary>
-        CacheStatistics GetStatistics();
+        Task<CacheStatistics> GetStatisticsAsync();
     }
-    
-    /// <summary>
-    /// Statistics for the cache
-    /// </summary>
-    public class CacheStatistics
-    {
-        /// <summary>
-        /// Number of items in the cache
-        /// </summary>
-        public int ItemCount { get; set; }
-        
-        /// <summary>
-        /// Total size of the cache in bytes
-        /// </summary>
-        public long SizeInBytes { get; set; }
-        
-        /// <summary>
-        /// Number of cache hits
-        /// </summary>
-        public long Hits { get; set; }
-        
-        /// <summary>
-        /// Number of cache misses
-        /// </summary>
-        public long Misses { get; set; }
-        
-        /// <summary>
-        /// Hit rate (hits / (hits + misses))
-        /// </summary>
-        public double HitRate => (Hits + Misses) > 0 ? (double)Hits / (Hits + Misses) : 0;
-    }
+
+
 }

@@ -29,18 +29,19 @@ namespace PPrePorter.SemanticLayer.Services
             _logger = logger;
             _config = config.Value;
             
-            // Initialize with default model
+            // Initialize with a default model
             _dataModel = GamingDataModel.GetDefaultModel();
+            
+            _logger.LogInformation("Data model service initialized with default gaming model");
         }
         
         /// <summary>
-        /// Gets the current data model, refreshing if needed
+        /// Gets the current data model
         /// </summary>
         public async Task<DataModel> GetDataModelAsync()
         {
-            // Check if auto-refresh is enabled and it's time to refresh
-            if (_config.DataModel.AutoRefresh && 
-                (DateTime.UtcNow - _lastRefreshTime).TotalMinutes > _config.DataModel.RefreshIntervalMinutes)
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
             {
                 await RefreshDataModelAsync();
             }
@@ -49,103 +50,94 @@ namespace PPrePorter.SemanticLayer.Services
         }
         
         /// <summary>
-        /// Refreshes the data model from the source
-        /// </summary>
-        public async Task<DataModel> RefreshDataModelAsync()
-        {
-            _logger.LogInformation("Refreshing data model");
-            
-            try
-            {
-                DataModel newModel;
-                
-                // Determine the source of the data model
-                switch (_config.DataModel.Source.ToLowerInvariant())
-                {
-                    case "database":
-                        newModel = await LoadModelFromDatabaseAsync();
-                        break;
-                    
-                    case "file":
-                        newModel = await LoadModelFromFileAsync();
-                        break;
-                    
-                    default:
-                        // Use default gaming model if source is not recognized
-                        newModel = GamingDataModel.GetDefaultModel();
-                        break;
-                }
-                
-                // Auto-discover relationships if configured
-                if (_config.DataModel.AutoDiscoverRelationships)
-                {
-                    DiscoverRelationships(newModel);
-                }
-                
-                // Update the data model
-                lock (_modelLock)
-                {
-                    _dataModel = newModel;
-                    _lastRefreshTime = DateTime.UtcNow;
-                }
-                
-                _logger.LogInformation("Data model refreshed successfully with {TableCount} tables, {ViewCount} views, and {RelationshipCount} relationships", 
-                    newModel.Tables.Count, newModel.Views.Count, newModel.Relationships.Count);
-                
-                return newModel;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error refreshing data model");
-                
-                // Return current model on error
-                return _dataModel;
-            }
-        }
-        
-        /// <summary>
-        /// Gets a table by name
+        /// Gets a table from the data model
         /// </summary>
         public async Task<Table?> GetTableAsync(string tableName)
         {
-            var model = await GetDataModelAsync();
-            return model.GetTable(tableName);
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return null;
+            }
+            
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel.Tables.FirstOrDefault(t => 
+                string.Equals(t.Name, tableName, StringComparison.OrdinalIgnoreCase));
         }
         
         /// <summary>
-        /// Gets a view by name
+        /// Gets a view from the data model
         /// </summary>
         public async Task<View?> GetViewAsync(string viewName)
         {
-            var model = await GetDataModelAsync();
-            return model.GetView(viewName);
+            if (string.IsNullOrEmpty(viewName))
+            {
+                return null;
+            }
+            
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel.Views.FirstOrDefault(v => 
+                string.Equals(v.Name, viewName, StringComparison.OrdinalIgnoreCase));
         }
         
         /// <summary>
-        /// Gets all related tables for a table
+        /// Gets relationships for a table
+        /// </summary>
+        public async Task<List<Relationship>> GetRelationshipsAsync(string tableName)
+        {
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return new List<Relationship>();
+            }
+            
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
+            {
+                await RefreshDataModelAsync();
+            }
+            
+            return _dataModel.Relationships.Where(r => 
+                string.Equals(r.SourceTable, tableName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r.TargetTable, tableName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        
+        /// <summary>
+        /// Gets tables related to the specified table
         /// </summary>
         public async Task<List<Table>> GetRelatedTablesAsync(string tableName)
         {
-            var model = await GetDataModelAsync();
-            var relatedTables = new List<Table>();
-            
-            foreach (var relationship in model.Relationships)
+            if (string.IsNullOrEmpty(tableName))
             {
-                if (relationship.FromTable.Equals(tableName, StringComparison.OrdinalIgnoreCase))
+                return new List<Table>();
+            }
+            
+            // Get relationships for the table
+            var relationships = await GetRelationshipsAsync(tableName);
+            
+            // Get related table names
+            var relatedTableNames = relationships
+                .Select(r => r.SourceTable == tableName ? r.TargetTable : r.SourceTable)
+                .Distinct()
+                .ToList();
+            
+            // Get table objects
+            var relatedTables = new List<Table>();
+            foreach (var relatedTableName in relatedTableNames)
+            {
+                var table = await GetTableAsync(relatedTableName);
+                if (table != null)
                 {
-                    var relatedTable = model.GetTable(relationship.ToTable);
-                    if (relatedTable != null)
-                    {
-                        relatedTables.Add(relatedTable);
-                    }
-                }
-                else if (relationship.ToTable.Equals(tableName, StringComparison.OrdinalIgnoreCase))
-                {
-                    var relatedTable = model.GetTable(relationship.FromTable);
-                    if (relatedTable != null)
-                    {
-                        relatedTables.Add(relatedTable);
-                    }
+                    relatedTables.Add(table);
                 }
             }
             
@@ -153,136 +145,101 @@ namespace PPrePorter.SemanticLayer.Services
         }
         
         /// <summary>
-        /// Finds a path to join two tables
+        /// Finds a join path between two tables
         /// </summary>
-        public async Task<List<string>?> FindJoinPathAsync(string fromTable, string toTable)
+        public async Task<List<Relationship>> FindJoinPathAsync(string sourceTable, string targetTable)
         {
-            var model = await GetDataModelAsync();
-            return model.FindJoinPath(fromTable, toTable);
-        }
-        
-        /// <summary>
-        /// Loads the data model from a database
-        /// </summary>
-        private async Task<DataModel> LoadModelFromDatabaseAsync()
-        {
-            _logger.LogInformation("Loading data model from database");
-            
-            // This would be replaced with actual database introspection code
-            // For now, we'll use the default gaming model
-            var model = GamingDataModel.GetDefaultModel();
-            
-            // TODO: Implement database schema discovery
-            // This could involve:
-            // 1. Querying information_schema tables
-            // 2. Reading metadata from the database
-            // 3. Building tables, views, and relationships
-            
-            await Task.Delay(100); // Simulate async database work
-            
-            return model;
-        }
-        
-        /// <summary>
-        /// Loads the data model from a file
-        /// </summary>
-        private async Task<DataModel> LoadModelFromFileAsync()
-        {
-            _logger.LogInformation("Loading data model from file: {FilePath}", _config.DataModel.ModelDefinitionPath);
-            
-            // This would be replaced with actual file loading code
-            // For now, we'll use the default gaming model
-            var model = GamingDataModel.GetDefaultModel();
-            
-            // TODO: Implement file-based model loading
-            // This could involve:
-            // 1. Reading JSON or XML file
-            // 2. Deserializing into DataModel object
-            
-            await Task.Delay(100); // Simulate async file I/O
-            
-            return model;
-        }
-        
-        /// <summary>
-        /// Discovers relationships between tables based on column names
-        /// </summary>
-        private void DiscoverRelationships(DataModel model)
-        {
-            _logger.LogInformation("Auto-discovering relationships");
-            
-            var relationships = new List<Relationship>();
-            
-            // Look for potential foreign key relationships based on naming conventions
-            foreach (var table in model.Tables)
+            if (string.IsNullOrEmpty(sourceTable) || string.IsNullOrEmpty(targetTable))
             {
-                foreach (var column in table.Columns)
-                {
-                    // Skip columns that are already identified as foreign keys
-                    if (column.IsForeignKey && !string.IsNullOrEmpty(column.ForeignKeyReference))
-                    {
-                        continue;
-                    }
-                    
-                    // Look for columns that might be foreign keys based on naming (e.g., xxxID)
-                    if (column.Name.EndsWith("ID", StringComparison.OrdinalIgnoreCase) ||
-                        column.Name.EndsWith("Key", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Get the potential referenced table name
-                        var potentialTableName = column.Name.Replace("ID", "").Replace("Key", "");
-                        
-                        // Find matching table that this column might reference
-                        var referencedTable = model.Tables.FirstOrDefault(t => 
-                            t.Name.Equals(potentialTableName, StringComparison.OrdinalIgnoreCase));
-                        
-                        if (referencedTable != null)
-                        {
-                            // Find primary key in the referenced table
-                            var primaryKey = referencedTable.Columns.FirstOrDefault(c => c.IsPrimaryKey);
-                            
-                            if (primaryKey != null)
-                            {
-                                // Create the relationship
-                                var relationship = new Relationship
-                                {
-                                    Name = $"FK_{table.Name}_{column.Name}_To_{referencedTable.Name}",
-                                    FromTable = table.Name,
-                                    FromColumn = column.Name,
-                                    ToTable = referencedTable.Name,
-                                    ToColumn = primaryKey.Name,
-                                    RelationshipType = "ManyToOne",
-                                    Cardinality = "N:1"
-                                };
-                                
-                                // Add to the list of discovered relationships
-                                relationships.Add(relationship);
-                                
-                                // Mark the column as a foreign key
-                                column.IsForeignKey = true;
-                                column.ForeignKeyReference = referencedTable.Name;
-                            }
-                        }
-                    }
-                }
+                return new List<Relationship>();
             }
             
-            // Add discovered relationships to the model
-            foreach (var relationship in relationships)
+            // Auto-refresh if needed
+            if (ShouldRefreshModel())
             {
-                // Check if the relationship already exists
-                var existingRelationship = model.Relationships.FirstOrDefault(r =>
-                    (r.FromTable == relationship.FromTable && r.FromColumn == relationship.FromColumn &&
-                     r.ToTable == relationship.ToTable && r.ToColumn == relationship.ToColumn) ||
-                    (r.FromTable == relationship.ToTable && r.FromColumn == relationship.ToColumn &&
-                     r.ToTable == relationship.FromTable && r.ToColumn == relationship.FromColumn));
+                await RefreshDataModelAsync();
+            }
+            
+            // Simple breadth-first search to find a path
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var queue = new Queue<(string Table, List<Relationship> Path)>();
+            
+            // Start from source table
+            visited.Add(sourceTable);
+            queue.Enqueue((sourceTable, new List<Relationship>()));
+            
+            while (queue.Count > 0)
+            {
+                var (currentTable, path) = queue.Dequeue();
                 
-                if (existingRelationship == null)
+                // Check if we've reached the target
+                if (string.Equals(currentTable, targetTable, StringComparison.OrdinalIgnoreCase))
                 {
-                    model.Relationships.Add(relationship);
+                    return path;
+                }
+                
+                // Find all relationships for the current table
+                var relationships = _dataModel.Relationships.Where(r => 
+                    string.Equals(r.SourceTable, currentTable, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(r.TargetTable, currentTable, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                
+                foreach (var rel in relationships)
+                {
+                    string nextTable = rel.SourceTable == currentTable ? rel.TargetTable : rel.SourceTable;
+                    
+                    if (!visited.Contains(nextTable))
+                    {
+                        // Create a new path with the current relationship
+                        var newPath = new List<Relationship>(path) { rel };
+                        
+                        // Mark as visited and add to queue
+                        visited.Add(nextTable);
+                        queue.Enqueue((nextTable, newPath));
+                    }
                 }
             }
             
-            _logger.LogInformation("Discovered {Count} relationships", relationships.Count);
+            // No path found
+            return new List<Relationship>();
+        }
+        
+        /// <summary>
+        /// Refreshes the data model from the database
+        /// </summary>
+        public async Task<DataModel> RefreshDataModelAsync()
+        {
+            _logger.LogInformation("Refreshing data model");
+            
+            try
+            {
+                // Use lock to prevent multiple concurrent refreshes
+                lock (_modelLock)
+                {
+                    // For now, just use the default model
+                    // In a real implementation, you would query the database metadata here
+                    _dataModel = GamingDataModel.GetDefaultModel();
+                    _lastRefreshTime = DateTime.UtcNow;
+                }
+                
+                _logger.LogInformation("Data model refreshed successfully");
+                
+                return _dataModel;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing data model");
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// Determines if the model should be refreshed based on time since last refresh
+        /// </summary>
+        private bool ShouldRefreshModel()
+        {
+            // Refresh if the model is more than 1 hour old
+            return (DateTime.UtcNow - _lastRefreshTime).TotalHours > 1;
         }
     }
 }

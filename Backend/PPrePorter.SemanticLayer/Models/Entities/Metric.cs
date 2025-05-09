@@ -10,78 +10,83 @@ namespace PPrePorter.SemanticLayer.Models.Entities
         /// <summary>
         /// Aggregation function to apply (e.g., sum, avg, count)
         /// </summary>
-        public string? Aggregation { get; set; }
-        
+        public string Aggregation { get; set; } = "SUM";
+
         /// <summary>
         /// Custom calculation expression if this is a calculated metric
         /// </summary>
-        public string? Expression { get; set; }
+        public string Expression { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The display name of the metric for user interfaces
+        /// </summary>
+        public string DisplayName { get; set; } = string.Empty;
     }
-    
+
     /// <summary>
-    /// Definition of a metric in the data model
+    /// Represents a metric definition in the semantic layer
     /// </summary>
     public class MetricDefinition : Entity
     {
         /// <summary>
-        /// Field in the database that holds this metric
+        /// The corresponding database field for the metric
         /// </summary>
         public string DatabaseField { get; set; } = string.Empty;
-        
+
         /// <summary>
-        /// Default aggregation to apply to this metric
+        /// The default aggregation function for the metric
         /// </summary>
-        public string DefaultAggregation { get; set; } = "sum";
-        
-        /// <summary>
-        /// Format to display this metric (e.g., currency, percentage, number)
-        /// </summary>
-        public string Format { get; set; } = "number";
-        
+        public string DefaultAggregation { get; set; } = "SUM";
+
         /// <summary>
         /// Whether this is a calculated metric
         /// </summary>
         public bool IsCalculated { get; set; }
-        
+
         /// <summary>
-        /// Formula for calculating this metric
+        /// The SQL formula for calculating the metric
         /// </summary>
-        public string? CalculationFormula { get; set; }
+        public string CalculationFormula { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The data type of the metric (number, currency, percentage, etc.)
+        /// </summary>
+        public string DataType { get; set; } = "number";
+
+        /// <summary>
+        /// The format string for displaying the metric
+        /// </summary>
+        public string FormatString { get; set; } = string.Empty;
     }
-    
+
     /// <summary>
-    /// Mapped metric with database fields and aggregations
+    /// Represents a mapped metric with database fields
     /// </summary>
     public class MappedMetric : Entity
     {
         /// <summary>
-        /// Field in the database that holds this metric
+        /// The display name of the metric
+        /// </summary>
+        public string DisplayName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The database field for the metric
         /// </summary>
         public string DatabaseField { get; set; } = string.Empty;
-        
+
         /// <summary>
-        /// Aggregation function to apply
+        /// The aggregation function to use
         /// </summary>
-        public string Aggregation { get; set; } = "sum";
-        
-        /// <summary>
-        /// Format for display
-        /// </summary>
-        public string Format { get; set; } = "number";
-        
+        public string Aggregation { get; set; } = "SUM";
+
         /// <summary>
         /// Whether this is a calculated metric
         /// </summary>
         public bool IsCalculated { get; set; }
-        
+
         /// <summary>
-        /// Formula for calculation
+        /// The SQL formula for calculating the metric
         /// </summary>
-        public string? CalculationFormula { get; set; }
-        
-        /// <summary>
-        /// Whether this metric is part of a calculated metric
-        /// </summary>
-        public bool IsPartOfCalculation { get; set; }
+        public string CalculationFormula { get; set; } = string.Empty;
     }
 }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using PPrePorter.API.Features.Dashboard.Models;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 
@@ -167,7 +168,7 @@ namespace PPrePorter.API.Features.Dashboard
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
-                _logger.LogInformation("Fetching contextual data explorer results for user {UserId}, context: {Context}, drill-down key: {DrillDownKey}", 
+                _logger.LogInformation("Fetching contextual data explorer results for user {UserId}, context: {Context}, drill-down key: {DrillDownKey}",
                     currentUser.Id, request.ExplorationContext, request.DrillDownKey);
 
                 var result = await _dashboardService.GetContextualDataExplorerResultAsync(request);
@@ -179,7 +180,7 @@ namespace PPrePorter.API.Features.Dashboard
                 return StatusCode(500, "An error occurred while retrieving contextual data explorer results");
             }
         }
-        
+
         [HttpGet("player-journey")]
         public async Task<IActionResult> GetPlayerJourneySankey([FromQuery] PlayerJourneyRequest request)
         {
@@ -188,10 +189,15 @@ namespace PPrePorter.API.Features.Dashboard
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
-                _logger.LogInformation("Fetching player journey Sankey diagram data for user {UserId}, timeframe: {TimeFrame}", 
+                _logger.LogInformation("Fetching player journey Sankey diagram data for user {UserId}, timeframe: {TimeFrame}",
                     currentUser.Id, request.TimeFrame);
 
-                var result = await _dashboardService.GetPlayerJourneySankeyDataAsync(request);
+                var dashboardRequest = new DashboardRequest
+                {
+                    UserId = request.UserId
+                };
+
+                var result = await _dashboardService.GetPlayerJourneySankeyDataAsync(dashboardRequest);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -209,10 +215,15 @@ namespace PPrePorter.API.Features.Dashboard
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
-                _logger.LogInformation("Fetching heatmap data for user {UserId}, dimensions: {PrimaryDimension}/{SecondaryDimension}, metric: {Metric}", 
+                _logger.LogInformation("Fetching heatmap data for user {UserId}, dimensions: {PrimaryDimension}/{SecondaryDimension}, metric: {Metric}",
                     currentUser.Id, request.PrimaryDimension, request.SecondaryDimension, request.Metric);
 
-                var result = await _dashboardService.GetHeatmapDataAsync(request);
+                var dashboardRequest = new DashboardRequest
+                {
+                    UserId = request.UserId
+                };
+
+                var result = await _dashboardService.GetHeatmapDataAsync(dashboardRequest);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -223,17 +234,25 @@ namespace PPrePorter.API.Features.Dashboard
         }
 
         [HttpGet("segment-comparison")]
-        public async Task<IActionResult> GetSegmentComparison([FromQuery] SegmentComparisonRequest request)
+        public async Task<IActionResult> GetSegmentComparison([FromQuery] Models.SegmentComparisonRequest request)
         {
             try
             {
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
-                _logger.LogInformation("Fetching segment comparison data for user {UserId}, segments: {Segments}, metrics: {Metrics}", 
+                _logger.LogInformation("Fetching segment comparison data for user {UserId}, segments: {Segments}, metrics: {Metrics}",
                     currentUser.Id, string.Join(",", request.Segments), string.Join(",", request.Metrics));
 
-                var result = await _dashboardService.GetSegmentComparisonAsync(request);
+                var domainRequest = new Domain.Entities.PPReporter.Dashboard.SegmentComparisonRequest
+                {
+                    UserId = request.UserId,
+                    SegmentType = request.Segments?.Length > 0 ? request.Segments[0] : "default",
+                    SegmentValues = request.Segments != null ? new List<string>(request.Segments) : new List<string>(),
+                    MetricToCompare = request.Metrics?.Length > 0 ? request.Metrics[0] : "revenue"
+                };
+
+                var result = await _dashboardService.GetSegmentComparisonAsync(domainRequest);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -251,10 +270,15 @@ namespace PPrePorter.API.Features.Dashboard
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
 
-                _logger.LogInformation("Fetching micro-chart data for user {UserId}, type: {ChartType}, entities: {EntityCount}", 
+                _logger.LogInformation("Fetching micro-chart data for user {UserId}, type: {ChartType}, entities: {EntityCount}",
                     currentUser.Id, request.ChartType, request.EntityIds?.Length ?? 0);
 
-                var result = await _dashboardService.GetMicroChartDataAsync(request);
+                var dashboardRequest = new DashboardRequest
+                {
+                    UserId = request.UserId
+                };
+
+                var result = await _dashboardService.GetMicroChartDataAsync(dashboardRequest);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -270,7 +294,7 @@ namespace PPrePorter.API.Features.Dashboard
             try
             {
                 var currentUser = await _userContextService.GetCurrentUserAsync();
-                
+
                 _logger.LogInformation("Fetching dashboard preferences for user {UserId}", currentUser.Id);
 
                 var preferences = await _dashboardService.GetUserDashboardPreferencesAsync(currentUser.Id);
@@ -290,10 +314,10 @@ namespace PPrePorter.API.Features.Dashboard
             {
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 preferences.UserId = currentUser.Id;
-                
+
                 _logger.LogInformation("Updating dashboard preferences for user {UserId}", currentUser.Id);
 
-                await _dashboardService.SaveUserDashboardPreferencesAsync(preferences);
+                await _dashboardService.SaveUserDashboardPreferencesAsync(currentUser.Id, preferences);
                 return Ok();
             }
             catch (Exception ex)
@@ -304,17 +328,24 @@ namespace PPrePorter.API.Features.Dashboard
         }
 
         [HttpGet("a11y-optimized")]
-        public async Task<IActionResult> GetAccessibilityOptimizedData([FromQuery] AccessibilityDataRequest request)
+        public async Task<IActionResult> GetAccessibilityOptimizedData([FromQuery] Models.AccessibilityDataRequest request)
         {
             try
             {
                 var currentUser = await _userContextService.GetCurrentUserAsync();
                 request.UserId = currentUser.Id;
-                
-                _logger.LogInformation("Fetching accessibility-optimized data for user {UserId}, visualization: {Visualization}", 
+
+                _logger.LogInformation("Fetching accessibility-optimized data for user {UserId}, visualization: {Visualization}",
                     currentUser.Id, request.VisualizationType);
 
-                var result = await _dashboardService.GetAccessibilityOptimizedDataAsync(request);
+                var domainRequest = new Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest
+                {
+                    UserId = request.UserId,
+                    VisualizationType = request.VisualizationType,
+                    MetricKey = request.OriginalVisualizationId
+                };
+
+                var result = await _dashboardService.GetAccessibilityOptimizedDataAsync(domainRequest);
                 return Ok(result);
             }
             catch (Exception ex)

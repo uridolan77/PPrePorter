@@ -145,7 +145,7 @@ namespace PPrePorter.API.Features.Authentication.Controllers
                 }
 
                 // Validate the refresh token
-                if (user.RefreshToken != request.RefreshToken || 
+                if (user.RefreshToken != request.RefreshToken ||
                     user.RefreshTokenExpiryTime <= DateTime.UtcNow)
                 {
                     return Unauthorized(new { Message = "Invalid or expired refresh token." });
@@ -213,7 +213,7 @@ namespace PPrePorter.API.Features.Authentication.Controllers
                 }
 
                 // Clear refresh token
-                user.RefreshToken = null;
+                user.RefreshToken = string.Empty;
                 user.RefreshTokenExpiryTime = null;
                 await _dbContext.SaveChangesAsync();
 
@@ -276,7 +276,7 @@ namespace PPrePorter.API.Features.Authentication.Controllers
                     LastName = request.LastName,
                     RoleId = request.RoleId,
                     IsActive = true,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 // Add user to database

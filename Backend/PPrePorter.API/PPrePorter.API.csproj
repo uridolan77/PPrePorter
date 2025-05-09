@@ -13,11 +13,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PPrePorter.Core\PPrePorter.Core.csproj" />
     <ProjectReference Include="..\PPrePorter.Infrastructure\PPrePorter.Infrastructure.csproj" />
+    <ProjectReference Include="..\PPrePorter.SemanticLayer\PPrePorter.SemanticLayer.csproj" />
   </ItemGroup>
 
 </Project>

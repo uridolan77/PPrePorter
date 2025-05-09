@@ -18,8 +18,16 @@ namespace PPrePorter.SemanticLayer.Extensions
         public static IServiceCollection AddSemanticLayer(this IServiceCollection services, IConfiguration configuration)
         {
             // Register configuration
-            services.Configure<SemanticLayerConfig>(configuration.GetSection("SemanticLayer"));
-            
+            var section = configuration.GetSection("SemanticLayer");
+            services.Configure<SemanticLayerConfig>(options =>
+            {
+                options.DefaultConnectionStringName = section["DefaultConnectionStringName"] ?? "PPRePorterDB";
+                options.MaxQueryRows = int.TryParse(section["MaxQueryRows"], out int maxRows) ? maxRows : 50000;
+                options.QueryTimeoutSeconds = int.TryParse(section["QueryTimeoutSeconds"], out int timeout) ? timeout : 60;
+                options.DefaultCacheDurationMinutes = int.TryParse(section["DefaultCacheDurationMinutes"], out int cacheDuration) ? cacheDuration : 15;
+                options.EnableQueryCaching = bool.TryParse(section["EnableQueryCaching"], out bool enableCache) ? enableCache : true;
+            });
+
             // Register services
             services.AddScoped<ISemanticLayerService, SemanticLayerService>();
             services.AddScoped<IDataModelService, DataModelService>();
@@ -27,27 +35,35 @@ namespace PPrePorter.SemanticLayer.Extensions
             services.AddScoped<ISqlTranslationService, SqlTranslationService>();
             services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddScoped<IPythonIntegrationService, PythonIntegrationService>();
-            
+
             return services;
         }
-        
+
         /// <summary>
         /// Adds just the core semantic layer services (minimal configuration)
         /// </summary>
         public static IServiceCollection AddSemanticLayerCore(this IServiceCollection services, IConfiguration configuration)
         {
             // Register configuration
-            services.Configure<SemanticLayerConfig>(configuration.GetSection("SemanticLayer"));
-            
+            var section = configuration.GetSection("SemanticLayer");
+            services.Configure<SemanticLayerConfig>(options =>
+            {
+                options.DefaultConnectionStringName = section["DefaultConnectionStringName"] ?? "PPRePorterDB";
+                options.MaxQueryRows = int.TryParse(section["MaxQueryRows"], out int maxRows) ? maxRows : 50000;
+                options.QueryTimeoutSeconds = int.TryParse(section["QueryTimeoutSeconds"], out int timeout) ? timeout : 60;
+                options.DefaultCacheDurationMinutes = int.TryParse(section["DefaultCacheDurationMinutes"], out int cacheDuration) ? cacheDuration : 15;
+                options.EnableQueryCaching = bool.TryParse(section["EnableQueryCaching"], out bool enableCache) ? enableCache : true;
+            });
+
             // Register essential services only
             services.AddScoped<ISemanticLayerService, SemanticLayerService>();
             services.AddScoped<IDataModelService, DataModelService>();
             services.AddScoped<IEntityMappingService, EntityMappingService>();
             services.AddScoped<ISqlTranslationService, SqlTranslationService>();
-            
+
             return services;
         }
-        
+
         /// <summary>
         /// Adds the semantic layer with Python integration
         /// </summary>
@@ -55,10 +71,10 @@ namespace PPrePorter.SemanticLayer.Extensions
         {
             // Add core semantic layer
             services.AddSemanticLayer(configuration);
-            
+
             // Add Python-specific services
             services.AddScoped<IPythonIntegrationService, PythonIntegrationService>();
-            
+
             return services;
         }
     }

@@ -34,9 +34,16 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
-                var templates = await _configService.GetAvailableReportTemplatesAsync(currentUser);
-                
+                var currentUser = await _userContextService.GetCurrentUserAsync();
+                // Create a mock user for now
+                var user = new PPrePorter.Domain.Entities.PPReporter.User
+                {
+                    Id = int.Parse(currentUser.Id),
+                    Username = currentUser.Username
+                };
+
+                var templates = await _configService.GetAvailableReportTemplatesAsync(user);
+
                 return Ok(templates);
             }
             catch (Exception ex)
@@ -51,9 +58,9 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var configurations = await _configService.GetSavedConfigurationsAsync(currentUser.Id);
-                
+
                 return Ok(configurations);
             }
             catch (Exception ex)
@@ -68,20 +75,20 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var configuration = await _configService.GetConfigurationByIdAsync(configId);
-                
+
                 if (configuration == null || configuration.UserId != currentUser.Id)
                 {
                     return NotFound(new { message = "Configuration not found" });
                 }
-                
+
                 // Parse configuration
                 if (!string.IsNullOrEmpty(configuration.ConfigurationJson))
                 {
                     configuration.Configuration = JsonSerializer.Deserialize<ReportRequest>(configuration.ConfigurationJson);
                 }
-                
+
                 return Ok(configuration);
             }
             catch (Exception ex)
@@ -100,24 +107,20 @@ namespace PPrePorter.API.Features.Reports
                 {
                     return BadRequest(new { message = "Configuration name is required" });
                 }
-                
-                var currentUser = _userContextService.GetCurrentUser();
+
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 configuration.UserId = currentUser.Id;
-                
+
                 // Serialize configuration
                 if (configuration.Configuration != null)
                 {
                     configuration.ConfigurationJson = JsonSerializer.Serialize(configuration.Configuration);
                 }
-                
-                // Generate ID if not provided
-                if (string.IsNullOrEmpty(configuration.Id))
-                {
-                    configuration.Id = Guid.NewGuid().ToString();
-                }
-                
+
+                // Let the service handle ID generation
+
                 var result = await _configService.SaveConfigurationAsync(configuration);
-                
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -132,26 +135,26 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 var existingConfig = await _configService.GetConfigurationByIdAsync(configId);
-                
+
                 if (existingConfig == null || existingConfig.UserId != currentUser.Id)
                 {
                     return NotFound(new { message = "Configuration not found" });
                 }
-                
+
                 // Update properties
                 existingConfig.Name = configuration.Name;
                 existingConfig.Description = configuration.Description;
-                
+
                 // Serialize updated configuration
                 if (configuration.Configuration != null)
                 {
                     existingConfig.ConfigurationJson = JsonSerializer.Serialize(configuration.Configuration);
                 }
-                
+
                 await _configService.UpdateConfigurationAsync(existingConfig);
-                
+
                 return Ok(existingConfig);
             }
             catch (Exception ex)
@@ -166,9 +169,9 @@ namespace PPrePorter.API.Features.Reports
         {
             try
             {
-                var currentUser = _userContextService.GetCurrentUser();
+                var currentUser = await _userContextService.GetCurrentUserAsync();
                 await _configService.DeleteConfigurationAsync(configId, currentUser.Id);
-                
+
                 return Ok(new { message = "Configuration deleted successfully" });
             }
             catch (Exception ex)

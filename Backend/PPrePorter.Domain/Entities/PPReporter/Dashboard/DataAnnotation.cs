@@ -14,8 +14,10 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public string RelatedMetric { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
-        
-        // Conversion method to create ExplorerDataAnnotation 
+        public string UserId { get; set; }
+        public DateTime ModifiedAt { get; set; }
+
+        // Conversion method to create ExplorerDataAnnotation
         public ExplorerDataAnnotation ToExplorerDataAnnotation()
         {
             return new ExplorerDataAnnotation
@@ -30,7 +32,7 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
                 CreatedAt = CreatedAt
             };
         }
-        
+
         // Static factory method to create from ExplorerDataAnnotation
         public static DataAnnotation FromExplorerDataAnnotation(ExplorerDataAnnotation da)
         {

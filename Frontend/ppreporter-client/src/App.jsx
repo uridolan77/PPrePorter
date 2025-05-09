@@ -1,14 +1,28 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Layout components
+// Auth context provider
+import { AuthProvider } from './contexts/AuthContext';
+
+// Auth components
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Layouts
 import MainLayout from './components/layout/MainLayout';
 
-// Container components
-import DailyActionsReportContainer from './containers/DailyActionsReportContainer';
-import PlayersReportContainer from './containers/PlayersReportContainer';
+// Auth pages
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+
+// Dashboard pages
+// import DashboardPage from './pages/Dashboard'; // Using Redux, commenting out for now
+import SimpleDashboard from './pages/SimpleDashboard';
+import DashboardSimple from './pages/DashboardSimple';
+import TestContextualExplanation from './components/dashboard/TestContextualExplanation';
 
 // Theme configuration
 const theme = createTheme({
@@ -49,21 +63,30 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            {/* Dashboard */}
-            <Route index element={<Navigate to="/reports/daily-actions" replace />} />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Auth Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+              {/* Protected Routes with MainLayout */}            <Route element={<ProtectedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route path="/dashboard" element={<SimpleDashboard />} />
+                <Route path="/dashboard/redux" element={<DashboardSimple />} />
+                <Route path="/dashboard/contextual-explanation" element={<TestContextualExplanation />} />
+              </Route>
+            </Route>
             
-            {/* Reports */}
-            <Route path="/reports/daily-actions" element={<DailyActionsReportContainer />} />
-            <Route path="/reports/players" element={<PlayersReportContainer />} />
+            {/* Default redirect to login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
             
-            {/* Fallback route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </Router>
+            {/* Catch all - redirect to login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

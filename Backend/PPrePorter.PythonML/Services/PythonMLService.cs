@@ -66,6 +66,8 @@ namespace PPrePorter.PythonML.Services
                     inputData,
                     modelName,
                     parameters,
+                    null,  // version
+                    null,  // stage
                     cancellationToken);
 
                 stopwatch.Stop();
@@ -146,6 +148,8 @@ namespace PPrePorter.PythonML.Services
                     modelName,
                     hyperparameters,
                     validate,
+                    null,  // framework
+                    null,  // initialStage
                     cancellationToken);
 
                 stopwatch.Stop();
@@ -215,17 +219,19 @@ namespace PPrePorter.PythonML.Services
             _logger.LogInformation("Getting info for model: {ModelName}, version: {Version}", modelName, version ?? "latest");
 
             try
-            {
-                // Check the model cache first
-                if (version != null && await TryGetModelFromCacheAsync(modelName, version, cancellationToken, out var cachedModel))
+            {                // Check the model cache first
+                if (version != null)
                 {
-                    return cachedModel!;
+                    var (found, cachedModel) = await TryGetModelFromCacheAsync(modelName, version, cancellationToken);
+                    if (found && cachedModel != null)
+                    {
+                        return cachedModel;
+                    }
                 }
 
                 var client = _clientFactory.CreateClient(_options.ClientInstanceName);
-                
-                // Get model info using the gRPC client
-                var modelInfo = await client.GetModelInfoAsync(modelName, cancellationToken);
+                  // Get model info using the gRPC client
+                var modelInfo = await client.GetModelInfoAsync(modelName, null, null, cancellationToken);
 
                 // Convert to MLModel
                 var mlModel = new MLModel
@@ -237,18 +243,15 @@ namespace PPrePorter.PythonML.Services
                     CreatedAt = DateTime.UtcNow, // This information might not be available from gRPC
                     UpdatedAt = DateTime.UtcNow,
                     SupportedOperations = modelInfo.SupportedOperations
-                };
-
-                // Set the model type based on properties
+                };                // Set the model type based on properties
+                ModelType modelType = ModelType.Other;
                 if (modelInfo.Properties.TryGetValue("type", out var typeStr) &&
-                    Enum.TryParse<ModelType>(typeStr, true, out var modelType))
+                    Enum.TryParse<ModelType>(typeStr, true, out modelType))
                 {
-                    mlModel.Type = modelType;
+                    // modelType already set by TryParse
                 }
-                else
-                {
-                    mlModel.Type = ModelType.Other;
-                }
+                
+                mlModel.Type = modelType;
 
                 // Set the framework
                 if (modelInfo.Properties.TryGetValue("framework", out var framework))
@@ -387,24 +390,22 @@ namespace PPrePorter.PythonML.Services
         }
 
         #region Helper Methods
-
-        private async Task<bool> TryGetModelFromCacheAsync(
+        
+        private async Task<(bool found, MLModel? model)> TryGetModelFromCacheAsync(
             string modelName,
             string version,
-            CancellationToken cancellationToken,
-            out MLModel? model)
+            CancellationToken cancellationToken)
         {
             await _cacheLock.WaitAsync(cancellationToken);
             try
             {
                 if (_modelCache.TryGetValue(modelName, out var versionDict) &&
-                    versionDict.TryGetValue(version, out model))
+                    versionDict.TryGetValue(version, out var model))
                 {
-                    return true;
+                    return (true, model);
                 }
 
-                model = null;
-                return false;
+                return (false, null);
             }
             finally
             {

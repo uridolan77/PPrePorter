@@ -37,12 +37,12 @@ namespace PPrePorter.Infrastructure.Services
         {
             if (request == null)
                 throw new ValidationException("Dashboard request cannot be null");
-                
+
             if (string.IsNullOrEmpty(request.UserId))
                 throw new ValidationException("User ID is required for dashboard access");
-                
+
             var cacheKey = $"dashboard:summary:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
-            
+
             try
             {
                 return await _cachingService.GetOrCreateAsync(
@@ -70,7 +70,7 @@ namespace PPrePorter.Infrastructure.Services
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
                 var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
-                
+
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
@@ -125,31 +125,31 @@ namespace PPrePorter.Infrastructure.Services
                     Date = today,
                     Registrations = todayMetrics?.Registrations ?? 0,
                     RegistrationsChange = CalculateChangePercentage(
-                        todayMetrics?.Registrations ?? 0, 
+                        todayMetrics?.Registrations ?? 0,
                         yesterdayMetrics?.Registrations ?? 0),
                     FTD = todayMetrics?.FTD ?? 0,
                     FTDChange = CalculateChangePercentage(
-                        todayMetrics?.FTD ?? 0, 
+                        todayMetrics?.FTD ?? 0,
                         yesterdayMetrics?.FTD ?? 0),
                     Deposits = todayMetrics?.Deposits ?? 0,
                     DepositsChange = CalculateChangePercentage(
-                        todayMetrics?.Deposits ?? 0, 
+                        todayMetrics?.Deposits ?? 0,
                         yesterdayMetrics?.Deposits ?? 0),
                     Cashouts = todayMetrics?.Cashouts ?? 0,
                     CashoutsChange = CalculateChangePercentage(
-                        todayMetrics?.Cashouts ?? 0, 
+                        todayMetrics?.Cashouts ?? 0,
                         yesterdayMetrics?.Cashouts ?? 0),
                     Bets = todayMetrics?.Bets ?? 0,
                     BetsChange = CalculateChangePercentage(
-                        todayMetrics?.Bets ?? 0, 
+                        todayMetrics?.Bets ?? 0,
                         yesterdayMetrics?.Bets ?? 0),
                     Wins = todayMetrics?.Wins ?? 0,
                     WinsChange = CalculateChangePercentage(
-                        todayMetrics?.Wins ?? 0, 
+                        todayMetrics?.Wins ?? 0,
                         yesterdayMetrics?.Wins ?? 0),
                     Revenue = todayMetrics?.Revenue ?? 0,
                     RevenueChange = CalculateChangePercentage(
-                        todayMetrics?.Revenue ?? 0, 
+                        todayMetrics?.Revenue ?? 0,
                         yesterdayMetrics?.Revenue ?? 0)
                 };
 
@@ -166,12 +166,12 @@ namespace PPrePorter.Infrastructure.Services
         {
             if (request == null)
                 throw new ValidationException("Dashboard request cannot be null");
-                
+
             if (string.IsNullOrEmpty(request.UserId))
                 throw new ValidationException("User ID is required for dashboard access");
-                
+
             var cacheKey = $"dashboard:casino-revenue:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
-            
+
             try
             {
                 return await _cachingService.GetOrCreateAsync(
@@ -199,7 +199,7 @@ namespace PPrePorter.Infrastructure.Services
                 var endDate = DateTime.UtcNow.Date;
                 var startDate = endDate.AddDays(-7);
                 var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
-                
+
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
@@ -233,7 +233,7 @@ namespace PPrePorter.Infrastructure.Services
                 for (var date = startDate; date <= endDate; date = date.AddDays(1))
                 {
                     var existingItem = revenueData.FirstOrDefault(item => item.Date.Date == date.Date);
-                    
+
                     if (existingItem != null)
                     {
                         result.Add(existingItem);
@@ -260,7 +260,7 @@ namespace PPrePorter.Infrastructure.Services
         public async Task<List<PlayerRegistrationItem>> GetPlayerRegistrationsChartDataAsync(DashboardRequest request)
         {
             var cacheKey = $"dashboard:player-registrations:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
-            
+
             return await _cachingService.GetOrCreateAsync(
                 cacheKey,
                 async () => await FetchPlayerRegistrationsChartDataAsync(request),
@@ -275,7 +275,7 @@ namespace PPrePorter.Infrastructure.Services
                 var endDate = DateTime.UtcNow.Date;
                 var startDate = endDate.AddDays(-7);
                 var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
-                
+
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
@@ -310,7 +310,7 @@ namespace PPrePorter.Infrastructure.Services
                 for (var date = startDate; date <= endDate; date = date.AddDays(1))
                 {
                     var existingItem = registrationData.FirstOrDefault(item => item.Date.Date == date.Date);
-                    
+
                     if (existingItem != null)
                     {
                         result.Add(existingItem);
@@ -338,7 +338,7 @@ namespace PPrePorter.Infrastructure.Services
         public async Task<List<TopGameItem>> GetTopGamesDataAsync(DashboardRequest request)
         {
             var cacheKey = $"dashboard:top-games:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
-            
+
             return await _cachingService.GetOrCreateAsync(
                 cacheKey,
                 async () => await FetchTopGamesDataAsync(request),
@@ -352,7 +352,7 @@ namespace PPrePorter.Infrastructure.Services
             {
                 var today = DateTime.UtcNow.Date;
                 var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
-                
+
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
@@ -370,11 +370,11 @@ namespace PPrePorter.Infrastructure.Services
                     switch (request.PlayMode.ToLower())
                     {
                         case "casino":
-                            query = query.Where(x => 
-                                x.game.GameType == "Slots" || 
-                                x.game.GameType == "Table Games" || 
-                                x.game.GameType == "Casual Games" || 
-                                x.game.GameType == "Jackpots" || 
+                            query = query.Where(x =>
+                                x.game.GameType == "Slots" ||
+                                x.game.GameType == "Table Games" ||
+                                x.game.GameType == "Casual Games" ||
+                                x.game.GameType == "Jackpots" ||
                                 x.game.GameType == "Featured");
                             break;
                         case "live":
@@ -400,10 +400,10 @@ namespace PPrePorter.Infrastructure.Services
                         GameType = g.Key.GameType,
                         Bets = g.Sum(x => (x.gameAct.RealBetAmount ?? 0) + (x.gameAct.BonusBetAmount ?? 0)),
                         Wins = g.Sum(x => (x.gameAct.RealWinAmount ?? 0) + (x.gameAct.BonusWinAmount ?? 0)),
-                        Revenue = g.Sum(x => 
-                            (x.gameAct.RealBetAmount ?? 0) + 
-                            (x.gameAct.BonusBetAmount ?? 0) - 
-                            (x.gameAct.RealWinAmount ?? 0) - 
+                        Revenue = g.Sum(x =>
+                            (x.gameAct.RealBetAmount ?? 0) +
+                            (x.gameAct.BonusBetAmount ?? 0) -
+                            (x.gameAct.RealWinAmount ?? 0) -
                             (x.gameAct.BonusWinAmount ?? 0))
                     })
                     .OrderByDescending(x => x.Revenue)
@@ -422,7 +422,7 @@ namespace PPrePorter.Infrastructure.Services
         public async Task<List<RecentTransactionItem>> GetRecentTransactionsAsync(DashboardRequest request)
         {
             var cacheKey = $"dashboard:recent-transactions:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMddHH}";
-            
+
             return await _cachingService.GetOrCreateAsync(
                 cacheKey,
                 async () => await FetchRecentTransactionsAsync(request),
@@ -435,7 +435,7 @@ namespace PPrePorter.Infrastructure.Services
             try
             {
                 var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
-                
+
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
@@ -496,16 +496,296 @@ namespace PPrePorter.Infrastructure.Services
             }
         }
 
+        public async Task<DashboardData> GetDashboardDataAsync(DashboardRequest request)
+        {
+            try
+            {
+                // Get all dashboard data in parallel
+                var summaryTask = GetDashboardSummaryAsync(request);
+                var revenueChartTask = GetCasinoRevenueChartDataAsync(request);
+                var registrationsChartTask = GetPlayerRegistrationsChartDataAsync(request);
+                var topGamesTask = GetTopGamesDataAsync(request);
+                var recentTransactionsTask = GetRecentTransactionsAsync(request);
+
+                await Task.WhenAll(
+                    summaryTask,
+                    revenueChartTask,
+                    registrationsChartTask,
+                    topGamesTask,
+                    recentTransactionsTask);
+
+                var dashboard = new DashboardData
+                {
+                    Summary = await summaryTask,
+                    CasinoRevenue = await revenueChartTask,
+                    PlayerRegistrations = await registrationsChartTask,
+                    TopGames = await topGamesTask,
+                    RecentTransactions = await recentTransactionsTask
+                };
+
+                return dashboard;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving complete dashboard data for user {UserId}", request.UserId);
+                throw;
+            }
+        }
+
+        public async Task<List<PlayerJourneySankeyData>> GetPlayerJourneySankeyDataAsync(DashboardRequest request)
+        {
+            var cacheKey = $"dashboard:player-journey:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
+
+            return await _cachingService.GetOrCreateAsync(
+                cacheKey,
+                async () => await FetchPlayerJourneySankeyDataAsync(request),
+                slidingExpiration: TimeSpan.FromMinutes(15),
+                absoluteExpiration: TimeSpan.FromHours(1));
+        }
+
+        private async Task<List<PlayerJourneySankeyData>> FetchPlayerJourneySankeyDataAsync(DashboardRequest request)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would query the database for player journey data
+            await Task.Delay(10); // Just to make it async
+
+            return new List<PlayerJourneySankeyData>
+            {
+                new PlayerJourneySankeyData { SourceNode = "Registration", TargetNode = "First Deposit", Value = 100, Color = "#4caf50" },
+                new PlayerJourneySankeyData { SourceNode = "First Deposit", TargetNode = "First Game", Value = 80, Color = "#2196f3" },
+                new PlayerJourneySankeyData { SourceNode = "First Game", TargetNode = "Second Deposit", Value = 50, Color = "#ff9800" },
+                new PlayerJourneySankeyData { SourceNode = "Second Deposit", TargetNode = "Regular Player", Value = 30, Color = "#9c27b0" },
+                new PlayerJourneySankeyData { SourceNode = "Registration", TargetNode = "Abandoned", Value = 20, Color = "#f44336" }
+            };
+        }
+
+        public async Task<HeatmapData> GetHeatmapDataAsync(DashboardRequest request)
+        {
+            var cacheKey = $"dashboard:heatmap:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
+
+            return await _cachingService.GetOrCreateAsync(
+                cacheKey,
+                async () => await FetchHeatmapDataAsync(request),
+                slidingExpiration: TimeSpan.FromMinutes(15),
+                absoluteExpiration: TimeSpan.FromHours(1));
+        }
+
+        private async Task<HeatmapData> FetchHeatmapDataAsync(DashboardRequest request)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would query the database for heatmap data
+            await Task.Delay(10); // Just to make it async
+
+            return new HeatmapData
+            {
+                Title = "Player Activity by Hour and Day",
+                XLabels = new List<string> { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
+                YLabels = new List<string> { "00:00", "04:00", "08:00", "12:00", "16:00", "20:00" },
+                Values = new List<List<decimal>>
+                {
+                    new List<decimal> { 10, 20, 15, 12, 18, 25, 30 },
+                    new List<decimal> { 5, 8, 10, 7, 9, 12, 15 },
+                    new List<decimal> { 8, 10, 12, 15, 20, 18, 14 },
+                    new List<decimal> { 20, 25, 30, 35, 40, 45, 50 },
+                    new List<decimal> { 30, 35, 40, 45, 50, 55, 60 },
+                    new List<decimal> { 25, 30, 35, 40, 45, 50, 55 }
+                },
+                MetricName = "Active Players"
+            };
+        }
+
+        public async Task<SegmentComparisonData> GetSegmentComparisonAsync(SegmentComparisonRequest request)
+        {
+            var cacheKey = $"dashboard:segment-comparison:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{request.SegmentType}:{request.MetricToCompare}:{DateTime.UtcNow:yyyyMMdd}";
+
+            return await _cachingService.GetOrCreateAsync(
+                cacheKey,
+                async () => await FetchSegmentComparisonDataAsync(request),
+                slidingExpiration: TimeSpan.FromMinutes(15),
+                absoluteExpiration: TimeSpan.FromHours(1));
+        }
+
+        private async Task<SegmentComparisonData> FetchSegmentComparisonDataAsync(SegmentComparisonRequest request)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would query the database for segment comparison data
+            await Task.Delay(10); // Just to make it async
+
+            return new SegmentComparisonData
+            {
+                SegmentType = request.SegmentType,
+                MetricName = request.MetricToCompare,
+                Segments = new List<SegmentMetricData>
+                {
+                    new SegmentMetricData { SegmentName = "Segment 1", Value = 1000, PercentChange = 5.2m },
+                    new SegmentMetricData { SegmentName = "Segment 2", Value = 1500, PercentChange = -2.1m },
+                    new SegmentMetricData { SegmentName = "Segment 3", Value = 800, PercentChange = 10.5m },
+                    new SegmentMetricData { SegmentName = "Segment 4", Value = 1200, PercentChange = 0.8m }
+                }
+            };
+        }
+
+        public async Task<List<MicroChartData>> GetMicroChartDataAsync(DashboardRequest request)
+        {
+            var cacheKey = $"dashboard:micro-charts:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{DateTime.UtcNow:yyyyMMdd}";
+
+            return await _cachingService.GetOrCreateAsync(
+                cacheKey,
+                async () => await FetchMicroChartDataAsync(request),
+                slidingExpiration: TimeSpan.FromMinutes(15),
+                absoluteExpiration: TimeSpan.FromHours(1));
+        }
+
+        private async Task<List<MicroChartData>> FetchMicroChartDataAsync(DashboardRequest request)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would query the database for micro chart data
+            await Task.Delay(10); // Just to make it async
+
+            return new List<MicroChartData>
+            {
+                new MicroChartData
+                {
+                    Title = "Revenue Trend",
+                    ChartType = "sparkline",
+                    Values = new List<decimal> { 100, 120, 110, 130, 150, 140, 160 },
+                    CurrentValue = 160,
+                    TargetValue = 150
+                },
+                new MicroChartData
+                {
+                    Title = "Registrations",
+                    ChartType = "sparkline",
+                    Values = new List<decimal> { 50, 45, 60, 55, 70, 65, 80 },
+                    CurrentValue = 80,
+                    TargetValue = 75
+                },
+                new MicroChartData
+                {
+                    Title = "Deposits",
+                    ChartType = "bullet",
+                    Values = new List<decimal> { 200, 220, 210, 230, 250, 240, 260 },
+                    CurrentValue = 260,
+                    TargetValue = 250
+                }
+            };
+        }
+
+        public async Task<DashboardPreferences> GetUserDashboardPreferencesAsync(string userId)
+        {
+            var cacheKey = $"dashboard:preferences:{userId}";
+
+            return await _cachingService.GetOrCreateAsync(
+                cacheKey,
+                async () => await FetchUserDashboardPreferencesAsync(userId),
+                slidingExpiration: TimeSpan.FromMinutes(15),
+                absoluteExpiration: TimeSpan.FromHours(1));
+        }
+
+        private async Task<DashboardPreferences> FetchUserDashboardPreferencesAsync(string userId)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would query the database for user preferences
+            await Task.Delay(10); // Just to make it async
+
+            // Return default preferences
+            return new DashboardPreferences
+            {
+                UserId = userId,
+                ColorScheme = new ColorSchemePreference
+                {
+                    UserId = userId,
+                    BaseTheme = "light",
+                    ColorMode = "standard",
+                    PrimaryColor = "#1976d2",
+                    SecondaryColor = "#dc004e",
+                    PositiveColor = "#4caf50",
+                    NegativeColor = "#f44336",
+                    NeutralColor = "#9e9e9e",
+                    ContrastLevel = 3
+                },
+                InformationDensity = "medium",
+                PreferredChartTypes = new Dictionary<string, string>
+                {
+                    { "revenue", "line" },
+                    { "registrations", "bar" },
+                    { "topGames", "bar" },
+                    { "transactions", "table" }
+                },
+                PinnedMetrics = new List<string> { "Revenue", "Registrations", "FTD" },
+                ShowAnnotations = true,
+                ShowInsights = true,
+                ShowAnomalies = true,
+                ShowForecasts = true,
+                DefaultTimeRange = "week",
+                DefaultDataGranularity = 7,
+                InsightImportanceThreshold = 4,
+                ComponentVisibility = new Dictionary<string, bool>
+                {
+                    { "summary", true },
+                    { "revenueChart", true },
+                    { "registrationChart", true },
+                    { "topGames", true },
+                    { "transactions", true },
+                    { "story", true }
+                },
+                LastUpdated = DateTime.UtcNow
+            };
+        }
+
+        public async Task SaveUserDashboardPreferencesAsync(string userId, DashboardPreferences preferences)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would save the preferences to the database
+            await Task.Delay(10); // Just to make it async
+
+            // Update the cache
+            var cacheKey = $"dashboard:preferences:{userId}";
+            await _cachingService.RemoveAsync(cacheKey);
+        }
+
+        public async Task<AccessibilityOptimizedData> GetAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
+        {
+            var cacheKey = $"dashboard:accessibility:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{request.VisualizationType}:{request.MetricKey}:{DateTime.UtcNow:yyyyMMdd}";
+
+            return await _cachingService.GetOrCreateAsync(
+                cacheKey,
+                async () => await FetchAccessibilityOptimizedDataAsync(request),
+                slidingExpiration: TimeSpan.FromMinutes(15),
+                absoluteExpiration: TimeSpan.FromHours(1));
+        }
+
+        private async Task<AccessibilityOptimizedData> FetchAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
+        {
+            // This is a placeholder implementation
+            // In a real implementation, you would query the database and transform the data
+            await Task.Delay(10); // Just to make it async
+
+            return new AccessibilityOptimizedData
+            {
+                Title = $"Accessibility Optimized {request.MetricKey} Data",
+                Description = $"This is an accessibility optimized view of {request.MetricKey} data in {request.VisualizationType} format.",
+                Format = request.VisualizationType,
+                Data = new { placeholder = "Sample data - replace with actual data" },
+                KeyInsights = new List<string>
+                {
+                    $"{request.MetricKey} has increased by 5% compared to last week",
+                    $"The highest {request.MetricKey} was recorded on Monday",
+                    $"The trend for {request.MetricKey} is positive over the last 30 days"
+                }
+            };
+        }
+
         public async Task<ContextualDataExplorerResult> GetContextualDataExplorerResultAsync(ContextualDataExplorerRequest request)
         {
             if (request == null)
                 throw new ValidationException("Contextual data explorer request cannot be null");
-                
+
             if (string.IsNullOrEmpty(request.UserId))
                 throw new ValidationException("User ID is required for contextual data exploration");
-                
+
             var cacheKey = $"dashboard:contextual-explorer:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{request.ExplorationContext}:{request.DrillDownKey}:{request.DrillDownLevel}:{DateTime.UtcNow:yyyyMMdd}";
-            
+
             try
             {
                 return await _cachingService.GetOrCreateAsync(
@@ -533,10 +813,10 @@ namespace PPrePorter.Infrastructure.Services
                 // Default dates if not provided
                 var endDate = request.EndDate?.Date ?? DateTime.UtcNow.Date;
                 var startDate = request.StartDate?.Date ?? endDate.AddDays(-30);
-                
+
                 // Get accessible white labels
                 var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
-                
+
                 if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
                     whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
@@ -597,7 +877,7 @@ namespace PPrePorter.Infrastructure.Services
             }
         }
 
-        private async Task ProcessRevenueExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result, 
+        private async Task ProcessRevenueExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Query daily actions for revenue data
@@ -626,7 +906,7 @@ namespace PPrePorter.Infrastructure.Services
 
             // Process dimensions for grouping
             var dimensionsList = request.Dimensions ?? new List<string> { "time" };
-            
+
             // Get data based on dimensions and metrics
             if (dimensionsList.Contains("time"))
             {
@@ -650,7 +930,7 @@ namespace PPrePorter.Infrastructure.Services
                         Dimensions = new Dictionary<string, object> { { "time", item.Key } },
                         Metrics = item.Metrics
                     };
-                    
+
                     // Convert to ExplorerDataPoint and add to result
                     result.DataPoints.Add(dataPoint.ToExplorerDataPoint());
                 }
@@ -673,10 +953,10 @@ namespace PPrePorter.Infrastructure.Services
         private async Task<List<RevenueDataItem>> GetRevenueDataByTimeAsync(IQueryable<DailyAction> query, string timeGrouping, List<string> metrics)
         {
             var result = new List<RevenueDataItem>();
-            
+
             // Default to basic metrics if none specified
             var metricsList = metrics?.Count > 0 ? metrics : new List<string> { "revenue", "bets", "wins" };
-            
+
             switch (timeGrouping)
             {
                 case "year":
@@ -694,16 +974,16 @@ namespace PPrePorter.Infrastructure.Services
                         .ToListAsync();                    foreach (var item in yearlyData)
                     {
                         var yearlyMetrics = new Dictionary<string, decimal>();
-                        
+
                         if (metricsList.Contains("revenue"))
                             yearlyMetrics["revenue"] = item.Revenue;
-                        
+
                         if (metricsList.Contains("bets"))
                             yearlyMetrics["bets"] = item.Bets;
-                        
+
                         if (metricsList.Contains("wins"))
                             yearlyMetrics["wins"] = item.Wins;
-                        
+
                         if (metricsList.Contains("deposits"))
                             yearlyMetrics["deposits"] = item.Deposits;
                           if (metricsList.Contains("cashouts"))
@@ -717,27 +997,27 @@ namespace PPrePorter.Infrastructure.Services
                         });
                     }
                     break;
-                
+
                 case "month":                    var monthlyData = await query
                         .GroupBy(da => new { Year = da.Date.Year, Month = da.Date.Month })
                         .Select(g => new
                         {
                             Year = g.Key.Year,
                             Month = g.Key.Month,
-                            Revenue = g.Sum(da => 
-                                ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) + 
-                                ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) + 
-                                ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) + 
+                            Revenue = g.Sum(da =>
+                                ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) +
+                                ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) +
+                                ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) +
                                 ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0))),
-                            Bets = g.Sum(da => 
-                                (da.BetsCasino ?? 0) + 
-                                (da.BetsSport ?? 0) + 
-                                (da.BetsLive ?? 0) + 
+                            Bets = g.Sum(da =>
+                                (da.BetsCasino ?? 0) +
+                                (da.BetsSport ?? 0) +
+                                (da.BetsLive ?? 0) +
                                 (da.BetsBingo ?? 0)),
-                            Wins = g.Sum(da => 
-                                (da.WinsCasino ?? 0) + 
-                                (da.WinsSport ?? 0) + 
-                                (da.WinsLive ?? 0) + 
+                            Wins = g.Sum(da =>
+                                (da.WinsCasino ?? 0) +
+                                (da.WinsSport ?? 0) +
+                                (da.WinsLive ?? 0) +
                                 (da.WinsBingo ?? 0)),
                             Deposits = g.Sum(da => da.Deposits ?? 0),
                             Cashouts = g.Sum(da => da.PaidCashouts ?? 0)
@@ -747,19 +1027,19 @@ namespace PPrePorter.Infrastructure.Services
                         .ToListAsync();                    foreach (var item in monthlyData)
                     {
                         var itemMetrics = new Dictionary<string, decimal>();
-                        
+
                         if (metricsList.Contains("revenue"))
                             itemMetrics["revenue"] = item.Revenue;
-                        
+
                         if (metricsList.Contains("bets"))
                             itemMetrics["bets"] = item.Bets;
-                        
+
                         if (metricsList.Contains("wins"))
                             itemMetrics["wins"] = item.Wins;
-                        
+
                         if (metricsList.Contains("deposits"))
                             itemMetrics["deposits"] = item.Deposits;
-                        
+
                         if (metricsList.Contains("cashouts"))
                             itemMetrics["cashouts"] = item.Cashouts;                        result.Add(new RevenueDataItem
                         {
@@ -769,32 +1049,32 @@ namespace PPrePorter.Infrastructure.Services
                         });
                     }
                     break;
-                
+
                 case "week":
                     // Implementation for weekly grouping
                     // ...
                     break;
-                
+
                 case "day":
                 default:                    var dailyData = await query
                         .GroupBy(da => da.Date.Date)
                         .Select(g => new
                         {
                             Date = g.Key,
-                            Revenue = g.Sum(da => 
-                                ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) + 
-                                ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) + 
-                                ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) + 
+                            Revenue = g.Sum(da =>
+                                ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) +
+                                ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) +
+                                ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) +
                                 ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0))),
-                            Bets = g.Sum(da => 
-                                (da.BetsCasino ?? 0) + 
-                                (da.BetsSport ?? 0) + 
-                                (da.BetsLive ?? 0) + 
+                            Bets = g.Sum(da =>
+                                (da.BetsCasino ?? 0) +
+                                (da.BetsSport ?? 0) +
+                                (da.BetsLive ?? 0) +
                                 (da.BetsBingo ?? 0)),
-                            Wins = g.Sum(da => 
-                                (da.WinsCasino ?? 0) + 
-                                (da.WinsSport ?? 0) + 
-                                (da.WinsLive ?? 0) + 
+                            Wins = g.Sum(da =>
+                                (da.WinsCasino ?? 0) +
+                                (da.WinsSport ?? 0) +
+                                (da.WinsLive ?? 0) +
                                 (da.WinsBingo ?? 0)),
                             Deposits = g.Sum(da => da.Deposits ?? 0),
                             Cashouts = g.Sum(da => da.PaidCashouts ?? 0)
@@ -805,19 +1085,19 @@ namespace PPrePorter.Infrastructure.Services
                     foreach (var item in dailyData)
                     {
                         var itemMetrics = new Dictionary<string, decimal>();
-                        
+
                         if (metricsList.Contains("revenue"))
                             itemMetrics["revenue"] = item.Revenue;
-                        
+
                         if (metricsList.Contains("bets"))
                             itemMetrics["bets"] = item.Bets;
-                        
+
                         if (metricsList.Contains("wins"))
                             itemMetrics["wins"] = item.Wins;
-                        
+
                         if (metricsList.Contains("deposits"))
                             itemMetrics["deposits"] = item.Deposits;
-                        
+
                         if (metricsList.Contains("cashouts"))
                             itemMetrics["cashouts"] = item.Cashouts;
 
@@ -830,7 +1110,7 @@ namespace PPrePorter.Infrastructure.Services
                     }
                     break;
             }
-            
+
             return result;
         }
 
@@ -841,65 +1121,65 @@ namespace PPrePorter.Infrastructure.Services
             public Dictionary<string, decimal> Metrics { get; set; }
         }
 
-        private async Task ProcessPlayerExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result, 
+        private async Task ProcessPlayerExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for player exploration
             // This will query player data and aggregate based on request dimensions
             // For now, return a placeholder implementation
-            
+
             result.Aggregations["total_players"] = 0;
             result.Aggregations["active_players"] = 0;
             result.Aggregations["new_players"] = 0;
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
         }
 
-        private async Task ProcessGameExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result, 
+        private async Task ProcessGameExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for game exploration
             // This will query game data and aggregate based on request dimensions
             // For now, return a placeholder implementation
-            
+
             result.Aggregations["total_games_played"] = 0;
             result.Aggregations["most_popular_game"] = 0;
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
         }
 
-        private async Task ProcessTransactionExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result, 
+        private async Task ProcessTransactionExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for transaction exploration
             // This will query transaction data and aggregate based on request dimensions
             // For now, return a placeholder implementation
-            
+
             result.Aggregations["total_transactions"] = 0;
             result.Aggregations["total_transaction_volume"] = 0;
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
         }
 
-        private async Task ProcessSummaryExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result, 
+        private async Task ProcessSummaryExplorationAsync(ContextualDataExplorerRequest request, ContextualDataExplorerResult result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for summary exploration (default context)
             // This will query summary data and aggregate based on request dimensions
             // For now, return a placeholder implementation
-            
+
             result.Aggregations["total_revenue"] = 0;
             result.Aggregations["total_players"] = 0;
             result.Aggregations["total_games_played"] = 0;
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
         }
 
@@ -908,7 +1188,7 @@ namespace PPrePorter.Infrastructure.Services
             // Implementation for trend analysis
             // This will analyze the data points and identify trends
             // For now, return a placeholder implementation
-            
+
             var trendAnalysis = new TrendAnalysis
             {
                 PrimaryTrend = "stable",
@@ -916,11 +1196,11 @@ namespace PPrePorter.Infrastructure.Services
                 DimensionalTrends = new Dictionary<string, string>(),
                 Anomalies = new List<Anomaly>()
             };
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
-            
+
             return trendAnalysis;
         }
 
@@ -929,7 +1209,7 @@ namespace PPrePorter.Infrastructure.Services
             // Implementation for predictive modeling
             // This will generate predictions based on the scenario parameters
             // For now, return a placeholder implementation
-            
+
             var predictiveResult = new PredictiveModelingResult
             {
                 ScenarioName = "Default Scenario",
@@ -939,11 +1219,11 @@ namespace PPrePorter.Infrastructure.Services
                 ConfidenceScore = 0.5m,
                 SensitivityAnalysis = new Dictionary<string, decimal>()
             };
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
-            
+
             return predictiveResult;
         }
 
@@ -952,7 +1232,7 @@ namespace PPrePorter.Infrastructure.Services
             // Implementation for insight generation
             // This will analyze the data and generate insights
             // For now, return a placeholder implementation
-            
+
             var insights = new List<DataInsight>
             {
                 new DataInsight
@@ -966,11 +1246,11 @@ namespace PPrePorter.Infrastructure.Services
                     SupportingData = new Dictionary<string, object>()
                 }
             };
-            
+
             // Further implementation will be added in the future
-            
+
             await Task.CompletedTask; // Placeholder for async implementation
-            
+
             return insights;
         }
 
@@ -1015,10 +1295,10 @@ namespace PPrePorter.Infrastructure.Services
                 case "bingo":
                     return group.Sum(da => da.BetsBingo ?? 0);
                 default:
-                    return group.Sum(da => 
-                        (da.BetsCasino ?? 0) + 
-                        (da.BetsSport ?? 0) + 
-                        (da.BetsLive ?? 0) + 
+                    return group.Sum(da =>
+                        (da.BetsCasino ?? 0) +
+                        (da.BetsSport ?? 0) +
+                        (da.BetsLive ?? 0) +
                         (da.BetsBingo ?? 0));
             }
         }
@@ -1036,10 +1316,10 @@ namespace PPrePorter.Infrastructure.Services
                 case "bingo":
                     return group.Sum(da => da.WinsBingo ?? 0);
                 default:
-                    return group.Sum(da => 
-                        (da.WinsCasino ?? 0) + 
-                        (da.WinsSport ?? 0) + 
-                        (da.WinsLive ?? 0) + 
+                    return group.Sum(da =>
+                        (da.WinsCasino ?? 0) +
+                        (da.WinsSport ?? 0) +
+                        (da.WinsLive ?? 0) +
                         (da.WinsBingo ?? 0));
             }
         }
@@ -1057,10 +1337,10 @@ namespace PPrePorter.Infrastructure.Services
                 case "bingo":
                     return group.Sum(da => (da.BetsBingo ?? 0) - (da.WinsBingo ?? 0));
                 default:
-                    return group.Sum(da => 
-                        ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) + 
-                        ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) + 
-                        ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) + 
+                    return group.Sum(da =>
+                        ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) +
+                        ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) +
+                        ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) +
                         ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0)));
             }
         }
@@ -1078,10 +1358,10 @@ namespace PPrePorter.Infrastructure.Services
                 case "bingo":
                     return group.Sum(da => (da.BetsBingo ?? 0) - (da.WinsBingo ?? 0));
                 default:
-                    return group.Sum(da => 
-                        ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) + 
-                        ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) + 
-                        ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) + 
+                    return group.Sum(da =>
+                        ((da.BetsCasino ?? 0) - (da.WinsCasino ?? 0)) +
+                        ((da.BetsSport ?? 0) - (da.WinsSport ?? 0)) +
+                        ((da.BetsLive ?? 0) - (da.WinsLive ?? 0)) +
                         ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0)));
             }
         }
@@ -1089,8 +1369,8 @@ namespace PPrePorter.Infrastructure.Services
         // Helper method to detect database connection errors
         private bool IsDbConnectionException(Exception ex)
         {
-            return ex is SqlException || 
-                   ex is DbUpdateException || 
+            return ex is SqlException ||
+                   ex is DbUpdateException ||
                    ex.InnerException != null && IsDbConnectionException(ex.InnerException);
         }
     }

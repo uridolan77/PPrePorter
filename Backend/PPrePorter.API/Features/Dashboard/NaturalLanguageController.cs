@@ -9,16 +9,16 @@ namespace PPrePorter.API.Features.Dashboard;
 /// Controller for natural language query features in the dashboard
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Dashboard/NaturalLanguage")]
 public class NaturalLanguageController : ControllerBase
 {
     private readonly NaturalLanguageQueryService _nlpService;
-    
+
     public NaturalLanguageController(NaturalLanguageQueryService nlpService)
     {
         _nlpService = nlpService;
     }
-    
+
     /// <summary>
     /// Processes a natural language query and returns structured results or clarification prompts
     /// </summary>
@@ -28,12 +28,12 @@ public class NaturalLanguageController : ControllerBase
     public async Task<IActionResult> ProcessQuery([FromBody] string query)
     {
         var result = await _nlpService.ProcessQueryAsync(query);
-        
+
         if (!result.IsSuccessful)
         {
             return BadRequest(new { error = result.ErrorMessage });
         }
-        
+
         if (result.NeedsClarification)
         {
             // Return clarification prompts to the client
@@ -44,10 +44,10 @@ public class NaturalLanguageController : ControllerBase
                 clarificationPrompts = result.ClarificationResponse?.ClarificationPrompts
             });
         }
-        
+
         // In a real implementation, you would execute the SQL here
         // var data = await _dataService.ExecuteQueryAsync(result.Sql);
-        
+
         return Ok(new
         {
             query = query,
@@ -57,7 +57,7 @@ public class NaturalLanguageController : ControllerBase
             data = new [] { new { placeholder = "Sample data - replace with actual query results" } }
         });
     }
-    
+
     /// <summary>
     /// Applies user clarification responses and completes the query processing
     /// </summary>
@@ -67,14 +67,14 @@ public class NaturalLanguageController : ControllerBase
     public async Task<IActionResult> ApplyClarification([FromBody] ClarificationRequest request)
     {
         var result = await _nlpService.ApplyClarificationAsync(
-            request.OriginalEntities, 
+            request.OriginalEntities,
             request.ClarificationResponses);
-            
+
         if (!result.IsSuccessful)
         {
             return BadRequest(new { error = result.ErrorMessage });
         }
-        
+
         if (result.NeedsClarification)
         {
             // Additional clarification is needed
@@ -85,10 +85,10 @@ public class NaturalLanguageController : ControllerBase
                 clarificationPrompts = result.ClarificationResponse?.ClarificationPrompts
             });
         }
-        
+
         // In a real implementation, you would execute the SQL here
         // var data = await _dataService.ExecuteQueryAsync(result.Sql);
-        
+
         return Ok(new
         {
             entities = result.Entities,
