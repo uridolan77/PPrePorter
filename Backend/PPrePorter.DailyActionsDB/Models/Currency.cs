@@ -7,24 +7,28 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a currency
     /// </summary>
-    [Table("tbl_Currencies")]
+    [Table("tbl_Currencies", Schema = "common")]
     public class Currency
     {
         [Key]
+        [Column("CurrencyID")]
         public byte CurrencyID { get; set; }
 
         [Required]
         [StringLength(30)]
+        [Column("CurrencyName")]
         public string CurrencyName { get; set; }
 
         [StringLength(5)]
+        [Column("CurrencySymbol")]
         public string? CurrencySymbol { get; set; }
 
         [Required]
         [StringLength(3)]
+        [Column("CurrencyCode")]
         public string CurrencyCode { get; set; }
 
-        [Column(TypeName = "money")]
+        [Column("RateInEUR", TypeName = "money")]
         public decimal? RateInEUR { get; set; }
 
         [Column(TypeName = "money")]

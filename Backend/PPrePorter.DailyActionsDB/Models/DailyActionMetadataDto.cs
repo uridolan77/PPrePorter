@@ -11,58 +11,58 @@ namespace PPrePorter.DailyActionsDB.Models
         /// List of white labels
         /// </summary>
         public List<WhiteLabelDto> WhiteLabels { get; set; } = new List<WhiteLabelDto>();
-        
+
         /// <summary>
         /// List of countries
         /// </summary>
         public List<CountryDto> Countries { get; set; } = new List<CountryDto>();
-        
+
         /// <summary>
         /// List of currencies
         /// </summary>
         public List<CurrencyDto> Currencies { get; set; } = new List<CurrencyDto>();
-        
+
         /// <summary>
         /// List of languages
         /// </summary>
         public List<LanguageDto> Languages { get; set; } = new List<LanguageDto>();
-        
+
         /// <summary>
         /// List of platforms
         /// </summary>
         public List<string> Platforms { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// List of genders
         /// </summary>
         public List<string> Genders { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// List of statuses
         /// </summary>
         public List<string> Statuses { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// List of player types
         /// </summary>
         public List<string> PlayerTypes { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// List of registration play modes
         /// </summary>
         public List<string> RegistrationPlayModes { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// List of trackers
         /// </summary>
         public List<string> Trackers { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// List of group by options
         /// </summary>
         public List<GroupByOptionDto> GroupByOptions { get; set; } = new List<GroupByOptionDto>();
     }
-    
+
     /// <summary>
     /// DTO for white label
     /// </summary>
@@ -70,9 +70,10 @@ namespace PPrePorter.DailyActionsDB.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
     }
-    
+
     /// <summary>
     /// DTO for country
     /// </summary>
@@ -82,7 +83,7 @@ namespace PPrePorter.DailyActionsDB.Models
         public string Name { get; set; } = string.Empty;
         public string? IsoCode { get; set; }
     }
-    
+
     /// <summary>
     /// DTO for currency
     /// </summary>
@@ -93,7 +94,7 @@ namespace PPrePorter.DailyActionsDB.Models
         public string Code { get; set; } = string.Empty;
         public string? Symbol { get; set; }
     }
-    
+
     /// <summary>
     /// DTO for language
     /// </summary>
@@ -103,7 +104,7 @@ namespace PPrePorter.DailyActionsDB.Models
         public string Name { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
     }
-    
+
     /// <summary>
     /// DTO for group by option
     /// </summary>

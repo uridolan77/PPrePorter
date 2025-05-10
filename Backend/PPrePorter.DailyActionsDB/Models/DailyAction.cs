@@ -7,51 +7,77 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents daily aggregated player actions and metrics
     /// </summary>
+    [Table("tbl_Daily_actions", Schema = "common")]
     public class DailyAction
     {
         [Key]
-        public int Id { get; set; }
+        [Column("ID")]
+        public long Id { get; set; }
 
-        [Required]
-        public int WhiteLabelID { get; set; }
-
-        [Required]
+        [Column("Date")]
         public DateTime Date { get; set; }
 
-        [Required]
-        public int Registration { get; set; }
+        [Column("WhiteLabelID")]
+        public short? WhiteLabelID { get; set; }
 
-        [Required]
-        public int FTD { get; set; }
+        [Column("WhiteLabelId")]
+        public short? WhiteLabelId { get; set; } // Some queries use WhiteLabelId instead of WhiteLabelID
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("PlayerID")]
+        public long? PlayerID { get; set; }
+
+        [Column("Registration")]
+        public byte? Registration { get; set; }
+
+        [Column("FTD")]
+        public byte? FTD { get; set; }
+
+        [Column("FTDA")]
+        public byte? FTDA { get; set; }
+
+        [Column("Deposits", TypeName = "money")]
         public decimal? Deposits { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("DepositsCreditCard", TypeName = "money")]
+        public decimal? DepositsCreditCard { get; set; }
+
+        [Column("DepositsNeteller", TypeName = "money")]
+        public decimal? DepositsNeteller { get; set; }
+
+        [Column("DepositsMoneyBookers", TypeName = "money")]
+        public decimal? DepositsMoneyBookers { get; set; }
+
+        [Column("DepositsOther", TypeName = "money")]
+        public decimal? DepositsOther { get; set; }
+
+        [Column("CashoutRequests", TypeName = "money")]
+        public decimal? CashoutRequests { get; set; }
+
+        [Column("PaidCashouts", TypeName = "money")]
         public decimal? PaidCashouts { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("BetsCasino", TypeName = "money")]
         public decimal? BetsCasino { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("WinsCasino", TypeName = "money")]
         public decimal? WinsCasino { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("BetsSport", TypeName = "money")]
         public decimal? BetsSport { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("WinsSport", TypeName = "money")]
         public decimal? WinsSport { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("BetsLive", TypeName = "money")]
         public decimal? BetsLive { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("WinsLive", TypeName = "money")]
         public decimal? WinsLive { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("BetsBingo", TypeName = "money")]
         public decimal? BetsBingo { get; set; }
 
-        [Column(TypeName = "decimal(18, 2)")]
+        [Column("WinsBingo", TypeName = "money")]
         public decimal? WinsBingo { get; set; }
 
         // Navigation property - commented out for now

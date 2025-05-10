@@ -7,14 +7,16 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a country
     /// </summary>
-    [Table("tbl_Countries")]
+    [Table("tbl_Countries", Schema = "common")]
     public class Country
     {
         [Key]
+        [Column("CountryID")]
         public int CountryID { get; set; }
 
         [Required]
         [StringLength(50)]
+        [Column("CountryName")]
         public string CountryName { get; set; }
 
         public bool? IsActive { get; set; }

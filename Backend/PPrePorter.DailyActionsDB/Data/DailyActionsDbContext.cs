@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Models;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPrePorter.DailyActionsDB.Data
 {
@@ -10,11 +14,49 @@ namespace PPrePorter.DailyActionsDB.Data
     /// </summary>
     public class DailyActionsDbContext : DbContext
     {
+        private readonly ILogger<DailyActionsDbContext>? _logger;
+
         public DailyActionsDbContext(DbContextOptions<DailyActionsDbContext> options)
             : base(options)
         {
             // The SQL Server configuration is now handled in the AddDbContext call
             // in DailyActionsServiceRegistration.cs
+        }
+
+        public DailyActionsDbContext(
+            DbContextOptions<DailyActionsDbContext> options,
+            ILogger<DailyActionsDbContext> logger)
+            : base(options)
+        {
+            _logger = logger;
+        }
+
+        // Override SaveChanges to add logging
+        public override int SaveChanges()
+        {
+            try
+            {
+                return base.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in SaveChanges");
+                throw;
+            }
+        }
+
+        // Override SaveChangesAsync to add logging
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await base.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in SaveChangesAsync");
+                throw;
+            }
         }
 
         // Game-related entities
@@ -74,14 +116,58 @@ namespace PPrePorter.DailyActionsDB.Data
             // See: https://docs.microsoft.com/en-us/ef/core/modeling/keyless-entity-types
             modelBuilder.Entity<SportBetEnhanced>().HasNoKey();
 
+            // Determine whether to use the common schema based on the connection string
+            bool useCommonSchema = false;
+
+            try
+            {
+                // Check if we're using the real database or the local database
+                var connectionString = Database.GetConnectionString();
+                if (connectionString != null && connectionString.Contains("185.64.56.157"))
+                {
+                    useCommonSchema = true;
+                    _logger?.LogInformation("Using common schema for DailyActionsDB tables (real database)");
+                }
+                else
+                {
+                    useCommonSchema = false;
+                    _logger?.LogInformation("Using dbo schema for DailyActionsDB tables (local database)");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Error determining schema, using dbo schema for local database");
+                useCommonSchema = false;
+            }
+
             // Configure DailyAction entity
             modelBuilder.Entity<DailyAction>(entity =>
             {
-                entity.ToTable("DailyActions");
+                if (useCommonSchema)
+                {
+                    entity.ToTable("tbl_Daily_actions", schema: "common");
+                }
+                else
+                {
+                    entity.ToTable("DailyActions");
+                }
+
                 entity.HasKey(e => e.Id);
 
                 // Create index on Date and WhiteLabelID for faster queries
                 entity.HasIndex(e => new { e.Date, e.WhiteLabelID });
+
+                // Configure money columns to use the money SQL Server type
+                entity.Property(e => e.Deposits).HasColumnType("money");
+                entity.Property(e => e.PaidCashouts).HasColumnType("money");
+                entity.Property(e => e.BetsCasino).HasColumnType("money");
+                entity.Property(e => e.WinsCasino).HasColumnType("money");
+                entity.Property(e => e.BetsSport).HasColumnType("money");
+                entity.Property(e => e.WinsSport).HasColumnType("money");
+                entity.Property(e => e.BetsLive).HasColumnType("money");
+                entity.Property(e => e.WinsLive).HasColumnType("money");
+                entity.Property(e => e.BetsBingo).HasColumnType("money");
+                entity.Property(e => e.WinsBingo).HasColumnType("money");
 
                 // Relationship configuration removed for now
                 // entity.HasOne(d => d.WhiteLabel)
@@ -90,16 +176,29 @@ namespace PPrePorter.DailyActionsDB.Data
                 //       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Configure WhiteLabel entity - commented out for now
-            /*
+            // Configure WhiteLabel entity
             modelBuilder.Entity<WhiteLabel>(entity =>
             {
-                entity.ToTable("WhiteLabels");
+                if (useCommonSchema)
+                {
+                    entity.ToTable("tbl_White_labels", schema: "common");
+                }
+                else
+                {
+                    entity.ToTable("WhiteLabels");
+                }
+
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Description).HasMaxLength(200);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+
+                if (useCommonSchema)
+                {
+                    entity.Property(e => e.Url).IsRequired().HasMaxLength(100);
+                    entity.Property(e => e.UrlName).HasMaxLength(50);
+                    entity.Property(e => e.Code).HasMaxLength(50);
+                    entity.Property(e => e.DefaultLanguage).HasMaxLength(50);
+                }
             });
-            */
 
             // Configure Transaction entity - commented out for now
             /*
@@ -120,6 +219,34 @@ namespace PPrePorter.DailyActionsDB.Data
                 entity.HasIndex(e => e.TransactionDate);
             });
             */
+
+            // Configure Currency entity
+            modelBuilder.Entity<Currency>(entity =>
+            {
+                if (useCommonSchema)
+                {
+                    entity.ToTable("tbl_Currencies", schema: "common");
+                }
+                else
+                {
+                    entity.ToTable("Currencies");
+                }
+                entity.HasKey(e => e.CurrencyID);
+            });
+
+            // Configure Country entity
+            modelBuilder.Entity<Country>(entity =>
+            {
+                if (useCommonSchema)
+                {
+                    entity.ToTable("tbl_Countries", schema: "common");
+                }
+                else
+                {
+                    entity.ToTable("Countries");
+                }
+                entity.HasKey(e => e.CountryID);
+            });
         }
     }
 }

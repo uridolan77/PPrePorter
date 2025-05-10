@@ -38,14 +38,41 @@ namespace PPrePorter.DailyActionsDB
             services.AddDbContext<DailyActionsDbContext>((serviceProvider, options) =>
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
+                var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+                var logger = loggerFactory?.CreateLogger("DailyActionsDB");
+
                 string resolvedConnectionString = Task.Run(async () =>
                     await connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)).Result;
+
+                // Log connection string (without sensitive info)
+                string sanitizedConnectionString = resolvedConnectionString;
+                if (sanitizedConnectionString.Contains("password="))
+                {
+                    sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
+                        sanitizedConnectionString,
+                        "password=[^;]*",
+                        "password=***");
+                }
+
+                logger?.LogInformation("Connecting to DailyActionsDB with connection string: {ConnectionString}, using {DatabaseType} database",
+                    sanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
 
                 options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
                 {
                     sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    sqlServerOptions.EnableRetryOnFailure(3);
+                    sqlServerOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null);
+                    sqlServerOptions.CommandTimeout(60); // Increase command timeout
                 });
+
+                // Enable sensitive data logging in development
+                if (connectionStringName == "DailyActionsDB_Local")
+                {
+                    options.EnableSensitiveDataLogging();
+                }
+
                 // Temporarily disabled: .AddInterceptors(noLockInterceptor);
             });
 
@@ -53,14 +80,41 @@ namespace PPrePorter.DailyActionsDB
             services.AddDbContext<DailyActionsSimpleDbContext>((serviceProvider, options) =>
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
+                var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+                var logger = loggerFactory?.CreateLogger("DailyActionsSimpleDB");
+
                 string resolvedConnectionString = Task.Run(async () =>
                     await connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)).Result;
+
+                // Log connection string (without sensitive info)
+                string sanitizedConnectionString = resolvedConnectionString;
+                if (sanitizedConnectionString.Contains("password="))
+                {
+                    sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
+                        sanitizedConnectionString,
+                        "password=[^;]*",
+                        "password=***");
+                }
+
+                logger?.LogInformation("Connecting to DailyActionsSimpleDB with connection string: {ConnectionString}, using {DatabaseType} database",
+                    sanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
 
                 options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
                 {
                     sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-                    sqlServerOptions.EnableRetryOnFailure(3);
+                    sqlServerOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        errorNumbersToAdd: null);
+                    sqlServerOptions.CommandTimeout(60); // Increase command timeout
                 });
+
+                // Enable sensitive data logging in development
+                if (connectionStringName == "DailyActionsDB_Local")
+                {
+                    options.EnableSensitiveDataLogging();
+                }
+
                 // Temporarily disabled: .AddInterceptors(noLockInterceptor);
             });
 

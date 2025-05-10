@@ -56,7 +56,10 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Apply white label filter if specified
                 if (whiteLabelId.HasValue)
                 {
-                    query = query.Where(da => da.WhiteLabelID == whiteLabelId.Value);
+                    // Check both WhiteLabelID and WhiteLabelId fields
+                    query = query.Where(da =>
+                        (da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelId.Value) ||
+                        (da.WhiteLabelId.HasValue && da.WhiteLabelId.Value == whiteLabelId.Value));
                 }
 
                 // Execute query - don't use WithNoLock() here since we're using the NoLockInterceptor
@@ -151,8 +154,8 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Calculate summary metrics
                 var summary = new DailyActionsSummary
                 {
-                    TotalRegistrations = dailyActions.Sum(da => da.Registration),
-                    TotalFTD = dailyActions.Sum(da => da.FTD),
+                    TotalRegistrations = dailyActions.Sum(da => da.Registration ?? 0),
+                    TotalFTD = dailyActions.Sum(da => da.FTD ?? 0),
                     TotalDeposits = dailyActions.Sum(da => da.Deposits ?? 0),
                     TotalCashouts = dailyActions.Sum(da => da.PaidCashouts ?? 0),
                     TotalBetsCasino = dailyActions.Sum(da => da.BetsCasino ?? 0),
@@ -212,26 +215,55 @@ namespace PPrePorter.DailyActionsDB.Services
                     if (whiteLabelIds.Length == 1)
                     {
                         // Simple case - just one white label ID
-                        query = query.Where(da => da.WhiteLabelID == whiteLabelIds[0]);
+                        query = query.Where(da =>
+                            (da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelIds[0]) ||
+                            (da.WhiteLabelId.HasValue && da.WhiteLabelId.Value == whiteLabelIds[0]));
                     }
                     else
                     {
                         // Multiple white label IDs - build a predicate
                         var parameter = System.Linq.Expressions.Expression.Parameter(typeof(DailyAction), "da");
-                        var property = System.Linq.Expressions.Expression.Property(parameter, "WhiteLabelID");
+                        var propertyID = System.Linq.Expressions.Expression.Property(parameter, "WhiteLabelID");
+                        var propertyId = System.Linq.Expressions.Expression.Property(parameter, "WhiteLabelId");
 
-                        // Start with the first ID
-                        var equals = System.Linq.Expressions.Expression.Equal(
-                            property,
-                            System.Linq.Expressions.Expression.Constant(whiteLabelIds[0]));
+                        // Build the combined expression for the first ID
+                        var hasValueID = System.Linq.Expressions.Expression.Property(propertyID, "HasValue");
+                        var valueID = System.Linq.Expressions.Expression.Property(propertyID, "Value");
+                        var equalsID = System.Linq.Expressions.Expression.Equal(
+                            valueID,
+                            System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[0]));
+                        var andID = System.Linq.Expressions.Expression.AndAlso(hasValueID, equalsID);
+
+                        var hasValueId = System.Linq.Expressions.Expression.Property(propertyId, "HasValue");
+                        var valueId = System.Linq.Expressions.Expression.Property(propertyId, "Value");
+                        var equalsId = System.Linq.Expressions.Expression.Equal(
+                            valueId,
+                            System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[0]));
+                        var andId = System.Linq.Expressions.Expression.AndAlso(hasValueId, equalsId);
+
+                        // Combine with OR
+                        var equals = System.Linq.Expressions.Expression.OrElse(andID, andId);
 
                         // Add the rest with OR
                         for (int i = 1; i < whiteLabelIds.Length; i++)
                         {
-                            var nextEquals = System.Linq.Expressions.Expression.Equal(
-                                property,
-                                System.Linq.Expressions.Expression.Constant(whiteLabelIds[i]));
-                            equals = System.Linq.Expressions.Expression.OrElse(equals, nextEquals);
+                            // Build for WhiteLabelID
+                            var nextEqualsID = System.Linq.Expressions.Expression.Equal(
+                                valueID,
+                                System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[i]));
+                            var nextAndID = System.Linq.Expressions.Expression.AndAlso(hasValueID, nextEqualsID);
+
+                            // Build for WhiteLabelId
+                            var nextEqualsId = System.Linq.Expressions.Expression.Equal(
+                                valueId,
+                                System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[i]));
+                            var nextAndId = System.Linq.Expressions.Expression.AndAlso(hasValueId, nextEqualsId);
+
+                            // Combine with OR
+                            var nextCombined = System.Linq.Expressions.Expression.OrElse(nextAndID, nextAndId);
+
+                            // Add to the main expression
+                            equals = System.Linq.Expressions.Expression.OrElse(equals, nextCombined);
                         }
 
                         // Create and apply the lambda expression
@@ -262,29 +294,50 @@ namespace PPrePorter.DailyActionsDB.Services
                 var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Id, wl => wl.Name);
 
                 // Map to DTOs
-                var result = dailyActions.Select(da => new DailyActionDto
+                var result = dailyActions.Select(da =>
                 {
-                    Id = da.Id,
-                    Date = da.Date,
-                    WhiteLabelId = da.WhiteLabelID,
-                    WhiteLabelName = whiteLabelDict.TryGetValue(da.WhiteLabelID, out var name) ? name : "Unknown",
-                    Registrations = da.Registration,
-                    FTD = da.FTD,
-                    Deposits = da.Deposits ?? 0,
-                    PaidCashouts = da.PaidCashouts ?? 0,
-                    BetsCasino = da.BetsCasino ?? 0,
-                    WinsCasino = da.WinsCasino ?? 0,
-                    BetsSport = da.BetsSport ?? 0,
-                    WinsSport = da.WinsSport ?? 0,
-                    BetsLive = da.BetsLive ?? 0,
-                    WinsLive = da.WinsLive ?? 0,
-                    BetsBingo = da.BetsBingo ?? 0,
-                    WinsBingo = da.WinsBingo ?? 0,
-                    GGRCasino = da.GGRCasino,
-                    GGRSport = da.GGRSport,
-                    GGRLive = da.GGRLive,
-                    GGRBingo = da.GGRBingo,
-                    TotalGGR = da.TotalGGR
+                    // Determine which WhiteLabel ID to use
+                    int whiteLabelId = 0;
+                    if (da.WhiteLabelID.HasValue)
+                    {
+                        whiteLabelId = (int)da.WhiteLabelID.Value;
+                    }
+                    else if (da.WhiteLabelId.HasValue)
+                    {
+                        whiteLabelId = (int)da.WhiteLabelId.Value;
+                    }
+
+                    // Get the white label name
+                    string whiteLabelName = "Unknown";
+                    if (whiteLabelId > 0 && whiteLabelDict.TryGetValue(whiteLabelId, out var name))
+                    {
+                        whiteLabelName = name;
+                    }
+
+                    return new DailyActionDto
+                    {
+                        Id = (int)da.Id,
+                        Date = da.Date,
+                        WhiteLabelId = whiteLabelId,
+                        WhiteLabelName = whiteLabelName,
+                        Registrations = da.Registration.HasValue ? (int)da.Registration.Value : 0,
+                        FTD = da.FTD.HasValue ? (int)da.FTD.Value : 0,
+                        Deposits = da.Deposits ?? 0,
+                        PaidCashouts = da.PaidCashouts ?? 0,
+                        BetsCasino = da.BetsCasino ?? 0,
+                        WinsCasino = da.WinsCasino ?? 0,
+                        BetsSport = da.BetsSport ?? 0,
+                        WinsSport = da.WinsSport ?? 0,
+                        BetsLive = da.BetsLive ?? 0,
+                        WinsLive = da.WinsLive ?? 0,
+                        BetsBingo = da.BetsBingo ?? 0,
+                        WinsBingo = da.WinsBingo ?? 0,
+                        GGRCasino = da.GGRCasino,
+                        GGRSport = da.GGRSport,
+                        GGRLive = da.GGRLive,
+                        GGRBingo = da.GGRBingo,
+                        TotalGGR = da.TotalGGR
+                    };
                 }).ToList();
 
                 // Calculate summary metrics
@@ -349,7 +402,8 @@ namespace PPrePorter.DailyActionsDB.Services
                 {
                     Id = wl.Id,
                     Name = wl.Name,
-                    Description = wl.Description
+                    Code = wl.Code,
+                    IsActive = wl.IsActive ?? false
                 }).ToList();
 
                 // Get countries

@@ -54,7 +54,8 @@ namespace PPrePorter.API.Features.Metadata.Controllers
                 {
                     Id = wl.Id,
                     Name = wl.Name,
-                    Description = wl.Description
+                    Code = wl.Code,
+                    IsActive = wl.IsActive ?? false
                 });
 
                 return Ok(result);
@@ -93,7 +94,8 @@ namespace PPrePorter.API.Features.Metadata.Controllers
                 {
                     Id = whiteLabel.Id,
                     Name = whiteLabel.Name,
-                    Description = whiteLabel.Description
+                    Code = whiteLabel.Code,
+                    IsActive = whiteLabel.IsActive ?? false
                 };
 
                 return Ok(result);
@@ -278,7 +280,8 @@ namespace PPrePorter.API.Features.Metadata.Controllers
                 {
                     Id = wl.Id,
                     Name = wl.Name,
-                    Description = wl.Description
+                    Code = wl.Code,
+                    IsActive = wl.IsActive ?? false
                 }).ToList();
 
                 var countryDtos = countries.Select(c => new CountryDto

@@ -52,10 +52,10 @@ namespace PPrePorter.API.Features.Reports.Controllers
                 {
                     id = da.Id,
                     date = da.Date,
-                    whiteLabelId = da.WhiteLabelID,
-                    whiteLabelName = whiteLabelDict.TryGetValue(da.WhiteLabelID, out var name) ? name : "Unknown",
-                    registrations = da.Registration,
-                    ftd = da.FTD,
+                    whiteLabelId = da.WhiteLabelID.HasValue ? (int)da.WhiteLabelID.Value : 0,
+                    whiteLabelName = da.WhiteLabelID.HasValue && whiteLabelDict.TryGetValue((int)da.WhiteLabelID.Value, out var name) ? name : "Unknown",
+                    registrations = da.Registration.HasValue ? (int)da.Registration.Value : 0,
+                    ftd = da.FTD.HasValue ? (int)da.FTD.Value : 0,
                     deposits = da.Deposits ?? 0,
                     paidCashouts = da.PaidCashouts ?? 0,
                     betsCasino = da.BetsCasino ?? 0,
@@ -88,7 +88,7 @@ namespace PPrePorter.API.Features.Reports.Controllers
                         totalCashouts = summary.TotalCashouts,
                         totalGGR = summary.TotalGGR
                     },
-                    totalCount = result.Count,
+                    totalCount = result.Count(),
                     startDate = start,
                     endDate = end
                 });
@@ -154,17 +154,18 @@ namespace PPrePorter.API.Features.Reports.Controllers
                 }
 
                 // Get white label name
-                var whiteLabel = await _whiteLabelService.GetWhiteLabelByIdAsync(dailyAction.WhiteLabelID);
+                var whiteLabelId = dailyAction.WhiteLabelID.HasValue ? (int)dailyAction.WhiteLabelID.Value : 0;
+                var whiteLabel = whiteLabelId > 0 ? await _whiteLabelService.GetWhiteLabelByIdAsync(whiteLabelId) : null;
                 var whiteLabelName = whiteLabel?.Name ?? "Unknown";
 
                 return Ok(new
                 {
                     id = dailyAction.Id,
                     date = dailyAction.Date,
-                    whiteLabelId = dailyAction.WhiteLabelID,
+                    whiteLabelId = whiteLabelId,
                     whiteLabelName = whiteLabelName,
-                    registrations = dailyAction.Registration,
-                    ftd = dailyAction.FTD,
+                    registrations = dailyAction.Registration.HasValue ? (int)dailyAction.Registration.Value : 0,
+                    ftd = dailyAction.FTD.HasValue ? (int)dailyAction.FTD.Value : 0,
                     deposits = dailyAction.Deposits ?? 0,
                     paidCashouts = dailyAction.PaidCashouts ?? 0,
                     betsCasino = dailyAction.BetsCasino ?? 0,
@@ -395,8 +396,8 @@ namespace PPrePorter.API.Features.Reports.Controllers
                     {
                         id = wl.Id,
                         name = wl.Name,
-                        description = wl.Description,
-                        isActive = wl.IsActive
+                        code = wl.Code,
+                        isActive = wl.IsActive ?? false
                     })
                 });
             }

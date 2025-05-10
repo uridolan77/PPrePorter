@@ -12,10 +12,10 @@ namespace PPrePorter.Core.Services
     {
         private readonly IAzureKeyVaultService _keyVaultService;
         private readonly ILogger<ConnectionStringResolverService> _logger;
-        
+
         // Cache to store resolved secrets from Azure Key Vault
         private readonly ConcurrentDictionary<string, string> _secretCache;
-        
+
         // Regex to find placeholders like {azurevault:vaultName:secretName}
         private static readonly Regex AzureVaultPlaceholderRegex = new Regex(@"\{azurevault:([^:]+):([^}]+)\}", RegexOptions.IgnoreCase);
 
@@ -43,7 +43,7 @@ namespace PPrePorter.Core.Services
             }
 
             _logger.LogInformation("Attempting to resolve connection string template.");
-            
+
             string resolvedConnectionString = connectionStringTemplate;
             MatchCollection matches = AzureVaultPlaceholderRegex.Matches(connectionStringTemplate);
 
@@ -62,8 +62,9 @@ namespace PPrePorter.Core.Services
                 string secretName = match.Groups[2].Value;
                 string cacheKey = $"{vaultName}:{secretName}";
 
-                _logger.LogDebug("Resolving placeholder: {Placeholder} (Vault: {VaultName}, Secret: {SecretName})", placeholder, vaultName, secretName);                string secretValue;
-                
+                _logger.LogInformation("Resolving placeholder: {Placeholder} (Vault: {VaultName}, Secret: {SecretName})", placeholder, vaultName, secretName);
+                string secretValue;
+
                 // Try to get the secret value from the cache first
                 if (_secretCache.TryGetValue(cacheKey, out string? cachedSecretValue) && cachedSecretValue != null)
                 {
@@ -75,20 +76,44 @@ namespace PPrePorter.Core.Services
                     try
                     {
                         // If not in cache, retrieve from Azure Key Vault
+                        _logger.LogInformation("Retrieving secret '{SecretName}' from vault '{VaultName}' using key '{Key}'", secretName, vaultName, cacheKey);
                         secretValue = await _keyVaultService.GetSecretAsync(vaultName, secretName);
-                        
+
+                        if (secretValue == null)
+                        {
+                            _logger.LogWarning("Secret '{SecretName}' from vault '{VaultName}' returned null", secretName, vaultName);
+                        }
+                        else
+                        {
+                            // Only log the first few characters of the secret if it's a password
+                            string logValue = secretName.Contains("Password") ?
+                                secretValue.Substring(0, Math.Min(3, secretValue.Length)) + "***" :
+                                secretValue;
+                            _logger.LogInformation("Successfully retrieved secret '{SecretName}' from vault '{VaultName}': {Value}",
+                                secretName, vaultName, logValue);
+                        }
+
                         // Cache the result (even if null, to avoid repeated failed lookups)
                         _secretCache.TryAdd(cacheKey, secretValue);
-                        
+
                         _logger.LogInformation("Cached secret for '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to resolve secret for placeholder '{Placeholder}' (Vault: {VaultName}, Secret: {SecretName}). The placeholder will not be replaced.", placeholder, vaultName, secretName);
+
+                        // Log additional details about the exception
+                        _logger.LogError("Exception type: {ExceptionType}, Message: {Message}", ex.GetType().Name, ex.Message);
+                        if (ex.InnerException != null)
+                        {
+                            _logger.LogError("Inner exception: {InnerExceptionType}, Message: {Message}",
+                                ex.InnerException.GetType().Name, ex.InnerException.Message);
+                        }
+
                         continue; // Skip to the next placeholder
                     }
                 }
-                
+
                 if (secretValue == null)
                 {
                     _logger.LogWarning("Secret '{SecretName}' from vault '{VaultName}' resolved to null. Placeholder '{Placeholder}' will not be replaced.", secretName, vaultName, placeholder);
@@ -99,14 +124,24 @@ namespace PPrePorter.Core.Services
                     _logger.LogDebug("Successfully replaced placeholder '{Placeholder}' with secret from vault '{VaultName}'.", placeholder, vaultName);
                 }
             }
-            
+
             // Cache the fully resolved connection string
             _connectionStringCache.TryAdd(connectionStringTemplate, resolvedConnectionString);
-            
-            _logger.LogInformation("Finished resolving connection string template.");
+
+            // Log the resolved connection string (without sensitive info)
+            string sanitizedConnectionString = resolvedConnectionString;
+            if (sanitizedConnectionString.Contains("password="))
+            {
+                sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
+                    sanitizedConnectionString,
+                    "password=[^;]*",
+                    "password=***");
+            }
+            _logger.LogInformation("Finished resolving connection string template. Result: {ConnectionString}", sanitizedConnectionString);
+
             return resolvedConnectionString;
         }
-        
+
         // Method to clear caches (useful for refreshing secrets if needed)
         public void ClearCaches()
         {
