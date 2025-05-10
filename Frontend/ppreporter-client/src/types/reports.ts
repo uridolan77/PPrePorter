@@ -194,9 +194,14 @@ export interface Report {
   type: string;
 
   /**
+   * Report category
+   */
+  category?: string;
+
+  /**
    * Report filters
    */
-  filters: Filter[];
+  filters?: Filter[];
 
   /**
    * Report creation date
@@ -209,9 +214,14 @@ export interface Report {
   updatedAt: string;
 
   /**
+   * Report created by
+   */
+  createdBy: string;
+
+  /**
    * Report owner
    */
-  owner: string;
+  owner?: string;
 
   /**
    * Report schedule
@@ -222,6 +232,26 @@ export interface Report {
    * Report sharing settings
    */
   sharing?: ReportSharing;
+
+  /**
+   * Report is favorite
+   */
+  isFavorite?: boolean;
+
+  /**
+   * Report configuration
+   */
+  configuration?: any;
+
+  /**
+   * Report view count
+   */
+  viewCount?: number;
+
+  /**
+   * Report title (alias for name)
+   */
+  title?: string;
 }
 
 /**

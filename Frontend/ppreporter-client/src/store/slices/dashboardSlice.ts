@@ -110,7 +110,7 @@ export const fetchDashboardData = createAsyncThunk<
         limit: 5,
         startDate,
         endDate,
-        category: filters.gameCategory,
+        gameCategory: filters.gameCategory, // Changed from category to gameCategory
         minRevenue: filters.minRevenue,
         maxRevenue: filters.maxRevenue
       });
@@ -119,7 +119,8 @@ export const fetchDashboardData = createAsyncThunk<
       const casinoRevenue = await dashboardService.getCasinoRevenue({
         startDate,
         endDate,
-        category: filters.gameCategory
+        period: 'month', // Added period parameter
+        gameCategory: filters.gameCategory // Changed from category to gameCategory
       });
 
       // Combine all data
@@ -400,7 +401,9 @@ const dashboardSlice = createSlice({
       .addCase(fetchDashboardData.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Failed to fetch dashboard data';
-        state.componentErrors.summary = action.payload || 'Failed to fetch dashboard data';
+        state.componentErrors.summary = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
+          new Error('Failed to fetch dashboard data');
       })
 
       // fetchRevenueChart
@@ -411,7 +414,9 @@ const dashboardSlice = createSlice({
         state.casinoRevenue = action.payload;
       })
       .addCase(fetchRevenueChart.rejected, (state, action) => {
-        state.componentErrors.revenue = action.payload || 'Failed to fetch revenue chart';
+        state.componentErrors.revenue = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
+          new Error('Failed to fetch revenue chart');
       })
 
       // fetchRegistrationsChart
@@ -422,7 +427,9 @@ const dashboardSlice = createSlice({
         state.playerRegistrations = action.payload;
       })
       .addCase(fetchRegistrationsChart.rejected, (state, action) => {
-        state.componentErrors.registrations = action.payload || 'Failed to fetch registrations chart';
+        state.componentErrors.registrations = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
+          new Error('Failed to fetch registrations chart');
       })
 
       // fetchTopGames
@@ -433,7 +440,9 @@ const dashboardSlice = createSlice({
         state.topGames = action.payload;
       })
       .addCase(fetchTopGames.rejected, (state, action) => {
-        state.componentErrors.topGames = action.payload || 'Failed to fetch top games';
+        state.componentErrors.topGames = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
+          new Error('Failed to fetch top games');
       })
 
       // fetchRecentTransactions
@@ -444,7 +453,9 @@ const dashboardSlice = createSlice({
         state.recentTransactions = action.payload;
       })
       .addCase(fetchRecentTransactions.rejected, (state, action) => {
-        state.componentErrors.transactions = action.payload || 'Failed to fetch recent transactions';
+        state.componentErrors.transactions = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
+          new Error('Failed to fetch recent transactions');
       })
 
       // fetchHeatmapData
@@ -458,7 +469,9 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchHeatmapData.rejected, (state, action) => {
         state.heatmapLoading = false;
-        state.heatmapError = action.payload || 'Failed to fetch heatmap data';
+        state.heatmapError = action.payload ?
+          (typeof action.payload === 'string' ? action.payload : 'Error fetching heatmap data') :
+          'Failed to fetch heatmap data';
       })
 
       // submitNaturalLanguageQuery
@@ -472,7 +485,9 @@ const dashboardSlice = createSlice({
       })
       .addCase(submitNaturalLanguageQuery.rejected, (state, action) => {
         state.nlQueryLoading = false;
-        state.nlQueryError = action.payload || 'Failed to process natural language query';
+        state.nlQueryError = action.payload ?
+          (typeof action.payload === 'string' ? action.payload : 'Error processing query') :
+          'Failed to process natural language query';
       })
 
       // fetchPlayerJourneyData
@@ -487,8 +502,12 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchPlayerJourneyData.rejected, (state, action) => {
         state.playerJourneyLoading = false;
-        state.playerJourneyError = action.payload || 'Failed to fetch player journey data';
-        state.componentErrors.playerJourney = action.payload || 'Failed to fetch player journey data';
+        state.playerJourneyError = action.payload ?
+          (typeof action.payload === 'string' ? action.payload : 'Error fetching player journey data') :
+          'Failed to fetch player journey data';
+        state.componentErrors.playerJourney = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(typeof action.payload === 'string' ? action.payload : 'Error fetching player journey data')) :
+          new Error('Failed to fetch player journey data');
       })
 
       // fetchSegmentComparisonData
@@ -503,8 +522,12 @@ const dashboardSlice = createSlice({
       })
       .addCase(fetchSegmentComparisonData.rejected, (state, action) => {
         state.segmentComparisonLoading = false;
-        state.segmentComparisonError = action.payload || 'Failed to fetch segment comparison data';
-        state.componentErrors.segmentComparison = action.payload || 'Failed to fetch segment comparison data';
+        state.segmentComparisonError = action.payload ?
+          (typeof action.payload === 'string' ? action.payload : 'Error fetching segment comparison data') :
+          'Failed to fetch segment comparison data';
+        state.componentErrors.segmentComparison = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(typeof action.payload === 'string' ? action.payload : 'Error fetching segment comparison data')) :
+          new Error('Failed to fetch segment comparison data');
       });
 
     // Add reducers for the other actions

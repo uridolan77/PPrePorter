@@ -347,9 +347,9 @@ export interface Transaction {
 
 // Normalized entities state
 export interface EntitiesState {
-  players: EntityState<Player>;
-  games: EntityState<Game>;
-  transactions: EntityState<Transaction>;
+  players: EntityState<Player, string>;
+  games: EntityState<Game, string>;
+  transactions: EntityState<Transaction, string>;
   loading: {
     players: boolean;
     games: boolean;

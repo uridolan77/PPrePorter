@@ -1,23 +1,21 @@
-import { createSlice, createEntityAdapter, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  createEntityAdapter,
+  createAsyncThunk,
+  PayloadAction,
+  EntityAdapter,
+  EntityState
+} from '@reduxjs/toolkit';
 import { Player, Game, Transaction, EntitiesState } from '../../types/redux';
 import { RootState } from '../store';
 import api from '../../services/api';
 
 // Create entity adapters
-const playersAdapter = createEntityAdapter<Player>({
-  selectId: (player) => player.id,
-  sortComparer: (a, b) => a.username.localeCompare(b.username)
-});
+const playersAdapter = createEntityAdapter<Player>();
 
-const gamesAdapter = createEntityAdapter<Game>({
-  selectId: (game) => game.id,
-  sortComparer: (a, b) => a.name.localeCompare(b.name)
-});
+const gamesAdapter = createEntityAdapter<Game>();
 
-const transactionsAdapter = createEntityAdapter<Transaction>({
-  selectId: (transaction) => transaction.id,
-  sortComparer: (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-});
+const transactionsAdapter = createEntityAdapter<Transaction>();
 
 // Initial state
 const initialState: EntitiesState = {
@@ -41,10 +39,11 @@ export const fetchPlayers = createAsyncThunk(
   'entities/fetchPlayers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/players');
+      const response = await api.client.get('/players');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch players';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -53,10 +52,11 @@ export const fetchGames = createAsyncThunk(
   'entities/fetchGames',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/games');
+      const response = await api.client.get('/games');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch games';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -65,10 +65,11 @@ export const fetchTransactions = createAsyncThunk(
   'entities/fetchTransactions',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/transactions');
+      const response = await api.client.get('/transactions');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transactions';
+      return rejectWithValue(errorMessage);
     }
   }
 );

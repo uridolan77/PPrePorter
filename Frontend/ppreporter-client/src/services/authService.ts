@@ -260,6 +260,9 @@ const loginWithMicrosoft = async (): Promise<User> => {
   }
 };
 
+// Alias for forgotPassword to maintain compatibility
+const requestPasswordReset = forgotPassword;
+
 export default {
   login,
   register,
@@ -269,6 +272,7 @@ export default {
   isAuthenticated,
   getToken,
   forgotPassword,
+  requestPasswordReset, // Add alias
   resetPassword,
   updateProfile,
   changePassword,

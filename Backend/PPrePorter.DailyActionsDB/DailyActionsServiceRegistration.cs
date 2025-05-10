@@ -1,13 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
+using PPrePorter.DailyActionsDB.Models;
 using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Services;
 using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PPrePorter.DailyActionsDB
@@ -35,10 +38,7 @@ namespace PPrePorter.DailyActionsDB
             // var noLockInterceptor = new NoLockInterceptor(loggerFactory?.CreateLogger<NoLockInterceptor>());
 
             // Register DbContext factory with pooling to resolve connection string at runtime
-            services.AddDbContextPool<DailyActionsDbContext>(
-                // Set a reasonable pool size to balance resource usage and performance
-                poolSize: 32,
-                (serviceProvider, options) =>
+            services.AddDbContextPool<DailyActionsDbContext>((serviceProvider, options) =>
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
                 var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
@@ -87,10 +87,7 @@ namespace PPrePorter.DailyActionsDB
             });
 
             // Register simplified DbContext with pooling and the same connection string resolution
-            services.AddDbContextPool<DailyActionsSimpleDbContext>(
-                // Set a reasonable pool size to balance resource usage and performance
-                poolSize: 32,
-                (serviceProvider, options) =>
+            services.AddDbContextPool<DailyActionsSimpleDbContext>((serviceProvider, options) =>
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
                 var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
@@ -141,9 +138,6 @@ namespace PPrePorter.DailyActionsDB
             // We're now using the MemoryCacheAdapter from PPrePorter.Core
             // No need to register memory cache here
 
-            // Register Unit of Work
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
-
             // Register repositories
             services.AddScoped<IWhiteLabelRepository, WhiteLabelRepository>();
             services.AddScoped<ICountryRepository, CountryRepository>();
@@ -151,6 +145,11 @@ namespace PPrePorter.DailyActionsDB
             services.AddScoped<IGameRepository, GameRepository>();
             services.AddScoped<IPlayerRepository, PlayerRepository>();
             services.AddScoped<IDailyActionGameRepository, DailyActionGameRepository>();
+
+            // We'll implement the DailyActionRepository later
+
+            // Register remaining repositories
+            // For now, register them with the traditional way until we update them all to use the Unit of Work pattern
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<IBonusRepository, BonusRepository>();
             services.AddScoped<IBonusBalanceRepository, BonusBalanceRepository>();
@@ -190,6 +189,7 @@ namespace PPrePorter.DailyActionsDB
             services.AddScoped<ICurrencyService, CurrencyService>();
             services.AddScoped<IGameService, GameService>();
             services.AddScoped<IPlayerService, PlayerService>();
+            // We'll implement the DailyActionService later
             services.AddScoped<IDailyActionGameService, DailyActionGameService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IBonusService, BonusService>();
@@ -248,10 +248,17 @@ namespace PPrePorter.DailyActionsDB
 
             if (connectionString.Contains("password="))
             {
-                return System.Text.RegularExpressions.Regex.Replace(
-                    connectionString,
-                    "password=[^;]*",
-                    "password=***");
+                // Simple string replacement instead of regex
+                int startIndex = connectionString.IndexOf("password=");
+                if (startIndex >= 0)
+                {
+                    int endIndex = connectionString.IndexOf(';', startIndex);
+                    if (endIndex < 0)
+                        endIndex = connectionString.Length;
+
+                    return connectionString.Substring(0, startIndex) + "password=***" +
+                           (endIndex < connectionString.Length ? connectionString.Substring(endIndex) : "");
+                }
             }
 
             return connectionString;

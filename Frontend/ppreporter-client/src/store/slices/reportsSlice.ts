@@ -11,7 +11,7 @@ import {
   ReportMetadata
 } from '../../types/reportsData';
 import { ReportsState } from '../../types/reportsState';
-import { RootState } from '../../types/store';
+import { RootState } from '../../types/redux';
 
 // Error handler helper for consistent error handling
 const handleApiError = (error: any): string => {
@@ -69,7 +69,7 @@ const initialState: ReportsState = {
 
 // Daily Actions Report actions
 export const fetchDailyActionsData = createAsyncThunk<
-  DailyAction[],
+  any[],
   any,
   { rejectValue: string }
 >(
@@ -77,7 +77,7 @@ export const fetchDailyActionsData = createAsyncThunk<
   async (filters, { rejectWithValue }) => {
     try {
       const data = await dailyActionsService.getData(filters);
-      return data;
+      return data as any[];
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -85,7 +85,7 @@ export const fetchDailyActionsData = createAsyncThunk<
 );
 
 export const fetchDailyActionsMetadata = createAsyncThunk<
-  ReportMetadata,
+  any,
   void,
   { rejectValue: string }
 >(
@@ -93,7 +93,7 @@ export const fetchDailyActionsMetadata = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const metadata = await dailyActionsService.getMetadata();
-      return metadata;
+      return metadata as any;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -102,7 +102,7 @@ export const fetchDailyActionsMetadata = createAsyncThunk<
 
 // Players Report actions
 export const fetchPlayersData = createAsyncThunk<
-  Player[],
+  any[],
   any,
   { rejectValue: string }
 >(
@@ -110,7 +110,7 @@ export const fetchPlayersData = createAsyncThunk<
   async (filters, { rejectWithValue }) => {
     try {
       const data = await playersService.getData(filters);
-      return data;
+      return data.data as any[];
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -118,7 +118,7 @@ export const fetchPlayersData = createAsyncThunk<
 );
 
 export const fetchPlayersMetadata = createAsyncThunk<
-  ReportMetadata,
+  any,
   void,
   { rejectValue: string }
 >(
@@ -126,7 +126,7 @@ export const fetchPlayersMetadata = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const metadata = await playersService.getMetadata();
-      return metadata;
+      return metadata as any;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -134,7 +134,7 @@ export const fetchPlayersMetadata = createAsyncThunk<
 );
 
 export const fetchPlayerDetails = createAsyncThunk<
-  PlayerDetails,
+  any,
   string,
   { rejectValue: string }
 >(
@@ -142,7 +142,7 @@ export const fetchPlayerDetails = createAsyncThunk<
   async (playerId, { rejectWithValue }) => {
     try {
       const details = await playersService.getPlayerDetails(playerId);
-      return details;
+      return details as any;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -172,7 +172,7 @@ export const fetchSavedConfigurations = createAsyncThunk<
 );
 
 export const saveReportConfiguration = createAsyncThunk<
-  { reportType: string; config: ReportConfiguration },
+  { reportType: string; config: any },
   { reportType: string; config: ReportConfiguration },
   { rejectValue: string }
 >(
@@ -185,7 +185,7 @@ export const saveReportConfiguration = createAsyncThunk<
       } else {
         savedConfig = await dailyActionsService.saveConfiguration(config);
       }
-      return { reportType, config: savedConfig };
+      return { reportType, config: savedConfig as any };
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -237,7 +237,7 @@ const reportsSlice = createSlice({
         state.dailyActions.loading = false;
       })
       .addCase(fetchDailyActionsMetadata.rejected, (state, action) => {
-        state.dailyActions.error = action.payload || null;
+        state.dailyActions.error = action.payload ? action.payload.toString() : null;
         state.dailyActions.loading = false;
       })
 
@@ -251,7 +251,7 @@ const reportsSlice = createSlice({
         state.players.loading = false;
       })
       .addCase(fetchPlayersData.rejected, (state, action) => {
-        state.players.error = action.payload || null;
+        state.players.error = action.payload ? action.payload.toString() : null;
         state.players.loading = false;
       })
       .addCase(fetchPlayersMetadata.pending, (state) => {
@@ -262,7 +262,7 @@ const reportsSlice = createSlice({
         state.players.loading = false;
       })
       .addCase(fetchPlayersMetadata.rejected, (state, action) => {
-        state.players.error = action.payload || null;
+        state.players.error = action.payload ? action.payload.toString() : null;
         state.players.loading = false;
       })
       .addCase(fetchPlayerDetails.pending, (state) => {
@@ -273,7 +273,7 @@ const reportsSlice = createSlice({
         state.players.loading = false;
       })
       .addCase(fetchPlayerDetails.rejected, (state, action) => {
-        state.players.error = action.payload || null;
+        state.players.error = action.payload ? action.payload.toString() : null;
         state.players.loading = false;
       })
 
@@ -307,7 +307,7 @@ const reportsSlice = createSlice({
         state.configurations.loading = false;
       })
       .addCase(saveReportConfiguration.rejected, (state, action) => {
-        state.configurations.error = action.payload || null;
+        state.configurations.error = action.payload ? action.payload.toString() : null;
         state.configurations.loading = false;
       });
   }
@@ -320,6 +320,6 @@ export const {
 } = reportsSlice.actions;
 
 // Selector
-export const selectReports = (state: RootState): ReportsState => state.reports;
+export const selectReports = (state: RootState) => state.reports;
 
 export default reportsSlice.reducer;

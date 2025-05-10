@@ -40,6 +40,6 @@ export const store = configureStore({
 // Export types for dispatch and selector
 export type AppDispatch = typeof store.dispatch;
 export type AppState = ReturnType<typeof store.getState>;
-export { RootState };
+export type { RootState };
 
 export default store;

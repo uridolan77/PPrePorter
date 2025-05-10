@@ -207,7 +207,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
       <DialogContent sx={{ p: 0 }}>
         <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-            {report.title || 'Report'}
+            {report.title || report.name || 'Report'}
           </Typography>
           {report.description && (
             <Typography variant="body2" color="text.secondary">

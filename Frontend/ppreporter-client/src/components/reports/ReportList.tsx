@@ -39,7 +39,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { formatDistanceToNow } from 'date-fns';
 import Pagination from '../common/Pagination';
 import { ReportListProps, ReportSortOption } from '../../types/reportList';
-import { Report } from '../../types/reports';
+import { Report } from '../../types/reportsData';
 
 /**
  * ReportList component for displaying a list of reports with search, filtering, and sorting
@@ -363,7 +363,7 @@ const ReportList: React.FC<ReportListProps> = ({
                   )}
 
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                    {report.description?.length > 100
+                    {report.description && report.description.length > 100
                       ? `${report.description.substring(0, 100)}...`
                       : report.description}
                   </Typography>

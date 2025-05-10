@@ -5,7 +5,7 @@ import {
   QueryResult,
   ExtractedEntities
 } from '../../types/naturalLanguage';
-import { RootState } from '../../types/store';
+import { RootState } from '../../types/redux';
 
 /**
  * Clarification prompt interface
@@ -314,6 +314,6 @@ export const {
 } = naturalLanguageSlice.actions;
 
 // Selector
-export const selectNaturalLanguage = (state: RootState): ExtendedNaturalLanguageState => state.naturalLanguage;
+export const selectNaturalLanguage = (state: RootState) => state.naturalLanguage as ExtendedNaturalLanguageState;
 
 export default naturalLanguageSlice.reducer;

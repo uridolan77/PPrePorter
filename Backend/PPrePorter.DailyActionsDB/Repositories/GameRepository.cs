@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Data;
+using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Models;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
     public class GameRepository : BaseRepository<Game>, IGameRepository
     {
         private readonly DailyActionsDbContext _dailyActionsDbContext;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -30,7 +31,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             _dailyActionsDbContext = dbContext;
         }
-        
+
         /// <summary>
         /// Get game by name
         /// </summary>
@@ -40,33 +41,33 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("Game name cannot be null or empty", nameof(name));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}Name_{name}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out Game cachedEntity))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedEntity;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var entity = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
                     .FirstOrDefaultAsync(g => g.GameName == name);
-                
+
                 // Cache the result if found
                 if (entity != null && _enableCaching)
                 {
                     _cache.Set(cacheKey, entity, _cacheExpiration);
                     _logger.LogDebug("Cached entity for {CacheKey}", cacheKey);
                 }
-                
+
                 return entity;
             }
             catch (Exception ex)
@@ -75,7 +76,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get games by provider
         /// </summary>
@@ -85,19 +86,19 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("Provider cannot be null or empty", nameof(provider));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}Provider_{provider}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Game> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -106,14 +107,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .Where(g => g.Provider == provider)
                     .OrderBy(g => g.GameName)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -122,7 +123,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get games by game type
         /// </summary>
@@ -132,19 +133,19 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("Game type cannot be null or empty", nameof(gameType));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}GameType_{gameType}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Game> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -153,14 +154,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .Where(g => g.GameType == gameType)
                     .OrderBy(g => g.GameName)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -169,24 +170,24 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get games by active status
         /// </summary>
         public async Task<IEnumerable<Game>> GetByActiveStatusAsync(bool isActive)
         {
             string cacheKey = $"{_cacheKeyPrefix}IsActive_{isActive}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Game> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -195,14 +196,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .Where(g => g.IsActive == isActive)
                     .OrderBy(g => g.GameName)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -211,24 +212,24 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get games ordered by game order
         /// </summary>
         public async Task<IEnumerable<Game>> GetOrderedByGameOrderAsync()
         {
             string cacheKey = $"{_cacheKeyPrefix}OrderedByGameOrder";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Game> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -236,14 +237,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .TagWith("WITH (NOLOCK)")
                     .OrderBy(g => g.GameOrder)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -252,24 +253,24 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get games that are not excluded for a specific country
         /// </summary>
         public async Task<IEnumerable<Game>> GetNotExcludedForCountryAsync(int countryId)
         {
             string cacheKey = $"{_cacheKeyPrefix}NotExcludedForCountry_{countryId}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Game> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 // Get all games that are not in the excluded list for the country
@@ -279,21 +280,21 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .Where(g => g.CountryID == countryId)
                     .Select(g => g.GameID)
                     .ToListAsync();
-                
+
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
                     .Where(g => !excludedGameIds.Contains(g.GameID))
                     .OrderBy(g => g.GameName)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -302,7 +303,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Apply active filter to query
         /// </summary>
