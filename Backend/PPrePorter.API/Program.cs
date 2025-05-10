@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.Extensions.Options;
 using System.Text.RegularExpressions;
 using OfficeOpenXml;
 using PPrePorter.API.Features.Authentication.Models;
@@ -21,6 +20,13 @@ using PPrePorter.SemanticLayer.Extensions;
 using PPrePorter.DailyActionsDB;
 using PPrePorter.AzureServices;
 using System.Text;
+using PPrePorter.API.Extensions;
+using HealthChecks.UI.Client;
+using PPrePorter.Infrastructure.Repositories;
+using PPrePorter.CQRS.Common;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,21 +39,19 @@ ExcelPackage.License.SetNonCommercialPersonal("PPrePorter");
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "PPrePorter API",
-        Version = "v1",
-        Description = "API for PPrePorter application"
-    });
+    // Security definitions are now configured in SwaggerVersioningConfiguration
 
     // Define the security scheme for JWT
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n" +
+                      "Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\n" +
+                      "Example: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
     });
 
     // Add the security requirement for JWT
@@ -65,6 +69,9 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Add operation filter to add authorization header to all endpoints
+    c.OperationFilter<SwaggerAuthorizationOperationFilter>();
 });
 
 // Register the real ConnectionStringResolverService to handle Azure Key Vault placeholders
@@ -107,9 +114,13 @@ builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSet
 var appSettings = builder.Configuration.GetSection("AppSettings").Get<AppSettings>();
 bool enableAuthentication = appSettings?.EnableAuthentication ?? true;
 
+// Configure rate limiting settings
+builder.Services.Configure<RateLimitingSettings>(builder.Configuration.GetSection("RateLimitingSettings"));
+
 // Configure JWT Authentication
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 // Always configure JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -268,6 +279,32 @@ builder.Services.AddDailyActionsServices(builder.Configuration, useLocalDatabase
 // Log which database we're using
 Console.WriteLine($"Using {(useLocalDatabase ? "local" : "real")} DailyActionsDB");
 
+// Add health checks
+builder.Services.AddApplicationHealthChecks(builder.Configuration);
+builder.Services.AddHealthCheckUI();
+
+// Add performance monitoring
+builder.Services.AddSingleton<PPrePorter.API.Features.Monitoring.IMetricsService, PPrePorter.API.Features.Monitoring.MetricsService>();
+
+// Add repositories
+builder.Services.AddRepositories();
+
+// Add MediatR
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(BaseCommand).Assembly);
+});
+
+// Register validators
+builder.Services.AddTransient<PPrePorter.CQRS.Common.IValidator<PPrePorter.CQRS.Users.Commands.CreateUserCommand>, PPrePorter.CQRS.Users.Commands.CreateUserCommandValidator>();
+builder.Services.AddTransient<PPrePorter.CQRS.Common.IValidator<PPrePorter.CQRS.Users.Queries.GetUserByIdQuery>, PPrePorter.CQRS.Users.Queries.GetUserByIdQueryValidator>();
+builder.Services.AddTransient<PPrePorter.CQRS.Common.IValidator<PPrePorter.CQRS.Users.Queries.GetAllUsersQuery>, PPrePorter.CQRS.Users.Queries.GetAllUsersQueryValidator>();
+
+// Add API versioning
+builder.Services.AddApiVersioningConfiguration();
+
+// Configure Swagger versioning
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerVersioningConfiguration>();
+
 var app = builder.Build();
 
 // Verify database connection by checking if we can retrieve currencies
@@ -421,16 +458,53 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PPrePorter API v1");
+        // Get all API versions from the API version description provider
+        var apiVersionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        // Add a swagger endpoint for each API version
+        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+        {
+            c.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                $"PPrePorter API {description.GroupName.ToUpperInvariant()}");
+        }
+
         c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
         c.DefaultModelsExpandDepth(-1); // Hide schemas section
         c.DisplayRequestDuration();
         c.EnableFilter();
         c.EnableDeepLinking();
+
+        // Add custom CSS to improve the UI
+        c.InjectStylesheet("/swagger-ui/custom.css");
+
+        // Add custom JavaScript for token handling
+        c.InjectJavascript("/swagger-ui/custom.js");
+
+        // Add authentication status information
+        var authStatus = builder.Configuration.GetSection("AppSettings").GetValue<bool>("EnableAuthentication", true)
+            ? "Authentication is <b>enabled</b>. You need to authenticate to access protected endpoints."
+            : "Authentication is <b>disabled</b> for development. All endpoints are accessible without authentication.";
+
+        c.HeadContent = $@"
+            <div style='padding: 10px; background-color: #f0f0f0; border-radius: 5px; margin-bottom: 10px;'>
+                <p><strong>Authentication Status:</strong> {authStatus}</p>
+                <p>To authenticate, use the <code>/api/Auth/login</code> endpoint to get a token, then click the 'Authorize' button and enter it.</p>
+                <p>API versioning is supported via:</p>
+                <ul>
+                    <li>URL path: <code>/api/v1/...</code> or <code>/api/v2/...</code></li>
+                    <li>Query string: <code>?api-version=1.0</code> or <code>?api-version=2.0</code></li>
+                    <li>Header: <code>X-Api-Version: 1.0</code> or <code>X-Api-Version: 2.0</code></li>
+                </ul>
+            </div>
+        ";
     });
 }
 
 app.UseHttpsRedirection();
+
+// Enable static files for Swagger UI customization
+app.UseStaticFiles();
 
 // Enable CORS
 app.UseCors("AllowReactApp");
@@ -456,6 +530,26 @@ else
 // Add global exception handling middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+// Add rate limiting middleware
+app.UseMiddleware<RateLimitingMiddleware>();
+
+// Add performance monitoring middleware
+app.UseMiddleware<PerformanceMonitoringMiddleware>();
+
 app.MapControllers();
+
+// Map health check endpoints
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Map health check UI endpoint
+app.MapHealthChecksUI(options =>
+{
+    options.UIPath = "/health-ui";
+    options.ApiPath = "/health-ui-api";
+});
 
 app.Run();

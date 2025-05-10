@@ -19,5 +19,11 @@ namespace PPrePorter.Domain.Entities.PPReporter
         // Properties for refresh token functionality
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
+
+        // Properties for account security and brute force protection
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? LockoutEnd { get; set; }
+        public bool IsLockedOut => LockoutEnd.HasValue && LockoutEnd > DateTime.UtcNow;
+        public DateTime? LastFailedLoginAttempt { get; set; }
     }
 }

@@ -4,11 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PPrePorter.API.Features.Authentication.Models;
 using PPrePorter.API.Features.Authentication.Services;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Infrastructure.Data;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace PPrePorter.API.Features.Authentication.Controllers
 {
@@ -18,16 +17,22 @@ namespace PPrePorter.API.Features.Authentication.Controllers
     {
         private readonly PPRePorterDbContext _dbContext;
         private readonly IJwtService _jwtService;
+        private readonly IPasswordHasher _passwordHasher;
         private readonly ILogger<AuthController> _logger;
+        private readonly RateLimitingSettings _rateLimitingSettings;
 
         public AuthController(
             PPRePorterDbContext dbContext,
             IJwtService jwtService,
+            IPasswordHasher passwordHasher,
+            IOptions<RateLimitingSettings> rateLimitingSettings,
             ILogger<AuthController> logger)
         {
-            _dbContext = dbContext;
-            _jwtService = jwtService;
-            _logger = logger;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
+            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+            _rateLimitingSettings = rateLimitingSettings?.Value ?? throw new ArgumentNullException(nameof(rateLimitingSettings));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         [HttpPost("login")]
@@ -47,30 +52,82 @@ namespace PPrePorter.API.Features.Authentication.Controllers
                     return Unauthorized(new { Message = "Invalid username or password" });
                 }
 
-                // Verify password
-                // Special case for admin user during development
-                if (user.Username == "admin" && loginRequest.Password == "Admin123!")
+                // Check if account is locked out
+                if (user.IsLockedOut)
                 {
-                    // Allow admin login with the known password
-                    _logger.LogWarning("Admin user logged in with development password");
+                    var remainingLockoutTime = user.LockoutEnd!.Value - DateTime.UtcNow;
+                    _logger.LogWarning("Login attempt for locked out user: {Username}, Remaining lockout time: {RemainingTime} minutes",
+                        user.Username, Math.Ceiling(remainingLockoutTime.TotalMinutes));
+
+                    return Unauthorized(new {
+                        Message = $"Your account is temporarily locked due to multiple failed login attempts. Please try again in {Math.Ceiling(remainingLockoutTime.TotalMinutes)} minutes or contact an administrator."
+                    });
+                }
+
+                // Check if user is active
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Login attempt for inactive user: {Username}", user.Username);
+                    return Unauthorized(new { Message = "Your account is inactive. Please contact an administrator." });
+                }
+
+                bool isPasswordValid = false;
+
+                // Verify password
+                if (_passwordHasher.IsBCryptHash(user.PasswordHash))
+                {
+                    // Use BCrypt verification
+                    isPasswordValid = _passwordHasher.VerifyPassword(loginRequest.Password, user.PasswordHash);
                 }
                 else
                 {
-                    string passwordHash = HashPassword(loginRequest.Password);
-                    if (user.PasswordHash != passwordHash)
+                    // Legacy verification - for backward compatibility
+                    string legacyHash = _passwordHasher.GenerateLegacyHash(loginRequest.Password);
+                    isPasswordValid = user.PasswordHash == legacyHash;
+
+                    // Special case for admin user during development - to be removed in production
+                    if (user.Username == "admin" && loginRequest.Password == "Admin123!")
                     {
-                        _logger.LogWarning("Login attempt with invalid password for user: {Username}", loginRequest.Username);
-                        _logger.LogWarning("Expected hash: {ExpectedHash}, Actual hash: {ActualHash}",
-                            user.PasswordHash, passwordHash);
-                        return Unauthorized(new { Message = "Invalid username or password" });
+                        _logger.LogWarning("Admin user logged in with development password");
+                        isPasswordValid = true;
+                    }
+
+                    // If using legacy hash and password is valid, upgrade to BCrypt
+                    if (isPasswordValid)
+                    {
+                        // Upgrade to BCrypt hash
+                        user.PasswordHash = _passwordHasher.HashPassword(loginRequest.Password);
+                        _logger.LogInformation("Upgraded password hash to BCrypt for user: {Username}", user.Username);
                     }
                 }
 
-                if (!user.IsActive)
+                // Handle failed login attempt
+                if (!isPasswordValid)
                 {
-                    _logger.LogWarning("Login attempt for inactive user: {Username}", loginRequest.Username);
-                    return Unauthorized(new { Message = "Your account is inactive. Please contact an administrator." });
+                    // Increment failed login attempts
+                    user.FailedLoginAttempts++;
+                    user.LastFailedLoginAttempt = DateTime.UtcNow;
+
+                    // Check if account should be locked
+                    if (user.FailedLoginAttempts >= _rateLimitingSettings.MaxFailedLoginAttempts)
+                    {
+                        user.LockoutEnd = DateTime.UtcNow.AddMinutes(_rateLimitingSettings.LockoutDurationMinutes);
+                        _logger.LogWarning("User {Username} has been locked out due to {Count} failed login attempts",
+                            user.Username, user.FailedLoginAttempts);
+                    }
+
+                    await _dbContext.SaveChangesAsync();
+
+                    _logger.LogWarning("Login attempt with invalid password for user: {Username}, Failed attempts: {FailedAttempts}",
+                        user.Username, user.FailedLoginAttempts);
+
+                    return Unauthorized(new { Message = "Invalid username or password" });
                 }
+
+                // Reset failed login attempts on successful login
+                user.FailedLoginAttempts = 0;
+                user.LastFailedLoginAttempt = null;
+                user.LockoutEnd = null;
 
                 // Get user permissions
                 var permissions = user.Role.Permissions
@@ -284,12 +341,13 @@ namespace PPrePorter.API.Features.Authentication.Controllers
                 {
                     Username = request.Username,
                     Email = request.Email,
-                    PasswordHash = HashPassword(request.Password),
+                    PasswordHash = _passwordHasher.HashPassword(request.Password),
                     FirstName = request.FirstName,
                     LastName = request.LastName,
                     RoleId = request.RoleId,
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    FailedLoginAttempts = 0
                 };
 
                 // Add user to database
@@ -307,13 +365,6 @@ namespace PPrePorter.API.Features.Authentication.Controllers
             }
         }
 
-        private string HashPassword(string password)
-        {
-            // In a real application, you should use a more secure password hashing algorithm like BCrypt
-            // This is a simple SHA256 hash for demo purposes
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
-        }
+
     }
 }

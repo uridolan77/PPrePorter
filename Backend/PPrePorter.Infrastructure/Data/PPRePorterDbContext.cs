@@ -59,6 +59,10 @@ namespace PPrePorter.Infrastructure.Data
                 entity.Property(e => e.LastName).HasMaxLength(50);
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.FailedLoginAttempts).HasDefaultValue(0);
+                entity.Property(e => e.LockoutEnd).IsRequired(false);
+                entity.Property(e => e.LastFailedLoginAttempt).IsRequired(false);
+                entity.Ignore(e => e.IsLockedOut); // This is a computed property
 
                 // Relationship with Role
                 entity.HasOne(u => u.Role)

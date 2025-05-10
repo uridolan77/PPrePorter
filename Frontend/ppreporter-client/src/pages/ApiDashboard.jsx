@@ -30,6 +30,8 @@ import {
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardTabs from '../components/dashboard/DashboardTabs';
 import TestPanel from '../components/dashboard/TestPanel';
+import DashboardMetrics from '../components/dashboard/DashboardMetrics';
+import DashboardCharts from '../components/dashboard/DashboardCharts';
 
 /**
  * API Dashboard component that connects to the backend API
