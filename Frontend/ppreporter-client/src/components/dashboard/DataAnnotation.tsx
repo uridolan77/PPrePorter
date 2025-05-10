@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -28,7 +28,8 @@ import {
   Grid,
   Paper,
   Tooltip,
-  useTheme
+  useTheme,
+  SelectChangeEvent
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -42,14 +43,72 @@ import FlagIcon from '@mui/icons-material/Flag';
 import PersonIcon from '@mui/icons-material/Person';
 import CommentIcon from '@mui/icons-material/Comment';
 import EventIcon from '@mui/icons-material/Event';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { format } from 'date-fns';
+import {
+  Annotation,
+  NewAnnotation,
+  DataPoint,
+  FormErrors,
+  User,
+  AnnotationType,
+  AnnotationVisibility
+} from '../../types/annotations';
+import { CommonProps } from '../../types/common';
+
+export interface DataAnnotationProps extends CommonProps {
+  /**
+   * Whether the dialog is open
+   */
+  open: boolean;
+
+  /**
+   * Close handler
+   */
+  onClose: () => void;
+
+  /**
+   * Data point
+   */
+  dataPoint?: DataPoint;
+
+  /**
+   * Data type
+   */
+  dataType?: string;
+
+  /**
+   * Metric type
+   */
+  metricType?: string;
+
+  /**
+   * Current user ID
+   */
+  currentUserId: string;
+
+  /**
+   * Save handler
+   */
+  onSave: (annotations: Annotation[]) => void;
+
+  /**
+   * Annotations
+   */
+  annotations?: Annotation[];
+
+  /**
+   * Loading state
+   */
+  isLoading?: boolean;
+}
 
 /**
  * DataAnnotation component for adding notes and context to dashboard data
  */
-const DataAnnotation = ({
+const DataAnnotation: React.FC<DataAnnotationProps> = ({
   open,
   onClose,
   dataPoint,
@@ -61,7 +120,7 @@ const DataAnnotation = ({
   isLoading = false
 }) => {
   const theme = useTheme();
-  const [newAnnotation, setNewAnnotation] = useState({
+  const [newAnnotation, setNewAnnotation] = useState<NewAnnotation>({
     content: '',
     type: 'note',
     visibility: 'team',
@@ -70,15 +129,15 @@ const DataAnnotation = ({
     associatedDate: new Date(),
     tags: []
   });
-  const [currentTag, setCurrentTag] = useState('');
-  const [editingIndex, setEditingIndex] = useState(-1);
-  const [localAnnotations, setLocalAnnotations] = useState([]);
-  const [errors, setErrors] = useState({});
-  
+  const [currentTag, setCurrentTag] = useState<string>('');
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [localAnnotations, setLocalAnnotations] = useState<Annotation[]>([]);
+  const [errors, setErrors] = useState<FormErrors>({});
+
   useEffect(() => {
     if (open) {
       setLocalAnnotations(annotations);
-      
+
       // Pre-fill some fields if dataPoint is provided
       if (dataPoint) {
         setNewAnnotation(prev => ({
@@ -91,8 +150,8 @@ const DataAnnotation = ({
       }
     }
   }, [open, annotations, dataPoint]);
-  
-  const resetForm = () => {
+
+  const resetForm = (): void => {
     setNewAnnotation({
       content: '',
       type: 'note',
@@ -106,90 +165,98 @@ const DataAnnotation = ({
     setEditingIndex(-1);
     setErrors({});
   };
-  
-  const handleInputChange = (e) => {
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
     setNewAnnotation(prev => ({
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
-        [name]: null
+        [name]: undefined
       }));
     }
   };
-  
-  const handleSwitchChange = (e) => {
+
+  const handleSelectChange = (e: SelectChangeEvent<AnnotationType | AnnotationVisibility>): void => {
+    const { name, value } = e.target;
+    setNewAnnotation(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSwitchChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, checked } = e.target;
     setNewAnnotation(prev => ({
       ...prev,
       [name]: checked
     }));
   };
-  
-  const handleDateChange = (date) => {
+
+  const handleDateChange = (date: Date | null): void => {
     setNewAnnotation(prev => ({
       ...prev,
-      associatedDate: date
+      associatedDate: date || new Date()
     }));
   };
-  
-  const handleKeyDown = (e) => {
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Enter' && currentTag.trim()) {
       e.preventDefault();
       addTag();
     }
   };
-  
-  const addTag = () => {
+
+  const addTag = (): void => {
     if (!currentTag.trim()) return;
-    
+
     if (!newAnnotation.tags.includes(currentTag.trim())) {
       setNewAnnotation(prev => ({
         ...prev,
         tags: [...prev.tags, currentTag.trim()]
       }));
     }
-    
+
     setCurrentTag('');
   };
-  
-  const removeTag = (tagToRemove) => {
+
+  const removeTag = (tagToRemove: string): void => {
     setNewAnnotation(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
-  
-  const validateForm = () => {
-    const newErrors = {};
-    
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
     if (!newAnnotation.content.trim()) {
       newErrors.content = 'Content is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
-  const handleSubmit = () => {
+
+  const handleSubmit = (): void => {
     if (!validateForm()) return;
-    
-    const annotationToSave = {
+
+    const annotationToSave: Annotation = {
       ...newAnnotation,
       id: editingIndex >= 0 ? localAnnotations[editingIndex].id : `annotation-${Date.now()}`,
       userId: currentUserId,
       createdAt: editingIndex >= 0 ? localAnnotations[editingIndex].createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      dataType,
-      metricType,
+      dataType: dataType || '',
+      metricType: metricType || '',
       dataPointId: dataPoint?.id
     };
-    
+
     if (editingIndex >= 0) {
       // Update existing annotation
       const updatedAnnotations = [...localAnnotations];
@@ -202,11 +269,11 @@ const DataAnnotation = ({
       setLocalAnnotations(updatedAnnotations);
       onSave(updatedAnnotations);
     }
-    
+
     resetForm();
   };
-  
-  const handleEdit = (index) => {
+
+  const handleEdit = (index: number): void => {
     const annotation = localAnnotations[index];
     setNewAnnotation({
       content: annotation.content,
@@ -219,23 +286,23 @@ const DataAnnotation = ({
     });
     setEditingIndex(index);
   };
-  
-  const handleDelete = (index) => {
+
+  const handleDelete = (index: number): void => {
     const updatedAnnotations = [...localAnnotations];
     updatedAnnotations.splice(index, 1);
     setLocalAnnotations(updatedAnnotations);
     onSave(updatedAnnotations);
   };
-  
-  const handleCancel = () => {
+
+  const handleCancel = (): void => {
     if (editingIndex >= 0) {
       resetForm();
     } else {
       onClose();
     }
   };
-  
-  const getAnnotationTypeLabel = (type) => {
+
+  const getAnnotationTypeLabel = (type: AnnotationType): string => {
     switch (type) {
       case 'note': return 'Note';
       case 'insight': return 'Insight';
@@ -245,8 +312,8 @@ const DataAnnotation = ({
       default: return type;
     }
   };
-  
-  const getAnnotationTypeIcon = (type) => {
+
+  const getAnnotationTypeIcon = (type: AnnotationType): React.ReactNode => {
     switch (type) {
       case 'note': return <CommentIcon />;
       case 'insight': return <InsightsIcon />;
@@ -256,8 +323,8 @@ const DataAnnotation = ({
       default: return <CommentIcon />;
     }
   };
-  
-  const getVisibilityIcon = (visibility) => {
+
+  const getVisibilityIcon = (visibility: AnnotationVisibility): React.ReactNode => {
     switch (visibility) {
       case 'private': return <VisibilityOffIcon fontSize="small" />;
       case 'team': return <VisibilityIcon fontSize="small" />;
@@ -265,8 +332,8 @@ const DataAnnotation = ({
       default: return <VisibilityIcon fontSize="small" />;
     }
   };
-  
-  const getVisibilityLabel = (visibility) => {
+
+  const getVisibilityLabel = (visibility: AnnotationVisibility): string => {
     switch (visibility) {
       case 'private': return 'Only me';
       case 'team': return 'Team';
@@ -274,25 +341,25 @@ const DataAnnotation = ({
       default: return visibility;
     }
   };
-  
-  const getDummyUser = (userId) => {
-    const users = {
+
+  const getDummyUser = (userId: string): User => {
+    const users: Record<string, User> = {
       'user1': { name: 'John Smith', avatar: '/avatars/john.png' },
       'user2': { name: 'Sarah Johnson', avatar: '/avatars/sarah.png' },
       'user3': { name: 'David Lee', avatar: '/avatars/david.png' }
     };
-    
+
     return users[userId] || { name: 'Unknown User', avatar: null };
   };
-  
-  const formatDate = (date) => {
+
+  const formatDate = (date: string | Date): string => {
     try {
       return format(new Date(date), 'MMM d, yyyy');
     } catch (e) {
       return 'Invalid date';
     }
   };
-  
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -309,7 +376,7 @@ const DataAnnotation = ({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent dividers>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -321,7 +388,7 @@ const DataAnnotation = ({
               <Typography variant="h6" gutterBottom>
                 {editingIndex >= 0 ? 'Edit Annotation' : 'Add New Annotation'}
               </Typography>
-              
+
               <Grid container spacing={3}>
                 <Grid item xs={12}>
                   <TextField
@@ -337,7 +404,7 @@ const DataAnnotation = ({
                     placeholder="Add your notes, insights, or context about this data point..."
                   />
                 </Grid>
-                
+
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel id="annotation-type-label">Annotation Type</InputLabel>
@@ -345,7 +412,7 @@ const DataAnnotation = ({
                       labelId="annotation-type-label"
                       name="type"
                       value={newAnnotation.type}
-                      onChange={handleInputChange}
+                      onChange={handleSelectChange}
                       label="Annotation Type"
                     >
                       <MenuItem value="note">Note</MenuItem>
@@ -356,7 +423,7 @@ const DataAnnotation = ({
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel id="visibility-label">Visibility</InputLabel>
@@ -364,7 +431,7 @@ const DataAnnotation = ({
                       labelId="visibility-label"
                       name="visibility"
                       value={newAnnotation.visibility}
-                      onChange={handleInputChange}
+                      onChange={handleSelectChange}
                       label="Visibility"
                     >
                       <MenuItem value="private">Only me</MenuItem>
@@ -373,7 +440,7 @@ const DataAnnotation = ({
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={6}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
@@ -384,7 +451,7 @@ const DataAnnotation = ({
                     />
                   </LocalizationProvider>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={6}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
                     <FormControlLabel
@@ -409,7 +476,7 @@ const DataAnnotation = ({
                     />
                   </Box>
                 </Grid>
-                
+
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" gutterBottom>
                     Tags
@@ -439,7 +506,7 @@ const DataAnnotation = ({
                   </Box>
                 </Grid>
               </Grid>
-              
+
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
                 <Button onClick={handleCancel} sx={{ mr: 1 }}>
                   Cancel
@@ -453,7 +520,7 @@ const DataAnnotation = ({
                 </Button>
               </Box>
             </Paper>
-            
+
             {localAnnotations.length > 0 && (
               <Box>
                 <Typography variant="h6" gutterBottom>
@@ -532,7 +599,7 @@ const DataAnnotation = ({
                                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, flexWrap: 'wrap' }}>
                                   <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
                                     {annotation.createdAt && `Added: ${formatDate(annotation.createdAt)}`}
-                                    {annotation.createdAt !== annotation.updatedAt && annotation.updatedAt && 
+                                    {annotation.createdAt !== annotation.updatedAt && annotation.updatedAt &&
                                       ` (Updated: ${formatDate(annotation.updatedAt)})`}
                                   </Typography>
                                   {annotation.associatedDate && (
@@ -561,7 +628,7 @@ const DataAnnotation = ({
           </>
         )}
       </DialogContent>
-      
+
       <DialogActions>
         <Button onClick={onClose}>
           Close

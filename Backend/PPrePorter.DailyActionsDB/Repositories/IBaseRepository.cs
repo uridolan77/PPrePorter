@@ -17,47 +17,68 @@ namespace PPrePorter.DailyActionsDB.Repositories
         /// <param name="includeInactive">Whether to include inactive entities</param>
         /// <returns>List of entities</returns>
         Task<IEnumerable<T>> GetAllAsync(bool includeInactive = false);
-        
+
         /// <summary>
         /// Get entities by a filter expression
         /// </summary>
         /// <param name="filter">Filter expression</param>
         /// <returns>Filtered list of entities</returns>
         Task<IEnumerable<T>> GetByFilterAsync(Expression<Func<T, bool>> filter);
-        
+
         /// <summary>
         /// Get entity by ID
         /// </summary>
         /// <param name="id">Entity ID</param>
         /// <returns>Entity or null if not found</returns>
         Task<T?> GetByIdAsync(int id);
-        
+
         /// <summary>
         /// Add a new entity
         /// </summary>
         /// <param name="entity">Entity to add</param>
         /// <returns>Added entity</returns>
         Task<T> AddAsync(T entity);
-        
+
         /// <summary>
         /// Update an existing entity
         /// </summary>
         /// <param name="entity">Entity to update</param>
         /// <returns>Updated entity</returns>
         Task<T> UpdateAsync(T entity);
-        
+
         /// <summary>
         /// Delete an entity
         /// </summary>
         /// <param name="id">Entity ID</param>
         /// <returns>True if deleted, false if not found</returns>
         Task<bool> DeleteAsync(int id);
-        
+
         /// <summary>
         /// Check if any entity matches the filter
         /// </summary>
         /// <param name="filter">Filter expression</param>
         /// <returns>True if any entity matches, false otherwise</returns>
         Task<bool> AnyAsync(Expression<Func<T, bool>> filter);
+    }
+
+    /// <summary>
+    /// Extended repository interface with common operations for entities with name and active status
+    /// </summary>
+    /// <typeparam name="T">Entity type</typeparam>
+    public interface INamedEntityRepository<T> : IBaseRepository<T> where T : class
+    {
+        /// <summary>
+        /// Get entity by name
+        /// </summary>
+        /// <param name="name">Entity name</param>
+        /// <returns>Entity or null if not found</returns>
+        Task<T?> GetByNameAsync(string name);
+
+        /// <summary>
+        /// Get entities by active status
+        /// </summary>
+        /// <param name="isActive">Active status</param>
+        /// <returns>List of entities</returns>
+        Task<IEnumerable<T>> GetByActiveStatusAsync(bool isActive);
     }
 }

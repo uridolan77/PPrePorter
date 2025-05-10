@@ -572,26 +572,80 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<HeatmapData> FetchHeatmapDataAsync(DashboardRequest request)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would query the database for heatmap data
-            await Task.Delay(10); // Just to make it async
-
-            return new HeatmapData
+            try
             {
-                Title = "Player Activity by Hour and Day",
-                XLabels = new List<string> { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
-                YLabels = new List<string> { "00:00", "04:00", "08:00", "12:00", "16:00", "20:00" },
-                Values = new List<List<decimal>>
+                var today = DateTime.UtcNow.Date;
+                var startDate = today.AddDays(-7); // Get data for the last 7 days
+                var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
+
+                if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
-                    new List<decimal> { 10, 20, 15, 12, 18, 25, 30 },
-                    new List<decimal> { 5, 8, 10, 7, 9, 12, 15 },
-                    new List<decimal> { 8, 10, 12, 15, 20, 18, 14 },
-                    new List<decimal> { 20, 25, 30, 35, 40, 45, 50 },
-                    new List<decimal> { 30, 35, 40, 45, 50, 55, 60 },
-                    new List<decimal> { 25, 30, 35, 40, 45, 50, 55 }
-                },
-                MetricName = "Active Players"
-            };
+                    whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
+                }
+
+                // Get daily action games data for heatmap
+                var dailyActionGames = await _dbContext.DailyActionsGames
+                    .Where(dag => whiteLabelIds.Contains(dag.WhiteLabelID) && dag.Date >= startDate && dag.Date <= today)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                // Group by day of week and hour of day
+                var groupedData = dailyActionGames
+                    .GroupBy(dag => new { DayOfWeek = dag.Date.DayOfWeek, Hour = dag.Date.Hour / 4 }) // Group by 4-hour blocks
+                    .Select(g => new
+                    {
+                        DayOfWeek = g.Key.DayOfWeek,
+                        HourBlock = g.Key.Hour,
+                        PlayerCount = g.Count(),
+                        Revenue = g.Sum(dag => dag.Revenue ?? 0)
+                    })
+                    .ToList();
+
+                // Create the heatmap data structure
+                var xLabels = new List<string> { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+                var yLabels = new List<string> { "00:00-04:00", "04:00-08:00", "08:00-12:00", "12:00-16:00", "16:00-20:00", "20:00-24:00" };
+
+                // Initialize the values matrix with zeros
+                var values = new List<List<decimal>>();
+                for (int i = 0; i < 6; i++) // 6 time blocks
+                {
+                    var row = new List<decimal>();
+                    for (int j = 0; j < 7; j++) // 7 days of week
+                    {
+                        row.Add(0);
+                    }
+                    values.Add(row);
+                }
+
+                // Fill in the values from the grouped data
+                foreach (var item in groupedData)
+                {
+                    int dayIndex = ((int)item.DayOfWeek + 6) % 7; // Convert DayOfWeek enum to 0-6 index (Monday = 0)
+                    int hourIndex = item.HourBlock;
+
+                    // Use player count or revenue based on request
+                    decimal value = request.PlayMode?.ToLower() == "revenue" ? item.Revenue : item.PlayerCount;
+
+                    if (hourIndex < 6 && dayIndex < 7) // Ensure we're within bounds
+                    {
+                        values[hourIndex][dayIndex] = value;
+                    }
+                }
+
+                return new HeatmapData
+                {
+                    Title = "Player Activity by Hour and Day",
+                    XLabels = xLabels,
+                    YLabels = yLabels,
+                    Values = values,
+                    MetricName = request.PlayMode?.ToLower() == "revenue" ? "Revenue" : "Active Players"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching heatmap data");
+                throw;
+            }
         }
 
         public async Task<SegmentComparisonData> GetSegmentComparisonAsync(SegmentComparisonRequest request)
@@ -638,37 +692,93 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<List<MicroChartData>> FetchMicroChartDataAsync(DashboardRequest request)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would query the database for micro chart data
-            await Task.Delay(10); // Just to make it async
-
-            return new List<MicroChartData>
+            try
             {
-                new MicroChartData
+                var today = DateTime.UtcNow.Date;
+                var startDate = today.AddDays(-7); // Get data for the last 7 days
+                var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
+
+                if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
+                {
+                    whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
+                }
+
+                // Build base query
+                var query = _dbContext.DailyActions
+                    .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= startDate && da.Date <= today)
+                    .AsNoTracking();
+
+                // Apply play mode filter if specified
+                if (!string.IsNullOrEmpty(request.PlayMode))
+                {
+                    query = ApplyPlayModeFilter(query, request.PlayMode);
+                }
+
+                // Get daily metrics for the last 7 days
+                var dailyMetrics = await query
+                    .GroupBy(da => da.Date)
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        Registrations = g.Sum(da => da.Registration),
+                        Deposits = g.Sum(da => da.Deposits ?? 0),
+                        Revenue = GetTotalRevenue(g, request.PlayMode)
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToListAsync();
+
+                // Create micro chart data
+                var result = new List<MicroChartData>();
+
+                // Revenue trend
+                var revenueValues = dailyMetrics.Select(m => m.Revenue).ToList();
+                var currentRevenue = revenueValues.LastOrDefault();
+                var targetRevenue = revenueValues.Count > 1 ? revenueValues[revenueValues.Count - 2] * 1.1m : currentRevenue;
+
+                result.Add(new MicroChartData
                 {
                     Title = "Revenue Trend",
                     ChartType = "sparkline",
-                    Values = new List<decimal> { 100, 120, 110, 130, 150, 140, 160 },
-                    CurrentValue = 160,
-                    TargetValue = 150
-                },
-                new MicroChartData
+                    Values = revenueValues,
+                    CurrentValue = currentRevenue,
+                    TargetValue = targetRevenue
+                });
+
+                // Registrations trend
+                var registrationValues = dailyMetrics.Select(m => (decimal)m.Registrations).ToList();
+                var currentRegistrations = registrationValues.LastOrDefault();
+                var targetRegistrations = registrationValues.Count > 1 ? registrationValues[registrationValues.Count - 2] * 1.1m : currentRegistrations;
+
+                result.Add(new MicroChartData
                 {
                     Title = "Registrations",
                     ChartType = "sparkline",
-                    Values = new List<decimal> { 50, 45, 60, 55, 70, 65, 80 },
-                    CurrentValue = 80,
-                    TargetValue = 75
-                },
-                new MicroChartData
+                    Values = registrationValues,
+                    CurrentValue = currentRegistrations,
+                    TargetValue = targetRegistrations
+                });
+
+                // Deposits trend
+                var depositValues = dailyMetrics.Select(m => m.Deposits).ToList();
+                var currentDeposits = depositValues.LastOrDefault();
+                var targetDeposits = depositValues.Count > 1 ? depositValues[depositValues.Count - 2] * 1.1m : currentDeposits;
+
+                result.Add(new MicroChartData
                 {
                     Title = "Deposits",
                     ChartType = "bullet",
-                    Values = new List<decimal> { 200, 220, 210, 230, 250, 240, 260 },
-                    CurrentValue = 260,
-                    TargetValue = 250
-                }
-            };
+                    Values = depositValues,
+                    CurrentValue = currentDeposits,
+                    TargetValue = targetDeposits
+                });
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching micro chart data");
+                throw;
+            }
         }
 
         public async Task<DashboardPreferences> GetUserDashboardPreferencesAsync(string userId)
