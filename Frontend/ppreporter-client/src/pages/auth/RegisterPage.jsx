@@ -14,7 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
  * Registration page component
  */
 const RegisterPage = () => {
-  const { register } = useAuth();
+  const { register, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -56,11 +56,12 @@ const RegisterPage = () => {
     setLoading(true);
     setError('');
     try {
-      // In a real implementation, we would dispatch a Redux action for Google registration
-      // For now, we'll just show an error message
-      setError('Google sign up is not implemented in this version.');
+      await loginWithGoogle();
+      // Navigate to dashboard upon successful registration
+      navigate('/dashboard');
     } catch (err) {
-      setError('Google sign up failed. Please try again.');
+      console.error('Google registration error:', err);
+      setError(err.message || 'Google sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -73,11 +74,12 @@ const RegisterPage = () => {
     setLoading(true);
     setError('');
     try {
-      // In a real implementation, we would dispatch a Redux action for Microsoft registration
-      // For now, we'll just show an error message
-      setError('Microsoft sign up is not implemented in this version.');
+      await loginWithMicrosoft();
+      // Navigate to dashboard upon successful registration
+      navigate('/dashboard');
     } catch (err) {
-      setError('Microsoft sign up failed. Please try again.');
+      console.error('Microsoft registration error:', err);
+      setError(err.message || 'Microsoft sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }

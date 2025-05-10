@@ -1,5 +1,6 @@
 import apiClient from './api/apiClient';
 import config from '../config/appConfig';
+import tokenService from './tokenService';
 
 /**
  * User registration service
@@ -30,22 +31,17 @@ export const login = async (credentials) => {  try {
     const response = await apiClient.post('/auth/login', loginData);
     // Store token and user data
     if (response.data.token) {
-      localStorage.setItem(config.auth.tokenKey, response.data.token);
-
-      // Store refresh token if available
-      if (response.data.refreshToken) {
-        localStorage.setItem(config.auth.refreshTokenKey, response.data.refreshToken);
-      }
-
-      // Store expiry if available
-      if (response.data.expiresAt) {
-        localStorage.setItem(config.auth.tokenExpiryKey, response.data.expiresAt);
-      }
+      // Store tokens using tokenService
+      tokenService.setTokens({
+        accessToken: response.data.token,
+        refreshToken: response.data.refreshToken
+      });
 
       // Create user object from response data
       const user = {
         username: response.data.username,
         fullName: response.data.fullName,
+        email: response.data.email,
         role: response.data.role,
         permissions: response.data.permissions
       };
@@ -78,9 +74,8 @@ export const loginWithMicrosoft = async () => {
  * Log out user and clear storage
  */
 export const logout = () => {
-  localStorage.removeItem(config.auth.tokenKey);
-  localStorage.removeItem(config.auth.refreshTokenKey);
-  localStorage.removeItem(config.auth.tokenExpiryKey);
+  // Remove tokens using tokenService
+  tokenService.removeTokens();
   localStorage.removeItem('user');
 };
 
@@ -89,8 +84,14 @@ export const logout = () => {
  * @returns {Object|null} - User data or null if not authenticated
  */
 export const getCurrentUser = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+  // First try to get from localStorage
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    return JSON.parse(userStr);
+  }
+
+  // If not in localStorage, try to extract from token
+  return tokenService.getUserFromToken();
 };
 
 /**
@@ -98,7 +99,8 @@ export const getCurrentUser = () => {
  * @returns {boolean} - True if user is authenticated
  */
 export const isAuthenticated = () => {
-  return !!localStorage.getItem(config.auth.tokenKey);
+  // Check if token exists and is not expired
+  return !!tokenService.getAccessToken() && !tokenService.isTokenExpired();
 };
 
 /**
@@ -107,12 +109,30 @@ export const isAuthenticated = () => {
  */
 export const refreshToken = async () => {
   try {
-    const response = await apiClient.post('/auth/refresh-token');
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+    const refreshToken = tokenService.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
     }
+
+    const response = await apiClient.post('/auth/refresh-token', { refreshToken });
+
+    if (response.data.token) {
+      // Store new tokens
+      tokenService.setTokens({
+        accessToken: response.data.token,
+        refreshToken: response.data.refreshToken || refreshToken // Keep old refresh token if new one not provided
+      });
+
+      // Update user data if provided
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+    }
+
     return response.data;
   } catch (error) {
+    // If refresh fails, clear tokens to force re-login
+    tokenService.removeTokens();
     throw error.message || { message: 'Token refresh failed' };
   }
 };

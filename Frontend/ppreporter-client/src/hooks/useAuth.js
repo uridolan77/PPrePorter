@@ -6,6 +6,8 @@ import {
   resetPassword as resetPasswordAction,
   forgotPassword as forgotPasswordAction,
   refreshToken as refreshTokenAction,
+  loginWithGoogle as loginWithGoogleAction,
+  loginWithMicrosoft as loginWithMicrosoftAction,
   selectAuth
 } from '../store/slices/authSlice';
 
@@ -127,6 +129,40 @@ export const useAuth = () => {
   };
 
   /**
+   * Login with Google OAuth
+   * @returns {Promise} - Google login result
+   */
+  const loginWithGoogle = async () => {
+    try {
+      const resultAction = await dispatch(loginWithGoogleAction());
+      if (loginWithGoogleAction.fulfilled.match(resultAction)) {
+        return resultAction.payload;
+      } else {
+        throw new Error(resultAction.payload || 'Google login failed');
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  /**
+   * Login with Microsoft OAuth
+   * @returns {Promise} - Microsoft login result
+   */
+  const loginWithMicrosoft = async () => {
+    try {
+      const resultAction = await dispatch(loginWithMicrosoftAction());
+      if (loginWithMicrosoftAction.fulfilled.match(resultAction)) {
+        return resultAction.payload;
+      } else {
+        throw new Error(resultAction.payload || 'Microsoft login failed');
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  /**
    * Check if user is authenticated
    * @returns {boolean} - Authentication status
    */
@@ -144,6 +180,8 @@ export const useAuth = () => {
     resetPassword,
     forgotPassword,
     refreshToken,
+    loginWithGoogle,
+    loginWithMicrosoft,
     isAuthenticated
   };
 };

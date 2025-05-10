@@ -13,8 +13,7 @@ using PPrePorter.Core.Services;
 using PPrePorter.Infrastructure.Data;
 using PPrePorter.Infrastructure.Services;
 using PPrePorter.API.Features.Dashboard.Insights;
-using PPrePorter.API.Features.Database;
-using PPrePorter.API.Features.Caching;
+using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.NLP.Extensions;
 using PPrePorter.SemanticLayer.Extensions;
 using PPrePorter.DailyActionsDB;
@@ -106,7 +105,6 @@ builder.Services.AddDbContext<PPRePorterDbContext>(options =>
 });
 
 // Register interfaces
-builder.Services.AddScoped<IDailyActionsDbContext>(provider => provider.GetRequiredService<DailyActionsDbContext>());
 builder.Services.AddScoped<IPPRePorterDbContext>(provider => provider.GetRequiredService<PPRePorterDbContext>());
 
 // Configure application settings

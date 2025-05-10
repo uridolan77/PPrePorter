@@ -14,7 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
  * Login page component
  */
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -55,11 +55,12 @@ const LoginPage = () => {
     setLoading(true);
     setError('');
     try {
-      // In a real implementation, we would dispatch a Redux action for Google login
-      // For now, we'll just show an error message
-      setError('Google login is not implemented in this version.');
+      await loginWithGoogle();
+      // Navigate to the page user tried to visit or dashboard
+      navigate(from, { replace: true });
     } catch (err) {
-      setError('Google login failed. Please try again.');
+      console.error('Google login error:', err);
+      setError(err.message || 'Google login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -72,11 +73,12 @@ const LoginPage = () => {
     setLoading(true);
     setError('');
     try {
-      // In a real implementation, we would dispatch a Redux action for Microsoft login
-      // For now, we'll just show an error message
-      setError('Microsoft login is not implemented in this version.');
+      await loginWithMicrosoft();
+      // Navigate to the page user tried to visit or dashboard
+      navigate(from, { replace: true });
     } catch (err) {
-      setError('Microsoft login failed. Please try again.');
+      console.error('Microsoft login error:', err);
+      setError(err.message || 'Microsoft login failed. Please try again.');
     } finally {
       setLoading(false);
     }
