@@ -101,16 +101,26 @@ export const useAuth = (): UseAuthReturn => {
    */
   const login = async (credentials: LoginCredentials): Promise<User> => {
     try {
+      console.log('useAuth.login called with credentials:', { username: credentials.username, rememberMe: credentials.rememberMe });
+
+      // Dispatch the login action
       const resultAction = await dispatch(loginAction(credentials));
+      console.log('Login action result:', resultAction);
+
+      // Check if the action was fulfilled
       if (loginAction.fulfilled.match(resultAction)) {
+        console.log('Login successful, user:', resultAction.payload);
         return resultAction.payload;
       } else {
+        // Handle rejected action
+        console.error('Login action rejected:', resultAction);
         const errorMessage = typeof resultAction.payload === 'string'
           ? resultAction.payload
           : 'Login failed';
         throw new Error(errorMessage);
       }
     } catch (error) {
+      console.error('Error in useAuth.login:', error);
       throw error;
     }
   };

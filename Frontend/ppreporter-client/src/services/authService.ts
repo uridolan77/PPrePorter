@@ -20,9 +20,7 @@ const USER_KEY = 'user_info';
  */
 const login = async (credentials: LoginCredentials): Promise<User> => {
   try {
-    // Add debugger statement to help with debugging
-    debugger;
-    console.log('Attempting login with credentials:', credentials);
+    console.log('Attempting login with credentials:', { username: credentials.username, rememberMe: credentials.rememberMe });
 
     // Check if we should use mock data
     const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
@@ -48,15 +46,38 @@ const login = async (credentials: LoginCredentials): Promise<User> => {
         throw new Error('No mock data available for login');
       }
     } else {
-      // Make the actual API call
-      response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+      try {
+        // Make the actual API call with explicit headers to match Swagger
+        response = await apiClient.post<AuthResponse>('/auth/login', credentials, {
+          headers: {
+            'Content-Type': 'application/json; v=1.0',
+            'Accept': 'text/plain; v=1.0'
+          }
+        });
+        console.log('API call successful:', response);
+      } catch (apiError) {
+        console.error('API call error:', apiError);
+        throw apiError;
+      }
     }
 
-    // Add debugger statement after the API call
-    debugger;
     console.log('Login response received:', response.data);
 
-    const { token, refreshToken, user } = response.data;
+    // Extract data from response
+    const { token, refreshToken, username, fullName, role, permissions } = response.data;
+
+    // Create user object from response data
+    const user: User = {
+      id: '1', // Assuming ID is 1 for admin user
+      username: username,
+      email: `${username}@example.com`, // Add email property to satisfy TypeScript
+      fullName: fullName,
+      role: role,
+      permissions: permissions,
+      active: true
+    };
+
+    console.log('Created user object:', user);
 
     // Store tokens and user data
     localStorage.setItem(TOKEN_KEY, token);
@@ -68,8 +89,6 @@ const login = async (credentials: LoginCredentials): Promise<User> => {
 
     return user;
   } catch (error) {
-    // Add debugger statement for errors
-    debugger;
     console.error('Login error:', error);
     throw error;
   }
@@ -158,8 +177,18 @@ const refreshToken = async (): Promise<User> => {
  * @returns {User|null} User data or null if not logged in
  */
 const getCurrentUser = (): User | null => {
-  const userJson = localStorage.getItem(USER_KEY);
-  return userJson ? JSON.parse(userJson) : null;
+  try {
+    const userJson = localStorage.getItem(USER_KEY);
+    if (!userJson) return null;
+
+    // Parse the JSON safely
+    return JSON.parse(userJson);
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error);
+    // If there's an error parsing the JSON, clear the invalid data
+    localStorage.removeItem(USER_KEY);
+    return null;
+  }
 };
 
 /**
@@ -167,7 +196,14 @@ const getCurrentUser = (): User | null => {
  * @returns {boolean} True if user is authenticated
  */
 const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem(TOKEN_KEY);
+  try {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const user = getCurrentUser();
+    return !!token && !!user;
+  } catch (error) {
+    console.error('Error checking authentication status:', error);
+    return false;
+  }
 };
 
 /**
@@ -175,7 +211,12 @@ const isAuthenticated = (): boolean => {
  * @returns {string|null} Authentication token or null
  */
 const getToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch (error) {
+    console.error('Error getting authentication token:', error);
+    return null;
+  }
 };
 
 /**

@@ -56,7 +56,7 @@ The application now includes detailed performance metrics for all cache operatio
 
 ### Method Performance
 
-```
+```log
 PERF [12:34:56.789]: Starting GetDailyActionsAsync
 PERF [12:34:56.789]: GetDailyActionsAsync completed with CACHE HIT in 15.3ms
 PERF [12:34:56.789]: GetDailyActionsAsync completed with CACHE MISS in 1250.7ms
@@ -64,14 +64,14 @@ PERF [12:34:56.789]: GetDailyActionsAsync completed with CACHE MISS in 1250.7ms
 
 ### Cache Operation Performance
 
-```
+```log
 PERF [12:34:56.789]: Cache set operation completed in 8.5ms
 PERF [12:34:56.789]: Database query for daily actions completed in 1150.2ms
 ```
 
 ### Request Performance
 
-```
+```log
 PERF [12:34:56.789]: Starting GetDailyActionsData request
 PERF [12:34:56.789]: GetDailyActionsAsync completed in 15.3ms
 PERF [12:34:56.789]: GetSummaryMetricsAsync completed in 12.1ms
@@ -93,11 +93,12 @@ If the cache is not working as expected, check the following:
 
 The cache key format must be consistent between setting and getting. The format is:
 
-```
+```text
 DailyActions_Data_yyyyMMdd_yyyyMMdd_whiteLabelId
 ```
 
 Where:
+
 - `yyyyMMdd` is the date format (e.g., 20250509 for May 9, 2025)
 - `whiteLabelId` is the ID of the white label, or "all" if no specific white label is selected
 

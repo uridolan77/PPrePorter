@@ -57,6 +57,9 @@ interface DailyAction {
   ggrSport: number;
   ggrLive: number;
   totalGGR: number;
+  // Additional properties for grouped data
+  groupKey?: string;
+  groupValue?: string;
 }
 
 interface Summary {
@@ -71,14 +74,23 @@ interface Filters {
   startDate: string;
   endDate: string;
   whiteLabelId?: string;
+  groupBy?: string;
 }
 
 const DailyActionsPage: React.FC = () => {
-  // State for filters - use dates that match our mock data (May 2023)
-  const [startDate, setStartDate] = useState<Date>(new Date('2023-05-01'));
-  const [endDate, setEndDate] = useState<Date>(new Date('2023-05-05'));
+  // State for filters - use yesterday and today as default date range
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 1));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [whiteLabelId, setWhiteLabelId] = useState<string>('');
   const [whiteLabels, setWhiteLabels] = useState<WhiteLabel[]>([]);
+  const [groupBy, setGroupBy] = useState<string>('Day');
+  const [groupByOptions, setGroupByOptions] = useState<{id: string, name: string}[]>([
+    { id: 'Day', name: 'Day' },
+    { id: 'Month', name: 'Month' },
+    { id: 'Year', name: 'Year' },
+    { id: 'Label', name: 'White Label' },
+    { id: 'Ranking', name: 'Ranking' }
+  ]);
 
   // State for data
   const [dailyActions, setDailyActions] = useState<DailyAction[]>([]);
@@ -163,7 +175,8 @@ const DailyActionsPage: React.FC = () => {
       // Create filters object
       const filters: Filters = {
         startDate: formattedStartDate,
-        endDate: formattedEndDate
+        endDate: formattedEndDate,
+        groupBy: groupBy
       };
 
       if (whiteLabelId && whiteLabelId !== '') {
@@ -172,6 +185,8 @@ const DailyActionsPage: React.FC = () => {
       } else {
         console.log('[DAILY ACTIONS PAGE] No white label filter applied');
       }
+
+      console.log(`[DAILY ACTIONS PAGE] Grouping by: ${groupBy}`);
 
       console.log('[DAILY ACTIONS PAGE] Starting data fetch with filters:', filters);
 
@@ -260,55 +275,38 @@ const DailyActionsPage: React.FC = () => {
         console.error('[DAILY ACTIONS PAGE] Error getting mock data directly:', mockError);
       }
 
-      // Fetch summary data first
+      // Fetch data directly (the data endpoint returns both data and summary)
       try {
-        console.log('[DAILY ACTIONS PAGE] Fetching summary data with filters:', filters);
-        const summaryResponse = await dailyActionsService.getSummaryData(filters);
-        console.log('[DAILY ACTIONS PAGE] Summary response:', summaryResponse);
-
-        if (summaryResponse && summaryResponse.dailyActions) {
-          setDailyActions(summaryResponse.dailyActions);
-
-          // Set summary metrics
-          const summaryData: Summary = {
-            totalRegistrations: summaryResponse.totalRegistrations || 0,
-            totalFTD: summaryResponse.totalFTD || 0,
-            totalDeposits: summaryResponse.totalDeposits || 0,
-            totalCashouts: summaryResponse.totalCashouts || 0,
-            totalGGR: summaryResponse.totalGGR || 0
-          };
-
-          setSummary(summaryData);
-        } else {
-          throw new Error('Invalid summary data format');
-        }
-      } catch (summaryError) {
-        console.error('[DAILY ACTIONS PAGE] Error fetching summary data:', summaryError);
-
-        // Fall back to regular data fetch if summary fails
-        console.log('[DAILY ACTIONS PAGE] Falling back to regular data fetch');
+        console.log('[DAILY ACTIONS PAGE] Fetching data with filters:', filters);
         const response = await dailyActionsService.getData(filters);
         console.log('[DAILY ACTIONS PAGE] Regular data response:', response);
 
-        const data = (response as any).data || [];
+        // Check if the response has the expected structure
+        if (response && response.data) {
+          setDailyActions(response.data);
 
-        setDailyActions(data);
+          // Set summary metrics if available in the response
+          if (response.summary) {
+            setSummary(response.summary);
+          } else {
+            // Calculate summary metrics if not provided by the API
+            const summaryData: Summary = {
+              totalRegistrations: response.data.reduce((sum: number, item: any) => sum + (item.registrations || 0), 0),
+              totalFTD: response.data.reduce((sum: number, item: any) => sum + (item.ftd || 0), 0),
+              totalDeposits: response.data.reduce((sum: number, item: any) => sum + (item.deposits || 0), 0),
+              totalCashouts: response.data.reduce((sum: number, item: any) => sum + (item.paidCashouts || 0), 0),
+              totalGGR: response.data.reduce((sum: number, item: any) => sum + (item.totalGGR || 0), 0)
+            };
 
-        // Set summary metrics if available in the response
-        if ((response as any).summary) {
-          setSummary((response as any).summary);
+            setSummary(summaryData);
+          }
         } else {
-          // Calculate summary metrics if not provided by the API
-          const summaryData: Summary = {
-            totalRegistrations: data.reduce((sum: number, item: any) => sum + (item.registrations || 0), 0),
-            totalFTD: data.reduce((sum: number, item: any) => sum + (item.ftd || 0), 0),
-            totalDeposits: data.reduce((sum: number, item: any) => sum + (item.deposits || 0), 0),
-            totalCashouts: data.reduce((sum: number, item: any) => sum + (item.paidCashouts || 0), 0),
-            totalGGR: data.reduce((sum: number, item: any) => sum + (item.totalGGR || 0), 0)
-          };
-
-          setSummary(summaryData);
+          console.error('[DAILY ACTIONS PAGE] Invalid response format:', response);
+          setError('Invalid response format from the server');
         }
+      } catch (innerErr) {
+        console.error('[DAILY ACTIONS PAGE] Error in inner try block:', innerErr);
+        throw innerErr; // Re-throw to be caught by the outer catch block
       }
     } catch (err) {
       console.error('[DAILY ACTIONS PAGE] Error fetching daily actions:', err);
@@ -333,6 +331,12 @@ const DailyActionsPage: React.FC = () => {
   const handleWhiteLabelChange = (event: SelectChangeEvent): void => {
     console.log(`[DAILY ACTIONS PAGE] White label changed to: ${event.target.value}`);
     setWhiteLabelId(event.target.value);
+  };
+
+  // Handle group by change
+  const handleGroupByChange = (event: SelectChangeEvent): void => {
+    console.log(`[DAILY ACTIONS PAGE] Group by changed to: ${event.target.value}`);
+    setGroupBy(event.target.value);
   };
 
   // Format currency values
@@ -415,6 +419,21 @@ const DailyActionsPage: React.FC = () => {
                   <MenuItem key="lucky-spin" value="lucky-spin">Lucky Spin</MenuItem>,
                   <MenuItem key="golden-bet" value="golden-bet">Golden Bet</MenuItem>
                 ]}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Group By</InputLabel>
+              <Select
+                value={groupBy}
+                onChange={handleGroupByChange}
+                label="Group By"
+              >
+                {groupByOptions.map((option) => (
+                  <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
@@ -537,8 +556,9 @@ const DailyActionsPage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>White Label</TableCell>
+                  {groupBy !== 'Label' && <TableCell>Date</TableCell>}
+                  {(groupBy === 'Day' || groupBy === 'Label') && <TableCell>White Label</TableCell>}
+                  {groupBy !== 'Day' && groupBy !== 'Label' && <TableCell>{groupBy}</TableCell>}
                   <TableCell align="right">Registrations</TableCell>
                   <TableCell align="right">FTD</TableCell>
                   <TableCell align="right">Deposits</TableCell>
@@ -550,10 +570,19 @@ const DailyActionsPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {dailyActions.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{format(new Date(row.date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>{row.whiteLabelName}</TableCell>
+                {dailyActions.map((row, index) => (
+                  <TableRow key={row.id || `row-${index}`}>
+                    {groupBy !== 'Label' &&
+                      <TableCell>
+                        {row.date ? format(new Date(row.date), 'MMM dd, yyyy') : 'N/A'}
+                      </TableCell>
+                    }
+                    {(groupBy === 'Day' || groupBy === 'Label') &&
+                      <TableCell>{row.whiteLabelName}</TableCell>
+                    }
+                    {groupBy !== 'Day' && groupBy !== 'Label' &&
+                      <TableCell>{row.groupValue || 'N/A'}</TableCell>
+                    }
                     <TableCell align="right">{row.registrations}</TableCell>
                     <TableCell align="right">{row.ftd}</TableCell>
                     <TableCell align="right">{formatCurrency(row.deposits)}</TableCell>

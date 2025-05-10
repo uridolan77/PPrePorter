@@ -30,8 +30,13 @@ export const shouldUseMockData = (): boolean => {
 export const getMockData = (endpoint: string, params?: any): any => {
   console.log(`[MOCK] Getting mock data for endpoint: ${endpoint}`, params);
 
-  // Remove leading slash if present
-  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+  // Normalize the endpoint by removing leading slash and any API prefix
+  let normalizedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+
+  // Remove api/ prefix if present (for proxy requests)
+  if (normalizedEndpoint.startsWith('api/')) {
+    normalizedEndpoint = normalizedEndpoint.substring(4);
+  }
 
   // Split the endpoint into segments
   const segments = normalizedEndpoint.split('/');

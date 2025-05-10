@@ -6,7 +6,7 @@
 const config = {
   // API settings
   api: {
-    baseUrl: process.env.REACT_APP_API_URL || 'http://localhost:5229/api',
+    baseUrl: process.env.REACT_APP_API_URL || 'https://localhost:7075/api',
     timeout: 10000, // 10 seconds
   },
 

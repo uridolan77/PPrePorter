@@ -24,10 +24,10 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { formatDistanceToNow } from 'date-fns';
 
 // Types
-import { 
-  NotificationCenterProps, 
-  Notification, 
-  NotificationType 
+import {
+  NotificationCenterProps,
+  Notification,
+  NotificationType
 } from '../../types/notificationCenter';
 
 /**
@@ -66,12 +66,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     if (!notification.isRead && onMarkAsRead) {
       onMarkAsRead(notification.id);
     }
-    
+
     // Navigate to link if exists
     if (notification.link) {
-      window.location.href = notification.link;
+      // Use React Router's navigate function instead of window.location.href
+      // This is a placeholder - you'll need to implement this with useNavigate from react-router-dom
+      // For now, we'll just log it
+      console.log('Would navigate to:', notification.link);
+      // TODO: Replace with proper navigation using React Router
     }
-    
+
     handleCloseNotifications();
   };
 
@@ -114,8 +118,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   return (
     <>
       <Tooltip title="Notifications">
-        <IconButton 
-          color="inherit" 
+        <IconButton
+          color="inherit"
           onClick={handleOpenNotifications}
           aria-describedby={id}
         >
@@ -124,7 +128,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
           </Badge>
         </IconButton>
       </Tooltip>
-      
+
       <Popover
         id={id}
         open={open}
@@ -144,10 +148,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       >
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Notifications</Typography>
-          
+
           {unreadCount > 0 && (
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               onClick={handleMarkAllAsRead}
               startIcon={<CheckCircleOutlineIcon />}
             >
@@ -155,9 +159,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             </Button>
           )}
         </Box>
-        
+
         <Divider />
-        
+
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress size={24} />
@@ -172,7 +176,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
           <List sx={{ p: 0 }}>
             {notifications.map((notification) => (
               <React.Fragment key={notification.id}>
-                <ListItem 
+                <ListItem
                   button
                   onClick={() => handleNotificationClick(notification)}
                   alignItems="flex-start"
@@ -186,12 +190,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   <ListItemIcon sx={{ minWidth: 40 }}>
                     {getNotificationIcon(notification.type)}
                   </ListItemIcon>
-                  
+
                   <ListItemText
                     primary={
-                      <Typography 
-                        variant="subtitle2" 
-                        sx={{ 
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
                           fontWeight: notification.isRead ? 'normal' : 'bold',
                           mr: 6 // Space for the delete button
                         }}
@@ -210,10 +214,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       </>
                     }
                   />
-                  
+
                   <ListItemSecondaryAction>
-                    <IconButton 
-                      edge="end" 
+                    <IconButton
+                      edge="end"
                       size="small"
                       onClick={(event) => handleDelete(event, notification)}
                     >
@@ -226,7 +230,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             ))}
           </List>
         )}
-        
+
         {notifications.length > 0 && (
           <Box sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
             <Button size="small" href="/notifications">

@@ -25,7 +25,7 @@ import {
   GetApp as GetAppIcon,
   Visibility as VisibilityIcon
 } from '@mui/icons-material';
-import { MicroSparkline, MicroBarChart, MicroBulletChart } from './MicroCharts';
+import MicroCharts, { MicroSparkline, MicroBarChart, MicroBulletChart } from './MicroCharts';
 import { formatCurrency, formatNumber, formatPercentage } from '../../utils/formatters';
 import VirtualizedList from '../common/VirtualizedList';
 import { CommonProps, ColumnDef } from '../../types/common';

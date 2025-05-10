@@ -12,15 +12,22 @@ export const login = createAsyncThunk<
   'auth/login',
   async ({ username, email, password, rememberMe }, { rejectWithValue }) => {
     try {
+      console.log('Login thunk called with:', { username, email, rememberMe });
+
       // Support both username and email
       const credentials: LoginCredentials = {
         username: username || email || '',
         password,
         rememberMe
       };
+
+      console.log('Calling authService.login with credentials');
       const response = await authService.login(credentials);
+      console.log('Login thunk received response:', response);
+
       return response;
     } catch (error) {
+      console.error('Login thunk error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       return rejectWithValue(errorMessage);
     }
@@ -146,11 +153,22 @@ export const loginWithMicrosoft = createAsyncThunk<
 
 // Initial state
 const initialState: AuthState = {
-  user: authService.getCurrentUser(),
-  isAuthenticated: !!authService.getCurrentUser(),
+  user: null,
+  isAuthenticated: false,
   loading: false,
   error: null
 };
+
+// Try to get the current user from localStorage
+try {
+  const currentUser = authService.getCurrentUser();
+  if (currentUser) {
+    initialState.user = currentUser;
+    initialState.isAuthenticated = true;
+  }
+} catch (error) {
+  console.error('Error initializing auth state:', error);
+}
 
 // Auth slice
 const authSlice = createSlice({

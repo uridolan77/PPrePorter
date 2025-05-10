@@ -45,7 +45,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 
 // Import micro-visualizations
-import { MicroSparkline, MicroBarChart, MicroBulletChart } from '../dashboard/MicroCharts';
+import MicroCharts, { MicroSparkline, MicroBarChart, MicroBulletChart } from '../dashboard/MicroCharts';
 
 // Import formatters if available
 let formatCurrency, formatNumber, formatPercentage;

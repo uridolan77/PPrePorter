@@ -6,7 +6,7 @@
 /**
  * API configuration
  */
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5229';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
 export const API_TIMEOUT = 30000; // 30 seconds
 
 /**
@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   DAILY_ACTIONS: {
     GET_DATA: '/reports/daily-actions/data',
     GET_METADATA: '/reports/daily-actions/metadata',
+    GET_SUMMARY: '/reports/daily-actions/summary',
     FILTER: '/reports/daily-actions/filter',
     NL_QUERY: '/reports/daily-actions/query',
     EXPORT: '/reports/daily-actions/export',

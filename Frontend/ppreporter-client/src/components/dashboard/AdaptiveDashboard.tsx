@@ -18,7 +18,7 @@ import PlayerRegistrationsChart from './PlayerRegistrationsChart';
 import TopGamesChart from './TopGamesChart';
 import MultiDimensionalRadarChart from './MultiDimensionalRadarChart';
 import EnhancedDataTable from './EnhancedDataTable';
-import { MicroSparkline, MicroBarChart } from './MicroCharts';
+import MicroCharts, { MicroSparkline, MicroBarChart } from './MicroCharts';
 import { formatCurrency, formatNumber, formatPercentage } from '../../utils/formatters';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';

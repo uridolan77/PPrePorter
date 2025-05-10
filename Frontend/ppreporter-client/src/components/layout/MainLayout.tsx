@@ -119,7 +119,8 @@ const MainLayout: React.FC = () => {
       ]
     },
     { text: 'Analytics', icon: <AutoGraphIcon />, path: '/analytics' },
-    { text: 'Configuration', icon: <TuneIcon />, path: '/configuration' }
+    { text: 'Configuration', icon: <TuneIcon />, path: '/configuration' },
+    { text: 'API Test', icon: <HelpIcon />, path: '/api-test' }
   ];
 
   // User menu items

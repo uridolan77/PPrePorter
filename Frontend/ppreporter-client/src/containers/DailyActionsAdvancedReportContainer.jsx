@@ -114,9 +114,20 @@ const DailyActionsAdvancedReportContainer = () => {
 
   // Handle filter changes
   const handleFilterChange = (filters) => {
-    // This function can be used to update local state if needed
-    // For now, we'll just use it to log the filters
+    // Log the filters
     console.log('Filters changed:', filters);
+
+    // If we have search term or multi-select filters, we might want to fetch data
+    if (
+      filters.searchTerm ||
+      (filters.gameCategories && filters.gameCategories.length > 0) ||
+      (filters.playerStatuses && filters.playerStatuses.length > 0) ||
+      (filters.countries && filters.countries.length > 0)
+    ) {
+      // Optionally fetch data with the new filters
+      // Uncomment the line below to automatically fetch data when filters change
+      // fetchData(filters);
+    }
   };
 
   // Handle export

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -15,13 +15,17 @@ import {
   MenuItem,
   IconButton,
   Tooltip,
-  Paper
+  Paper,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoIcon from '@mui/icons-material/Info';
+import SearchIcon from '@mui/icons-material/Search';
 import DateRangePicker from '../common/DateRangePicker';
+import { MultiSelect } from '../common';
 import { DateRange } from '../../types/dateRangePicker';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
@@ -82,12 +86,95 @@ const DailyActionsAdvancedReport: React.FC<DailyActionsAdvancedReportProps> = ({
   const [filters, setFilters] = useState({
     startDate: startOfDay(subDays(new Date(), 30)),
     endDate: endOfDay(new Date()),
-    gameCategory: '',
-    playerStatus: '',
-    country: '',
+    gameCategories: [] as string[],
+    playerStatuses: [] as string[],
+    countries: [] as string[],
+    whiteLabels: [] as string[],
     minAmount: '',
-    maxAmount: ''
+    maxAmount: '',
+    searchTerm: ''
   });
+
+  // Prepare options for select components
+  const [gameCategories, setGameCategories] = useState<Array<{ value: string, label: string }>>([]);
+  const [playerStatuses, setPlayerStatuses] = useState<Array<{ value: string, label: string }>>([]);
+  const [countries, setCountries] = useState<Array<{ value: string, label: string }>>([]);
+  const [whiteLabels, setWhiteLabels] = useState<Array<{ value: string, label: string }>>([]);
+
+  // Extract options from metadata when it changes
+  useEffect(() => {
+    if (metadata) {
+      // Extract game categories
+      const gameCategoryFilter = metadata.filters?.find((filter: any) => filter.id === 'gameCategory');
+      if (gameCategoryFilter?.options) {
+        setGameCategories(gameCategoryFilter.options);
+      } else {
+        // Default game categories if not found in metadata
+        setGameCategories([
+          { value: 'slots', label: 'Slots' },
+          { value: 'table', label: 'Table Games' },
+          { value: 'live', label: 'Live Casino' },
+          { value: 'poker', label: 'Poker' },
+          { value: 'sports', label: 'Sports' },
+          { value: 'arcade', label: 'Arcade' }
+        ]);
+      }
+
+      // Extract player statuses
+      const playerStatusFilter = metadata.filters?.find((filter: any) => filter.id === 'playerStatus');
+      if (playerStatusFilter?.options) {
+        setPlayerStatuses(playerStatusFilter.options);
+      } else {
+        // Default player statuses if not found in metadata
+        setPlayerStatuses([
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+          { value: 'suspended', label: 'Suspended' },
+          { value: 'new', label: 'New' },
+          { value: 'vip', label: 'VIP' }
+        ]);
+      }
+
+      // Extract countries
+      const countryFilter = metadata.filters?.find((filter: any) => filter.id === 'country');
+      if (countryFilter?.options) {
+        setCountries(countryFilter.options);
+      } else {
+        // Default countries if not found in metadata
+        setCountries([
+          { value: 'us', label: 'United States' },
+          { value: 'uk', label: 'United Kingdom' },
+          { value: 'ca', label: 'Canada' },
+          { value: 'de', label: 'Germany' },
+          { value: 'fr', label: 'France' },
+          { value: 'es', label: 'Spain' },
+          { value: 'it', label: 'Italy' },
+          { value: 'au', label: 'Australia' }
+        ]);
+      }
+
+      // Extract white labels
+      const whiteLabelFilter = metadata.filters?.find((filter: any) => filter.id === 'whiteLabel');
+      if (whiteLabelFilter?.options) {
+        setWhiteLabels(whiteLabelFilter.options);
+      } else if (metadata.whiteLabels) {
+        // Try to get white labels from metadata.whiteLabels
+        setWhiteLabels(metadata.whiteLabels.map((wl: any) => ({
+          value: wl.id,
+          label: wl.name
+        })));
+      } else {
+        // Default white labels if not found in metadata
+        setWhiteLabels([
+          { value: 'casino-royale', label: 'Casino Royale' },
+          { value: 'lucky-spin', label: 'Lucky Spin' },
+          { value: 'golden-bet', label: 'Golden Bet' },
+          { value: 'diamond-play', label: 'Diamond Play' },
+          { value: 'royal-flush', label: 'Royal Flush' }
+        ]);
+      }
+    }
+  }, [metadata]);
 
   // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -123,6 +210,16 @@ const DailyActionsAdvancedReport: React.FC<DailyActionsAdvancedReportProps> = ({
 
     setFilters(newFilters);
     onFilterChange(newFilters);
+  };
+
+  // Handle multi-select change
+  const handleMultiSelectChange = (field: string, value: (string | number)[]) => {
+    handleFilterChange(field, value);
+  };
+
+  // Handle search term change
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleFilterChange('searchTerm', event.target.value);
   };
 
   // Handle date range change
@@ -223,7 +320,111 @@ const DailyActionsAdvancedReport: React.FC<DailyActionsAdvancedReportProps> = ({
                   buttonLabel="Date Range"
                 />
               </Grid>
-              {/* Additional filters would go here */}
+
+              {/* Search */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Search"
+                  placeholder="Search by player, game, etc."
+                  value={filters.searchTerm}
+                  onChange={handleSearchChange}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              {/* Game Categories */}
+              <Grid item xs={12} md={6}>
+                <MultiSelect
+                  label="Game Categories"
+                  options={gameCategories}
+                  value={filters.gameCategories}
+                  onChange={(value) => handleMultiSelectChange('gameCategories', value)}
+                  placeholder="Select game categories"
+                  searchable
+                  showSelectAllOption
+                />
+              </Grid>
+
+              {/* Player Statuses */}
+              <Grid item xs={12} md={6}>
+                <MultiSelect
+                  label="Player Statuses"
+                  options={playerStatuses}
+                  value={filters.playerStatuses}
+                  onChange={(value) => handleMultiSelectChange('playerStatuses', value)}
+                  placeholder="Select player statuses"
+                  searchable
+                  showSelectAllOption
+                />
+              </Grid>
+
+              {/* Countries */}
+              <Grid item xs={12} md={6}>
+                <MultiSelect
+                  label="Countries"
+                  options={countries}
+                  value={filters.countries}
+                  onChange={(value) => handleMultiSelectChange('countries', value)}
+                  placeholder="Select countries"
+                  searchable
+                  showSelectAllOption
+                />
+              </Grid>
+
+              {/* White Labels */}
+              <Grid item xs={12} md={6}>
+                <MultiSelect
+                  label="White Labels"
+                  options={whiteLabels}
+                  value={filters.whiteLabels}
+                  onChange={(value) => handleMultiSelectChange('whiteLabels', value)}
+                  placeholder="Select white labels"
+                  searchable
+                  showSelectAllOption
+                />
+              </Grid>
+
+              {/* Amount Range */}
+              <Grid item xs={12} md={6}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Min Amount"
+                      type="number"
+                      placeholder="0"
+                      value={filters.minAmount}
+                      onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Max Amount"
+                      type="number"
+                      placeholder="1000"
+                      value={filters.maxAmount}
+                      onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </Grid>
             </Grid>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
               <Button
@@ -233,11 +434,13 @@ const DailyActionsAdvancedReport: React.FC<DailyActionsAdvancedReportProps> = ({
                   const resetFilters = {
                     startDate: startOfDay(subDays(new Date(), 30)),
                     endDate: endOfDay(new Date()),
-                    gameCategory: '',
-                    playerStatus: '',
-                    country: '',
+                    gameCategories: [],
+                    playerStatuses: [],
+                    countries: [],
+                    whiteLabels: [],
                     minAmount: '',
-                    maxAmount: ''
+                    maxAmount: '',
+                    searchTerm: ''
                   };
                   setFilters(resetFilters);
                   onFilterChange(resetFilters);

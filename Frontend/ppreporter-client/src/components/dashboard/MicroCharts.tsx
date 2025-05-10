@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Tooltip, useTheme } from '@mui/material';
+import { Box, Tooltip, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
 // Type definitions
@@ -428,4 +428,63 @@ const MicroBulletChart: React.FC<MicroBulletChartProps> = ({
   );
 };
 
+// Named exports for individual components
 export { MicroSparkline, MicroBarChart, MicroBulletChart };
+
+// Define the interface for the MicroChartsWrapper component with additional properties
+interface MicroChartsWrapperComponent extends React.FC {
+  Sparkline: typeof MicroSparkline;
+  BarChart: typeof MicroBarChart;
+  BulletChart: typeof MicroBulletChart;
+}
+
+// Create a wrapper component that can be used as a default export for React.lazy
+const MicroChartsWrapper: React.FC = () => {
+  return (
+    <Box>
+      <Typography variant="h6">MicroCharts Components</Typography>
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle1">MicroSparkline Example</Typography>
+        <MicroSparkline
+          data={[
+            { value: 10 },
+            { value: 25 },
+            { value: 15 },
+            { value: 30 },
+            { value: 20 }
+          ]}
+        />
+      </Box>
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle1">MicroBarChart Example</Typography>
+        <MicroBarChart
+          data={[
+            { value: 10 },
+            { value: 25 },
+            { value: 15 },
+            { value: 30 },
+            { value: 20 }
+          ]}
+        />
+      </Box>
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle1">MicroBulletChart Example</Typography>
+        <MicroBulletChart
+          actual={75}
+          target={100}
+          comparative={80}
+        />
+      </Box>
+    </Box>
+  );
+};
+
+// Cast the component to our extended interface type
+const EnhancedMicroChartsWrapper = MicroChartsWrapper as MicroChartsWrapperComponent;
+
+// Add the individual components as properties
+EnhancedMicroChartsWrapper.Sparkline = MicroSparkline;
+EnhancedMicroChartsWrapper.BarChart = MicroBarChart;
+EnhancedMicroChartsWrapper.BulletChart = MicroBulletChart;
+
+export default EnhancedMicroChartsWrapper;

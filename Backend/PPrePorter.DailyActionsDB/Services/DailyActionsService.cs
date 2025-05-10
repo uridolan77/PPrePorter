@@ -105,10 +105,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     }
 
                     // Log total method time for cache hit
-                    var methodEndTime = DateTime.UtcNow;
-                    var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                    var cacheHitEndTime = DateTime.UtcNow;
+                    var cacheHitElapsedMs = (cacheHitEndTime - methodStartTime).TotalMilliseconds;
                     _logger.LogInformation("PERF [{Timestamp}]: GetDailyActionsAsync completed with CACHE HIT in {ElapsedMs}ms",
-                        methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
+                        cacheHitEndTime.ToString("HH:mm:ss.fff"), cacheHitElapsedMs);
 
                     return cachedResult;
                 }
@@ -258,10 +258,10 @@ namespace PPrePorter.DailyActionsDB.Services
                 }
 
                 // Log total method time for cache miss
-                var methodEndTime = DateTime.UtcNow;
-                var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                var cacheMissEndTime = DateTime.UtcNow;
+                var cacheMissElapsedMs = (cacheMissEndTime - methodStartTime).TotalMilliseconds;
                 _logger.LogInformation("PERF [{Timestamp}]: GetDailyActionsAsync completed with CACHE MISS in {ElapsedMs}ms",
-                    methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
+                    cacheMissEndTime.ToString("HH:mm:ss.fff"), cacheMissElapsedMs);
 
                 return result;
             }
@@ -442,10 +442,10 @@ namespace PPrePorter.DailyActionsDB.Services
                         DateTime.UtcNow.ToString("HH:mm:ss.fff"), cachedResult.TotalRegistrations, cachedResult.TotalFTD, cachedResult.TotalGGR);
 
                     // Log total method time for cache hit
-                    var methodEndTime = DateTime.UtcNow;
-                    var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                    var summaryHitEndTime = DateTime.UtcNow;
+                    var summaryHitElapsedMs = (summaryHitEndTime - methodStartTime).TotalMilliseconds;
                     _logger.LogInformation("PERF [{Timestamp}]: GetSummaryMetricsAsync completed with CACHE HIT in {ElapsedMs}ms",
-                        methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
+                        summaryHitEndTime.ToString("HH:mm:ss.fff"), summaryHitElapsedMs);
 
                     return cachedResult;
                 }
@@ -553,10 +553,10 @@ namespace PPrePorter.DailyActionsDB.Services
                 }
 
                 // Log total method time for cache miss
-                var methodEndTime = DateTime.UtcNow;
-                var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                var summaryMissEndTime = DateTime.UtcNow;
+                var summaryMissElapsedMs = (summaryMissEndTime - methodStartTime).TotalMilliseconds;
                 _logger.LogInformation("PERF [{Timestamp}]: GetSummaryMetricsAsync completed with CACHE MISS in {ElapsedMs}ms",
-                    methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
+                    summaryMissEndTime.ToString("HH:mm:ss.fff"), summaryMissElapsedMs);
 
                 return summary;
             }
@@ -687,7 +687,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Id, wl => wl.Name);
 
                 // Map to DTOs
-                var result = dailyActions.Select(da =>
+                var mappedDailyActions = dailyActions.Select(da =>
                 {
                     // Get the WhiteLabel ID
                     int whiteLabelId = 0;
@@ -709,18 +709,136 @@ namespace PPrePorter.DailyActionsDB.Services
                         Date = da.Date,
                         WhiteLabelId = whiteLabelId,
                         WhiteLabelName = whiteLabelName,
+                        PlayerId = da.PlayerID,
                         Registrations = da.Registration.HasValue ? (int)da.Registration.Value : 0,
                         FTD = da.FTD.HasValue ? (int)da.FTD.Value : 0,
+                        FTDA = da.FTDA.HasValue ? (int)da.FTDA.Value : null,
+
+                        // Deposit-related properties
                         Deposits = da.Deposits ?? 0,
+                        DepositsCreditCard = da.DepositsCreditCard,
+                        DepositsNeteller = da.DepositsNeteller,
+                        DepositsMoneyBookers = da.DepositsMoneyBookers,
+                        DepositsOther = da.DepositsOther,
+                        DepositsFee = da.DepositsFee,
+                        DepositsSport = da.DepositsSport,
+                        DepositsLive = da.DepositsLive,
+                        DepositsBingo = da.DepositsBingo,
+
+                        // Cashout-related properties
+                        CashoutRequests = da.CashoutRequests,
                         PaidCashouts = da.PaidCashouts ?? 0,
+                        Chargebacks = da.Chargebacks,
+                        Voids = da.Voids,
+                        ReverseChargebacks = da.ReverseChargebacks,
+
+                        // Bonus-related properties
+                        Bonuses = da.Bonuses,
+                        BonusesSport = da.BonusesSport,
+                        BonusesLive = da.BonusesLive,
+                        BonusesBingo = da.BonusesBingo,
+                        CollectedBonuses = da.CollectedBonuses,
+                        ExpiredBonuses = da.ExpiredBonuses,
+                        BonusConverted = da.BonusConverted,
+
+                        // Casino-related properties
                         BetsCasino = da.BetsCasino ?? 0,
+                        BetsCasinoReal = da.BetsCasinoReal,
+                        BetsCasinoBonus = da.BetsCasinoBonus,
+                        RefundsCasino = da.RefundsCasino,
+                        RefundsCasinoReal = da.RefundsCasinoReal,
+                        RefundsCasinoBonus = da.RefundsCasinoBonus,
                         WinsCasino = da.WinsCasino ?? 0,
+                        WinsCasinoReal = da.WinsCasinoReal,
+                        WinsCasinoBonus = da.WinsCasinoBonus,
+
+                        // Sport-related properties
                         BetsSport = da.BetsSport ?? 0,
+                        BetsSportReal = da.BetsSportReal,
+                        BetsSportBonus = da.BetsSportBonus,
+                        RefundsSport = da.RefundsSport,
+                        RefundsSportReal = da.RefundsSportReal,
+                        RefundsSportBonus = da.RefundsSportBonus,
                         WinsSport = da.WinsSport ?? 0,
+                        WinsSportReal = da.WinsSportReal,
+                        WinsSportBonus = da.WinsSportBonus,
+
+                        // Live-related properties
                         BetsLive = da.BetsLive ?? 0,
+                        BetsLiveReal = da.BetsLiveReal,
+                        BetsLiveBonus = da.BetsLiveBonus,
+                        RefundsLive = da.RefundsLive,
+                        RefundsLiveReal = da.RefundsLiveReal,
+                        RefundsLiveBonus = da.RefundsLiveBonus,
                         WinsLive = da.WinsLive ?? 0,
+                        WinsLiveReal = da.WinsLiveReal,
+                        WinsLiveBonus = da.WinsLiveBonus,
+
+                        // Bingo-related properties
                         BetsBingo = da.BetsBingo ?? 0,
+                        BetsBingoReal = da.BetsBingoReal,
+                        BetsBingoBonus = da.BetsBingoBonus,
+                        RefundsBingo = da.RefundsBingo,
+                        RefundsBingoReal = da.RefundsBingoReal,
+                        RefundsBingoBonus = da.RefundsBingoBonus,
                         WinsBingo = da.WinsBingo ?? 0,
+                        WinsBingoReal = da.WinsBingoReal,
+                        WinsBingoBonus = da.WinsBingoBonus,
+
+                        // Side games properties
+                        SideGamesBets = da.SideGamesBets,
+                        SideGamesRefunds = da.SideGamesRefunds,
+                        SideGamesWins = da.SideGamesWins,
+                        SideGamesTableGamesBets = da.SideGamesTableGamesBets,
+                        SideGamesTableGamesWins = da.SideGamesTableGamesWins,
+                        SideGamesCasualGamesBets = da.SideGamesCasualGamesBets,
+                        SideGamesCasualGamesWins = da.SideGamesCasualGamesWins,
+                        SideGamesSlotsBets = da.SideGamesSlotsBets,
+                        SideGamesSlotsWins = da.SideGamesSlotsWins,
+                        SideGamesJackpotsBets = da.SideGamesJackpotsBets,
+                        SideGamesJackpotsWins = da.SideGamesJackpotsWins,
+                        SideGamesFeaturedBets = da.SideGamesFeaturedBets,
+                        SideGamesFeaturedWins = da.SideGamesFeaturedWins,
+
+                        // Lotto-related properties
+                        LottoBets = da.LottoBets,
+                        LottoAdvancedBets = da.LottoAdvancedBets,
+                        LottoWins = da.LottoWins,
+                        LottoAdvancedWins = da.LottoAdvancedWins,
+
+                        // App-related properties
+                        AppBets = da.AppBets,
+                        AppRefunds = da.AppRefunds,
+                        AppWins = da.AppWins,
+                        AppBetsCasino = da.AppBetsCasino,
+                        AppRefundsCasino = da.AppRefundsCasino,
+                        AppWinsCasino = da.AppWinsCasino,
+                        AppBetsSport = da.AppBetsSport,
+                        AppRefundsSport = da.AppRefundsSport,
+                        AppWinsSport = da.AppWinsSport,
+
+                        // Other financial properties
+                        ClubPointsConversion = da.ClubPointsConversion,
+                        BankRoll = da.BankRoll,
+                        JackpotContribution = da.JackpotContribution,
+                        InsuranceContribution = da.InsuranceContribution,
+                        Adjustments = da.Adjustments,
+                        AdjustmentsAdd = da.AdjustmentsAdd,
+                        ClearedBalance = da.ClearedBalance,
+                        RevenueAdjustments = da.RevenueAdjustments,
+                        RevenueAdjustmentsAdd = da.RevenueAdjustmentsAdd,
+                        AdministrativeFee = da.AdministrativeFee,
+                        AdministrativeFeeReturn = da.AdministrativeFeeReturn,
+                        BetsReal = da.BetsReal,
+                        BetsBonus = da.BetsBonus,
+                        RefundsReal = da.RefundsReal,
+                        RefundsBonus = da.RefundsBonus,
+                        WinsReal = da.WinsReal,
+                        WinsBonus = da.WinsBonus,
+                        EUR2GBP = da.EUR2GBP,
+                        UpdatedDate = da.UpdatedDate,
+
+                        // Calculated GGR properties
                         GGRCasino = da.GGRCasino,
                         GGRSport = da.GGRSport,
                         GGRLive = da.GGRLive,
@@ -728,6 +846,35 @@ namespace PPrePorter.DailyActionsDB.Services
                         TotalGGR = da.TotalGGR
                     };
                 }).ToList();
+
+                // Apply grouping if specified
+                List<DailyActionDto> result;
+                if (filter.GroupBy != GroupByOption.Day)
+                {
+                    _logger.LogInformation("Applying grouping by {GroupBy}", filter.GroupBy);
+
+                    // Group the data based on the selected option
+                    var groupedData = filter.GroupBy switch
+                    {
+                        GroupByOption.Month => GroupByMonth(mappedDailyActions),
+                        GroupByOption.Year => GroupByYear(mappedDailyActions),
+                        GroupByOption.Label => GroupByWhiteLabel(mappedDailyActions),
+                        GroupByOption.Country => GroupByCountry(mappedDailyActions),
+                        GroupByOption.Tracker => GroupByTracker(mappedDailyActions),
+                        GroupByOption.Currency => GroupByCurrency(mappedDailyActions),
+                        GroupByOption.Gender => GroupByGender(mappedDailyActions),
+                        GroupByOption.Platform => GroupByPlatform(mappedDailyActions),
+                        GroupByOption.Ranking => GroupByRanking(mappedDailyActions),
+                        _ => mappedDailyActions // Default to no grouping
+                    };
+
+                    result = groupedData;
+                }
+                else
+                {
+                    // No grouping needed
+                    result = mappedDailyActions;
+                }
 
                 // Calculate summary metrics
                 var summary = await GetSummaryMetricsAsync(startDate, endDate,
@@ -993,6 +1140,250 @@ namespace PPrePorter.DailyActionsDB.Services
                 var hash = sha256.ComputeHash(bytes);
                 return Convert.ToBase64String(hash);
             }
+        }
+
+        /// <summary>
+        /// Groups daily actions by month
+        /// </summary>
+        private List<DailyActionDto> GroupByMonth(List<DailyActionDto> dailyActions)
+        {
+            return dailyActions
+                .GroupBy(da => new { Year = da.Date.Year, Month = da.Date.Month })
+                .Select(group =>
+                {
+                    var firstItem = group.First();
+                    var monthName = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMMM yyyy");
+
+                    return new DailyActionDto
+                    {
+                        Id = 0, // Not applicable for grouped data
+                        Date = new DateTime(group.Key.Year, group.Key.Month, 1),
+                        WhiteLabelId = 0, // Not applicable for grouped data
+                        WhiteLabelName = "All White Labels",
+                        GroupKey = "Month",
+                        GroupValue = monthName,
+
+                        // Sum numeric values
+                        Registrations = group.Sum(da => da.Registrations),
+                        FTD = group.Sum(da => da.FTD),
+                        Deposits = group.Sum(da => da.Deposits),
+                        PaidCashouts = group.Sum(da => da.PaidCashouts),
+                        BetsCasino = group.Sum(da => da.BetsCasino),
+                        WinsCasino = group.Sum(da => da.WinsCasino),
+                        BetsSport = group.Sum(da => da.BetsSport),
+                        WinsSport = group.Sum(da => da.WinsSport),
+                        BetsLive = group.Sum(da => da.BetsLive),
+                        WinsLive = group.Sum(da => da.WinsLive),
+                        BetsBingo = group.Sum(da => da.BetsBingo),
+                        WinsBingo = group.Sum(da => da.WinsBingo),
+
+                        // Calculate GGR values
+                        GGRCasino = group.Sum(da => da.BetsCasino) - group.Sum(da => da.WinsCasino),
+                        GGRSport = group.Sum(da => da.BetsSport) - group.Sum(da => da.WinsSport),
+                        GGRLive = group.Sum(da => da.BetsLive) - group.Sum(da => da.WinsLive),
+                        GGRBingo = group.Sum(da => da.BetsBingo) - group.Sum(da => da.WinsBingo),
+                        TotalGGR = group.Sum(da => da.TotalGGR)
+                    };
+                })
+                .OrderBy(da => da.Date)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Groups daily actions by year
+        /// </summary>
+        private List<DailyActionDto> GroupByYear(List<DailyActionDto> dailyActions)
+        {
+            return dailyActions
+                .GroupBy(da => da.Date.Year)
+                .Select(group =>
+                {
+                    var firstItem = group.First();
+                    var yearName = group.Key.ToString();
+
+                    return new DailyActionDto
+                    {
+                        Id = 0, // Not applicable for grouped data
+                        Date = new DateTime(group.Key, 1, 1),
+                        WhiteLabelId = 0, // Not applicable for grouped data
+                        WhiteLabelName = "All White Labels",
+                        GroupKey = "Year",
+                        GroupValue = yearName,
+
+                        // Sum numeric values
+                        Registrations = group.Sum(da => da.Registrations),
+                        FTD = group.Sum(da => da.FTD),
+                        Deposits = group.Sum(da => da.Deposits),
+                        PaidCashouts = group.Sum(da => da.PaidCashouts),
+                        BetsCasino = group.Sum(da => da.BetsCasino),
+                        WinsCasino = group.Sum(da => da.WinsCasino),
+                        BetsSport = group.Sum(da => da.BetsSport),
+                        WinsSport = group.Sum(da => da.WinsSport),
+                        BetsLive = group.Sum(da => da.BetsLive),
+                        WinsLive = group.Sum(da => da.WinsLive),
+                        BetsBingo = group.Sum(da => da.BetsBingo),
+                        WinsBingo = group.Sum(da => da.WinsBingo),
+
+                        // Calculate GGR values
+                        GGRCasino = group.Sum(da => da.BetsCasino) - group.Sum(da => da.WinsCasino),
+                        GGRSport = group.Sum(da => da.BetsSport) - group.Sum(da => da.WinsSport),
+                        GGRLive = group.Sum(da => da.BetsLive) - group.Sum(da => da.WinsLive),
+                        GGRBingo = group.Sum(da => da.BetsBingo) - group.Sum(da => da.WinsBingo),
+                        TotalGGR = group.Sum(da => da.TotalGGR)
+                    };
+                })
+                .OrderBy(da => da.Date)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Groups daily actions by white label
+        /// </summary>
+        private List<DailyActionDto> GroupByWhiteLabel(List<DailyActionDto> dailyActions)
+        {
+            return dailyActions
+                .GroupBy(da => da.WhiteLabelId)
+                .Select(group =>
+                {
+                    var firstItem = group.First();
+
+                    return new DailyActionDto
+                    {
+                        Id = 0, // Not applicable for grouped data
+                        Date = DateTime.MinValue, // Not applicable for grouped data
+                        WhiteLabelId = group.Key,
+                        WhiteLabelName = firstItem.WhiteLabelName,
+                        GroupKey = "Label",
+                        GroupValue = firstItem.WhiteLabelName,
+
+                        // Sum numeric values
+                        Registrations = group.Sum(da => da.Registrations),
+                        FTD = group.Sum(da => da.FTD),
+                        Deposits = group.Sum(da => da.Deposits),
+                        PaidCashouts = group.Sum(da => da.PaidCashouts),
+                        BetsCasino = group.Sum(da => da.BetsCasino),
+                        WinsCasino = group.Sum(da => da.WinsCasino),
+                        BetsSport = group.Sum(da => da.BetsSport),
+                        WinsSport = group.Sum(da => da.WinsSport),
+                        BetsLive = group.Sum(da => da.BetsLive),
+                        WinsLive = group.Sum(da => da.WinsLive),
+                        BetsBingo = group.Sum(da => da.BetsBingo),
+                        WinsBingo = group.Sum(da => da.WinsBingo),
+
+                        // Calculate GGR values
+                        GGRCasino = group.Sum(da => da.BetsCasino) - group.Sum(da => da.WinsCasino),
+                        GGRSport = group.Sum(da => da.BetsSport) - group.Sum(da => da.WinsSport),
+                        GGRLive = group.Sum(da => da.BetsLive) - group.Sum(da => da.WinsLive),
+                        GGRBingo = group.Sum(da => da.BetsBingo) - group.Sum(da => da.WinsBingo),
+                        TotalGGR = group.Sum(da => da.TotalGGR)
+                    };
+                })
+                .OrderByDescending(da => da.TotalGGR)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Groups daily actions by country
+        /// </summary>
+        private List<DailyActionDto> GroupByCountry(List<DailyActionDto> dailyActions)
+        {
+            // Since we don't have country information in the DailyAction model,
+            // we'll return the data without grouping and log a warning
+            _logger.LogWarning("Country grouping is not implemented yet because country information is not available in the DailyAction model");
+            return dailyActions;
+        }
+
+        /// <summary>
+        /// Groups daily actions by tracker
+        /// </summary>
+        private List<DailyActionDto> GroupByTracker(List<DailyActionDto> dailyActions)
+        {
+            // Since we don't have tracker information in the DailyAction model,
+            // we'll return the data without grouping and log a warning
+            _logger.LogWarning("Tracker grouping is not implemented yet because tracker information is not available in the DailyAction model");
+            return dailyActions;
+        }
+
+        /// <summary>
+        /// Groups daily actions by currency
+        /// </summary>
+        private List<DailyActionDto> GroupByCurrency(List<DailyActionDto> dailyActions)
+        {
+            // Since we don't have currency information in the DailyAction model,
+            // we'll return the data without grouping and log a warning
+            _logger.LogWarning("Currency grouping is not implemented yet because currency information is not available in the DailyAction model");
+            return dailyActions;
+        }
+
+        /// <summary>
+        /// Groups daily actions by gender
+        /// </summary>
+        private List<DailyActionDto> GroupByGender(List<DailyActionDto> dailyActions)
+        {
+            // Since we don't have gender information in the DailyAction model,
+            // we'll return the data without grouping and log a warning
+            _logger.LogWarning("Gender grouping is not implemented yet because gender information is not available in the DailyAction model");
+            return dailyActions;
+        }
+
+        /// <summary>
+        /// Groups daily actions by platform
+        /// </summary>
+        private List<DailyActionDto> GroupByPlatform(List<DailyActionDto> dailyActions)
+        {
+            // Since we don't have platform information in the DailyAction model,
+            // we'll return the data without grouping and log a warning
+            _logger.LogWarning("Platform grouping is not implemented yet because platform information is not available in the DailyAction model");
+            return dailyActions;
+        }
+
+        /// <summary>
+        /// Groups daily actions by ranking
+        /// </summary>
+        private List<DailyActionDto> GroupByRanking(List<DailyActionDto> dailyActions)
+        {
+            // For ranking, we'll sort by total GGR and add a rank
+            var rankedData = dailyActions
+                .OrderByDescending(da => da.TotalGGR)
+                .Select((da, index) =>
+                {
+                    var rankValue = (index + 1).ToString();
+
+                    // Create a copy of the DTO with the rank information
+                    var rankedDto = new DailyActionDto
+                    {
+                        Id = da.Id,
+                        Date = da.Date,
+                        WhiteLabelId = da.WhiteLabelId,
+                        WhiteLabelName = da.WhiteLabelName,
+                        GroupKey = "Rank",
+                        GroupValue = rankValue,
+
+                        // Copy all other properties
+                        Registrations = da.Registrations,
+                        FTD = da.FTD,
+                        Deposits = da.Deposits,
+                        PaidCashouts = da.PaidCashouts,
+                        BetsCasino = da.BetsCasino,
+                        WinsCasino = da.WinsCasino,
+                        BetsSport = da.BetsSport,
+                        WinsSport = da.WinsSport,
+                        BetsLive = da.BetsLive,
+                        WinsLive = da.WinsLive,
+                        BetsBingo = da.BetsBingo,
+                        WinsBingo = da.WinsBingo,
+                        GGRCasino = da.GGRCasino,
+                        GGRSport = da.GGRSport,
+                        GGRLive = da.GGRLive,
+                        GGRBingo = da.GGRBingo,
+                        TotalGGR = da.TotalGGR
+                    };
+
+                    return rankedDto;
+                })
+                .ToList();
+
+            return rankedData;
         }
 
         /// <summary>

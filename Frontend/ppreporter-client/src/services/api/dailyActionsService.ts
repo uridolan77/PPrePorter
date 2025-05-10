@@ -79,7 +79,17 @@ class DailyActionsService extends ApiService {
    * @returns {Promise<any>} - Report data
    */
   async getData(filters: ReportFilters): Promise<any> {
-    return this.post(DAILY_ACTIONS_ENDPOINTS.GET_DATA, filters);
+    console.log('[DAILY_ACTIONS_SERVICE] getData called with filters:', filters);
+    console.log('[DAILY_ACTIONS_SERVICE] Using endpoint:', DAILY_ACTIONS_ENDPOINTS.GET_DATA);
+    try {
+      // The backend expects query parameters, not a POST body
+      const result = await this.get(DAILY_ACTIONS_ENDPOINTS.GET_DATA, filters);
+      console.log('[DAILY_ACTIONS_SERVICE] getData result:', result);
+      return result;
+    } catch (error) {
+      console.error('[DAILY_ACTIONS_SERVICE] getData error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -96,7 +106,16 @@ class DailyActionsService extends ApiService {
    * @returns {Promise<any>} - Metadata
    */
   async getMetadata(): Promise<any> {
-    return this.get(DAILY_ACTIONS_ENDPOINTS.GET_METADATA);
+    console.log('[DAILY_ACTIONS_SERVICE] getMetadata called');
+    console.log('[DAILY_ACTIONS_SERVICE] Using endpoint:', DAILY_ACTIONS_ENDPOINTS.GET_METADATA);
+    try {
+      const result = await this.get(DAILY_ACTIONS_ENDPOINTS.GET_METADATA);
+      console.log('[DAILY_ACTIONS_SERVICE] getMetadata result:', result);
+      return result;
+    } catch (error) {
+      console.error('[DAILY_ACTIONS_SERVICE] getMetadata error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -105,7 +124,17 @@ class DailyActionsService extends ApiService {
    * @returns {Promise<any>} - Summary data
    */
   async getSummaryData(filters: ReportFilters): Promise<any> {
-    return this.post(DAILY_ACTIONS_ENDPOINTS.GET_SUMMARY, filters);
+    console.log('[DAILY_ACTIONS_SERVICE] getSummaryData called with filters:', filters);
+    console.log('[DAILY_ACTIONS_SERVICE] Using endpoint:', DAILY_ACTIONS_ENDPOINTS.GET_DATA);
+    try {
+      // Use getData instead since the backend doesn't have a separate summary endpoint
+      const result = await this.get(DAILY_ACTIONS_ENDPOINTS.GET_DATA, filters);
+      console.log('[DAILY_ACTIONS_SERVICE] getSummaryData result:', result);
+      return result;
+    } catch (error) {
+      console.error('[DAILY_ACTIONS_SERVICE] getSummaryData error:', error);
+      throw error;
+    }
   }
 
   /**

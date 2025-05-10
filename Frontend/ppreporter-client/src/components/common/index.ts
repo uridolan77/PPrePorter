@@ -20,3 +20,4 @@ export { default as KPICard } from './KPICard';
 export { default as PageHeader } from './PageHeader';
 export { default as TabPanel } from './TabPanel';
 export { default as VirtualizedList } from './VirtualizedList';
+export { default as MultiSelect } from './MultiSelect';

@@ -18,8 +18,11 @@ class ApiService {
    * @param timeout - Request timeout in milliseconds
    */
   constructor(baseUrl: string = API_BASE_URL, timeout: number = API_TIMEOUT) {
+    // Don't add '/api' again if it's already in the baseUrl
+    const finalBaseUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+
     this.client = axios.create({
-      baseURL: `${baseUrl}/api`,
+      baseURL: finalBaseUrl,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -53,12 +56,12 @@ class ApiService {
       (error) => {
         // Transform error using our error handler utility
         const apiError = handleApiError(error);
-        
+
         // Handle authentication errors (401)
         if (apiError.status === 401) {
           errorHandler.handleAuthError(apiError);
         }
-        
+
         return Promise.reject(apiError);
       }
     );

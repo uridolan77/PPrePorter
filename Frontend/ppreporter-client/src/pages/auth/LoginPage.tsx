@@ -5,11 +5,14 @@ import {
   Box,
   Typography,
   Paper,
-  Alert
+  Alert,
+  Collapse
 } from '@mui/material';
 import LoginForm from '../../components/auth/LoginForm';
+import MockDataToggle from '../../components/common/MockDataToggle';
 import { useAuth } from '../../hooks/useAuth';
 import { LoginCredentials } from '../../types/auth';
+import { isMockDataEnabled } from '../../utils/mockDataToggle';
 
 // Type definitions
 interface LocationState {
@@ -40,11 +43,16 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      await login({
+      console.log('Attempting login with credentials:', { username: formData.username, rememberMe: formData.rememberMe });
+
+      // Call the login function from useAuth hook
+      const result = await login({
         username: formData.username,
         password: formData.password,
         rememberMe: formData.rememberMe
       });
+
+      console.log('Login successful, user:', result);
 
       // Navigate to the page user tried to visit or dashboard
       navigate(from, { replace: true });
@@ -95,6 +103,9 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  // Check if mock data is enabled
+  const mockEnabled = isMockDataEnabled();
+
   return (
     <Container
       component="main"
@@ -114,6 +125,11 @@ const LoginPage: React.FC = () => {
           alignItems: 'center'
         }}
       >
+        {/* Mock Data Toggle */}
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <MockDataToggle showDetails={false} />
+        </Box>
+
         {/* Error Alert */}
         {error && (
           <Alert
@@ -124,6 +140,11 @@ const LoginPage: React.FC = () => {
             }}
           >
             {error}
+            {mockEnabled && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Tip:</strong> You're currently in mock data mode. Toggle it off above to connect to the real API.
+              </Typography>
+            )}
           </Alert>
         )}
 

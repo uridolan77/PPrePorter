@@ -41,6 +41,9 @@ const TestContextualExplanation = lazy(() => import('./components/dashboard/Test
 const DailyActionsPage = lazy(() => import('./pages/reports/DailyActionsPage'));
 const DailyActionsAdvancedPage = lazy(() => import('./pages/reports/DailyActionsAdvancedPage'));
 
+// Test pages
+const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
+
 // Theme configuration
 const theme: Theme = createTheme({
   palette: {
@@ -177,6 +180,13 @@ const App: React.FC = () => {
                   } />
                 </Route>
               </Route>
+
+              {/* Public test routes */}
+              <Route path="/api-test" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <ApiTestPage />
+                </Suspense>
+              } />
 
               {/* Default redirect to login */}
               <Route path="/" element={<Navigate to="/login" replace />} />

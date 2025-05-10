@@ -2,29 +2,68 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, In
 import mockDataService from '../../mockData';
 
 // Constants
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+// Always use the full URL to avoid client calling itself
+// This ensures we're always pointing to the actual API server
+const API_URL = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
+
+// Log the API URL being used
+console.log('API URL configured as:', API_URL);
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Initialize mock data flag in localStorage
 // This ensures the flag is set when the application starts
-localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
-console.log('Mock data mode is enabled for UI testing');
+localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'false');
+console.log('Mock data mode is disabled, using real API calls');
+
+// Function to check API availability without automatically enabling mock data
+const checkApiAvailability = async () => {
+  try {
+    // Extract the base URL without the /api part for health check
+    const baseUrl = API_URL.replace('/api', '');
+    console.log('Checking API availability at:', `${baseUrl}/health`);
+
+    // Try to ping the API server
+    const response = await fetch(`${baseUrl}/health`, {
+      method: 'HEAD',
+      cache: 'no-cache',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      redirect: 'follow',
+      referrerPolicy: 'no-referrer',
+    });
+
+    console.log('API health check successful, status:', response.status);
+    return true;
+  } catch (error) {
+    console.error('API health check failed:', error);
+    console.warn('API is unavailable, but not automatically enabling mock data mode');
+    // Don't automatically switch to mock data mode
+    // localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
+    return false;
+  }
+};
+
+// Check API availability on startup
+checkApiAvailability();
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json; v=1.0', // Add API version to match Swagger
   },
   timeout: 30000, // 30 seconds
+  withCredentials: false, // Set to false to avoid CORS preflight issues
 });
 
 // Add a mock data interceptor
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
-    // Add debugger statement for request interceptor
-    debugger;
+    // Log request details
     console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
 
     const token = localStorage.getItem(TOKEN_KEY);
@@ -55,7 +94,7 @@ apiClient.interceptors.request.use(
         console.log('[API CLIENT] Params:', method.toLowerCase() === 'get' ? config.params : data);
 
         // Extract the endpoint from the URL (remove the base URL)
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5229/api';
+        const baseUrl = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
         const endpoint = url.replace(baseUrl, '');
         console.log('[API CLIENT] Extracted endpoint:', endpoint);
 
@@ -80,8 +119,6 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error: AxiosError): Promise<AxiosError> => {
-    // Add debugger statement for request error
-    debugger;
     console.error('API Request Error:', error);
     return Promise.reject(error);
   }
@@ -124,8 +161,6 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError): Promise<any> => {
-    // Add debugger statement for response error
-    debugger;
     console.error('[API CLIENT RESPONSE] API Response Error:', error.response?.status, error.config?.url, error.response?.data);
 
     // Check if we should use mock data
@@ -173,8 +208,6 @@ apiClient.interceptors.response.use(
 // Handle token refresh on 401 errors
 apiClient.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => {
-    // Add debugger statement for successful response
-    debugger;
     console.log('API Response:', response.status, response.config.url, response.data);
 
     // We've already handled mock data in the previous interceptor
@@ -208,7 +241,8 @@ apiClient.interceptors.response.use(
           localStorage.removeItem(TOKEN_KEY);
           localStorage.removeItem(REFRESH_TOKEN_KEY);
           localStorage.removeItem('user_info');
-          window.location.href = '/login';
+          // Don't use window.location.href as it causes a page refresh
+          // Instead, we'll let the auth state handle the redirect
           return Promise.reject(error);
         }
 
@@ -237,7 +271,8 @@ apiClient.interceptors.response.use(
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
         localStorage.removeItem('user_info');
-        window.location.href = '/login';
+        // Don't use window.location.href as it causes a page refresh
+        // Instead, we'll let the auth state handle the redirect
         return Promise.reject(refreshError);
       }
     }
@@ -245,11 +280,42 @@ apiClient.interceptors.response.use(
     // Handle network errors
     if (!error.response) {
       console.error('Network Error:', error.message);
+
+      // Check if it's likely a CORS error
+      if (error.message && (
+          error.message.includes('Network Error') ||
+          error.message.includes('CORS') ||
+          error.message.includes('XMLHttpRequest')
+      )) {
+        console.error('Possible CORS issue detected. Make sure the API server has proper CORS headers enabled.');
+
+        // If we're in development mode, provide more helpful information
+        if (process.env.NODE_ENV === 'development') {
+          console.info('CORS Troubleshooting Tips:');
+          console.info('1. Ensure the API server has CORS enabled and allows this origin');
+          console.info('2. Check if the API server is running and accessible');
+          console.info('3. Verify the API URL is correct:', API_URL);
+          console.info('4. Try using the setupProxy.js configuration');
+          console.info('5. Check browser console for specific CORS errors');
+          console.info('6. Ensure the server is properly configured to accept credentials');
+
+          // Don't automatically enable mock data mode
+          console.warn('Network error detected, but not automatically enabling mock data mode');
+          console.info('You can manually enable mock data mode in the settings if needed');
+        }
+      }
+
       return Promise.reject({
         ...error,
         response: {
           data: {
             message: 'Network error. Please check your connection and try again.',
+            details: error.message,
+            isCorsError: error.message && (
+              error.message.includes('Network Error') ||
+              error.message.includes('CORS') ||
+              error.message.includes('XMLHttpRequest')
+            )
           },
         },
       });

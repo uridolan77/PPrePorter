@@ -9,17 +9,17 @@ export class ApiError extends Error {
    * HTTP status code
    */
   status: number;
-  
+
   /**
    * Error code
    */
   code: string;
-  
+
   /**
    * Additional error details
    */
   details: any;
-  
+
   /**
    * Timestamp when the error occurred
    */
@@ -40,7 +40,7 @@ export class ApiError extends Error {
     this.details = details;
     this.timestamp = new Date().toISOString();
   }
-  
+
   /**
    * Returns a user-friendly error message
    */
@@ -54,7 +54,7 @@ export class ApiError extends Error {
     } else if (this.status >= 500) {
       return 'A server error occurred. Please try again later.';
     }
-    
+
     return this.message || 'An unexpected error occurred. Please try again.';
   }
 }
@@ -78,22 +78,22 @@ export interface ErrorDisplayDetails {
 export const handleApiError = (error: any): ApiError => {
   // Log the error for debugging
   console.error('API Error:', error);
-  
+
   // Already processed error
   if (error instanceof ApiError) {
     return error;
   }
-  
+
   // Handle Axios errors
   if (error.response) {
     // Server responded with a status code outside of 2xx range
     const { data, status } = error.response;
-    
+
     // Extract error details from API response if available
     const message = data?.message || error.message || 'An error occurred';
     const code = data?.code || String(status);
     const details = data?.details || data?.errors || null;
-    
+
     return new ApiError(message, status, code, details);
   } else if (error.request) {
     // Request was made but no response received (network error)
@@ -119,7 +119,7 @@ export const handleApiError = (error: any): ApiError => {
  */
 export const getErrorDisplayDetails = (error: any): ErrorDisplayDetails => {
   const apiError = handleApiError(error);
-  
+
   return {
     message: apiError.getUserMessage(),
     statusCode: apiError.status,
@@ -136,7 +136,7 @@ export const getErrorDisplayDetails = (error: any): ErrorDisplayDetails => {
  */
 export const formatErrorForState = (error: any): ApiErrorType => {
   const apiError = handleApiError(error);
-  
+
   return {
     message: apiError.getUserMessage(),
     code: apiError.code,
@@ -152,7 +152,7 @@ export const formatErrorForState = (error: any): ApiErrorType => {
  */
 export const handleAuthError = (error: any, logout?: () => void): boolean => {
   const apiError = handleApiError(error);
-  
+
   if (apiError.status === 401) {
     // Session expired, redirect to login
     if (logout && typeof logout === 'function') {
@@ -160,11 +160,13 @@ export const handleAuthError = (error: any, logout?: () => void): boolean => {
     } else {
       // Fallback if logout function not provided
       localStorage.removeItem('auth_token');
-      window.location.href = '/login?session=expired';
+      // Don't use window.location.href as it causes a page refresh
+      // Instead, we'll let the auth state handle the redirect
+      // The auth state will detect that the token is missing and redirect to login
     }
     return true;
   }
-  
+
   return false;
 };
 

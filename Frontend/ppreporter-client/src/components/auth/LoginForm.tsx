@@ -70,18 +70,18 @@ const LoginForm: React.FC<LoginFormProps> = ({
     password: '',
     rememberMe: false
   });
-  
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formErrors, setFormErrors] = useState<LoginFormErrors>({});
-  
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value, checked, type } = e.target;
-    
+
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
-    
+
     // Clear validation error when field is edited
     if (formErrors[name as keyof LoginFormErrors]) {
       setFormErrors({
@@ -90,76 +90,94 @@ const LoginForm: React.FC<LoginFormProps> = ({
       });
     }
   };
-  
+
   const toggleShowPassword = (): void => {
     setShowPassword(!showPassword);
   };
-  
+
   const validate = (): LoginFormErrors => {
     const errors: LoginFormErrors = {};
-    
+
     if (!formData.username.trim()) {
       errors.username = 'Username or email is required';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     }
-    
+
     return errors;
   };
-  
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    // Prevent the default form submission behavior
     e.preventDefault();
-    
+
+    // Stop propagation to prevent any parent handlers from being called
+    e.stopPropagation();
+
+    console.log('Form submit event prevented');
+
     const errors = validate();
-    
+
     if (Object.keys(errors).length === 0) {
       if (onSubmit) {
+        console.log('Form is valid, calling onSubmit');
+        // Call the onSubmit handler with the form data
+        // This will be handled by the parent component
         onSubmit(formData);
       }
     } else {
+      console.log('Form has errors:', errors);
       setFormErrors(errors);
     }
+
+    // Explicitly return false to ensure the form doesn't submit traditionally
+    return;
   };
-  
+
   const handleGoogleLogin = (): void => {
     if (onGoogleLogin) {
       onGoogleLogin();
     }
   };
-  
+
   const handleMicrosoftLogin = (): void => {
     if (onMicrosoftLogin) {
       onMicrosoftLogin();
     }
   };
-  
+
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        maxWidth: 450, 
-        width: '100%', 
-        p: 4, 
+    <Paper
+      elevation={3}
+      sx={{
+        maxWidth: 450,
+        width: '100%',
+        p: 4,
         borderRadius: 2,
         ...sx
       }}
     >
-      <Box 
-        component="form" 
-        onSubmit={handleSubmit} 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: 3 
+      <Box
+        component="form"
+        onSubmit={(e) => {
+          handleSubmit(e);
+          return false; // Explicitly return false to prevent form submission
+        }}
+        noValidate
+        autoComplete="off"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3
         }}
       >
         {/* Logo and Title */}
         <Box sx={{ textAlign: 'center', mb: 2 }}>
-          <img 
-            src={logoUrl} 
-            alt="Logo" 
+          <img
+            src={logoUrl}
+            alt="Logo"
             style={{ height: 60, width: 'auto', marginBottom: 16 }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
@@ -170,14 +188,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
             Enter your credentials to access your account
           </Typography>
         </Box>
-        
+
         {/* Error Message */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
-        
+
         {/* Username/Email Field */}
         <TextField
           label="Username or Email"
@@ -197,7 +215,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           disabled={loading}
           required
         />
-        
+
         {/* Password Field */}
         <TextField
           label="Password"
@@ -229,7 +247,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           disabled={loading}
           required
         />
-        
+
         {/* Remember Me and Forgot Password */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FormControlLabel
@@ -244,10 +262,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
             }
             label="Remember me"
           />
-          
+
           {showForgotPassword && (
-            <Link 
-              component={RouterLink} 
+            <Link
+              component={RouterLink}
               to={forgotPasswordLink}
               variant="body2"
               color="primary"
@@ -257,7 +275,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             </Link>
           )}
         </Box>
-        
+
         {/* Submit Button */}
         <Button
           type="submit"
@@ -270,14 +288,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
         >
           {loading ? <CircularProgress size={24} /> : 'Sign In'}
         </Button>
-        
+
         {/* Register Link */}
         {showRegister && (
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2" color="text.secondary">
               Don't have an account?{' '}
-              <Link 
-                component={RouterLink} 
+              <Link
+                component={RouterLink}
                 to={registerLink}
                 color="primary"
                 underline="hover"
@@ -287,7 +305,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             </Typography>
           </Box>
         )}
-        
+
         {/* Social Login Options */}
         {showSocialLogin && (
           <>

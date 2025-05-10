@@ -210,7 +210,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "https://localhost:3000",
+                "https://localhost:3001",
+                "https://localhost:7075"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -680,16 +686,9 @@ app.UseHttpsRedirection();
 // Enable static files for Swagger UI customization
 app.UseStaticFiles();
 
-// Enable CORS
-app.UseCors("AllowReactApp");
-
 // Get application settings
 var appSettingsOptions = app.Services.GetRequiredService<IOptions<AppSettings>>();
 bool authEnabled = appSettingsOptions.Value.EnableAuthentication;
-
-// Always add both middleware, but authentication will be bypassed when disabled
-app.UseAuthentication();
-app.UseAuthorization();
 
 // Log authentication status
 if (authEnabled)
@@ -712,6 +711,9 @@ app.UseMiddleware<PerformanceMonitoringMiddleware>();
 // Add routing early in the pipeline
 // This is required for the authorization middleware to work correctly
 app.UseRouting();
+
+// Enable CORS after routing but before authentication
+app.UseCors("AllowReactApp");
 
 // Add authentication and authorization middleware
 // These must be after UseRouting() but before UseEndpoints()
@@ -768,21 +770,23 @@ app.MapControllers();
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = _ => true,
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    AllowCachingResponses = false // Prevent caching of health check responses
+}).RequireCors("AllowReactApp"); // Apply CORS policy to health endpoint
 
 // Map specific health check endpoint for DailyActionsDB
 app.MapHealthChecks("/health/dailyactions", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = hc => hc.Name == "DailyActionsDB",
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    AllowCachingResponses = false // Prevent caching of health check responses
+}).RequireCors("AllowReactApp"); // Apply CORS policy to health endpoint
 
 // Map health check UI endpoint
 app.MapHealthChecksUI(options =>
 {
     options.UIPath = "/health-ui";
     options.ApiPath = "/health-ui-api";
-});
+}).RequireCors("AllowReactApp"); // Apply CORS policy to health UI endpoint
 
 app.Run();

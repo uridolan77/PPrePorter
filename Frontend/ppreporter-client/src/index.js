@@ -10,8 +10,8 @@ import { FEATURES } from './config/constants';
 
 // Initialize mock data flag for UI testing
 // This ensures the flag is set when the application starts
-localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
-console.log('Mock data mode is enabled for UI testing');
+localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'false');
+console.log('Mock data mode is disabled, using real API calls');
 
 // Preload mock data service to ensure it's initialized
 if (FEATURES.USE_MOCK_DATA_FOR_UI_TESTING) {

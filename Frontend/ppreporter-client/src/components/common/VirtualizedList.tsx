@@ -28,6 +28,15 @@ function VirtualizedList<T>({
   emptyMessage = 'No data to display',
   sx = {}
 }: VirtualizedListProps<T>): React.ReactElement {
+  // Memoized row renderer to prevent unnecessary re-renders
+  const Row = useCallback(
+    ({ index, style }: ListChildComponentProps) => {
+      if (!data || index >= data.length) return null;
+      return renderRow({ index, style, data: data[index] });
+    },
+    [data, renderRow]
+  );
+
   // If loading, return a loading message
   if (loading) {
     return (
@@ -49,13 +58,6 @@ function VirtualizedList<T>({
       </Box>
     );
   }
-
-  // Memoized row renderer to prevent unnecessary re-renders
-  const Row = useCallback(
-    ({ index, style }: ListChildComponentProps) =>
-      renderRow({ index, style, data: data[index] }),
-    [data, renderRow]
-  );
 
   return (
     <Box sx={{ height, width, ...sx }}>
