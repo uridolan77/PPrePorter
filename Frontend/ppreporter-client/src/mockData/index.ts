@@ -1,6 +1,6 @@
 /**
  * Mock Data Service
- * 
+ *
  * This service provides mock data for UI testing when the backend server is not available.
  * It intercepts API calls and returns appropriate mock data based on the endpoint.
  */
@@ -28,33 +28,49 @@ export const shouldUseMockData = (): boolean => {
  * @returns Mock data for the endpoint
  */
 export const getMockData = (endpoint: string, params?: any): any => {
+  console.log(`[MOCK] Getting mock data for endpoint: ${endpoint}`, params);
+
   // Remove leading slash if present
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-  
+
   // Split the endpoint into segments
   const segments = normalizedEndpoint.split('/');
   const category = segments[0];
-  
+
+  console.log(`[MOCK] Category: ${category}, Segments:`, segments);
+
+  let result;
+
   // Select the appropriate mock data based on the category
   switch (category) {
     case 'auth':
-      return authMockData.getMockData(normalizedEndpoint, params);
+      result = authMockData.getMockData(normalizedEndpoint, params);
+      break;
     case 'dashboard':
-      return dashboardMockData.getMockData(normalizedEndpoint, params);
+      result = dashboardMockData.getMockData(normalizedEndpoint, params);
+      break;
     case 'reports':
-      return reportsMockData.getMockData(normalizedEndpoint, params);
+      result = reportsMockData.getMockData(normalizedEndpoint, params);
+      break;
     case 'players':
-      return playersMockData.getMockData(normalizedEndpoint, params);
+      result = playersMockData.getMockData(normalizedEndpoint, params);
+      break;
     case 'games':
-      return gamesMockData.getMockData(normalizedEndpoint, params);
+      result = gamesMockData.getMockData(normalizedEndpoint, params);
+      break;
     case 'transactions':
-      return transactionsMockData.getMockData(normalizedEndpoint, params);
+      result = transactionsMockData.getMockData(normalizedEndpoint, params);
+      break;
     case 'natural-language':
-      return naturalLanguageMockData.getMockData(normalizedEndpoint, params);
+      result = naturalLanguageMockData.getMockData(normalizedEndpoint, params);
+      break;
     default:
-      console.warn(`No mock data available for endpoint: ${endpoint}`);
-      return null;
+      console.warn(`[MOCK] No mock data available for endpoint: ${endpoint}`);
+      result = null;
   }
+
+  console.log(`[MOCK] Result for ${endpoint}:`, result);
+  return result;
 };
 
 /**

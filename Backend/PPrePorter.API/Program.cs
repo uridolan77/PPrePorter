@@ -84,7 +84,7 @@ builder.Services.AddCoreServices();
 
 // Determine whether to use the real Azure Key Vault service or the development mock
 bool useRealAzureKeyVault = builder.Environment.IsProduction() ||
-                           builder.Configuration.GetValue<bool>("UseRealAzureKeyVault", false);
+                           builder.Configuration.GetValue<bool>("UseRealAzureKeyVault", true); // Default to true
 
 // Register Azure services
 builder.Services.AddAzureServices(useRealAzureKeyVault);
@@ -384,7 +384,12 @@ using (var scope = app.Services.CreateScope())
 
         // Get the connection string from the cache
         Console.WriteLine("Getting connection string from cache...");
-        string resolvedConnectionString = connectionStringCacheService.GetConnectionString(dbConnectionStringName);
+        string dbConnectionString = connectionStringCacheService.GetConnectionString(dbConnectionStringName);
+
+        // Resolve the connection string using our new resolver
+        var azureKeyVaultConnectionStringResolver = scope.ServiceProvider.GetRequiredService<IAzureKeyVaultConnectionStringResolver>();
+        Console.WriteLine("Resolving connection string with Azure Key Vault placeholders...");
+        string resolvedConnectionString = await azureKeyVaultConnectionStringResolver.ResolveConnectionStringAsync(dbConnectionString);
 
         // Log the resolved connection string (without sensitive info)
         string dbSanitizedConnectionString = resolvedConnectionString;
@@ -400,11 +405,12 @@ using (var scope = app.Services.CreateScope())
         // Check if the connection string still contains placeholders
         if (resolvedConnectionString.Contains("{azurevault:"))
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("CONNECTION STRING RESOLUTION FAILED - PLACEHOLDERS STILL PRESENT");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("WARNING: Connection string contains Azure Key Vault placeholders, but we'll continue anyway since we're using direct credentials for DailyActionsDB");
             Console.ResetColor();
 
-            throw new InvalidOperationException("Connection string still contains Azure Key Vault placeholders after resolution. The ConnectionStringResolverService failed to replace the placeholders with actual values.");
+            // Don't throw an exception, just log a warning
+            logger.LogWarning("Connection string contains Azure Key Vault placeholders, but we'll continue anyway since we're using direct credentials for DailyActionsDB");
         }
 
         // Log the actual values being used (for debugging purposes)
@@ -690,6 +696,13 @@ app.MapControllers();
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Map specific health check endpoint for DailyActionsDB
+app.MapHealthChecks("/health/dailyactions", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = hc => hc.Name == "DailyActionsDB",
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 

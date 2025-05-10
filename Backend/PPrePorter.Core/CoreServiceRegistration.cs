@@ -29,6 +29,9 @@ namespace PPrePorter.Core
             // Register other core services
             services.AddScoped<IConnectionStringResolverService, ConnectionStringResolverService>();
 
+            // Register the Azure Key Vault connection string resolver
+            services.AddScoped<IAzureKeyVaultConnectionStringResolver, AzureKeyVaultConnectionStringResolver>();
+
             return services;
         }
     }

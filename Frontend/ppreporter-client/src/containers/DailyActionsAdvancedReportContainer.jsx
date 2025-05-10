@@ -5,6 +5,7 @@ import DailyActionsAdvancedReport from '../components/reports/DailyActionsAdvanc
 import dailyActionsService from '../services/api/dailyActionsService';
 import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
+import { FEATURES } from '../config/constants';
 
 /**
  * Container component for DailyActionsAdvancedReport
@@ -31,6 +32,29 @@ const DailyActionsAdvancedReportContainer = () => {
     try {
       setMetadataLoading(true);
       setMetadataError(null);
+
+      // Check if mock data is enabled
+      const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING || localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+      if (useMockData) {
+        console.log('[DAILY ACTIONS ADVANCED] Using mock data for metadata');
+
+        // Import mock data dynamically
+        const mockDataModule = await import('../mockData');
+        const mockDataService = mockDataModule.default;
+
+        // Get mock metadata
+        const mockMetadata = mockDataService.getMockData('/reports/daily-actions/metadata');
+
+        if (mockMetadata) {
+          console.log('[DAILY ACTIONS ADVANCED] Got mock metadata:', mockMetadata);
+          setMetadata(mockMetadata);
+          return;
+        }
+      }
+
+      // Fall back to service if mock data is not available or not enabled
+      console.log('[DAILY ACTIONS ADVANCED] Fetching metadata from service');
       const response = await dailyActionsService.getMetadata();
       setMetadata(response);
     } catch (err) {
@@ -54,6 +78,30 @@ const DailyActionsAdvancedReportContainer = () => {
         endDate: filters.endDate ? format(new Date(filters.endDate), 'yyyy-MM-dd') : null
       };
 
+      console.log('[DAILY ACTIONS ADVANCED] Fetching data with filters:', apiFilters);
+
+      // Check if mock data is enabled
+      const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING || localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+      if (useMockData) {
+        console.log('[DAILY ACTIONS ADVANCED] Using mock data for report');
+
+        // Import mock data dynamically
+        const mockDataModule = await import('../mockData');
+        const mockDataService = mockDataModule.default;
+
+        // Get mock data
+        const mockData = mockDataService.getMockData('/reports/daily-actions/data', apiFilters);
+
+        if (mockData) {
+          console.log('[DAILY ACTIONS ADVANCED] Got mock data:', mockData);
+          setData(mockData);
+          return;
+        }
+      }
+
+      // Fall back to service if mock data is not available or not enabled
+      console.log('[DAILY ACTIONS ADVANCED] Fetching data from service');
       const response = await dailyActionsService.getFilteredData(apiFilters);
       setData(response);
     } catch (err) {
@@ -83,6 +131,33 @@ const DailyActionsAdvancedReportContainer = () => {
         endDate: filters.endDate ? format(new Date(filters.endDate), 'yyyy-MM-dd') : null
       };
 
+      console.log('[DAILY ACTIONS ADVANCED] Exporting data with filters:', apiFilters, 'format:', exportFormat);
+
+      // Check if mock data is enabled
+      const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING || localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+      if (useMockData) {
+        console.log('[DAILY ACTIONS ADVANCED] Using mock data for export');
+
+        // For mock data, we'll just create a simple text file with JSON data
+        const mockDataModule = await import('../mockData');
+        const mockDataService = mockDataModule.default;
+
+        // Get mock data
+        const mockData = mockDataService.getMockData('/reports/daily-actions/data', apiFilters);
+
+        if (mockData) {
+          console.log('[DAILY ACTIONS ADVANCED] Creating mock export file');
+          // Create a blob with the JSON data
+          const blob = new Blob([JSON.stringify(mockData, null, 2)], { type: 'application/json' });
+          const fileName = `daily-actions-report-${format(new Date(), 'yyyy-MM-dd')}.json`;
+          saveAs(blob, fileName);
+          return;
+        }
+      }
+
+      // Fall back to service if mock data is not available or not enabled
+      console.log('[DAILY ACTIONS ADVANCED] Exporting data from service');
       const blob = await dailyActionsService.exportFilteredReport(apiFilters, exportFormat);
       const fileName = `daily-actions-report-${format(new Date(), 'yyyy-MM-dd')}.${exportFormat}`;
       saveAs(blob, fileName);

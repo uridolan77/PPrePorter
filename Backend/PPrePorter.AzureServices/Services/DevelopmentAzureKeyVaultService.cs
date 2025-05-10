@@ -23,7 +23,7 @@ namespace PPrePorter.AzureServices.Services
             {
                 // DailyActionsDB credentials - use the actual username from Azure Key Vault
                 { "progressplaymcp-kv:DailyActionsDB--Username", "ReportsUser" },
-                { "progressplaymcp-kv:DailyActionsDB--Password", "YourPassword123!" },
+                { "progressplaymcp-kv:DailyActionsDB--Password", "Pp@123456" },
 
                 // JWT Secret Key
                 { "progressplaymcp-kv:JWT--SecretKey", "ThisIsAVeryLongSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm_ThisIsAVeryLongSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm" },

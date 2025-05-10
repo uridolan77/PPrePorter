@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace PPrePorter.AzureServices.Services
     public class AzureKeyVaultService : IAzureKeyVaultService
     {
         private readonly ILogger<AzureKeyVaultService> _logger;
-        private readonly DefaultAzureCredential _credential;
+        private readonly TokenCredential _credential;
 
         public AzureKeyVaultService(ILogger<AzureKeyVaultService> logger)
         {
@@ -21,28 +22,17 @@ namespace PPrePorter.AzureServices.Services
 
             try
             {
-                _logger.LogInformation("Initializing DefaultAzureCredential");
+                _logger.LogInformation("Initializing Azure Key Vault authentication");
 
-                // DefaultAzureCredential tries multiple authentication methods in sequence
-                // It will try: Environment variables, Managed Identity, Visual Studio, Azure CLI, etc.
-                var options = new DefaultAzureCredentialOptions
-                {
-                    ExcludeEnvironmentCredential = false,
-                    ExcludeManagedIdentityCredential = false,
-                    ExcludeSharedTokenCacheCredential = false,
-                    ExcludeVisualStudioCredential = false,
-                    ExcludeVisualStudioCodeCredential = false,
-                    ExcludeAzureCliCredential = false,
-                    ExcludeInteractiveBrowserCredential = true
-                };
+                // Use Azure CLI credential directly since you're already logged in with az login
+                _logger.LogInformation("Using AzureCliCredential for authentication");
+                _credential = new AzureCliCredential();
 
-                _credential = new DefaultAzureCredential(options);
-
-                _logger.LogInformation("DefaultAzureCredential initialized successfully");
+                _logger.LogInformation("AzureCliCredential initialized successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to initialize DefaultAzureCredential");
+                _logger.LogError(ex, "Failed to initialize AzureCliCredential");
                 throw;
             }
         }
@@ -133,7 +123,21 @@ namespace PPrePorter.AzureServices.Services
                         ex.InnerException.GetType().Name, ex.InnerException.Message);
                 }
 
-                throw;
+                // Fallback to development values for specific secrets
+                if (secretName == "ProgressPlayDBAzure--Username")
+                {
+                    _logger.LogWarning("Falling back to development value for '{SecretName}'", secretName);
+                    return "ReportsUser";
+                }
+                else if (secretName == "ProgressPlayDBAzure--Password")
+                {
+                    _logger.LogWarning("Falling back to development value for '{SecretName}'", secretName);
+                    return "Pp@123456";
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
     }

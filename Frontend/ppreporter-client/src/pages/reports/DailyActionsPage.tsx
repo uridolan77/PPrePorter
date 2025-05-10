@@ -29,6 +29,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { format, subDays } from 'date-fns';
+import { FEATURES } from '../../config/constants';
 import dailyActionsService from '../../services/api/dailyActionsService';
 
 // Import icons
@@ -73,9 +74,9 @@ interface Filters {
 }
 
 const DailyActionsPage: React.FC = () => {
-  // State for filters
-  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  // State for filters - use dates that match our mock data (May 2023)
+  const [startDate, setStartDate] = useState<Date>(new Date('2023-05-01'));
+  const [endDate, setEndDate] = useState<Date>(new Date('2023-05-05'));
   const [whiteLabelId, setWhiteLabelId] = useState<string>('');
   const [whiteLabels, setWhiteLabels] = useState<WhiteLabel[]>([]);
 
@@ -97,15 +98,56 @@ const DailyActionsPage: React.FC = () => {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
+        console.log('[DAILY ACTIONS PAGE] Fetching metadata');
+
+        // Check if mock data is enabled (from constants or localStorage)
+        const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING || localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+        if (useMockData) {
+          console.log('[DAILY ACTIONS PAGE] Using mock data for metadata');
+
+          // Import mock data dynamically
+          const mockDataModule = await import('../../mockData');
+          const mockDataService = mockDataModule.default;
+
+          // Get mock metadata
+          const mockMetadata = mockDataService.getMockData('/reports/daily-actions/metadata');
+
+          if (mockMetadata && mockMetadata.whiteLabels) {
+            console.log('[DAILY ACTIONS PAGE] Got mock white labels:', mockMetadata.whiteLabels);
+            setWhiteLabels(mockMetadata.whiteLabels);
+            return;
+          }
+        }
+
+        // Fall back to service if mock data is not available
         const data = await dailyActionsService.getMetadata();
+        console.log('[DAILY ACTIONS PAGE] Got white labels from service:', (data as any).whiteLabels);
         setWhiteLabels((data as any).whiteLabels || []);
       } catch (err) {
-        console.error('Error fetching metadata:', err);
+        console.error('[DAILY ACTIONS PAGE] Error fetching metadata:', err);
         setError('Failed to load metadata. Please try again later.');
       }
     };
 
     fetchMetadata();
+  }, []);
+
+  // Fetch initial data on component mount
+  useEffect(() => {
+    // Define a function to fetch data on mount to avoid dependency issues
+    const fetchInitialData = async () => {
+      console.log('[DAILY ACTIONS PAGE] Fetching initial data');
+      await fetchDailyActions();
+    };
+
+    // Set a small delay to ensure the component is fully mounted
+    const timer = setTimeout(() => {
+      fetchInitialData();
+    }, 100);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch daily actions data
@@ -124,33 +166,152 @@ const DailyActionsPage: React.FC = () => {
         endDate: formattedEndDate
       };
 
-      if (whiteLabelId) {
+      if (whiteLabelId && whiteLabelId !== '') {
+        console.log(`[DAILY ACTIONS PAGE] Filtering by white label ID: ${whiteLabelId}`);
         filters.whiteLabelId = whiteLabelId;
+      } else {
+        console.log('[DAILY ACTIONS PAGE] No white label filter applied');
       }
 
-      // Use the service to get data
-      const response = await dailyActionsService.getData(filters);
-      const data = (response as any).data || [];
+      console.log('[DAILY ACTIONS PAGE] Starting data fetch with filters:', filters);
 
-      setDailyActions(data);
+      // Try to get mock data directly first
+      try {
+        console.log('[DAILY ACTIONS PAGE] Checking if mock data is enabled');
+        // Check both the constant and localStorage
+        const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING || localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
 
-      // Set summary metrics if available in the response
-      if ((response as any).summary) {
-        setSummary((response as any).summary);
-      } else {
-        // Calculate summary metrics if not provided by the API
-        const summaryData: Summary = {
-          totalRegistrations: data.reduce((sum: number, item: any) => sum + item.registrations, 0),
-          totalFTD: data.reduce((sum: number, item: any) => sum + item.ftd, 0),
-          totalDeposits: data.reduce((sum: number, item: any) => sum + item.deposits, 0),
-          totalCashouts: data.reduce((sum: number, item: any) => sum + item.paidCashouts, 0),
-          totalGGR: data.reduce((sum: number, item: any) => sum + item.totalGGR, 0)
-        };
+        if (useMockData) {
+          console.log('[DAILY ACTIONS PAGE] Mock data is enabled, trying to get mock data directly');
 
-        setSummary(summaryData);
+          // Import mock data dynamically
+          const mockDataModule = await import('../../mockData');
+          const mockDataService = mockDataModule.default;
+
+          // Try to get summary data
+          console.log('[DAILY ACTIONS PAGE] Getting mock summary data directly with filters:', filters);
+          const mockSummaryData = mockDataService.getMockData('/reports/daily-actions/summary', filters);
+
+          if (mockSummaryData && mockSummaryData.dailyActions) {
+            console.log('[DAILY ACTIONS PAGE] Got mock summary data directly:', mockSummaryData);
+            console.log('[DAILY ACTIONS PAGE] Daily actions from mock data:', mockSummaryData.dailyActions);
+
+            // Use the mock data
+            setDailyActions(mockSummaryData.dailyActions || []);
+
+            // Set summary metrics
+            const summaryData: Summary = {
+              totalRegistrations: mockSummaryData.totalRegistrations || 0,
+              totalFTD: mockSummaryData.totalFTD || 0,
+              totalDeposits: mockSummaryData.totalDeposits || 0,
+              totalCashouts: mockSummaryData.totalCashouts || 0,
+              totalGGR: mockSummaryData.totalGGR || 0
+            };
+
+            setSummary(summaryData);
+            setLoading(false);
+            return;
+          } else {
+            console.log('[DAILY ACTIONS PAGE] No mock summary data found or no daily actions in the response, trying regular mock data');
+
+            // Try to get regular data
+            const mockRegularData = mockDataService.getMockData('/reports/daily-actions/data', filters);
+
+            if (mockRegularData) {
+              console.log('[DAILY ACTIONS PAGE] Got mock regular data directly:', mockRegularData);
+
+              // Check if we have dailyActions in the response
+              if (mockRegularData.dailyActions && mockRegularData.dailyActions.length > 0) {
+                console.log('[DAILY ACTIONS PAGE] Using dailyActions from mock data:', mockRegularData.dailyActions);
+                setDailyActions(mockRegularData.dailyActions);
+              } else if (mockRegularData.data && mockRegularData.data.length > 0) {
+                // Fall back to data field
+                console.log('[DAILY ACTIONS PAGE] Using data field from mock data:', mockRegularData.data);
+                setDailyActions(mockRegularData.data);
+              } else {
+                // No data found
+                console.log('[DAILY ACTIONS PAGE] No data found in mock response');
+                setDailyActions([]);
+              }
+
+              // Check if we have summary in the response
+              if (mockRegularData.summary) {
+                setSummary(mockRegularData.summary);
+              } else {
+                // Calculate summary metrics from the data
+                const data = mockRegularData.dailyActions || mockRegularData.data || [];
+                const summaryData: Summary = {
+                  totalRegistrations: mockRegularData.totalRegistrations || data.reduce((sum: number, item: any) => sum + (item.registrations || 0), 0),
+                  totalFTD: mockRegularData.totalFTD || data.reduce((sum: number, item: any) => sum + (item.ftd || 0), 0),
+                  totalDeposits: mockRegularData.totalDeposits || data.reduce((sum: number, item: any) => sum + (item.deposits || 0), 0),
+                  totalCashouts: mockRegularData.totalCashouts || data.reduce((sum: number, item: any) => sum + (item.paidCashouts || 0), 0),
+                  totalGGR: mockRegularData.totalGGR || data.reduce((sum: number, item: any) => sum + (item.totalGGR || 0), 0)
+                };
+
+                setSummary(summaryData);
+              }
+
+              setLoading(false);
+              return;
+            }
+          }
+        }
+      } catch (mockError) {
+        console.error('[DAILY ACTIONS PAGE] Error getting mock data directly:', mockError);
+      }
+
+      // Fetch summary data first
+      try {
+        console.log('[DAILY ACTIONS PAGE] Fetching summary data with filters:', filters);
+        const summaryResponse = await dailyActionsService.getSummaryData(filters);
+        console.log('[DAILY ACTIONS PAGE] Summary response:', summaryResponse);
+
+        if (summaryResponse && summaryResponse.dailyActions) {
+          setDailyActions(summaryResponse.dailyActions);
+
+          // Set summary metrics
+          const summaryData: Summary = {
+            totalRegistrations: summaryResponse.totalRegistrations || 0,
+            totalFTD: summaryResponse.totalFTD || 0,
+            totalDeposits: summaryResponse.totalDeposits || 0,
+            totalCashouts: summaryResponse.totalCashouts || 0,
+            totalGGR: summaryResponse.totalGGR || 0
+          };
+
+          setSummary(summaryData);
+        } else {
+          throw new Error('Invalid summary data format');
+        }
+      } catch (summaryError) {
+        console.error('[DAILY ACTIONS PAGE] Error fetching summary data:', summaryError);
+
+        // Fall back to regular data fetch if summary fails
+        console.log('[DAILY ACTIONS PAGE] Falling back to regular data fetch');
+        const response = await dailyActionsService.getData(filters);
+        console.log('[DAILY ACTIONS PAGE] Regular data response:', response);
+
+        const data = (response as any).data || [];
+
+        setDailyActions(data);
+
+        // Set summary metrics if available in the response
+        if ((response as any).summary) {
+          setSummary((response as any).summary);
+        } else {
+          // Calculate summary metrics if not provided by the API
+          const summaryData: Summary = {
+            totalRegistrations: data.reduce((sum: number, item: any) => sum + (item.registrations || 0), 0),
+            totalFTD: data.reduce((sum: number, item: any) => sum + (item.ftd || 0), 0),
+            totalDeposits: data.reduce((sum: number, item: any) => sum + (item.deposits || 0), 0),
+            totalCashouts: data.reduce((sum: number, item: any) => sum + (item.paidCashouts || 0), 0),
+            totalGGR: data.reduce((sum: number, item: any) => sum + (item.totalGGR || 0), 0)
+          };
+
+          setSummary(summaryData);
+        }
       }
     } catch (err) {
-      console.error('Error fetching daily actions:', err);
+      console.error('[DAILY ACTIONS PAGE] Error fetching daily actions:', err);
       setError('Failed to load daily actions data. Please try again later.');
     } finally {
       setLoading(false);
@@ -159,11 +320,18 @@ const DailyActionsPage: React.FC = () => {
 
   // Handle filter changes
   const handleApplyFilters = (): void => {
+    console.log('[DAILY ACTIONS PAGE] Apply filters button clicked');
+    console.log('[DAILY ACTIONS PAGE] Current filters:', {
+      startDate: format(startDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
+      whiteLabelId
+    });
     fetchDailyActions();
   };
 
   // Handle white label change
   const handleWhiteLabelChange = (event: SelectChangeEvent): void => {
+    console.log(`[DAILY ACTIONS PAGE] White label changed to: ${event.target.value}`);
     setWhiteLabelId(event.target.value);
   };
 
@@ -237,9 +405,16 @@ const DailyActionsPage: React.FC = () => {
                 label="White Label"
               >
                 <MenuItem value="">All White Labels</MenuItem>
-                {whiteLabels.map((wl) => (
-                  <MenuItem key={wl.id} value={wl.id}>{wl.name}</MenuItem>
-                ))}
+                {whiteLabels && whiteLabels.length > 0 ?
+                  whiteLabels.map((wl) => (
+                    <MenuItem key={wl.id} value={wl.id}>{wl.name}</MenuItem>
+                  ))
+                : [
+                  // Default white labels if none are loaded - use array instead of Fragment
+                  <MenuItem key="casino-royale" value="casino-royale">Casino Royale</MenuItem>,
+                  <MenuItem key="lucky-spin" value="lucky-spin">Lucky Spin</MenuItem>,
+                  <MenuItem key="golden-bet" value="golden-bet">Golden Bet</MenuItem>
+                ]}
               </Select>
             </FormControl>
           </Grid>
@@ -255,13 +430,15 @@ const DailyActionsPage: React.FC = () => {
               Apply Filters
             </Button>
 
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              disabled={loading || dailyActions.length === 0}
-            >
-              Export
-            </Button>
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                disabled={loading || dailyActions.length === 0}
+              >
+                Export
+              </Button>
+            </span>
           </Grid>
         </Grid>
       </Paper>

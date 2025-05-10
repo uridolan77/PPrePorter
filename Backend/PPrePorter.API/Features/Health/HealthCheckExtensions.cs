@@ -27,26 +27,32 @@ namespace PPrePorter.API.Extensions
                     healthQuery: "SELECT 1;",
                     failureStatus: HealthStatus.Degraded,
                     tags: new[] { "database", "sql", "ppreporter" })
-                
+
                 .AddSqlServer(
                     name: "DailyActionsDB",
                     connectionString: dailyActionsConnectionString,
                     healthQuery: "SELECT 1;",
                     failureStatus: HealthStatus.Degraded,
                     tags: new[] { "database", "sql", "dailyactions" })
-                
+
                 // Add Redis health check if configured
                 .AddRedis(
                     redisConnectionString: redisConnectionString,
                     name: "Redis",
                     failureStatus: HealthStatus.Degraded,
                     tags: new[] { "cache", "redis" })
-                
+
                 // Add custom health check
                 .AddCheck<CustomHealthCheck>(
                     name: "ApplicationServices",
                     failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "app", "services" });
+                    tags: new[] { "app", "services" })
+
+                // Add DailyActionsDB custom health check
+                .AddCheck<DailyActionsDbHealthCheck>(
+                    name: "DailyActionsDBCustom",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "database", "sql", "dailyactions", "custom" });
 
             return services;
         }
@@ -62,7 +68,7 @@ namespace PPrePorter.API.Extensions
                     options.SetEvaluationTimeInSeconds(60); // Evaluate health every 60 seconds
                     options.MaximumHistoryEntriesPerEndpoint(50); // Keep 50 history entries
                     options.SetApiMaxActiveRequests(1); // Only allow 1 concurrent request
-                    
+
                     // Add health check endpoint
                     options.AddHealthCheckEndpoint("API", "/health");
                 })

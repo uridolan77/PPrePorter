@@ -59,6 +59,7 @@ if ((API_ENDPOINTS as any).DAILY_ACTIONS) {
     GET_DATA: '/reports/daily-actions/data',
     FILTER: '/reports/daily-actions/filter',
     GET_METADATA: '/reports/daily-actions/metadata',
+    GET_SUMMARY: '/reports/daily-actions/summary',
     NL_QUERY: '/reports/daily-actions/query',
     EXPORT: '/reports/daily-actions/export',
     SAVE_CONFIG: '/reports/configurations/save',
@@ -96,6 +97,15 @@ class DailyActionsService extends ApiService {
    */
   async getMetadata(): Promise<any> {
     return this.get(DAILY_ACTIONS_ENDPOINTS.GET_METADATA);
+  }
+
+  /**
+   * Get summary data for daily actions report
+   * @param {ReportFilters} filters - Report filters
+   * @returns {Promise<any>} - Summary data
+   */
+  async getSummaryData(filters: ReportFilters): Promise<any> {
+    return this.post(DAILY_ACTIONS_ENDPOINTS.GET_SUMMARY, filters);
   }
 
   /**

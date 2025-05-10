@@ -36,9 +36,45 @@ apiClient.interceptors.request.use(
     const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
     console.log('Using mock data?', useMockData);
 
-    // If mock data is enabled, add a custom header to mark this request for mocking
-    if (useMockData && config.headers) {
-      config.headers['X-Use-Mock-Data'] = 'true';
+    // If mock data is enabled, we'll handle it directly here
+    if (useMockData) {
+      console.log('[API CLIENT] Mock data is enabled for request:', config.method?.toUpperCase(), config.url);
+
+      // Import mock data dynamically to avoid circular dependencies
+      try {
+        const mockDataModule = await import('../../mockData');
+        const mockDataService = mockDataModule.default;
+
+        // Get the URL path without the base URL
+        const url = config.url || '';
+        const method = config.method || 'get';
+        const data = config.data ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) : {};
+
+        console.log('[API CLIENT] Preparing mock data for:', url);
+        console.log('[API CLIENT] Method:', method);
+        console.log('[API CLIENT] Params:', method.toLowerCase() === 'get' ? config.params : data);
+
+        // Extract the endpoint from the URL (remove the base URL)
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5229/api';
+        const endpoint = url.replace(baseUrl, '');
+        console.log('[API CLIENT] Extracted endpoint:', endpoint);
+
+        // Add a custom property to the config to store the mock data
+        // This will be used in the response interceptor
+        (config as any).mockData = {
+          url: endpoint, // Use the endpoint without the base URL
+          method,
+          params: method.toLowerCase() === 'get' ? config.params : data,
+          mockDataService
+        };
+
+        // Add a custom header to mark this request for mocking
+        if (config.headers) {
+          config.headers['X-Use-Mock-Data'] = 'true';
+        }
+      } catch (error) {
+        console.error('[API CLIENT] Error setting up mock data:', error);
+      }
     }
 
     return config;
@@ -53,36 +89,65 @@ apiClient.interceptors.request.use(
 
 // Add a mock data response interceptor
 apiClient.interceptors.response.use(
-  (response: AxiosResponse): AxiosResponse => {
-    // Just return the response if it's already resolved
+  async (response: AxiosResponse): Promise<AxiosResponse> => {
+    // Check if we should use mock data
+    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+    // If mock data is enabled and we have mock data in the config
+    if (useMockData && (response.config as any).mockData) {
+      console.log('[API CLIENT RESPONSE] Using mock data for successful request:', response.config.url);
+
+      try {
+        const mockDataInfo = (response.config as any).mockData;
+        console.log('[API CLIENT RESPONSE] Mock data info:', mockDataInfo);
+
+        // Get mock data for this endpoint
+        console.log('[API CLIENT RESPONSE] Getting mock data for:', mockDataInfo.url);
+        const mockData = mockDataInfo.mockDataService.getMockData(mockDataInfo.url, mockDataInfo.params);
+
+        // Simulate API delay
+        await mockDataInfo.mockDataService.simulateApiDelay();
+
+        if (mockData) {
+          console.log('[API CLIENT RESPONSE] Mock data response:', mockData);
+
+          // Override the response with mock data
+          response.data = mockData;
+        } else {
+          console.warn('[API CLIENT RESPONSE] No mock data returned for:', mockDataInfo.url);
+        }
+      } catch (mockError) {
+        console.error('[API CLIENT RESPONSE] Error generating mock data for successful response:', mockError);
+      }
+    }
+
     return response;
   },
   async (error: AxiosError): Promise<any> => {
     // Add debugger statement for response error
     debugger;
-    console.error('API Response Error:', error.response?.status, error.config?.url, error.response?.data);
+    console.error('[API CLIENT RESPONSE] API Response Error:', error.response?.status, error.config?.url, error.response?.data);
 
     // Check if we should use mock data
     const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
 
-    // If mock data is enabled and we have a request config
-    if (useMockData && error.config && error.config.headers && error.config.headers['X-Use-Mock-Data'] === 'true') {
-      console.log('Using mock data for failed request:', error.config.url);
+    // If mock data is enabled and we have mock data in the config
+    if (useMockData && error.config && (error.config as any).mockData) {
+      console.log('[API CLIENT RESPONSE] Using mock data for failed request:', error.config.url);
 
       try {
-        // Extract the endpoint from the URL
-        const url = error.config.url || '';
-        const method = error.config.method || 'get';
-        const data = error.config.data ? JSON.parse(error.config.data) : {};
+        const mockDataInfo = (error.config as any).mockData;
+        console.log('[API CLIENT RESPONSE] Mock data info for error:', mockDataInfo);
 
         // Get mock data for this endpoint
-        const mockData = mockDataService.getMockData(url, method === 'get' ? error.config.params : data);
+        console.log('[API CLIENT RESPONSE] Getting mock data for error:', mockDataInfo.url);
+        const mockData = mockDataInfo.mockDataService.getMockData(mockDataInfo.url, mockDataInfo.params);
 
         // Simulate API delay
-        await mockDataService.simulateApiDelay();
+        await mockDataInfo.mockDataService.simulateApiDelay();
 
         if (mockData) {
-          console.log('Mock data response:', mockData);
+          console.log('[API CLIENT RESPONSE] Mock data response for error:', mockData);
 
           // Return a mock response
           return Promise.resolve({
@@ -92,9 +157,11 @@ apiClient.interceptors.response.use(
             headers: {},
             config: error.config,
           });
+        } else {
+          console.warn('[API CLIENT RESPONSE] No mock data returned for error:', mockDataInfo.url);
         }
       } catch (mockError) {
-        console.error('Error generating mock data:', mockError);
+        console.error('[API CLIENT RESPONSE] Error generating mock data for error:', mockError);
       }
     }
 
@@ -110,36 +177,18 @@ apiClient.interceptors.response.use(
     debugger;
     console.log('API Response:', response.status, response.config.url, response.data);
 
-    // Check if we should use mock data for successful responses too
-    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
-    if (useMockData && response.config.headers && response.config.headers['X-Use-Mock-Data'] === 'true') {
-      console.log('Using mock data for successful request:', response.config.url);
-
-      try {
-        // Extract the endpoint from the URL
-        const url = response.config.url || '';
-        const method = response.config.method || 'get';
-        const data = response.config.data ? JSON.parse(response.config.data) : {};
-
-        // Get mock data for this endpoint
-        const mockData = mockDataService.getMockData(url, method === 'get' ? response.config.params : data);
-
-        if (mockData) {
-          console.log('Mock data response (overriding success):', mockData);
-
-          // Override the response with mock data
-          response.data = mockData;
-        }
-      } catch (mockError) {
-        console.error('Error generating mock data for successful response:', mockError);
-      }
-    }
-
+    // We've already handled mock data in the previous interceptor
     return response;
   },
   async (error: AxiosError): Promise<any> => {
     // This interceptor is for token refresh, not for mock data
     // The mock data interceptor is already handling errors
+    // Only proceed with token refresh if mock data is disabled
+    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+    if (useMockData) {
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
 
     // If error is 401 and we haven't already tried to refresh
