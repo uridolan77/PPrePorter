@@ -8,7 +8,6 @@ using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Services;
 using System;
-using System.Text.RegularExpressions;
 
 namespace PPrePorter.DailyActionsDB
 {
@@ -27,41 +26,31 @@ namespace PPrePorter.DailyActionsDB
         {
             // Always use the remote database
             string connectionStringName = "DailyActionsDB";
-            string connectionStringTemplate = configuration.GetConnectionString(connectionStringName)
-                ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
-            // Temporarily disable the NoLock interceptor due to issues with OPENJSON
-            // var loggerFactory = services.BuildServiceProvider().GetService<ILoggerFactory>();
-            // var noLockInterceptor = new NoLockInterceptor(loggerFactory?.CreateLogger<NoLockInterceptor>());
-
-            // Get the connection string from the resolver service
+            // Get the connection string from the cache service
             var serviceProvider = services.BuildServiceProvider();
-            var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
+            var connectionStringCacheService = serviceProvider.GetRequiredService<IConnectionStringCacheService>();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
             var logger = loggerFactory?.CreateLogger("DailyActionsDB");
 
-            // Resolve the connection string
-            string resolvedConnectionString = connectionStringTemplate;
+            // Get the resolved connection string from the cache
+            string resolvedConnectionString = connectionStringCacheService.GetConnectionString(connectionStringName);
 
-            try
+            if (string.IsNullOrEmpty(resolvedConnectionString))
             {
-                // Resolve the connection string synchronously
-                resolvedConnectionString = connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)
-                    .ConfigureAwait(false).GetAwaiter().GetResult();
+                // Fallback to getting from configuration if not in cache
+                logger?.LogWarning("Connection string '{Name}' not found in cache, getting from configuration", connectionStringName);
+                resolvedConnectionString = configuration.GetConnectionString(connectionStringName)
+                    ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
+            }
 
-                // Log the resolved connection string (without sensitive info)
-                string sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
-                logger?.LogInformation("Resolved connection string: {ConnectionString}", sanitizedConnectionString);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError(ex, "Failed to resolve connection string. Using original template.");
-            }
+            // Log the resolved connection string (without sensitive info)
+            string sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
+            logger?.LogInformation("Resolved connection string: {ConnectionString}", sanitizedConnectionString);
 
             // Log connection string (without sensitive info)
-            string finalSanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
             logger?.LogInformation("Connecting to DailyActionsDB with connection string: {ConnectionString}, using {DatabaseType} database",
-                finalSanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
+                sanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
 
             // Register DbContext with pooling
             services.AddDbContextPool<DailyActionsDbContext>(options =>
@@ -84,7 +73,7 @@ namespace PPrePorter.DailyActionsDB
             }, 32); // Set pool size to 32
 
             // Register simplified DbContext with pooling using the same connection string
-            logger?.LogInformation("Connecting to DailyActionsSimpleDB with connection string: {ConnectionString}", finalSanitizedConnectionString);
+            logger?.LogInformation("Connecting to DailyActionsSimpleDB with connection string: {ConnectionString}", sanitizedConnectionString);
 
             services.AddDbContextPool<DailyActionsSimpleDbContext>(options =>
             {

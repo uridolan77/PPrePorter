@@ -25,14 +25,35 @@ namespace PPrePorter.API.Features.Reports.Controllers
         {
             try
             {
+                // Start performance timer
+                var startTime = DateTime.UtcNow;
+                _logger.LogInformation("PERF [{Timestamp}]: Starting GetDailyActionsData request",
+                    startTime.ToString("HH:mm:ss.fff"));
+
                 // Default date range to yesterday-today if not specified
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
                 var start = startDate?.Date ?? yesterday;
                 var end = endDate?.Date ?? today;
 
-                // Get daily actions data
+                // Log the parameters being used for the cache key
+                _logger.LogInformation("CONTROLLER [{Timestamp}]: Getting daily actions with parameters: startDate={StartDate}, endDate={EndDate}, whiteLabelId={WhiteLabelId}",
+                    DateTime.UtcNow.ToString("HH:mm:ss.fff"),
+                    start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"), whiteLabelId);
+
+                // Calculate expected cache key format for debugging
+                string expectedCacheKeyFormat = $"DailyActions_Data_{start:yyyyMMdd}_{end:yyyyMMdd}_{whiteLabelId?.ToString() ?? "all"}";
+                _logger.LogInformation("CONTROLLER [{Timestamp}]: Expected cache key format: {ExpectedCacheKeyFormat}",
+                    DateTime.UtcNow.ToString("HH:mm:ss.fff"), expectedCacheKeyFormat);
+
+                // Get daily actions data - measure time
+                var getDataStartTime = DateTime.UtcNow;
                 var dailyActions = await _dailyActionsService.GetDailyActionsAsync(start, end, whiteLabelId);
+                var getDataEndTime = DateTime.UtcNow;
+                var getDataElapsedMs = (getDataEndTime - getDataStartTime).TotalMilliseconds;
+
+                _logger.LogInformation("PERF [{Timestamp}]: GetDailyActionsAsync completed in {ElapsedMs}ms",
+                    getDataEndTime.ToString("HH:mm:ss.fff"), getDataElapsedMs);
 
                 // Limit the number of records to prevent Swagger UI from crashing
                 var limitedDailyActions = dailyActions.Take(100).ToList();
@@ -173,10 +194,17 @@ namespace PPrePorter.API.Features.Reports.Controllers
                     return obj;
                 }).ToList();
 
-                // Get summary metrics
+                // Get summary metrics - measure time
+                var getSummaryStartTime = DateTime.UtcNow;
                 var summary = await _dailyActionsService.GetSummaryMetricsAsync(start, end, whiteLabelId);
+                var getSummaryEndTime = DateTime.UtcNow;
+                var getSummaryElapsedMs = (getSummaryEndTime - getSummaryStartTime).TotalMilliseconds;
 
-                return Ok(new
+                _logger.LogInformation("PERF [{Timestamp}]: GetSummaryMetricsAsync completed in {ElapsedMs}ms",
+                    getSummaryEndTime.ToString("HH:mm:ss.fff"), getSummaryElapsedMs);
+
+                // Prepare response
+                var response = new
                 {
                     data = result,
                     summary = new
@@ -190,7 +218,15 @@ namespace PPrePorter.API.Features.Reports.Controllers
                     totalCount = dailyActions.Count(),
                     startDate = start,
                     endDate = end
-                });
+                };
+
+                // Log total request time
+                var endTime = DateTime.UtcNow;
+                var totalElapsedMs = (endTime - startTime).TotalMilliseconds;
+                _logger.LogInformation("PERF [{Timestamp}]: Total GetDailyActionsData request completed in {ElapsedMs}ms",
+                    endTime.ToString("HH:mm:ss.fff"), totalElapsedMs);
+
+                return Ok(response);
             }
             catch (Exception ex)
             {

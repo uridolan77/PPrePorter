@@ -18,29 +18,42 @@ import {
 import TableChartIcon from '@mui/icons-material/TableChart';
 import StorageIcon from '@mui/icons-material/Storage';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import { CommonProps } from '../../types/common';
+
+// Type definitions
+export interface DataSource {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  tags?: string[];
+  schema?: any[];
+}
+
+export interface ReportDataSourceSelectorProps extends CommonProps {
+  selected?: DataSource | null;
+  availableDataSources?: DataSource[];
+  onChange?: (source: DataSource) => void;
+  name?: string;
+  description?: string;
+  onNameChange?: (name: string) => void;
+  onDescriptionChange?: (description: string) => void;
+}
 
 /**
  * Component for selecting a data source for a report and configuring basic report information
- * @param {Object} props - Component props
- * @param {Object} props.selected - Currently selected data source
- * @param {Array} props.availableDataSources - List of available data sources
- * @param {Function} props.onChange - Function called when a data source is selected
- * @param {string} props.name - Report name
- * @param {string} props.description - Report description
- * @param {Function} props.onNameChange - Function called when report name changes
- * @param {Function} props.onDescriptionChange - Function called when report description changes
  */
-const ReportDataSourceSelector = ({
+const ReportDataSourceSelector: React.FC<ReportDataSourceSelectorProps> = ({
   selected,
   availableDataSources = [],
   onChange,
-  name,
-  description,
+  name = '',
+  description = '',
   onNameChange,
   onDescriptionChange
 }) => {
   // Function to get icon based on source type
-  const getSourceIcon = (type) => {
+  const getSourceIcon = (type?: string): React.ReactNode => {
     switch (type?.toLowerCase()) {
       case 'database':
         return <StorageIcon fontSize="large" />;
@@ -54,7 +67,7 @@ const ReportDataSourceSelector = ({
   };
 
   // Handle data source selection
-  const handleSourceSelect = (source) => {
+  const handleSourceSelect = (source: DataSource): void => {
     if (onChange) {
       onChange(source);
     }
@@ -72,7 +85,7 @@ const ReportDataSourceSelector = ({
             label="Report Name"
             fullWidth
             value={name}
-            onChange={(e) => onNameChange(e.target.value)}
+            onChange={(e) => onNameChange && onNameChange(e.target.value)}
             required
             placeholder="Enter a name for your report"
             helperText="This name will be displayed in the reports list"
@@ -83,7 +96,7 @@ const ReportDataSourceSelector = ({
             label="Description"
             fullWidth
             value={description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
+            onChange={(e) => onDescriptionChange && onDescriptionChange(e.target.value)}
             multiline
             rows={1}
             placeholder="Describe the purpose of this report"

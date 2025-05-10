@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
@@ -15,6 +16,12 @@ namespace PPrePorter.AzureServices.Services
     {
         private readonly ILogger<AzureKeyVaultService> _logger;
         private readonly TokenCredential _credential;
+
+        // Static cache for SecretClient instances to avoid creating new ones for each request
+        private static readonly ConcurrentDictionary<string, SecretClient> _secretClientCache = new();
+
+        // Static cache for secrets to avoid retrieving the same secret multiple times
+        private static readonly ConcurrentDictionary<string, string> _secretCache = new();
 
         public AzureKeyVaultService(ILogger<AzureKeyVaultService> logger)
         {
@@ -55,16 +62,35 @@ namespace PPrePorter.AzureServices.Services
                 throw new ArgumentException("Secret name cannot be null or empty", nameof(secretName));
             }
 
+            // Create a cache key for this secret
+            string cacheKey = $"{vaultName}:{secretName}";
+
+            // Check if the secret is already in the cache
+            if (_secretCache.TryGetValue(cacheKey, out string cachedSecret))
+            {
+                _logger.LogInformation("Using cached secret for '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
+                return cachedSecret;
+            }
+
             try
             {
                 _logger.LogInformation("Retrieving secret '{SecretName}' from Azure Key Vault '{VaultName}'", secretName, vaultName);
 
-                // Create a client for the specified vault
+                // Get or create a client for the specified vault
                 var vaultUri = new Uri($"https://{vaultName}.vault.azure.net/");
-                _logger.LogInformation("Creating SecretClient for vault URI: {VaultUri}", vaultUri);
 
-                var secretClient = new SecretClient(vaultUri, _credential);
-                _logger.LogInformation("SecretClient created successfully");
+                // Try to get the SecretClient from the cache
+                if (!_secretClientCache.TryGetValue(vaultName, out SecretClient secretClient))
+                {
+                    _logger.LogInformation("Creating new SecretClient for vault URI: {VaultUri}", vaultUri);
+                    secretClient = new SecretClient(vaultUri, _credential);
+                    _secretClientCache.TryAdd(vaultName, secretClient);
+                    _logger.LogInformation("SecretClient created and cached successfully");
+                }
+                else
+                {
+                    _logger.LogInformation("Using cached SecretClient for vault URI: {VaultUri}", vaultUri);
+                }
 
                 // Get the secret
                 _logger.LogInformation("Calling GetSecretAsync for secret '{SecretName}'", secretName);
@@ -80,6 +106,10 @@ namespace PPrePorter.AzureServices.Services
 
                     _logger.LogInformation("Successfully retrieved secret '{SecretName}' from Azure Key Vault '{VaultName}': {Value}",
                         secretName, vaultName, logValue);
+
+                    // Cache the secret
+                    _secretCache.TryAdd(cacheKey, secret.Value.Value);
+                    _logger.LogInformation("Secret '{SecretName}' from vault '{VaultName}' added to cache", secretName, vaultName);
 
                     return secret.Value.Value;
                 }

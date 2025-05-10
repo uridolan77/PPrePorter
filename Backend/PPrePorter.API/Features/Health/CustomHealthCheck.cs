@@ -9,13 +9,16 @@ namespace PPrePorter.API.Features.Health
     public class CustomHealthCheck : IHealthCheck
     {
         private readonly IConnectionStringResolverService _connectionStringResolver;
+        private readonly IConnectionStringCacheService _connectionStringCacheService;
         private readonly ILogger<CustomHealthCheck> _logger;
 
         public CustomHealthCheck(
             IConnectionStringResolverService connectionStringResolver,
+            IConnectionStringCacheService connectionStringCacheService,
             ILogger<CustomHealthCheck> logger)
         {
             _connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
+            _connectionStringCacheService = connectionStringCacheService ?? throw new ArgumentNullException(nameof(connectionStringCacheService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -26,12 +29,24 @@ namespace PPrePorter.API.Features.Health
         {
             var data = new Dictionary<string, object>();
             var isHealthy = true;
-            
+
             try
             {
                 // Check if Azure Key Vault service is available
                 data.Add("AzureKeyVaultStatus", "Available");
-                
+
+                // Check if connection string cache is working
+                var cachedConnectionString = _connectionStringCacheService.GetConnectionString("DailyActionsDB");
+                if (!string.IsNullOrEmpty(cachedConnectionString))
+                {
+                    data.Add("ConnectionStringCacheStatus", "Available");
+                    data.Add("CachedConnectionStrings", "DailyActionsDB is cached");
+                }
+                else
+                {
+                    data.Add("ConnectionStringCacheStatus", "No cached connection strings found");
+                }
+
                 // Check if connection string resolver is working
                 var connectionString = await _connectionStringResolver.ResolveConnectionStringAsync("PPRePorterDB");
                 if (string.IsNullOrEmpty(connectionString))
@@ -43,13 +58,13 @@ namespace PPrePorter.API.Features.Health
                 {
                     data.Add("ConnectionStringResolverStatus", "Available");
                 }
-                
+
                 // Add application version
                 data.Add("ApplicationVersion", GetType().Assembly.GetName().Version?.ToString() ?? "Unknown");
-                
+
                 // Add environment information
                 data.Add("Environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown");
-                
+
                 if (isHealthy)
                 {
                     return HealthCheckResult.Healthy("All application services are healthy", data);

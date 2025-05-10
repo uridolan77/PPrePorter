@@ -18,11 +18,16 @@ namespace PPrePorter.Core.Services
         private readonly IAzureKeyVaultService _keyVaultService;
         private readonly IConfiguration _configuration;
 
-        // Cache to store resolved secrets from Azure Key Vault
-        private readonly ConcurrentDictionary<string, string> _secretCache = new();
+        // Static cache to store resolved secrets from Azure Key Vault
+        // This ensures the cache persists across all instances of the service
+        private static readonly ConcurrentDictionary<string, string> _secretCache = new();
 
-        // Resolved connection string cache - stores fully resolved connection strings
-        private readonly ConcurrentDictionary<string, string> _connectionStringCache = new();
+        // Static resolved connection string cache - stores fully resolved connection strings
+        // Key is the connection string name, value is the resolved connection string
+        private static readonly ConcurrentDictionary<string, string> _connectionStringCache = new();
+
+        // Static cache for connection string templates - maps connection string name to template
+        private static readonly ConcurrentDictionary<string, string> _connectionStringTemplateCache = new();
 
         // Regex to find placeholders like {azurevault:vaultName:secretName}
         private static readonly Regex AzureVaultPlaceholderRegex = new(@"\{azurevault:([^:]+):([^}]+)\}", RegexOptions.IgnoreCase);
@@ -79,12 +84,26 @@ namespace PPrePorter.Core.Services
                         continue;
                     }
 
+                    // Cache the template
+                    _connectionStringTemplateCache.TryAdd(name, template);
+
                     _logger.LogInformation("Pre-resolving connection string '{Name}'", name);
                     string resolved = await ResolveConnectionStringAsync(template);
+
+                    // Cache the resolved connection string by name
+                    _connectionStringCache.TryAdd(name, resolved);
+
+                    // Also cache with the template as key for template-based lookups
+                    string templateCacheKey = $"template:{template}";
+                    _connectionStringCache.TryAdd(templateCacheKey, resolved);
 
                     // Log the resolved connection string (without sensitive info)
                     string sanitizedConnectionString = SanitizeConnectionString(resolved);
                     _logger.LogInformation("Pre-resolved connection string '{Name}': {ConnectionString}", name, sanitizedConnectionString);
+
+                    // Log cache status
+                    _logger.LogInformation("Connection string '{Name}' cached with {Count} total cached connection strings",
+                        name, _connectionStringCache.Count);
                 }
 
                 _isInitialized = true;
@@ -107,7 +126,40 @@ namespace PPrePorter.Core.Services
                 throw new ArgumentException("Connection string name cannot be null or empty", nameof(connectionStringName));
             }
 
-            // Get the connection string template from configuration
+            // First check if we have the resolved connection string cached by name
+            if (_connectionStringCache.TryGetValue(connectionStringName, out string cachedResolved))
+            {
+                _logger.LogDebug("Using cached resolved connection string for '{Name}'", connectionStringName);
+                return cachedResolved;
+            }
+
+            // If not in name-based cache, check if we have the template cached
+            if (_connectionStringTemplateCache.TryGetValue(connectionStringName, out string cachedTemplate))
+            {
+                _logger.LogDebug("Using cached template for '{Name}'", connectionStringName);
+
+                try
+                {
+                    // Resolve the template and cache the result
+                    string resolved = ResolveConnectionStringAsync(cachedTemplate).GetAwaiter().GetResult();
+
+                    // Cache the resolved connection string with both the name and template as keys
+                    _connectionStringCache.TryAdd(connectionStringName, resolved);
+
+                    // Also cache with the template as key for template-based lookups
+                    string templateCacheKey = $"template:{cachedTemplate}";
+                    _connectionStringCache.TryAdd(templateCacheKey, resolved);
+
+                    return resolved;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error resolving cached template for '{Name}'", connectionStringName);
+                    // Continue to try getting from configuration
+                }
+            }
+
+            // If not in template cache, get from configuration
             string template = _configuration.GetConnectionString(connectionStringName);
             if (string.IsNullOrEmpty(template))
             {
@@ -115,16 +167,29 @@ namespace PPrePorter.Core.Services
                 return null;
             }
 
-            // Check if the connection string is already resolved and cached
-            if (_connectionStringCache.TryGetValue(template, out string resolved))
-            {
-                _logger.LogDebug("Using cached resolved connection string for '{Name}'", connectionStringName);
-                return resolved;
-            }
+            // Cache the template
+            _connectionStringTemplateCache.TryAdd(connectionStringName, template);
 
-            // If not in cache, resolve it synchronously (this should rarely happen after initialization)
-            _logger.LogWarning("Connection string '{Name}' not found in cache, resolving synchronously", connectionStringName);
-            return ResolveConnectionStringAsync(template).GetAwaiter().GetResult();
+            try
+            {
+                // Resolve it synchronously (this should rarely happen after initialization)
+                _logger.LogWarning("Connection string '{Name}' not found in cache, resolving synchronously", connectionStringName);
+                string resolvedConnectionString = ResolveConnectionStringAsync(template).GetAwaiter().GetResult();
+
+                // Cache the resolved connection string with both the name and template as keys
+                _connectionStringCache.TryAdd(connectionStringName, resolvedConnectionString);
+
+                // Also cache with the template as key for template-based lookups
+                string templateCacheKey = $"template:{template}";
+                _connectionStringCache.TryAdd(templateCacheKey, resolvedConnectionString);
+
+                return resolvedConnectionString;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resolving connection string '{Name}' from configuration", connectionStringName);
+                return null;
+            }
         }
 
         /// <summary>
@@ -137,10 +202,12 @@ namespace PPrePorter.Core.Services
                 return connectionStringTemplate;
             }
 
-            // Check if this connection string template has already been resolved and cached
-            if (_connectionStringCache.TryGetValue(connectionStringTemplate, out string cachedConnectionString))
+            // Check if this connection string template has already been resolved and cached in the template-based cache
+            // We'll use a separate dictionary for template-based caching to avoid conflicts with name-based caching
+            string templateCacheKey = $"template:{connectionStringTemplate}";
+            if (_connectionStringCache.TryGetValue(templateCacheKey, out string cachedConnectionString))
             {
-                _logger.LogDebug("Using cached resolved connection string");
+                _logger.LogDebug("Using cached resolved connection string for template");
                 return cachedConnectionString;
             }
 
@@ -203,8 +270,8 @@ namespace PPrePorter.Core.Services
                 resolvedConnectionString = resolvedConnectionString.Replace(placeholder, secretValue);
             }
 
-            // Cache the fully resolved connection string
-            _connectionStringCache.TryAdd(connectionStringTemplate, resolvedConnectionString);
+            // Cache the fully resolved connection string using the template cache key
+            _connectionStringCache.TryAdd(templateCacheKey, resolvedConnectionString);
 
             // Log the resolved connection string (without sensitive info)
             string sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
@@ -239,6 +306,68 @@ namespace PPrePorter.Core.Services
             }
 
             return connectionString;
+        }
+
+        /// <summary>
+        /// Dump the cache contents for debugging
+        /// </summary>
+        public void DumpCacheContents()
+        {
+            _logger.LogInformation("=== CONNECTION STRING CACHE CONTENTS ===");
+            _logger.LogInformation("Connection string cache has {Count} entries", _connectionStringCache.Count);
+
+            foreach (var entry in _connectionStringCache)
+            {
+                string sanitizedValue = SanitizeConnectionString(entry.Value);
+                _logger.LogInformation("Cache entry: {Key} => {Value}", entry.Key, sanitizedValue);
+            }
+
+            _logger.LogInformation("Connection string template cache has {Count} entries", _connectionStringTemplateCache.Count);
+
+            foreach (var entry in _connectionStringTemplateCache)
+            {
+                _logger.LogInformation("Template cache entry: {Key} => {Value}", entry.Key, entry.Value);
+            }
+
+            _logger.LogInformation("Secret cache has {Count} entries", _secretCache.Count);
+
+            foreach (var entry in _secretCache)
+            {
+                string sanitizedValue = entry.Key.Contains("Password") ? "***" : entry.Value;
+                _logger.LogInformation("Secret cache entry: {Key} => {Value}", entry.Key, sanitizedValue);
+            }
+
+            _logger.LogInformation("=== END OF CACHE CONTENTS ===");
+        }
+
+        /// <summary>
+        /// Add a resolved connection string to the cache
+        /// </summary>
+        public void AddToCache(string connectionStringName, string resolvedConnectionString)
+        {
+            if (string.IsNullOrEmpty(connectionStringName))
+            {
+                throw new ArgumentException("Connection string name cannot be null or empty", nameof(connectionStringName));
+            }
+
+            if (string.IsNullOrEmpty(resolvedConnectionString))
+            {
+                throw new ArgumentException("Resolved connection string cannot be null or empty", nameof(resolvedConnectionString));
+            }
+
+            _logger.LogInformation("Manually adding connection string '{Name}' to cache", connectionStringName);
+
+            // Add to the connection string cache
+            _connectionStringCache.AddOrUpdate(connectionStringName, resolvedConnectionString, (key, oldValue) => resolvedConnectionString);
+
+            // If we have the template, also cache with the template as key
+            if (_connectionStringTemplateCache.TryGetValue(connectionStringName, out string template))
+            {
+                string templateCacheKey = $"template:{template}";
+                _connectionStringCache.AddOrUpdate(templateCacheKey, resolvedConnectionString, (key, oldValue) => resolvedConnectionString);
+            }
+
+            _logger.LogInformation("Connection string '{Name}' added to cache", connectionStringName);
         }
     }
 }

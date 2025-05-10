@@ -30,7 +30,7 @@ namespace PPrePorter.API.Features.Utilities
         /// <summary>
         /// Test resolving a connection string with Azure Key Vault placeholders
         /// </summary>
-        [HttpGet("test")]
+        [HttpGet("resolver-test")]
         [AllowAnonymous]
         public async Task<IActionResult> TestConnectionStringResolution()
         {
@@ -38,45 +38,45 @@ namespace PPrePorter.API.Features.Utilities
             {
                 // Get the connection string from appsettings.json
                 var connectionString = "data source=185.64.56.157;initial catalog=DailyActionsDB;persist security info=True;user id={azurevault:progressplaymcp-kv:DailyActionsDB--Username};password={azurevault:progressplaymcp-kv:DailyActionsDB--Password};TrustServerCertificate=True;MultipleActiveResultSets=True;Connection Timeout=60;";
-                
+
                 _logger.LogInformation("Testing connection string resolution with Azure Key Vault placeholders");
                 _logger.LogInformation("Original connection string: {ConnectionString}", SanitizeConnectionString(connectionString));
-                
+
                 // Resolve the connection string
                 var resolvedConnectionString = await _connectionStringResolver.ResolveConnectionStringAsync(connectionString);
-                
+
                 // Log the resolved connection string (without sensitive info)
                 var sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
                 _logger.LogInformation("Resolved connection string: {ConnectionString}", sanitizedConnectionString);
-                
+
                 // Check if the connection string still contains placeholders
                 if (resolvedConnectionString.Contains("{azurevault:"))
                 {
                     return BadRequest(new { message = "Connection string still contains Azure Key Vault placeholders after resolution" });
                 }
-                
+
                 // Try to connect to the database using the resolved connection string
                 using (var connection = new Microsoft.Data.SqlClient.SqlConnection(resolvedConnectionString))
                 {
                     try
                     {
-                        _logger.LogInformation("Testing connection to database server {Server}, database {Database}...", 
+                        _logger.LogInformation("Testing connection to database server {Server}, database {Database}...",
                             connection.DataSource, connection.Database);
-                        
+
                         // Try to open the connection
                         await connection.OpenAsync();
-                        
+
                         // Execute a simple query to verify database access
                         using (var command = connection.CreateCommand())
                         {
                             command.CommandText = "SELECT 1";
                             var result = await command.ExecuteScalarAsync();
-                            
+
                             if (result != null)
                             {
-                                _logger.LogInformation("Connected successfully to {Server}\\{Database}", 
+                                _logger.LogInformation("Connected successfully to {Server}\\{Database}",
                                     connection.DataSource, connection.Database);
-                                
+
                                 // Try a simple query to verify we can access a specific table
                                 try
                                 {
@@ -92,13 +92,13 @@ namespace PPrePorter.API.Features.Utilities
                                 catch (Exception ex)
                                 {
                                     _logger.LogWarning(ex, "Connected to database but failed to query the Currencies table");
-                                    return Ok(new { 
+                                    return Ok(new {
                                         message = "Connected to database but failed to query the Currencies table",
                                         error = ex.Message
                                     });
                                 }
-                                
-                                return Ok(new { 
+
+                                return Ok(new {
                                     message = "Connection string resolved successfully and database connection verified",
                                     connectionString = sanitizedConnectionString
                                 });
@@ -112,8 +112,8 @@ namespace PPrePorter.API.Features.Utilities
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to connect to database");
-                        return BadRequest(new { 
-                            message = "Failed to connect to database", 
+                        return BadRequest(new {
+                            message = "Failed to connect to database",
                             error = ex.Message,
                             connectionString = sanitizedConnectionString
                         });
@@ -126,7 +126,7 @@ namespace PPrePorter.API.Features.Utilities
                 return StatusCode(500, new { message = "An error occurred while testing connection string resolution", error = ex.Message });
             }
         }
-        
+
         /// <summary>
         /// Helper method to sanitize connection strings by hiding sensitive information
         /// </summary>

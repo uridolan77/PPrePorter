@@ -20,26 +20,73 @@ import {
   Select,
   MenuItem,
   TextField,
-  Button
+  Button,
+  SelectChangeEvent
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import { CommonProps } from '../../types/common';
+
+// Type definitions
+export interface ColumnConfig {
+  id: string;
+  name: string;
+  type: string;
+  width: string;
+  visible: boolean;
+  aggregation: string | null;
+  renderer?: (value: any) => React.ReactNode;
+}
+
+export interface FilterConfig {
+  column: string;
+  operator: string;
+  value: string;
+}
+
+export interface SortConfig {
+  columnId: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface GroupConfig {
+  columnId: string;
+}
+
+export interface DataSource {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
+
+export interface ReportConfig {
+  name: string;
+  description: string;
+  dataSource: DataSource | null;
+  filters: FilterConfig[];
+  columns: ColumnConfig[];
+  sortBy: SortConfig | null;
+  groupBy: GroupConfig | null;
+  [key: string]: any;
+}
+
+export interface ReportPreviewProps extends CommonProps {
+  config: ReportConfig;
+  data?: any[];
+  loading?: boolean;
+  error?: string | null;
+  onRefresh?: () => void;
+  onDownload?: () => void;
+  onConfigChange?: (config: ReportConfig) => void;
+}
 
 /**
  * Component for previewing a report with the configured settings
- * @param {Object} props - Component props
- * @param {Object} props.config - Report configuration
- * @param {Array} props.data - Preview data
- * @param {boolean} props.loading - Whether data is loading
- * @param {string} props.error - Error message if any
- * @param {Function} props.onRefresh - Function to refresh preview data
- * @param {Function} props.onDownload - Function to download report
- * @param {Function} props.onConfigChange - Function to update report configuration
  */
-const ReportPreview = ({
+const ReportPreview: React.FC<ReportPreviewProps> = ({
   config,
   data = [],
   loading = false,
@@ -48,29 +95,29 @@ const ReportPreview = ({
   onDownload,
   onConfigChange
 }) => {
-  const [previewLimit, setPreviewLimit] = useState(10);
-  
+  const [previewLimit, setPreviewLimit] = useState<number>(10);
+
   // Handle preview limit change
-  const handleLimitChange = (event) => {
-    setPreviewLimit(event.target.value);
+  const handleLimitChange = (event: SelectChangeEvent<number>): void => {
+    setPreviewLimit(event.target.value as number);
   };
-  
+
   // Filter columns to only show visible ones and in the correct order
-  const getVisibleColumns = () => {
+  const getVisibleColumns = (): ColumnConfig[] => {
     return config.columns.filter(column => column.visible);
   };
-  
+
   // Format cell value based on column type
-  const formatCellValue = (value, column) => {
+  const formatCellValue = (value: any, column: ColumnConfig): React.ReactNode => {
     if (value === null || value === undefined) {
       return '-';
     }
-    
+
     // If the column has a renderer function, use it
     if (column.renderer) {
       return column.renderer(value);
     }
-    
+
     switch (column.type) {
       case 'date':
         return new Date(value).toLocaleDateString();
@@ -81,7 +128,7 @@ const ReportPreview = ({
       case 'boolean':
         return value ? 'Yes' : 'No';
       case 'currency':
-        return typeof value === 'number' 
+        return typeof value === 'number'
           ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
           : value;
       case 'percentage':
@@ -92,9 +139,9 @@ const ReportPreview = ({
         return value;
     }
   };
-  
+
   // Get cell alignment based on column type
-  const getCellAlignment = (column) => {
+  const getCellAlignment = (column: ColumnConfig): 'left' | 'right' | 'center' => {
     switch (column.type) {
       case 'number':
       case 'currency':
@@ -104,9 +151,9 @@ const ReportPreview = ({
         return 'left';
     }
   };
-  
+
   // Get column width based on configuration
-  const getColumnWidth = (width) => {
+  const getColumnWidth = (width: string): React.CSSProperties => {
     switch (width) {
       case 'small':
         return { width: 100, maxWidth: 100 };
@@ -125,11 +172,11 @@ const ReportPreview = ({
         <Typography variant="h6">
           Report Preview
         </Typography>
-        
+
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
             <InputLabel id="preview-limit-label">Preview Rows</InputLabel>
-            <Select
+            <Select<number>
               labelId="preview-limit-label"
               value={previewLimit}
               onChange={handleLimitChange}
@@ -141,7 +188,7 @@ const ReportPreview = ({
               <MenuItem value={50}>50 rows</MenuItem>
             </Select>
           </FormControl>
-          
+
           {onRefresh && (
             <Button
               variant="outlined"
@@ -152,58 +199,58 @@ const ReportPreview = ({
               Refresh
             </Button>
           )}
-          
+
           {onDownload && (
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={onDownload}
-              disabled={loading || error || data.length === 0}
+              disabled={loading || !!error || data.length === 0}
             >
               Download
             </Button>
           )}
         </Box>
       </Box>
-      
+
       {/* Report configuration summary */}
       <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
         <Typography variant="subtitle2" gutterBottom>
           Report Configuration
         </Typography>
-        
+
         <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 1 }}>
-          <Chip 
-            icon={<TableChartIcon />} 
+          <Chip
+            icon={<TableChartIcon />}
             label={config.dataSource?.name || 'No data source selected'}
             color={config.dataSource ? 'primary' : 'default'}
             variant="outlined"
           />
-          <Chip 
-            icon={<ViewColumnIcon />} 
+          <Chip
+            icon={<ViewColumnIcon />}
             label={`${getVisibleColumns().length} columns`}
             variant="outlined"
           />
-          <Chip 
-            icon={<FilterListIcon />} 
+          <Chip
+            icon={<FilterListIcon />}
             label={`${config.filters.length} filters`}
             variant="outlined"
           />
           {config.sortBy && (
-            <Chip 
-              label={`Sorted by ${config.columns.find(col => col.id === config.sortBy.columnId)?.name || ''} (${config.sortBy.direction === 'asc' ? 'Ascending' : 'Descending'})`}
+            <Chip
+              label={`Sorted by ${config.columns.find(col => col.id === config.sortBy?.columnId)?.name || ''} (${config.sortBy?.direction === 'asc' ? 'Ascending' : 'Descending'})`}
               variant="outlined"
             />
           )}
           {config.groupBy && (
-            <Chip 
-              label={`Grouped by ${config.columns.find(col => col.id === config.groupBy.columnId)?.name || ''}`}
+            <Chip
+              label={`Grouped by ${config.columns.find(col => col.id === config.groupBy?.columnId)?.name || ''}`}
               variant="outlined"
             />
           )}
         </Stack>
       </Paper>
-      
+
       {/* Data preview */}
       <Paper variant="outlined">
         {loading ? (
@@ -265,7 +312,7 @@ const ReportPreview = ({
             </Table>
           </TableContainer>
         )}
-        
+
         {data.length > previewLimit && (
           <Box sx={{ p: 2, textAlign: 'center', borderTop: 1, borderColor: 'divider' }}>
             <Typography variant="body2" color="text.secondary">

@@ -279,33 +279,79 @@ builder.Services.AddNLPServices(builder.Configuration);
 // Register Semantic Layer services
 builder.Services.AddSemanticLayer(builder.Configuration);
 
-// Register DailyActionsDB services
-// Always use the real database with hardcoded credentials
-bool useLocalDatabase = false; // Set to false to use the real database
+// Initialize the connection string cache before registering DailyActionsDB services
+Console.WriteLine("\n=== PRE-INITIALIZING CONNECTION STRING CACHE ===");
+Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
 
-// Get the connection string from configuration
-string connectionStringName = "DailyActionsDB";
-string connectionString = builder.Configuration.GetConnectionString(connectionStringName);
-
-// Log the connection string (without sensitive info)
-string sanitizedConnectionString = connectionString;
-if (sanitizedConnectionString != null && sanitizedConnectionString.Contains("password="))
+// Create a temporary service provider to initialize the connection string cache
+using (var tempServiceProvider = builder.Services.BuildServiceProvider())
 {
-    sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
-        sanitizedConnectionString,
-        "password=[^;]*",
-        "password=***");
+    var logger = tempServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Get the connection string cache service
+        var connectionStringCacheService = tempServiceProvider.GetRequiredService<IConnectionStringCacheService>();
+        logger.LogInformation("Pre-initializing connection string cache");
+
+        // Initialize the cache
+        connectionStringCacheService.InitializeAsync().GetAwaiter().GetResult();
+
+        // Verify that the DailyActionsDB connection string is cached
+        string dailyActionsDbConnectionString = connectionStringCacheService.GetConnectionString("DailyActionsDB");
+        if (!string.IsNullOrEmpty(dailyActionsDbConnectionString))
+        {
+            logger.LogInformation("DailyActionsDB connection string is pre-cached successfully");
+
+            // Log the connection string (without sensitive info)
+            string sanitizedConnectionString = dailyActionsDbConnectionString;
+            if (sanitizedConnectionString != null && sanitizedConnectionString.Contains("password="))
+            {
+                sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
+                    sanitizedConnectionString,
+                    "password=[^;]*",
+                    "password=***");
+            }
+            Console.WriteLine($"Using connection string from cache: {sanitizedConnectionString}");
+
+            // Dump the cache contents for debugging
+            connectionStringCacheService.DumpCacheContents();
+        }
+        else
+        {
+            logger.LogWarning("DailyActionsDB connection string is not pre-cached");
+        }
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("CONNECTION STRING CACHE PRE-INITIALIZED SUCCESSFULLY");
+        Console.ResetColor();
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("CONNECTION STRING CACHE PRE-INITIALIZATION FAILED");
+        Console.ResetColor();
+
+        logger.LogError(ex, "Failed to pre-initialize connection string cache");
+    }
+
+    Console.WriteLine("=== CONNECTION STRING CACHE PRE-INITIALIZATION COMPLETE ===\n");
 }
-Console.WriteLine($"Using connection string from configuration: {sanitizedConnectionString}");
+
+// Register DailyActionsDB services
+// Always use the real database
+bool useLocalDatabase = false; // Set to false to use the real database
 
 builder.Services.AddDailyActionsServices(builder.Configuration);
 
 // Log which database we're using
 Console.WriteLine($"Using {(useLocalDatabase ? "local" : "real")} DailyActionsDB");
 
-// Add health checks
+// Now that the connection string cache is pre-initialized, register health checks
+Console.WriteLine("\n=== REGISTERING HEALTH CHECKS ===");
 builder.Services.AddApplicationHealthChecks(builder.Configuration);
 builder.Services.AddHealthCheckUI();
+Console.WriteLine("=== HEALTH CHECKS REGISTERED ===\n");
 
 // Add performance monitoring
 builder.Services.AddSingleton<PPrePorter.API.Features.Monitoring.IMetricsService, PPrePorter.API.Features.Monitoring.MetricsService>();
@@ -331,8 +377,8 @@ builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerVersi
 
 var app = builder.Build();
 
-// Initialize the connection string cache
-Console.WriteLine("\n=== INITIALIZING CONNECTION STRING CACHE ===");
+// Verify the connection string cache is initialized
+Console.WriteLine("\n=== VERIFYING CONNECTION STRING CACHE ===");
 Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
 using (var scope = app.Services.CreateScope())
 {
@@ -342,25 +388,59 @@ using (var scope = app.Services.CreateScope())
     {
         // Get the connection string cache service
         var connectionStringCacheService = scope.ServiceProvider.GetRequiredService<IConnectionStringCacheService>();
-        logger.LogInformation("Initializing connection string cache");
 
-        // Initialize the cache
-        await connectionStringCacheService.InitializeAsync();
+        // Verify that the DailyActionsDB connection string is cached
+        string dailyActionsDbConnectionString = connectionStringCacheService.GetConnectionString("DailyActionsDB");
+        if (!string.IsNullOrEmpty(dailyActionsDbConnectionString))
+        {
+            logger.LogInformation("DailyActionsDB connection string is verified in cache");
 
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("CONNECTION STRING CACHE INITIALIZED SUCCESSFULLY");
-        Console.ResetColor();
+            // Dump the cache contents for debugging
+            connectionStringCacheService.DumpCacheContents();
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("CONNECTION STRING CACHE VERIFICATION SUCCESSFUL");
+            Console.ResetColor();
+        }
+        else
+        {
+            logger.LogWarning("DailyActionsDB connection string is not in cache, initializing now");
+
+            // Initialize the cache if needed
+            await connectionStringCacheService.InitializeAsync();
+
+            // Verify again
+            dailyActionsDbConnectionString = connectionStringCacheService.GetConnectionString("DailyActionsDB");
+            if (!string.IsNullOrEmpty(dailyActionsDbConnectionString))
+            {
+                logger.LogInformation("DailyActionsDB connection string is now cached successfully");
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("CONNECTION STRING CACHE INITIALIZED SUCCESSFULLY");
+                Console.ResetColor();
+            }
+            else
+            {
+                logger.LogError("DailyActionsDB connection string could not be cached");
+
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("CONNECTION STRING CACHE INITIALIZATION FAILED");
+                Console.ResetColor();
+            }
+        }
     }
     catch (Exception ex)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("CONNECTION STRING CACHE INITIALIZATION FAILED");
+        Console.WriteLine("CONNECTION STRING CACHE VERIFICATION FAILED");
         Console.ResetColor();
 
-        logger.LogError(ex, "Failed to initialize connection string cache");
+        logger.LogError(ex, "Failed to verify connection string cache");
     }
 
-    Console.WriteLine("=== CONNECTION STRING CACHE INITIALIZATION COMPLETE ===\n");
+    Console.WriteLine("=== CONNECTION STRING CACHE VERIFICATION COMPLETE ===\n");
+
+    // The connection string cache is now verified
 }
 
 // Verify database connection with a clear success/failure message
@@ -384,12 +464,16 @@ using (var scope = app.Services.CreateScope())
 
         // Get the connection string from the cache
         Console.WriteLine("Getting connection string from cache...");
-        string dbConnectionString = connectionStringCacheService.GetConnectionString(dbConnectionStringName);
+        string resolvedConnectionString = connectionStringCacheService.GetConnectionString(dbConnectionStringName);
 
-        // Resolve the connection string using our new resolver
-        var azureKeyVaultConnectionStringResolver = scope.ServiceProvider.GetRequiredService<IAzureKeyVaultConnectionStringResolver>();
-        Console.WriteLine("Resolving connection string with Azure Key Vault placeholders...");
-        string resolvedConnectionString = await azureKeyVaultConnectionStringResolver.ResolveConnectionStringAsync(dbConnectionString);
+        if (string.IsNullOrEmpty(resolvedConnectionString))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("ERROR: Connection string not found in cache");
+            Console.ResetColor();
+            logger.LogError("Connection string '{Name}' not found in cache", dbConnectionStringName);
+            return;
+        }
 
         // Log the resolved connection string (without sensitive info)
         string dbSanitizedConnectionString = resolvedConnectionString;
@@ -405,27 +489,15 @@ using (var scope = app.Services.CreateScope())
         // Check if the connection string still contains placeholders
         if (resolvedConnectionString.Contains("{azurevault:"))
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("WARNING: Connection string contains Azure Key Vault placeholders, but we'll continue anyway since we're using direct credentials for DailyActionsDB");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("ERROR: Connection string still contains Azure Key Vault placeholders");
             Console.ResetColor();
-
-            // Don't throw an exception, just log a warning
-            logger.LogWarning("Connection string contains Azure Key Vault placeholders, but we'll continue anyway since we're using direct credentials for DailyActionsDB");
+            logger.LogError("Connection string still contains Azure Key Vault placeholders");
+            return;
         }
 
         // Log the actual values being used (for debugging purposes)
         Console.WriteLine("Connection string successfully resolved with all placeholders replaced.");
-
-        // Log the resolved connection string (without sensitive info)
-        string sanitizedResolvedConnectionString = resolvedConnectionString;
-        if (sanitizedResolvedConnectionString.Contains("password="))
-        {
-            sanitizedResolvedConnectionString = Regex.Replace(
-                sanitizedResolvedConnectionString,
-                "password=[^;]*",
-                "password=***");
-        }
-        logger.LogInformation("Resolved connection string: {ConnectionString}", sanitizedResolvedConnectionString);
 
         // Create a connection using the resolved connection string
         using (var connection = new Microsoft.Data.SqlClient.SqlConnection(resolvedConnectionString))

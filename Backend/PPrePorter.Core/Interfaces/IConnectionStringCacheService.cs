@@ -21,5 +21,17 @@ namespace PPrePorter.Core.Interfaces
         /// Resolve a connection string template by replacing Azure Key Vault placeholders with actual values
         /// </summary>
         Task<string> ResolveConnectionStringAsync(string connectionStringTemplate);
+
+        /// <summary>
+        /// Dump the cache contents for debugging
+        /// </summary>
+        void DumpCacheContents();
+
+        /// <summary>
+        /// Add a resolved connection string to the cache
+        /// </summary>
+        /// <param name="connectionStringName">The name of the connection string</param>
+        /// <param name="resolvedConnectionString">The resolved connection string value</param>
+        void AddToCache(string connectionStringName, string resolvedConnectionString);
     }
 }

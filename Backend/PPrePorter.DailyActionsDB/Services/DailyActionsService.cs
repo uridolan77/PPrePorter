@@ -51,6 +51,11 @@ namespace PPrePorter.DailyActionsDB.Services
         {
             try
             {
+                // Start performance timer
+                var methodStartTime = DateTime.UtcNow;
+                _logger.LogInformation("PERF [{Timestamp}]: Starting GetDailyActionsAsync",
+                    methodStartTime.ToString("HH:mm:ss.fff"));
+
                 // Normalize dates to start/end of day
                 var start = startDate.Date;
                 var end = endDate.Date.AddDays(1).AddTicks(-1);
@@ -61,7 +66,11 @@ namespace PPrePorter.DailyActionsDB.Services
                     end.ToString("yyyyMMdd"),
                     whiteLabelId?.ToString() ?? "all");
 
-                _logger.LogDebug("CACHE CHECK: Checking cache for daily actions with key: {CacheKey}", cacheKey);
+                _logger.LogInformation("CACHE KEY GENERATION [{Timestamp}]: Generated cache key for daily actions: {CacheKey} with parameters: startDate={StartDate}, endDate={EndDate}, whiteLabelId={WhiteLabelId}",
+                    DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey, start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"), whiteLabelId);
+
+                _logger.LogDebug("CACHE CHECK [{Timestamp}]: Checking cache for daily actions with key: {CacheKey}",
+                    DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey);
 
                 // Log cache statistics before trying to get from cache
                 var globalCacheService = _cache as IGlobalCacheService;
@@ -72,25 +81,46 @@ namespace PPrePorter.DailyActionsDB.Services
                         stats["TotalHits"], stats["TotalMisses"], stats["CacheCount"]);
                 }
 
-                // Try to get from cache first
+                // Try to get from cache first - measure time
+                var cacheCheckStartTime = DateTime.UtcNow;
                 bool cacheHit = _cache.TryGetValue(cacheKey, out IEnumerable<DailyAction>? cachedResult);
+                var cacheCheckEndTime = DateTime.UtcNow;
+                var cacheCheckElapsedMs = (cacheCheckEndTime - cacheCheckStartTime).TotalMilliseconds;
 
-                _logger.LogDebug("CACHE RESULT: TryGetValue returned {Result} for key {CacheKey}", cacheHit, cacheKey);
+                _logger.LogDebug("CACHE RESULT [{Timestamp}]: TryGetValue returned {Result} for key {CacheKey} in {ElapsedMs}ms",
+                    cacheCheckEndTime.ToString("HH:mm:ss.fff"), cacheHit, cacheKey, cacheCheckElapsedMs);
 
                 if (cacheHit && cachedResult != null)
                 {
-                    _logger.LogInformation("CACHE HIT: Retrieved daily actions from cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, count: {Count}",
-                        startDate, endDate, whiteLabelId, cacheKey, cachedResult.Count());
+                    var cachedCount = cachedResult.Count();
+                    _logger.LogInformation("CACHE HIT [{Timestamp}]: Retrieved daily actions from cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, count: {Count}, retrieval time: {ElapsedMs}ms",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), startDate, endDate, whiteLabelId, cacheKey, cachedCount, cacheCheckElapsedMs);
+
+                    // Log the first few items to verify data integrity
+                    if (cachedCount > 0)
+                    {
+                        var firstItem = cachedResult.First();
+                        _logger.LogDebug("CACHE HIT SAMPLE [{Timestamp}]: First item from cache - ID: {Id}, Date: {Date}, WhiteLabelID: {WhiteLabelID}",
+                            DateTime.UtcNow.ToString("HH:mm:ss.fff"), firstItem.Id, firstItem.Date, firstItem.WhiteLabelID);
+                    }
+
+                    // Log total method time for cache hit
+                    var methodEndTime = DateTime.UtcNow;
+                    var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                    _logger.LogInformation("PERF [{Timestamp}]: GetDailyActionsAsync completed with CACHE HIT in {ElapsedMs}ms",
+                        methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
+
                     return cachedResult;
                 }
                 else if (cacheHit && cachedResult == null)
                 {
-                    _logger.LogWarning("CACHE ANOMALY: Cache hit but null result for key {CacheKey}", cacheKey);
+                    _logger.LogWarning("CACHE ANOMALY [{Timestamp}]: Cache hit but null result for key {CacheKey}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey);
                 }
                 else
                 {
-                    _logger.LogWarning("CACHE MISS: Getting daily actions from database for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
-                        startDate, endDate, whiteLabelId, cacheKey);
+                    _logger.LogWarning("CACHE MISS [{Timestamp}]: Getting daily actions from database for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), startDate, endDate, whiteLabelId, cacheKey);
                 }
 
                 // Calculate date range span in days
@@ -121,12 +151,20 @@ namespace PPrePorter.DailyActionsDB.Services
                 query = query.OrderBy(da => da.Date).ThenBy(da => da.WhiteLabelID).Take(maxRecords);
 
                 // Execute query - don't use WithNoLock() here since we're using the NoLockInterceptor
+                // Measure database query time
+                var dbQueryStartTime = DateTime.UtcNow;
+                _logger.LogInformation("PERF [{Timestamp}]: Starting database query for daily actions",
+                    dbQueryStartTime.ToString("HH:mm:ss.fff"));
+
                 var result = await query.ToListAsync();
+
+                var dbQueryEndTime = DateTime.UtcNow;
+                var dbQueryElapsedMs = (dbQueryEndTime - dbQueryStartTime).TotalMilliseconds;
 
                 // Log the result count and size estimation
                 int resultCount = result.Count;
-                _logger.LogInformation("Retrieved {Count} daily actions from database for date range {StartDate} to {EndDate} and white label {WhiteLabelId}",
-                    resultCount, startDate, endDate, whiteLabelId);
+                _logger.LogInformation("PERF [{Timestamp}]: Retrieved {Count} daily actions from database in {ElapsedMs}ms for date range {StartDate} to {EndDate} and white label {WhiteLabelId}",
+                    dbQueryEndTime.ToString("HH:mm:ss.fff"), resultCount, dbQueryElapsedMs, startDate, endDate, whiteLabelId);
 
                 // Estimate the size of the result for cache entry
                 long estimatedSize = resultCount * 1000; // More accurate estimate: 1000 bytes per DailyAction
@@ -153,8 +191,8 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 try
                 {
-                    _logger.LogDebug("CACHE SET: About to set cache with key {CacheKey}, value type {ValueType}, value count {ValueCount}, options {@Options}",
-                        cacheKey, result.GetType().Name, result.Count, new {
+                    _logger.LogDebug("CACHE SET [{Timestamp}]: About to set cache with key {CacheKey}, value type {ValueType}, value count {ValueCount}, options {@Options}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey, result.GetType().Name, result.Count, new {
                             Priority = cacheOptions.Priority,
                             Size = cacheOptions.Size,
                             SlidingExpiration = cacheOptions.SlidingExpiration,
@@ -164,11 +202,20 @@ namespace PPrePorter.DailyActionsDB.Services
                     // Store the result in a local variable to ensure it's not modified
                     var resultToCache = result.ToList();
 
-                    _logger.LogDebug("CACHE SET DETAILS: Setting cache with key {CacheKey}, value type {ValueType}, value count {ValueCount}, first item ID {FirstItemId}",
-                        cacheKey, resultToCache.GetType().Name, resultToCache.Count, resultToCache.FirstOrDefault()?.Id);
+                    _logger.LogDebug("CACHE SET DETAILS [{Timestamp}]: Setting cache with key {CacheKey}, value type {ValueType}, value count {ValueCount}, first item ID {FirstItemId}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey, resultToCache.GetType().Name, resultToCache.Count, resultToCache.FirstOrDefault()?.Id);
 
-                    // Set the cache with the local variable
+                    // Set the cache with the local variable - measure time
+                    var cacheSetStartTime = DateTime.UtcNow;
+                    _logger.LogInformation("PERF [{Timestamp}]: Starting cache set operation",
+                        cacheSetStartTime.ToString("HH:mm:ss.fff"));
+
                     _cache.Set(cacheKey, resultToCache, cacheOptions);
+
+                    var cacheSetEndTime = DateTime.UtcNow;
+                    var cacheSetElapsedMs = (cacheSetEndTime - cacheSetStartTime).TotalMilliseconds;
+                    _logger.LogInformation("PERF [{Timestamp}]: Cache set operation completed in {ElapsedMs}ms",
+                        cacheSetEndTime.ToString("HH:mm:ss.fff"), cacheSetElapsedMs);
 
                     // Verify the cache was set correctly
                     bool verifySet = _cache.TryGetValue(cacheKey, out IEnumerable<DailyAction>? verifyResult);
@@ -192,22 +239,29 @@ namespace PPrePorter.DailyActionsDB.Services
                             verifySet, cacheKey, verifyResult != null ? "not null" : "null");
                     }
 
-                    _logger.LogInformation("Cached daily actions for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
-                        startDate, endDate, whiteLabelId, cacheKey, estimatedSize);
+                    _logger.LogInformation("CACHE SET SUCCESS [{Timestamp}]: Cached daily actions for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes, count: {Count}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), startDate, endDate, whiteLabelId, cacheKey, estimatedSize, resultToCache.Count);
 
                     // Log cache statistics after setting
                     var cacheServiceAfterSet = _cache as IGlobalCacheService;
                     if (cacheServiceAfterSet != null)
                     {
                         var stats = cacheServiceAfterSet.GetStatistics();
-                        _logger.LogDebug("CACHE STATS after set: TotalHits={TotalHits}, TotalMisses={TotalMisses}, CacheCount={CacheCount}",
-                            stats["TotalHits"], stats["TotalMisses"], stats["CacheCount"]);
+                        _logger.LogDebug("CACHE STATS [{Timestamp}] after set: TotalHits={TotalHits}, TotalMisses={TotalMisses}, CacheCount={CacheCount}",
+                            DateTime.UtcNow.ToString("HH:mm:ss.fff"), stats["TotalHits"], stats["TotalMisses"], stats["CacheCount"]);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "CACHE ERROR: Failed to set cache with key {CacheKey}", cacheKey);
+                    _logger.LogError(ex, "CACHE ERROR [{Timestamp}]: Failed to set cache with key {CacheKey}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey);
                 }
+
+                // Log total method time for cache miss
+                var methodEndTime = DateTime.UtcNow;
+                var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                _logger.LogInformation("PERF [{Timestamp}]: GetDailyActionsAsync completed with CACHE MISS in {ElapsedMs}ms",
+                    methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
 
                 return result;
             }
@@ -351,6 +405,11 @@ namespace PPrePorter.DailyActionsDB.Services
         {
             try
             {
+                // Start performance timer
+                var methodStartTime = DateTime.UtcNow;
+                _logger.LogInformation("PERF [{Timestamp}]: Starting GetSummaryMetricsAsync",
+                    methodStartTime.ToString("HH:mm:ss.fff"));
+
                 // Normalize dates to start/end of day
                 var start = startDate.Date;
                 var end = endDate.Date.AddDays(1).AddTicks(-1);
@@ -361,21 +420,56 @@ namespace PPrePorter.DailyActionsDB.Services
                     end.ToString("yyyyMMdd"),
                     whiteLabelId?.ToString() ?? "all");
 
-                // Try to get from cache first
-                if (_cache.TryGetValue(cacheKey, out DailyActionsSummary? cachedResult) && cachedResult != null)
+                _logger.LogInformation("CACHE KEY GENERATION [{Timestamp}]: Generated cache key for summary metrics: {CacheKey} with parameters: startDate={StartDate}, endDate={EndDate}, whiteLabelId={WhiteLabelId}",
+                    DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey, start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"), whiteLabelId);
+
+                // Try to get from cache first - measure time
+                var cacheCheckStartTime = DateTime.UtcNow;
+                bool cacheHit = _cache.TryGetValue(cacheKey, out DailyActionsSummary? cachedResult);
+                var cacheCheckEndTime = DateTime.UtcNow;
+                var cacheCheckElapsedMs = (cacheCheckEndTime - cacheCheckStartTime).TotalMilliseconds;
+
+                _logger.LogDebug("CACHE RESULT [{Timestamp}]: TryGetValue returned {Result} for key {CacheKey} in {ElapsedMs}ms",
+                    cacheCheckEndTime.ToString("HH:mm:ss.fff"), cacheHit, cacheKey, cacheCheckElapsedMs);
+
+                if (cacheHit && cachedResult != null)
                 {
-                    _logger.LogInformation("CACHE HIT: Retrieved summary metrics from cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
-                        startDate, endDate, whiteLabelId, cacheKey);
+                    _logger.LogInformation("CACHE HIT [{Timestamp}]: Retrieved summary metrics from cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, retrieval time: {ElapsedMs}ms",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), startDate, endDate, whiteLabelId, cacheKey, cacheCheckElapsedMs);
+
+                    // Log some details about the cached summary
+                    _logger.LogDebug("CACHE HIT DETAILS [{Timestamp}]: Summary metrics - TotalRegistrations: {TotalRegistrations}, TotalFTD: {TotalFTD}, TotalGGR: {TotalGGR}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cachedResult.TotalRegistrations, cachedResult.TotalFTD, cachedResult.TotalGGR);
+
+                    // Log total method time for cache hit
+                    var methodEndTime = DateTime.UtcNow;
+                    var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                    _logger.LogInformation("PERF [{Timestamp}]: GetSummaryMetricsAsync completed with CACHE HIT in {ElapsedMs}ms",
+                        methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
+
                     return cachedResult;
                 }
 
-                _logger.LogWarning("CACHE MISS: Calculating summary metrics for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
-                    startDate, endDate, whiteLabelId, cacheKey);
+                _logger.LogWarning("CACHE MISS [{Timestamp}]: Calculating summary metrics for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
+                    DateTime.UtcNow.ToString("HH:mm:ss.fff"), startDate, endDate, whiteLabelId, cacheKey);
 
-                // Get daily actions for the specified date range
+                // Get daily actions for the specified date range - measure time
+                var getDailyActionsStartTime = DateTime.UtcNow;
+                _logger.LogInformation("PERF [{Timestamp}]: Starting GetDailyActionsAsync for summary metrics",
+                    getDailyActionsStartTime.ToString("HH:mm:ss.fff"));
+
                 var dailyActions = await GetDailyActionsAsync(startDate, endDate, whiteLabelId);
 
-                // Calculate summary metrics
+                var getDailyActionsEndTime = DateTime.UtcNow;
+                var getDailyActionsElapsedMs = (getDailyActionsEndTime - getDailyActionsStartTime).TotalMilliseconds;
+                _logger.LogInformation("PERF [{Timestamp}]: GetDailyActionsAsync for summary metrics completed in {ElapsedMs}ms",
+                    getDailyActionsEndTime.ToString("HH:mm:ss.fff"), getDailyActionsElapsedMs);
+
+                // Calculate summary metrics - measure time
+                var calculateStartTime = DateTime.UtcNow;
+                _logger.LogInformation("PERF [{Timestamp}]: Starting summary metrics calculation",
+                    calculateStartTime.ToString("HH:mm:ss.fff"));
+
                 var summary = new DailyActionsSummary
                 {
                     TotalRegistrations = dailyActions.Sum(da => da.Registration ?? 0),
@@ -398,6 +492,11 @@ namespace PPrePorter.DailyActionsDB.Services
                                   summary.TotalBetsLive - summary.TotalWinsLive +
                                   summary.TotalBetsBingo - summary.TotalWinsBingo;
 
+                var calculateEndTime = DateTime.UtcNow;
+                var calculateElapsedMs = (calculateEndTime - calculateStartTime).TotalMilliseconds;
+                _logger.LogInformation("PERF [{Timestamp}]: Summary metrics calculation completed in {ElapsedMs}ms",
+                    calculateEndTime.ToString("HH:mm:ss.fff"), calculateElapsedMs);
+
                 // Estimate the size of the summary object for cache entry
                 long estimatedSize = 1000; // More accurate estimate for summary object
 
@@ -408,9 +507,56 @@ namespace PPrePorter.DailyActionsDB.Services
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
                     .SetSize(estimatedSize); // Explicitly set the size for the cache entry
 
-                _cache.Set(cacheKey, summary, cacheOptions);
-                _logger.LogInformation("Cached summary metrics for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
-                    startDate, endDate, whiteLabelId, cacheKey, estimatedSize);
+                try
+                {
+                    _logger.LogDebug("CACHE SET [{Timestamp}]: About to set summary metrics cache with key {CacheKey}, value type {ValueType}, options {@Options}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey, summary.GetType().Name, new {
+                            Priority = cacheOptions.Priority,
+                            Size = cacheOptions.Size,
+                            SlidingExpiration = cacheOptions.SlidingExpiration,
+                            AbsoluteExpiration = cacheOptions.AbsoluteExpiration
+                        });
+
+                    // Set the cache with the summary - measure time
+                    var cacheSetStartTime = DateTime.UtcNow;
+                    _logger.LogInformation("PERF [{Timestamp}]: Starting cache set operation for summary metrics",
+                        cacheSetStartTime.ToString("HH:mm:ss.fff"));
+
+                    _cache.Set(cacheKey, summary, cacheOptions);
+
+                    var cacheSetEndTime = DateTime.UtcNow;
+                    var cacheSetElapsedMs = (cacheSetEndTime - cacheSetStartTime).TotalMilliseconds;
+                    _logger.LogInformation("PERF [{Timestamp}]: Cache set operation for summary metrics completed in {ElapsedMs}ms",
+                        cacheSetEndTime.ToString("HH:mm:ss.fff"), cacheSetElapsedMs);
+
+                    // Verify the cache was set correctly
+                    bool verifySet = _cache.TryGetValue(cacheKey, out DailyActionsSummary? verifyResult);
+
+                    if (verifySet && verifyResult != null)
+                    {
+                        _logger.LogDebug("CACHE VERIFY SUCCESS [{Timestamp}]: After Set, TryGetValue returned {Result} for key {CacheKey}, result is not null",
+                            DateTime.UtcNow.ToString("HH:mm:ss.fff"), verifySet, cacheKey);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("CACHE VERIFY FAILED [{Timestamp}]: After Set, TryGetValue returned {Result} for key {CacheKey}, result is {ResultStatus}",
+                            DateTime.UtcNow.ToString("HH:mm:ss.fff"), verifySet, cacheKey, verifyResult != null ? "not null" : "null");
+                    }
+
+                    _logger.LogInformation("CACHE SET SUCCESS [{Timestamp}]: Cached summary metrics for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), startDate, endDate, whiteLabelId, cacheKey, estimatedSize);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "CACHE ERROR [{Timestamp}]: Failed to set summary metrics cache with key {CacheKey}",
+                        DateTime.UtcNow.ToString("HH:mm:ss.fff"), cacheKey);
+                }
+
+                // Log total method time for cache miss
+                var methodEndTime = DateTime.UtcNow;
+                var methodElapsedMs = (methodEndTime - methodStartTime).TotalMilliseconds;
+                _logger.LogInformation("PERF [{Timestamp}]: GetSummaryMetricsAsync completed with CACHE MISS in {ElapsedMs}ms",
+                    methodEndTime.ToString("HH:mm:ss.fff"), methodElapsedMs);
 
                 return summary;
             }

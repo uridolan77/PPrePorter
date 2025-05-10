@@ -20,7 +20,8 @@ import {
   Tooltip,
   Alert,
   Chip,
-  TextField
+  TextField,
+  SelectChangeEvent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,19 +32,57 @@ import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { CommonProps } from '../../types/common';
+
+// Type definitions
+export interface ColumnInfo {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  isSortable?: boolean;
+  isGroupable?: boolean;
+  isAggregatable?: boolean;
+  aggregationFunctions?: string[];
+}
+
+export interface SelectedColumn {
+  id: string;
+  name: string;
+  type: string;
+  width: string;
+  visible: boolean;
+  aggregation: string | null;
+}
+
+export interface SortConfig {
+  columnId: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface GroupConfig {
+  columnId: string;
+}
+
+export interface DataSource {
+  schema?: ColumnInfo[];
+  [key: string]: any;
+}
+
+export interface ReportColumnSelectorProps extends CommonProps {
+  dataSource?: DataSource;
+  selectedColumns?: SelectedColumn[];
+  onChange?: (columns: SelectedColumn[]) => void;
+  sortBy?: SortConfig | null;
+  onSortChange?: (sortConfig: SortConfig | null) => void;
+  groupBy?: GroupConfig | null;
+  onGroupChange?: (groupConfig: GroupConfig | null) => void;
+}
 
 /**
  * Component for selecting columns to include in a report and configuring sorting and grouping
- * @param {Object} props - Component props
- * @param {Object} props.dataSource - The selected data source
- * @param {Array} props.selectedColumns - Currently selected columns
- * @param {Function} props.onChange - Function called when selected columns change
- * @param {Object} props.sortBy - Sort configuration
- * @param {Function} props.onSortChange - Function called when sort configuration changes
- * @param {Object} props.groupBy - Group by configuration
- * @param {Function} props.onGroupChange - Function called when group by configuration changes
  */
-const ReportColumnSelector = ({
+const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
   dataSource,
   selectedColumns = [],
   onChange,
@@ -53,8 +92,8 @@ const ReportColumnSelector = ({
   onGroupChange
 }) => {
   // State for available columns from the data source
-  const [availableColumns, setAvailableColumns] = useState([]);
-  
+  const [availableColumns, setAvailableColumns] = useState<ColumnInfo[]>([]);
+
   // Load available columns from data source
   useEffect(() => {
     if (dataSource?.schema) {
@@ -64,16 +103,16 @@ const ReportColumnSelector = ({
         name: field.name,
         type: field.type,
         description: field.description,
-        isSortable: field.sortable !== false,
-        isGroupable: field.groupable !== false,
-        isAggregatable: field.aggregatable === true,
-        aggregationFunctions: field.aggregationFunctions || []
+        isSortable: (field as any).sortable !== false,
+        isGroupable: (field as any).groupable !== false,
+        isAggregatable: (field as any).aggregatable === true,
+        aggregationFunctions: (field as any).aggregationFunctions || []
       }));
-      
+
       setAvailableColumns(columns);
-      
+
       // If no columns are selected and we have available columns, select the first few by default
-      if (selectedColumns.length === 0 && columns.length > 0) {
+      if (selectedColumns.length === 0 && columns.length > 0 && onChange) {
         const defaultColumns = columns.slice(0, Math.min(5, columns.length)).map(col => ({
           id: col.id,
           name: col.name,
@@ -82,20 +121,20 @@ const ReportColumnSelector = ({
           visible: true,
           aggregation: null
         }));
-        
+
         onChange(defaultColumns);
       }
     }
   }, [dataSource, onChange, selectedColumns.length]);
 
   // Add a column to the selection
-  const handleAddColumn = (column) => {
+  const handleAddColumn = (column: ColumnInfo): void => {
     // Check if column is already selected
-    if (selectedColumns.some(col => col.id === column.id)) {
+    if (selectedColumns.some(col => col.id === column.id) || !onChange) {
       return;
     }
-    
-    const newColumn = {
+
+    const newColumn: SelectedColumn = {
       id: column.id,
       name: column.name,
       type: column.type,
@@ -103,122 +142,134 @@ const ReportColumnSelector = ({
       visible: true,
       aggregation: null
     };
-    
+
     onChange([...selectedColumns, newColumn]);
   };
-  
+
   // Remove a column from the selection
-  const handleRemoveColumn = (columnId) => {
+  const handleRemoveColumn = (columnId: string): void => {
+    if (!onChange) return;
+
     const updatedColumns = selectedColumns.filter(col => col.id !== columnId);
     onChange(updatedColumns);
-    
+
     // If the removed column was used for sorting, clear sorting
-    if (sortBy?.columnId === columnId) {
+    if (sortBy?.columnId === columnId && onSortChange) {
       onSortChange(null);
     }
-    
+
     // If the removed column was used for grouping, clear grouping
-    if (groupBy?.columnId === columnId) {
+    if (groupBy?.columnId === columnId && onGroupChange) {
       onGroupChange(null);
     }
   };
-  
+
   // Move a column up in the order
-  const handleMoveUp = (index) => {
-    if (index <= 0) return;
-    
+  const handleMoveUp = (index: number): void => {
+    if (index <= 0 || !onChange) return;
+
     const updatedColumns = [...selectedColumns];
     [updatedColumns[index], updatedColumns[index - 1]] = [updatedColumns[index - 1], updatedColumns[index]];
-    
+
     onChange(updatedColumns);
   };
-  
+
   // Move a column down in the order
-  const handleMoveDown = (index) => {
-    if (index >= selectedColumns.length - 1) return;
-    
+  const handleMoveDown = (index: number): void => {
+    if (index >= selectedColumns.length - 1 || !onChange) return;
+
     const updatedColumns = [...selectedColumns];
     [updatedColumns[index], updatedColumns[index + 1]] = [updatedColumns[index + 1], updatedColumns[index]];
-    
+
     onChange(updatedColumns);
   };
-  
+
   // Update column width
-  const handleWidthChange = (columnId, width) => {
+  const handleWidthChange = (columnId: string, width: string): void => {
+    if (!onChange) return;
+
     const updatedColumns = selectedColumns.map(col => {
       if (col.id === columnId) {
         return { ...col, width };
       }
       return col;
     });
-    
+
     onChange(updatedColumns);
   };
-  
+
   // Update column visibility
-  const handleVisibilityChange = (columnId, visible) => {
+  const handleVisibilityChange = (columnId: string, visible: boolean): void => {
+    if (!onChange) return;
+
     const updatedColumns = selectedColumns.map(col => {
       if (col.id === columnId) {
         return { ...col, visible };
       }
       return col;
     });
-    
+
     onChange(updatedColumns);
   };
-  
+
   // Update column aggregation
-  const handleAggregationChange = (columnId, aggregation) => {
+  const handleAggregationChange = (columnId: string, aggregation: string | null): void => {
+    if (!onChange) return;
+
     const updatedColumns = selectedColumns.map(col => {
       if (col.id === columnId) {
         return { ...col, aggregation };
       }
       return col;
     });
-    
+
     onChange(updatedColumns);
   };
-  
+
   // Handle sort configuration change
-  const handleSortChange = (columnId, direction) => {
+  const handleSortChange = (columnId: string, direction: 'asc' | 'desc'): void => {
+    if (!onSortChange) return;
+
     if (!columnId) {
       onSortChange(null);
       return;
     }
-    
+
     onSortChange({
       columnId,
       direction
     });
   };
-  
+
   // Handle group by configuration change
-  const handleGroupChange = (columnId) => {
+  const handleGroupChange = (columnId: string): void => {
+    if (!onGroupChange) return;
+
     if (!columnId) {
       onGroupChange(null);
       return;
     }
-    
+
     onGroupChange({
       columnId
     });
   };
-  
+
   // Get column info from available columns
-  const getColumnInfo = (columnId) => {
-    return availableColumns.find(col => col.id === columnId) || {};
+  const getColumnInfo = (columnId: string): ColumnInfo => {
+    return availableColumns.find(col => col.id === columnId) || { id: '', name: '', type: '' };
   };
-  
+
   // Get sortable columns
-  const getSortableColumns = () => {
+  const getSortableColumns = (): SelectedColumn[] => {
     return selectedColumns.filter(col => {
       const columnInfo = getColumnInfo(col.id);
       return columnInfo.isSortable;
     });
   };
-  
+
   // Get groupable columns
-  const getGroupableColumns = () => {
+  const getGroupableColumns = (): SelectedColumn[] => {
     return selectedColumns.filter(col => {
       const columnInfo = getColumnInfo(col.id);
       return columnInfo.isGroupable;
@@ -230,13 +281,13 @@ const ReportColumnSelector = ({
       <Typography variant="h6" gutterBottom>
         Select Columns
       </Typography>
-      
+
       {!dataSource && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           Please select a data source first.
         </Alert>
       )}
-      
+
       <Grid container spacing={3}>
         {/* Available columns */}
         <Grid item xs={12} md={4}>
@@ -248,7 +299,7 @@ const ReportColumnSelector = ({
               </Typography>
             </Box>
             <Divider />
-            
+
             {availableColumns.length === 0 ? (
               <Box sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
@@ -294,7 +345,7 @@ const ReportColumnSelector = ({
             )}
           </Paper>
         </Grid>
-        
+
         {/* Selected columns */}
         <Grid item xs={12} md={8}>
           <Paper variant="outlined">
@@ -307,7 +358,7 @@ const ReportColumnSelector = ({
               </Typography>
             </Box>
             <Divider />
-            
+
             {selectedColumns.length === 0 ? (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
@@ -318,24 +369,24 @@ const ReportColumnSelector = ({
               <List sx={{ maxHeight: 400, overflow: 'auto' }}>
                 {selectedColumns.map((column, index) => {
                   const columnInfo = getColumnInfo(column.id);
-                  
+
                   return (
                     <React.Fragment key={column.id}>
                       <ListItem>
                         <ListItemIcon>
                           <DragIndicatorIcon color="action" />
                         </ListItemIcon>
-                        
+
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               {column.name}
                               {column.aggregation && (
-                                <Chip 
-                                  label={column.aggregation} 
-                                  size="small" 
-                                  color="secondary" 
-                                  sx={{ ml: 1 }} 
+                                <Chip
+                                  label={column.aggregation}
+                                  size="small"
+                                  color="secondary"
+                                  sx={{ ml: 1 }}
                                 />
                               )}
                             </Box>
@@ -352,14 +403,14 @@ const ReportColumnSelector = ({
                                 }
                                 label="Visible"
                               />
-                              
+
                               <FormControl size="small" sx={{ minWidth: 100 }}>
                                 <InputLabel id={`width-label-${column.id}`}>Width</InputLabel>
                                 <Select
                                   labelId={`width-label-${column.id}`}
                                   value={column.width}
                                   label="Width"
-                                  onChange={(e) => handleWidthChange(column.id, e.target.value)}
+                                  onChange={(e) => handleWidthChange(column.id, e.target.value as string)}
                                 >
                                   <MenuItem value="auto">Auto</MenuItem>
                                   <MenuItem value="small">Small</MenuItem>
@@ -367,7 +418,7 @@ const ReportColumnSelector = ({
                                   <MenuItem value="large">Large</MenuItem>
                                 </Select>
                               </FormControl>
-                              
+
                               {columnInfo.isAggregatable && (
                                 <FormControl size="small" sx={{ minWidth: 120 }}>
                                   <InputLabel id={`aggregation-label-${column.id}`}>Aggregation</InputLabel>
@@ -375,10 +426,10 @@ const ReportColumnSelector = ({
                                     labelId={`aggregation-label-${column.id}`}
                                     value={column.aggregation || ''}
                                     label="Aggregation"
-                                    onChange={(e) => handleAggregationChange(column.id, e.target.value || null)}
+                                    onChange={(e) => handleAggregationChange(column.id, e.target.value as string || null)}
                                   >
                                     <MenuItem value="">None</MenuItem>
-                                    {columnInfo.aggregationFunctions?.length > 0 ? (
+                                    {columnInfo.aggregationFunctions && columnInfo.aggregationFunctions.length > 0 ? (
                                       columnInfo.aggregationFunctions.map(func => (
                                         <MenuItem key={func} value={func}>
                                           {func}
@@ -399,7 +450,7 @@ const ReportColumnSelector = ({
                             </Box>
                           }
                         />
-                        
+
                         <ListItemSecondaryAction>
                           <IconButton
                             edge="end"
@@ -436,7 +487,7 @@ const ReportColumnSelector = ({
               </List>
             )}
           </Paper>
-          
+
           {/* Sorting and Grouping */}
           <Grid container spacing={2} sx={{ mt: 2 }}>
             <Grid item xs={12} md={6}>
@@ -445,7 +496,7 @@ const ReportColumnSelector = ({
                   <SortIcon sx={{ mr: 1 }} />
                   Sort By
                 </Typography>
-                
+
                 <Box sx={{ mt: 2 }}>
                   <Grid container spacing={2}>
                     <Grid item xs={8}>
@@ -455,7 +506,7 @@ const ReportColumnSelector = ({
                           labelId="sort-column-label"
                           value={sortBy?.columnId || ''}
                           label="Column"
-                          onChange={(e) => handleSortChange(e.target.value, sortBy?.direction || 'asc')}
+                          onChange={(e) => handleSortChange(e.target.value as string, sortBy?.direction || 'asc')}
                         >
                           <MenuItem value="">None</MenuItem>
                           {getSortableColumns().map((column) => (
@@ -466,7 +517,7 @@ const ReportColumnSelector = ({
                         </Select>
                       </FormControl>
                     </Grid>
-                    
+
                     <Grid item xs={4}>
                       <FormControl fullWidth size="small" disabled={!sortBy?.columnId}>
                         <InputLabel id="sort-direction-label">Direction</InputLabel>
@@ -474,7 +525,7 @@ const ReportColumnSelector = ({
                           labelId="sort-direction-label"
                           value={sortBy?.direction || 'asc'}
                           label="Direction"
-                          onChange={(e) => handleSortChange(sortBy?.columnId, e.target.value)}
+                          onChange={(e) => handleSortChange(sortBy?.columnId || '', e.target.value as 'asc' | 'desc')}
                         >
                           <MenuItem value="asc">Ascending</MenuItem>
                           <MenuItem value="desc">Descending</MenuItem>
@@ -485,14 +536,14 @@ const ReportColumnSelector = ({
                 </Box>
               </Paper>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                   <GroupWorkIcon sx={{ mr: 1 }} />
                   Group By
                 </Typography>
-                
+
                 <Box sx={{ mt: 2 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel id="group-column-label">Column</InputLabel>
@@ -500,7 +551,7 @@ const ReportColumnSelector = ({
                       labelId="group-column-label"
                       value={groupBy?.columnId || ''}
                       label="Column"
-                      onChange={(e) => handleGroupChange(e.target.value)}
+                      onChange={(e) => handleGroupChange(e.target.value as string)}
                     >
                       <MenuItem value="">None</MenuItem>
                       {getGroupableColumns().map((column) => (

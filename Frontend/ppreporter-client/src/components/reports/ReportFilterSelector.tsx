@@ -17,7 +17,8 @@ import {
   Stack,
   Card,
   CardContent,
-  Tooltip
+  Tooltip,
+  SelectChangeEvent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -26,22 +27,58 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { CommonProps } from '../../types/common';
+
+// Type definitions
+export interface Operator {
+  id: string;
+  label: string;
+}
+
+export interface FilterField {
+  id: string;
+  name: string;
+  type: string;
+  operators: Operator[];
+  description?: string;
+}
+
+export interface FilterValue {
+  from?: Date | string | number | null;
+  to?: Date | string | number | null;
+  [key: string]: any;
+}
+
+export interface Filter {
+  id: string;
+  field: string;
+  operator: string;
+  value: string | FilterValue | null;
+  displayValue: string;
+}
+
+export interface DataSource {
+  schema?: any[];
+  [key: string]: any;
+}
+
+export interface ReportFilterSelectorProps extends CommonProps {
+  dataSource?: DataSource | null;
+  filters?: Filter[];
+  onChange?: (filters: Filter[]) => void;
+}
 
 /**
  * Component for defining report filters
- * @param {Object} props - Component props
- * @param {Object} props.dataSource - The selected data source
- * @param {Array} props.filters - Currently defined filters
- * @param {Function} props.onChange - Function called when filters change
  */
-const ReportFilterSelector = ({
+const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
   dataSource,
   filters = [],
   onChange
 }) => {
-  const [filterFields, setFilterFields] = useState([]);
-  const [activeFilter, setActiveFilter] = useState(null);
-  
+  const [filterFields, setFilterFields] = useState<FilterField[]>([]);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
   // Load available filter fields from data source
   useEffect(() => {
     if (dataSource?.schema) {
@@ -55,13 +92,13 @@ const ReportFilterSelector = ({
           operators: getOperatorsForType(field.type),
           description: field.description
         }));
-      
+
       setFilterFields(availableFields);
     }
   }, [dataSource]);
 
   // Get appropriate operators based on field type
-  const getOperatorsForType = (type) => {
+  const getOperatorsForType = (type: string): Operator[] => {
     switch (type) {
       case 'string':
         return [
@@ -107,37 +144,43 @@ const ReportFilterSelector = ({
         ];
     }
   };
-  
+
   // Create a new filter
-  const handleAddFilter = () => {
-    const newFilter = {
+  const handleAddFilter = (): void => {
+    if (!onChange) return;
+
+    const newFilter: Filter = {
       id: `filter_${Date.now()}`,
       field: filterFields[0]?.id || '',
       operator: '',
       value: '',
       displayValue: ''
     };
-    
+
     onChange([...filters, newFilter]);
     setActiveFilter(newFilter.id);
   };
-  
+
   // Remove a filter
-  const handleRemoveFilter = (filterId) => {
+  const handleRemoveFilter = (filterId: string): void => {
+    if (!onChange) return;
+
     const updatedFilters = filters.filter(filter => filter.id !== filterId);
     onChange(updatedFilters);
-    
+
     if (activeFilter === filterId) {
       setActiveFilter(null);
     }
   };
-  
+
   // Update a filter
-  const handleUpdateFilter = (filterId, field, value) => {
+  const handleUpdateFilter = (filterId: string, field: keyof Filter, value: any): void => {
+    if (!onChange) return;
+
     const updatedFilters = filters.map(filter => {
       if (filter.id === filterId) {
         const updatedFilter = { ...filter, [field]: value };
-        
+
         // If field changed, reset operator and value
         if (field === 'field') {
           const fieldInfo = filterFields.find(f => f.id === value);
@@ -145,36 +188,36 @@ const ReportFilterSelector = ({
           updatedFilter.value = '';
           updatedFilter.displayValue = '';
         }
-        
+
         return updatedFilter;
       }
       return filter;
     });
-    
+
     onChange(updatedFilters);
   };
-  
+
   // Get field info by id
-  const getFieldInfo = (fieldId) => {
-    return filterFields.find(field => field.id === fieldId) || {};
+  const getFieldInfo = (fieldId: string): FilterField => {
+    return filterFields.find(field => field.id === fieldId) || { id: '', name: '', type: '', operators: [] };
   };
-  
+
   // Get operators for a field
-  const getOperatorsForField = (fieldId) => {
+  const getOperatorsForField = (fieldId: string): Operator[] => {
     const field = getFieldInfo(fieldId);
     return field.operators || [];
   };
-  
+
   // Render value input based on field type and operator
-  const renderValueInput = (filter) => {
+  const renderValueInput = (filter: Filter): React.ReactNode => {
     const field = getFieldInfo(filter.field);
     const operator = filter.operator;
-    
+
     // Some operators don't need value input
     if (operator === 'isNull' || operator === 'isNotNull') {
       return null;
     }
-    
+
     // Render different inputs based on field type
     switch (field.type) {
       case 'date':
@@ -185,21 +228,21 @@ const ReportFilterSelector = ({
               <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                 <DatePicker
                   label="From"
-                  value={filter.value?.from || null}
+                  value={(filter.value as FilterValue)?.from || null}
                   onChange={(date) => {
-                    const newValue = { ...(filter.value || {}), from: date };
+                    const newValue = { ...((filter.value as FilterValue) || {}), from: date };
                     handleUpdateFilter(filter.id, 'value', newValue);
-                    handleUpdateFilter(filter.id, 'displayValue', `From ${date?.toLocaleDateString()} to ${filter.value?.to?.toLocaleDateString() || 'any'}`);
+                    handleUpdateFilter(filter.id, 'displayValue', `From ${(date as Date)?.toLocaleDateString() || 'any'} to ${((filter.value as FilterValue)?.to as Date)?.toLocaleDateString() || 'any'}`);
                   }}
                   slotProps={{ textField: { fullWidth: true, size: "small" } }}
                 />
                 <DatePicker
                   label="To"
-                  value={filter.value?.to || null}
+                  value={(filter.value as FilterValue)?.to || null}
                   onChange={(date) => {
-                    const newValue = { ...(filter.value || {}), to: date };
+                    const newValue = { ...((filter.value as FilterValue) || {}), to: date };
                     handleUpdateFilter(filter.id, 'value', newValue);
-                    handleUpdateFilter(filter.id, 'displayValue', `From ${filter.value?.from?.toLocaleDateString() || 'any'} to ${date?.toLocaleDateString()}`);
+                    handleUpdateFilter(filter.id, 'displayValue', `From ${((filter.value as FilterValue)?.from as Date)?.toLocaleDateString() || 'any'} to ${(date as Date)?.toLocaleDateString() || 'any'}`);
                   }}
                   slotProps={{ textField: { fullWidth: true, size: "small" } }}
                 />
@@ -208,10 +251,10 @@ const ReportFilterSelector = ({
               <Box sx={{ mt: 2 }}>
                 <DatePicker
                   label="Value"
-                  value={filter.value || null}
+                  value={filter.value as Date | null}
                   onChange={(date) => {
                     handleUpdateFilter(filter.id, 'value', date);
-                    handleUpdateFilter(filter.id, 'displayValue', date?.toLocaleDateString());
+                    handleUpdateFilter(filter.id, 'displayValue', (date as Date)?.toLocaleDateString() || '');
                   }}
                   slotProps={{ textField: { fullWidth: true, size: "small" } }}
                 />
@@ -219,7 +262,7 @@ const ReportFilterSelector = ({
             )}
           </LocalizationProvider>
         );
-      
+
       case 'number':
         return (
           operator === 'between' ? (
@@ -227,11 +270,11 @@ const ReportFilterSelector = ({
               <TextField
                 label="From"
                 type="number"
-                value={filter.value?.from || ''}
+                value={(filter.value as FilterValue)?.from || ''}
                 onChange={(e) => {
-                  const newValue = { ...(filter.value || {}), from: e.target.value };
+                  const newValue = { ...((filter.value as FilterValue) || {}), from: e.target.value };
                   handleUpdateFilter(filter.id, 'value', newValue);
-                  handleUpdateFilter(filter.id, 'displayValue', `From ${e.target.value || 'any'} to ${filter.value?.to || 'any'}`);
+                  handleUpdateFilter(filter.id, 'displayValue', `From ${e.target.value || 'any'} to ${(filter.value as FilterValue)?.to || 'any'}`);
                 }}
                 fullWidth
                 size="small"
@@ -239,11 +282,11 @@ const ReportFilterSelector = ({
               <TextField
                 label="To"
                 type="number"
-                value={filter.value?.to || ''}
+                value={(filter.value as FilterValue)?.to || ''}
                 onChange={(e) => {
-                  const newValue = { ...(filter.value || {}), to: e.target.value };
+                  const newValue = { ...((filter.value as FilterValue) || {}), to: e.target.value };
                   handleUpdateFilter(filter.id, 'value', newValue);
-                  handleUpdateFilter(filter.id, 'displayValue', `From ${filter.value?.from || 'any'} to ${e.target.value || 'any'}`);
+                  handleUpdateFilter(filter.id, 'displayValue', `From ${(filter.value as FilterValue)?.from || 'any'} to ${e.target.value || 'any'}`);
                 }}
                 fullWidth
                 size="small"
@@ -264,14 +307,14 @@ const ReportFilterSelector = ({
             />
           )
         );
-      
+
       case 'boolean':
         return (
           <FormControl fullWidth size="small" sx={{ mt: 2 }}>
             <InputLabel id={`filter-value-${filter.id}-label`}>Value</InputLabel>
             <Select
               labelId={`filter-value-${filter.id}-label`}
-              value={filter.value || ''}
+              value={filter.value as string || ''}
               onChange={(e) => {
                 handleUpdateFilter(filter.id, 'value', e.target.value);
                 handleUpdateFilter(filter.id, 'displayValue', e.target.value === 'true' ? 'Yes' : 'No');
@@ -283,7 +326,7 @@ const ReportFilterSelector = ({
             </Select>
           </FormControl>
         );
-      
+
       default:
         return (
           <TextField
@@ -302,18 +345,18 @@ const ReportFilterSelector = ({
   };
 
   // Format filter for display
-  const formatFilterDisplay = (filter) => {
+  const formatFilterDisplay = (filter: Filter): string => {
     const field = getFieldInfo(filter.field);
     const operator = getOperatorsForField(filter.field).find(op => op.id === filter.operator)?.label || filter.operator;
-    
+
     if (filter.operator === 'isNull') {
       return `${field.name} is empty`;
     }
-    
+
     if (filter.operator === 'isNotNull') {
       return `${field.name} is not empty`;
     }
-    
+
     return `${field.name} ${operator} ${filter.displayValue}`;
   };
 
@@ -323,7 +366,7 @@ const ReportFilterSelector = ({
         <Typography variant="h6">
           Define Filters
         </Typography>
-        
+
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -333,19 +376,19 @@ const ReportFilterSelector = ({
           Add Filter
         </Button>
       </Box>
-      
+
       {!dataSource && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           Please select a data source first.
         </Alert>
       )}
-      
+
       {dataSource && filterFields.length === 0 && (
         <Alert severity="info" sx={{ mb: 3 }}>
           The selected data source does not have any filterable fields.
         </Alert>
       )}
-      
+
       <Grid container spacing={3}>
         {/* Filter list */}
         <Grid item xs={12} md={4}>
@@ -354,9 +397,9 @@ const ReportFilterSelector = ({
               <FilterListIcon sx={{ mr: 1 }} />
               Applied Filters ({filters.length})
             </Typography>
-            
+
             <Divider sx={{ my: 1 }} />
-            
+
             {filters.length === 0 ? (
               <Box sx={{ py: 2, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
@@ -369,10 +412,10 @@ const ReportFilterSelector = ({
             ) : (
               <Stack spacing={1} sx={{ mt: 2 }}>
                 {filters.map((filter) => (
-                  <Card 
-                    key={filter.id} 
-                    variant="outlined" 
-                    sx={{ 
+                  <Card
+                    key={filter.id}
+                    variant="outlined"
+                    sx={{
                       borderColor: activeFilter === filter.id ? 'primary.main' : 'divider',
                       cursor: 'pointer',
                       '&:hover': {
@@ -386,8 +429,8 @@ const ReportFilterSelector = ({
                         <Typography variant="body2">
                           {formatFilterDisplay(filter)}
                         </Typography>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           color="error"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -405,7 +448,7 @@ const ReportFilterSelector = ({
             )}
           </Paper>
         </Grid>
-        
+
         {/* Filter editor */}
         <Grid item xs={12} md={8}>
           <Paper variant="outlined" sx={{ p: 3 }}>
@@ -414,7 +457,7 @@ const ReportFilterSelector = ({
                 <Typography variant="subtitle1" gutterBottom>
                   Edit Filter
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   {/* Field */}
                   <Grid item xs={12} sm={6}>
@@ -441,7 +484,7 @@ const ReportFilterSelector = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   {/* Operator */}
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small">
@@ -452,7 +495,7 @@ const ReportFilterSelector = ({
                         onChange={(e) => handleUpdateFilter(activeFilter, 'operator', e.target.value)}
                         label="Operator"
                       >
-                        {getOperatorsForField(filters.find(f => f.id === activeFilter)?.field).map((operator) => (
+                        {getOperatorsForField(filters.find(f => f.id === activeFilter)?.field || '').map((operator) => (
                           <MenuItem key={operator.id} value={operator.id}>
                             {operator.label}
                           </MenuItem>
@@ -460,11 +503,11 @@ const ReportFilterSelector = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   {/* Value */}
                   {filters.find(f => f.id === activeFilter)?.operator && (
                     <Grid item xs={12}>
-                      {renderValueInput(filters.find(f => f.id === activeFilter))}
+                      {renderValueInput(filters.find(f => f.id === activeFilter) as Filter)}
                     </Grid>
                   )}
                 </Grid>

@@ -18,7 +18,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Tooltip
+  Tooltip,
+  SelectChangeEvent
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -28,14 +29,50 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import EmailIcon from '@mui/icons-material/Email';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import InfoIcon from '@mui/icons-material/Info';
+import { CommonProps } from '../../types/common';
+
+// Type definitions
+export interface CustomOptions {
+  pdfQuality?: string;
+  pageSize?: string;
+  orientation?: string;
+  paginate?: boolean;
+  freezeHeaders?: boolean;
+  autoFilter?: boolean;
+  separateSheets?: boolean;
+  fitToPage?: boolean;
+  delimiter?: string;
+  encoding?: string;
+  includeHeaders?: boolean;
+  quoteStrings?: boolean;
+  jsonFormat?: string;
+  wrapInArray?: boolean;
+  storagePath?: string;
+  [key: string]: any;
+}
+
+export interface ExportSettings {
+  format: string;
+  includeCharts: boolean;
+  includeTables: boolean;
+  includeFilters: boolean;
+  includeMetadata: boolean;
+  compression: string;
+  password: string;
+  deliveryMethod: string;
+  emailRecipients: string[];
+  customOptions: CustomOptions;
+}
+
+export interface ReportExportSettingsProps extends CommonProps {
+  exportSettings?: ExportSettings;
+  onChange?: (settings: ExportSettings) => void;
+}
 
 /**
  * Component for configuring report export settings
- * @param {Object} props - Component props
- * @param {Object} props.exportSettings - Current export settings
- * @param {Function} props.onChange - Function called when export settings change
  */
-const ReportExportSettings = ({
+const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
   exportSettings = {
     format: 'pdf',
     includeCharts: true,
@@ -50,60 +87,62 @@ const ReportExportSettings = ({
   },
   onChange
 }) => {
-  
+
   // Handle changes to any export setting
-  const handleSettingChange = (setting, value) => {
+  const handleSettingChange = (setting: keyof ExportSettings, value: any): void => {
+    if (!onChange) return;
+
     const updatedSettings = {
       ...exportSettings,
       [setting]: value
     };
     onChange(updatedSettings);
   };
-  
+
   // Handle changes to format-specific options
-  const handleFormatOptionChange = (option, value) => {
+  const handleFormatOptionChange = (option: string, value: any): void => {
     const updatedCustomOptions = {
       ...exportSettings.customOptions,
       [option]: value
     };
-    
+
     handleSettingChange('customOptions', updatedCustomOptions);
   };
-  
+
   // Add email recipient
-  const handleAddRecipient = () => {
-    const recipientInput = document.getElementById('email-recipient-input');
+  const handleAddRecipient = (): void => {
+    const recipientInput = document.getElementById('email-recipient-input') as HTMLInputElement;
     const recipient = recipientInput.value.trim();
-    
+
     if (!recipient) return;
-    
+
     // Check if recipient is valid email
     const isValidEmail = /\S+@\S+\.\S+/.test(recipient);
-    
+
     if (!isValidEmail) {
       // TODO: Show validation error
       return;
     }
-    
+
     // Add recipient if not already in the list
     if (!exportSettings.emailRecipients.includes(recipient)) {
       handleSettingChange('emailRecipients', [...exportSettings.emailRecipients, recipient]);
     }
-    
+
     // Clear input field
     recipientInput.value = '';
   };
-  
+
   // Remove email recipient
-  const handleRemoveRecipient = (recipient) => {
+  const handleRemoveRecipient = (recipient: string): void => {
     handleSettingChange(
-      'emailRecipients', 
+      'emailRecipients',
       exportSettings.emailRecipients.filter(r => r !== recipient)
     );
   };
-  
+
   // Render format-specific options based on the selected format
-  const renderFormatOptions = () => {
+  const renderFormatOptions = (): React.ReactNode => {
     switch (exportSettings.format) {
       case 'pdf':
         return (
@@ -124,7 +163,7 @@ const ReportExportSettings = ({
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel id="pdf-page-size-label">Page Size</InputLabel>
@@ -141,7 +180,7 @@ const ReportExportSettings = ({
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel id="pdf-orientation-label">Orientation</InputLabel>
@@ -156,12 +195,12 @@ const ReportExportSettings = ({
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.paginate || true}
+                    checked={exportSettings.customOptions?.paginate ?? true}
                     onChange={(e) => handleFormatOptionChange('paginate', e.target.checked)}
                   />
                 }
@@ -170,7 +209,7 @@ const ReportExportSettings = ({
             </Grid>
           </>
         );
-        
+
       case 'excel':
         return (
           <>
@@ -178,43 +217,43 @@ const ReportExportSettings = ({
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.freezeHeaders || true}
+                    checked={exportSettings.customOptions?.freezeHeaders ?? true}
                     onChange={(e) => handleFormatOptionChange('freezeHeaders', e.target.checked)}
                   />
                 }
                 label="Freeze Header Row"
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.autoFilter || true}
+                    checked={exportSettings.customOptions?.autoFilter ?? true}
                     onChange={(e) => handleFormatOptionChange('autoFilter', e.target.checked)}
                   />
                 }
                 label="Enable Auto Filters"
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.separateSheets || false}
+                    checked={exportSettings.customOptions?.separateSheets ?? false}
                     onChange={(e) => handleFormatOptionChange('separateSheets', e.target.checked)}
                   />
                 }
                 label="Create Separate Sheets for Tables"
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.fitToPage || true}
+                    checked={exportSettings.customOptions?.fitToPage ?? true}
                     onChange={(e) => handleFormatOptionChange('fitToPage', e.target.checked)}
                   />
                 }
@@ -223,7 +262,7 @@ const ReportExportSettings = ({
             </Grid>
           </>
         );
-        
+
       case 'csv':
         return (
           <>
@@ -243,7 +282,7 @@ const ReportExportSettings = ({
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel id="csv-encoding-label">Encoding</InputLabel>
@@ -260,24 +299,24 @@ const ReportExportSettings = ({
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.includeHeaders || true}
+                    checked={exportSettings.customOptions?.includeHeaders ?? true}
                     onChange={(e) => handleFormatOptionChange('includeHeaders', e.target.checked)}
                   />
                 }
                 label="Include Column Headers"
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.quoteStrings || true}
+                    checked={exportSettings.customOptions?.quoteStrings ?? true}
                     onChange={(e) => handleFormatOptionChange('quoteStrings', e.target.checked)}
                   />
                 }
@@ -286,7 +325,7 @@ const ReportExportSettings = ({
             </Grid>
           </>
         );
-        
+
       case 'json':
         return (
           <>
@@ -304,12 +343,12 @@ const ReportExportSettings = ({
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={exportSettings.customOptions?.wrapInArray || true}
+                    checked={exportSettings.customOptions?.wrapInArray ?? true}
                     onChange={(e) => handleFormatOptionChange('wrapInArray', e.target.checked)}
                   />
                 }
@@ -318,19 +357,19 @@ const ReportExportSettings = ({
             </Grid>
           </>
         );
-        
+
       default:
         return null;
     }
   };
-  
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
         <InsertDriveFileIcon sx={{ mr: 1 }} />
         Export Settings
       </Typography>
-      
+
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={3}>
           {/* Basic Export Settings */}
@@ -357,7 +396,7 @@ const ReportExportSettings = ({
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
               <InputLabel id="compression-label">Compression</InputLabel>
@@ -373,11 +412,11 @@ const ReportExportSettings = ({
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12}>
             <Divider sx={{ my: 1 }} />
           </Grid>
-          
+
           {/* Content Inclusion Options */}
           <Grid item xs={12} sm={6}>
             <FormControlLabel
@@ -390,7 +429,7 @@ const ReportExportSettings = ({
               label="Include Charts"
             />
           </Grid>
-          
+
           <Grid item xs={12} sm={6}>
             <FormControlLabel
               control={
@@ -402,7 +441,7 @@ const ReportExportSettings = ({
               label="Include Data Tables"
             />
           </Grid>
-          
+
           <Grid item xs={12} sm={6}>
             <FormControlLabel
               control={
@@ -414,7 +453,7 @@ const ReportExportSettings = ({
               label="Include Applied Filters"
             />
           </Grid>
-          
+
           <Grid item xs={12} sm={6}>
             <FormControlLabel
               control={
@@ -426,7 +465,7 @@ const ReportExportSettings = ({
               label="Include Report Metadata"
             />
           </Grid>
-          
+
           <Grid item xs={12}>
             <TextField
               label="Export Password (Optional)"
@@ -437,11 +476,11 @@ const ReportExportSettings = ({
               fullWidth
             />
           </Grid>
-          
+
           <Grid item xs={12}>
             <Divider sx={{ my: 1 }} />
           </Grid>
-          
+
           {/* Format-specific options */}
           <Grid item xs={12}>
             <Accordion defaultExpanded>
@@ -464,17 +503,17 @@ const ReportExportSettings = ({
               </AccordionDetails>
             </Accordion>
           </Grid>
-          
+
           <Grid item xs={12}>
             <Divider sx={{ my: 1 }} />
           </Grid>
-          
+
           {/* Delivery Method */}
           <Grid item xs={12}>
             <Typography variant="subtitle1" gutterBottom>
               Delivery Method
             </Typography>
-            
+
             <Grid container spacing={2}>
               <Grid item>
                 <Button
@@ -486,7 +525,7 @@ const ReportExportSettings = ({
                   Download
                 </Button>
               </Grid>
-              
+
               <Grid item>
                 <Button
                   variant={exportSettings.deliveryMethod === 'email' ? 'contained' : 'outlined'}
@@ -497,7 +536,7 @@ const ReportExportSettings = ({
                   Email
                 </Button>
               </Grid>
-              
+
               <Grid item>
                 <Button
                   variant={exportSettings.deliveryMethod === 'cloud' ? 'contained' : 'outlined'}
@@ -509,7 +548,7 @@ const ReportExportSettings = ({
               </Grid>
             </Grid>
           </Grid>
-          
+
           {/* Email recipients */}
           {exportSettings.deliveryMethod === 'email' && (
             <Grid item xs={12}>
@@ -527,7 +566,7 @@ const ReportExportSettings = ({
                   }}
                   InputProps={{
                     endAdornment: (
-                      <Button 
+                      <Button
                         onClick={handleAddRecipient}
                         variant="contained"
                         size="small"
@@ -539,7 +578,7 @@ const ReportExportSettings = ({
                   }}
                 />
               </Box>
-              
+
               <Box>
                 {exportSettings.emailRecipients?.length > 0 ? (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -560,7 +599,7 @@ const ReportExportSettings = ({
               </Box>
             </Grid>
           )}
-          
+
           {/* Cloud storage path */}
           {exportSettings.deliveryMethod === 'cloud' && (
             <Grid item xs={12}>
@@ -576,7 +615,7 @@ const ReportExportSettings = ({
           )}
         </Grid>
       </Paper>
-      
+
       <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
         <InfoIcon color="info" fontSize="small" sx={{ mr: 1 }} />
         <Typography variant="caption" color="text.secondary">

@@ -12,6 +12,7 @@ namespace PPrePorter.API.Features.Health
     public class DailyActionsDbHealthCheck : IHealthCheck
     {
         private readonly IAzureKeyVaultConnectionStringResolver _connectionStringResolver;
+        private readonly IConnectionStringCacheService _connectionStringCacheService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<DailyActionsDbHealthCheck> _logger;
 
@@ -20,10 +21,12 @@ namespace PPrePorter.API.Features.Health
         /// </summary>
         public DailyActionsDbHealthCheck(
             IAzureKeyVaultConnectionStringResolver connectionStringResolver,
+            IConnectionStringCacheService connectionStringCacheService,
             IConfiguration configuration,
             ILogger<DailyActionsDbHealthCheck> logger)
         {
             _connectionStringResolver = connectionStringResolver ?? throw new ArgumentNullException(nameof(connectionStringResolver));
+            _connectionStringCacheService = connectionStringCacheService ?? throw new ArgumentNullException(nameof(connectionStringCacheService));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -35,15 +38,42 @@ namespace PPrePorter.API.Features.Health
         {
             try
             {
-                // Get the connection string template from configuration
-                string connectionStringTemplate = _configuration.GetConnectionString("DailyActionsDB");
-                if (string.IsNullOrEmpty(connectionStringTemplate))
-                {
-                    return HealthCheckResult.Unhealthy("Connection string 'DailyActionsDB' not found in configuration");
-                }
+                // First try to get the connection string from the cache
+                string resolvedConnectionString = _connectionStringCacheService.GetConnectionString("DailyActionsDB");
 
-                // Resolve the connection string
-                string resolvedConnectionString = await _connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate);
+                // If not in cache, try to resolve it
+                if (string.IsNullOrEmpty(resolvedConnectionString))
+                {
+                    _logger.LogWarning("Connection string 'DailyActionsDB' not found in cache, resolving from configuration");
+
+                    // Dump the cache contents for debugging
+                    _connectionStringCacheService.DumpCacheContents();
+
+                    // Get the connection string template from configuration
+                    string connectionStringTemplate = _configuration.GetConnectionString("DailyActionsDB");
+                    if (string.IsNullOrEmpty(connectionStringTemplate))
+                    {
+                        return HealthCheckResult.Unhealthy("Connection string 'DailyActionsDB' not found in configuration");
+                    }
+
+                    // Resolve the connection string
+                    resolvedConnectionString = await _connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate);
+
+                    // Cache the resolved connection string
+                    if (!string.IsNullOrEmpty(resolvedConnectionString))
+                    {
+                        // Manually add it to the cache
+                        _logger.LogInformation("Manually adding resolved connection string to cache");
+                        _connectionStringCacheService.AddToCache("DailyActionsDB", resolvedConnectionString);
+
+                        // Dump the cache contents after adding
+                        _connectionStringCacheService.DumpCacheContents();
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("Using cached connection string for DailyActionsDB health check");
+                }
 
                 // Check if the connection string still contains placeholders
                 if (resolvedConnectionString.Contains("{azurevault:"))
