@@ -37,9 +37,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import RotateLeftIcon from '@mui/icons-material/RotateLeft';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import dashboardAnalyticsService from '../../services/dashboardAnalyticsService';
-import { 
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip as RechartsTooltip, Legend, ResponsiveContainer, 
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   Scatter, ScatterChart, ZAxis, ReferenceLine, Area, AreaChart, ComposedChart
 } from 'recharts';
 import { format, subDays } from 'date-fns';
@@ -72,7 +72,7 @@ const TrendAnalysis = ({
     timeWindowDays: 30,
     significanceThreshold: 0.05
   });
-  
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -87,13 +87,13 @@ const TrendAnalysis = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       let data;
       const params = {
         ...dashboardParams,
         timeRange: parseInt(timeRange)
       };
-      
+
       // Fetch the appropriate trend data based on metricType
       if (metricType === 'revenue') {
         data = await dashboardAnalyticsService.getRevenueTrends(params, options);
@@ -102,12 +102,12 @@ const TrendAnalysis = ({
       } else {
         throw new Error('Unsupported metric type');
       }
-      
+
       setTrendData(data);
-      
-      // Generate mock forecast data if the API doesn't provide it
-      if (data && data.IdentifiedPatterns) {
-        generateMockForecast(data);
+
+      // Use forecast data from the API if available
+      if (data && data.ForecastData) {
+        setForecastData(data.ForecastData);
       }
     } catch (err) {
       console.error('Error loading trend data:', err);
@@ -117,39 +117,7 @@ const TrendAnalysis = ({
     }
   };
 
-  // Generate a simple mock forecast for demo purposes
-  const generateMockForecast = (data) => {
-    if (!data.OutlierPoints || data.OutlierPoints.length === 0) return;
-    
-    const lastDataPoint = data.OutlierPoints[data.OutlierPoints.length - 1];
-    const lastDate = new Date(lastDataPoint.Date);
-    const lastValue = lastDataPoint.Value;
-    
-    // Determine trend direction and slope
-    const slope = data.OverallTrendSlope || 0.02;
-    
-    // Generate 14 days of forecast
-    const forecastPoints = [];
-    for (let i = 1; i <= 14; i++) {
-      const forecastDate = new Date(lastDate);
-      forecastDate.setDate(forecastDate.getDate() + i);
-      
-      // Simple linear forecast with some random noise
-      const noise = Math.random() * 0.2 - 0.1; // Random noise between -0.1 and 0.1
-      const forecastValue = lastValue * (1 + (slope * i) + noise);
-      
-      forecastPoints.push({
-        Date: forecastDate.toISOString(),
-        Value: forecastValue,
-        isForecasted: true,
-        LowerBound: forecastValue * 0.9,
-        UpperBound: forecastValue * 1.1,
-        ConfidenceInterval: 0.9
-      });
-    }
-    
-    setForecastData(forecastPoints);
-  };
+  // Forecast data should come from the API
 
   const handleViewTypeChange = (event, newValue) => {
     if (newValue !== null) {
@@ -198,7 +166,7 @@ const TrendAnalysis = ({
   // Get color for trend direction
   const getTrendColor = (direction) => {
     if (!direction) return theme.palette.grey[500];
-    
+
     switch (direction.toLowerCase()) {
       case 'increasing':
       case 'positive':
@@ -216,7 +184,7 @@ const TrendAnalysis = ({
   // Get icon for trend direction
   const getTrendIcon = (direction) => {
     if (!direction) return <TrendingFlatIcon />;
-    
+
     switch (direction.toLowerCase()) {
       case 'increasing':
       case 'positive':
@@ -234,26 +202,26 @@ const TrendAnalysis = ({
   // Check if a date falls within pattern range
   const isInPattern = (date, patterns) => {
     if (!patterns || !patterns.length) return false;
-    
+
     const dateObj = new Date(date);
-    
+
     for (const pattern of patterns) {
       const startDate = new Date(pattern.StartDate);
       const endDate = new Date(pattern.EndDate);
-      
+
       if (dateObj >= startDate && dateObj <= endDate) {
         return pattern;
       }
     }
-    
+
     return false;
   };
 
   // Check if a point is an outlier
   const isOutlier = (date, outliers) => {
     if (!outliers || !outliers.length) return false;
-    
-    return outliers.some(outlier => 
+
+    return outliers.some(outlier =>
       new Date(outlier.Date).getTime() === new Date(date).getTime()
     );
   };
@@ -261,14 +229,14 @@ const TrendAnalysis = ({
   // Prepares a combined data array for charts (including forecasts if needed)
   const getChartData = () => {
     if (!trendData || !trendData.OutlierPoints) return [];
-    
+
     const mainData = [...trendData.OutlierPoints];
-    
+
     // Add forecast data if enabled
     if (showForecast && forecastData) {
       return [...mainData, ...forecastData];
     }
-    
+
     return mainData;
   };
 
@@ -289,7 +257,7 @@ const TrendAnalysis = ({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent dividers>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -320,7 +288,7 @@ const TrendAnalysis = ({
                     </Select>
                   </FormControl>
                 </Grid>
-                
+
                 <Grid item xs={12} sm={8} md={9}>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     <ToggleButtonGroup
@@ -346,7 +314,7 @@ const TrendAnalysis = ({
                         </Tooltip>
                       </ToggleButton>
                     </ToggleButtonGroup>
-                    
+
                     <Tooltip title={showForecast ? "Hide Forecast" : "Show Forecast"}>
                       <Chip
                         icon={<CompareIcon />}
@@ -357,7 +325,7 @@ const TrendAnalysis = ({
                         size="small"
                       />
                     </Tooltip>
-                    
+
                     {trendData.SeasonalityDetected && (
                       <Tooltip title={showSeasonality ? "Hide Seasonality" : "Show Seasonality"}>
                         <Chip
@@ -370,7 +338,7 @@ const TrendAnalysis = ({
                         />
                       </Tooltip>
                     )}
-                    
+
                     <Tooltip title={showPatterns ? "Hide Patterns" : "Show Patterns"}>
                       <Chip
                         icon={<TimelineIcon />}
@@ -381,7 +349,7 @@ const TrendAnalysis = ({
                         size="small"
                       />
                     </Tooltip>
-                    
+
                     <Tooltip title={showOutliers ? "Hide Outliers" : "Show Outliers"}>
                       <Chip
                         icon={<BubbleChartIcon />}
@@ -392,7 +360,7 @@ const TrendAnalysis = ({
                         size="small"
                       />
                     </Tooltip>
-                    
+
                     <Tooltip title="Reset">
                       <IconButton size="small" onClick={handleResetOptions}>
                         <RotateLeftIcon />
@@ -402,7 +370,7 @@ const TrendAnalysis = ({
                 </Grid>
               </Grid>
             </Paper>
-            
+
             {/* Overall trend summary */}
             <Paper sx={{ p: 2, mb: 3, backgroundColor: 'background.paper' }}>
               <Grid container spacing={2}>
@@ -415,19 +383,19 @@ const TrendAnalysis = ({
                   </Box>
                   <Typography variant="body1" sx={{ mt: 1 }}>
                     {metricName || metricKey} is {trendData.TrendDirection.toLowerCase()} with a
-                    {trendData.PercentageChange !== null && trendData.PercentageChange !== undefined 
+                    {trendData.PercentageChange !== null && trendData.PercentageChange !== undefined
                       ? ` ${Math.abs(trendData.PercentageChange).toFixed(1)}% ${trendData.PercentageChange >= 0 ? 'increase' : 'decrease'}`
                       : ' stable pattern'} over the selected period.
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-                    <Typography variant="h4" sx={{ 
+                    <Typography variant="h4" sx={{
                       color: getTrendColor(trendData.TrendDirection),
                       display: 'flex',
                       alignItems: 'center'
                     }}>
-                      {trendData.PercentageChange !== null && trendData.PercentageChange !== undefined 
+                      {trendData.PercentageChange !== null && trendData.PercentageChange !== undefined
                         ? `${trendData.PercentageChange >= 0 ? '+' : ''}${trendData.PercentageChange.toFixed(1)}%`
                         : '0%'}
                     </Typography>
@@ -438,7 +406,7 @@ const TrendAnalysis = ({
                 </Grid>
               </Grid>
             </Paper>
-            
+
             {/* Data visualization */}
             <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
               <Box sx={{ height: 400 }}>
@@ -449,34 +417,34 @@ const TrendAnalysis = ({
                       margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="Date" 
+                      <XAxis
+                        dataKey="Date"
                         tickFormatter={formatDate}
                         tick={{ fontSize: 12 }}
                       />
                       <YAxis />
-                      <RechartsTooltip 
+                      <RechartsTooltip
                         formatter={(value, name, props) => [
-                          props.payload.isForecasted ? 
+                          props.payload.isForecasted ?
                             `${value.toFixed(2)} (forecast)` :
-                            value.toFixed(2), 
+                            value.toFixed(2),
                           metricName || metricKey
                         ]}
                         labelFormatter={(label) => formatDate(label)}
                       />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="Value" 
+                      <Line
+                        type="monotone"
+                        dataKey="Value"
                         name={metricName || metricKey}
-                        stroke={getTrendColor(trendData.TrendDirection)} 
+                        stroke={getTrendColor(trendData.TrendDirection)}
                         activeDot={{ r: 8 }}
                         dot={(props) => {
                           const { cx, cy, payload } = props;
-                          
+
                           // Skip null values
                           if (!cx || !cy) return null;
-                          
+
                           // Different styling for forecasted points
                           if (payload.isForecasted) {
                             return (
@@ -485,7 +453,7 @@ const TrendAnalysis = ({
                               </svg>
                             );
                           }
-                          
+
                           // Highlight outliers
                           if (showOutliers && isOutlier(payload.Date, trendData.OutlierPoints)) {
                             return (
@@ -494,16 +462,16 @@ const TrendAnalysis = ({
                               </svg>
                             );
                           }
-                          
+
                           // Highlight pattern points
                           if (showPatterns && trendData.IdentifiedPatterns) {
                             const pattern = isInPattern(payload.Date, trendData.IdentifiedPatterns);
                             if (pattern) {
-                              const patternColor = 
+                              const patternColor =
                                 pattern.PatternType === 'Spike' ? theme.palette.success.main :
                                 pattern.PatternType === 'Dip' ? theme.palette.error.main :
                                 theme.palette.warning.main;
-                                
+
                               return (
                                 <svg x={cx - 5} y={cy - 5} width={10} height={10} fill={patternColor}>
                                   <circle cx="5" cy="5" r="5" />
@@ -511,7 +479,7 @@ const TrendAnalysis = ({
                               );
                             }
                           }
-                          
+
                           // Default dot
                           return (
                             <svg x={cx - 3} y={cy - 3} width={6} height={6} fill={getTrendColor(trendData.TrendDirection)}>
@@ -556,24 +524,24 @@ const TrendAnalysis = ({
                       margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="Date" 
+                      <XAxis
+                        dataKey="Date"
                         tickFormatter={formatDate}
                         tick={{ fontSize: 12 }}
                       />
                       <YAxis />
-                      <RechartsTooltip 
+                      <RechartsTooltip
                         formatter={(value, name, props) => [
-                          props.payload.isForecasted ? 
+                          props.payload.isForecasted ?
                             `${value.toFixed(2)} (forecast)` :
-                            value.toFixed(2), 
+                            value.toFixed(2),
                           metricName || metricKey
                         ]}
                         labelFormatter={(label) => formatDate(label)}
                       />
                       <Legend />
-                      <Bar 
-                        dataKey="Value" 
+                      <Bar
+                        dataKey="Value"
                         name={metricName || metricKey}
                         fill={getTrendColor(trendData.TrendDirection)}
                         fillOpacity={(entry) => entry.isForecasted ? 0.5 : 1}
@@ -585,17 +553,17 @@ const TrendAnalysis = ({
                       margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="Date" 
+                      <XAxis
+                        dataKey="Date"
                         tickFormatter={formatDate}
                         tick={{ fontSize: 12 }}
                       />
                       <YAxis />
-                      <RechartsTooltip 
+                      <RechartsTooltip
                         formatter={(value, name, props) => [
-                          props.payload.isForecasted ? 
+                          props.payload.isForecasted ?
                             `${value.toFixed(2)} (forecast)` :
-                            value.toFixed(2), 
+                            value.toFixed(2),
                           metricName || metricKey
                         ]}
                         labelFormatter={(label) => formatDate(label)}
@@ -623,11 +591,11 @@ const TrendAnalysis = ({
                   )}
                 </ResponsiveContainer>
               </Box>
-              
+
               {/* Chart legend */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, justifyContent: 'center' }}>
                 {showPatterns && trendData.IdentifiedPatterns && trendData.IdentifiedPatterns.length > 0 && (
-                  <Chip 
+                  <Chip
                     size="small"
                     variant="outlined"
                     icon={<TimelineIcon />}
@@ -636,7 +604,7 @@ const TrendAnalysis = ({
                   />
                 )}
                 {showOutliers && trendData.OutlierPoints && trendData.OutlierPoints.some(p => p.isOutlier) && (
-                  <Chip 
+                  <Chip
                     size="small"
                     variant="outlined"
                     icon={<BubbleChartIcon />}
@@ -645,7 +613,7 @@ const TrendAnalysis = ({
                   />
                 )}
                 {showForecast && forecastData && forecastData.length > 0 && (
-                  <Chip 
+                  <Chip
                     size="small"
                     variant="outlined"
                     icon={<CompareIcon />}
@@ -654,7 +622,7 @@ const TrendAnalysis = ({
                   />
                 )}
                 {showSeasonality && trendData.SeasonalityDetected && (
-                  <Chip 
+                  <Chip
                     size="small"
                     variant="outlined"
                     icon={<EventRepeatIcon />}
@@ -664,7 +632,7 @@ const TrendAnalysis = ({
                 )}
               </Box>
             </Paper>
-            
+
             {/* Patterns and insights */}
             {trendData.IdentifiedPatterns && trendData.IdentifiedPatterns.length > 0 && (
               <Paper sx={{ p: 2, mb: 3 }}>
@@ -674,12 +642,12 @@ const TrendAnalysis = ({
                 <Grid container spacing={2}>
                   {trendData.IdentifiedPatterns.map((pattern, index) => (
                     <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Paper 
-                        variant="outlined" 
-                        sx={{ 
+                      <Paper
+                        variant="outlined"
+                        sx={{
                           p: 2,
                           borderLeft: 3,
-                          borderColor: 
+                          borderColor:
                             pattern.PatternType === 'Spike' ? 'success.main' :
                             pattern.PatternType === 'Dip' ? 'error.main' :
                             'warning.main'
@@ -696,9 +664,9 @@ const TrendAnalysis = ({
                             {formatDate(pattern.StartDate)} - {formatDate(pattern.EndDate)}
                           </Typography>
                           <Tooltip title="Confidence Score">
-                            <Chip 
-                              size="small" 
-                              label={`${(pattern.ConfidenceScore * 100).toFixed(0)}%`} 
+                            <Chip
+                              size="small"
+                              label={`${(pattern.ConfidenceScore * 100).toFixed(0)}%`}
                               color={pattern.ConfidenceScore > 0.7 ? "success" : "default"}
                             />
                           </Tooltip>
@@ -709,7 +677,7 @@ const TrendAnalysis = ({
                 </Grid>
               </Paper>
             )}
-            
+
             {/* Seasonality */}
             {trendData.SeasonalityDetected && showSeasonality && (
               <Paper sx={{ p: 2, mb: 3 }}>
@@ -720,7 +688,7 @@ const TrendAnalysis = ({
                   </Typography>
                 </Box>
                 <Alert severity="info" sx={{ mb: 2 }}>
-                  {trendData.SeasonalCycleDays ? 
+                  {trendData.SeasonalCycleDays ?
                     `A ${trendData.SeasonalCycleDays}-day seasonality pattern has been detected in the data.` :
                     'Seasonality patterns have been detected in the data.'}
                 </Alert>
@@ -729,7 +697,7 @@ const TrendAnalysis = ({
                 </Typography>
               </Paper>
             )}
-            
+
             {/* Additional metrics */}
             {trendData.AdditionalMetrics && Object.keys(trendData.AdditionalMetrics).length > 0 && (
               <Paper sx={{ p: 2 }}>
@@ -759,9 +727,9 @@ const TrendAnalysis = ({
           </Typography>
         )}
       </DialogContent>
-      
+
       <DialogActions>
-        <Button 
+        <Button
           startIcon={<HelpOutlineIcon />}
           onClick={() => {}}
         >

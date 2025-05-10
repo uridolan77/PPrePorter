@@ -31,7 +31,7 @@ namespace PPrePorter.Infrastructure.Services
             _dbContext = dbContext;
             _userContextService = userContextService;
             _logger = logger;
-            
+
             // Set export directory
             _exportDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ReportExports");
             if (!Directory.Exists(_exportDirectory))
@@ -45,7 +45,7 @@ namespace PPrePorter.Infrastructure.Services
             try
             {
                 _logger.LogInformation("Generating report for user {UserId} with template {TemplateId}", userId, request.TemplateId);
-                
+
                 // Create report record
                 var report = new GeneratedReport
                 {
@@ -56,26 +56,26 @@ namespace PPrePorter.Infrastructure.Services
                     CreatedAt = DateTime.UtcNow,
                     RequestJson = JsonSerializer.Serialize(request)
                 };
-                
+
                 _dbContext.GeneratedReports.Add(report);
                 await _dbContext.SaveChangesAsync();
-                
+
                 try
                 {
                     // Get template - convert id to string for comparison
                     var template = await _dbContext.ReportTemplates
                         .FirstOrDefaultAsync(t => t.Id.ToString() == request.TemplateId);
-                    
+
                     if (template == null)
                     {
                         throw new Exception($"Report template with ID {request.TemplateId} not found");
                     }
-                    
+
                     report.Name = $"{template.Name} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
-                    
+
                     // Fetch template details
                     var columns = template.AvailableColumns;
-                    
+
                     // Validate selected columns
                     foreach (var column in request.SelectedColumns)
                     {
@@ -84,31 +84,31 @@ namespace PPrePorter.Infrastructure.Services
                             throw new Exception($"Invalid column selection: {column}");
                         }
                     }
-                    
+
                     // Apply selected columns or use all available
-                    var selectedColumns = request.SelectedColumns.Any() 
-                        ? request.SelectedColumns 
+                    var selectedColumns = request.SelectedColumns.Any()
+                        ? request.SelectedColumns
                         : columns;
-                    
+
                     // Prepare dynamic SQL based on template and filters - fixed tuple type inference
                     var executionResult = await ExecuteReportQueryAsync(template, request);
                     var data = executionResult.Item1;
                     var columnMetadata = executionResult.Item2;
-                    
+
                     // Update report
                     report.Status = "Completed";
                     report.CompletedAt = DateTime.UtcNow;
                     report.TotalRows = data.Count;
                     report.Data = data;
                     report.Columns = columnMetadata;
-                    
+
                     await _dbContext.SaveChangesAsync();
-                    
+
                     // Map to response DTO
                     var pageSize = request.PageSize ?? 100;
                     var pageNumber = request.PageNumber ?? 1;
                     var totalPages = (int)Math.Ceiling((double)report.TotalRows / pageSize);
-                    
+
                     var result = new ReportResultDto
                     {
                         ReportId = report.Id.ToString(),
@@ -136,9 +136,9 @@ namespace PPrePorter.Infrastructure.Services
                             AggregateFunction = c.AggregateFunction
                         }).ToList()
                     };
-                    
+
                     _logger.LogInformation("Report {ReportId} generated successfully with {RowCount} rows", report.Id, report.TotalRows);
-                    
+
                     return result;
                 }
                 catch (Exception ex)
@@ -147,11 +147,11 @@ namespace PPrePorter.Infrastructure.Services
                     report.Status = "Failed";
                     report.ErrorMessage = ex.Message;
                     report.CompletedAt = DateTime.UtcNow;
-                    
+
                     await _dbContext.SaveChangesAsync();
-                    
+
                     _logger.LogError(ex, "Error generating report for user {UserId}", userId);
-                    
+
                     throw;
                 }
             }
@@ -172,34 +172,34 @@ namespace PPrePorter.Infrastructure.Services
                 {
                     return null; // Invalid ID format
                 }
-                
+
                 var report = await _dbContext.GeneratedReports
                     .FirstOrDefaultAsync(r => r.Id == reportIdInt && r.UserId == userId);
-                
+
                 if (report == null)
                 {
                     return null;
                 }
-                
+
                 // Deserialize stored data
                 var request = JsonSerializer.Deserialize<ReportRequestDto>(report.RequestJson);
-                
+
                 // Regenerate data if needed (or load from cache/storage in a real implementation)
                 if (report.Status == "Completed" && report.Data == null)
                 {
                     var template = await _dbContext.ReportTemplates
                         .FirstOrDefaultAsync(t => t.Id.ToString() == report.TemplateId);
-                    
+
                     var executionResult = await ExecuteReportQueryAsync(template, request);
                     report.Data = executionResult.Item1;
                     report.Columns = executionResult.Item2;
                 }
-                
+
                 // Map to DTO
                 var pageSize = request.PageSize ?? 100;
                 var pageNumber = request.PageNumber ?? 1;
                 var totalPages = (int)Math.Ceiling((double)report.TotalRows / pageSize);
-                
+
                 return new ReportResultDto
                 {
                     ReportId = report.Id.ToString(),
@@ -246,19 +246,19 @@ namespace PPrePorter.Infrastructure.Services
                 {
                     return null; // Invalid ID format
                 }
-                
+
                 var report = await _dbContext.GeneratedReports
                     .FirstOrDefaultAsync(r => r.Id == reportIdInt && r.UserId == user.Id.ToString());
-                
+
                 if (report == null)
                 {
                     return null;
                 }
-                
+
                 // Check if already exported
                 var existingExport = await _dbContext.ReportExports
                     .FirstOrDefaultAsync(e => e.ReportId == reportId && e.Format == format && e.ExpiresAt > DateTime.UtcNow);
-                
+
                 if (existingExport != null)
                 {
                     return new ExportResultDto
@@ -270,31 +270,31 @@ namespace PPrePorter.Infrastructure.Services
                         ExpiresAt = existingExport.ExpiresAt
                     };
                 }
-                
+
                 // Deserialize stored data
                 var request = JsonSerializer.Deserialize<ReportRequestDto>(report.RequestJson);
-                
+
                 // Regenerate data if needed
                 if (report.Status == "Completed" && report.Data == null)
                 {
                     var template = await _dbContext.ReportTemplates
                         .FirstOrDefaultAsync(t => t.Id.ToString() == report.TemplateId);
-                    
+
                     var executionResult = await ExecuteReportQueryAsync(template, request);
                     report.Data = executionResult.Item1;
                     report.Columns = executionResult.Item2;
                 }
-                
+
                 if (report.Data == null || !report.Data.Any())
                 {
                     throw new Exception("No data available for export");
                 }
-                
+
                 // Generate file based on format
                 var fileName = $"{report.Name.Replace(" ", "_")}_{DateTime.UtcNow:yyyyMMdd_HHmmss}";
                 var filePath = "";
                 long fileSize = 0;
-                
+
                 switch (format.ToLower())
                 {
                     case "excel":
@@ -302,23 +302,23 @@ namespace PPrePorter.Infrastructure.Services
                         filePath = Path.Combine(_exportDirectory, fileName);
                         fileSize = ExportToExcel(report, filePath);
                         break;
-                    
+
                     case "csv":
                         fileName += ".csv";
                         filePath = Path.Combine(_exportDirectory, fileName);
                         fileSize = ExportToCsv(report, filePath);
                         break;
-                    
+
                     case "pdf":
                         fileName += ".pdf";
                         filePath = Path.Combine(_exportDirectory, fileName);
                         fileSize = ExportToPdf(report, filePath);
                         break;
-                    
+
                     default:
                         throw new Exception($"Unsupported export format: {format}");
                 }
-                
+
                 // Save export record
                 var expiresAt = DateTime.UtcNow.AddDays(7); // Files expire after 7 days
                 var export = new ReportExport
@@ -333,10 +333,10 @@ namespace PPrePorter.Infrastructure.Services
                     CreatedAt = DateTime.UtcNow,
                     ExpiresAt = expiresAt
                 };
-                
+
                 _dbContext.ReportExports.Add(export);
                 await _dbContext.SaveChangesAsync();
-                
+
                 return new ExportResultDto
                 {
                     FileUrl = $"/api/reports/download/{export.Id}",
@@ -373,15 +373,15 @@ namespace PPrePorter.Infrastructure.Services
         #region Helper Methods
 
         private async Task<(List<Dictionary<string, object>>, List<ColumnMetadata>)> ExecuteReportQueryAsync(
-            ReportTemplate template, 
+            ReportTemplate template,
             ReportRequestDto request)
         {
-            // This method would normally generate and execute a SQL query based on the template and request
-            // For this implementation, we'll use a simulated data source
-            
-            // Simulate report data based on template
-            var data = await GenerateSimulatedDataAsync(template, request);
-            
+            // This method should generate and execute a SQL query based on the template and request
+            // For now, we'll return an empty result set
+            _logger.LogWarning("ExecuteReportQueryAsync is not fully implemented yet");
+
+            var data = new List<Dictionary<string, object>>();
+
             // Create column metadata
             var columnMetadata = template.AvailableColumns
                 .Where(c => request.SelectedColumns.Count == 0 || request.SelectedColumns.Contains(c))
@@ -398,104 +398,13 @@ namespace PPrePorter.Infrastructure.Services
                     AggregateFunction = request.Groupings.FirstOrDefault(g => g.Field == c)?.Function
                 })
                 .ToList();
-            
+
+            await Task.CompletedTask;
             return (data, columnMetadata);
         }
 
-        private async Task<List<Dictionary<string, object>>> GenerateSimulatedDataAsync(
-            ReportTemplate template, 
-            ReportRequestDto request)
-        {
-            // Add an await operation to satisfy the compiler warning
-            await Task.Yield();
-            
-            // Simulated data generation based on template type
-            // In a real implementation, this would execute database queries
-            var result = new List<Dictionary<string, object>>();
-            var random = new Random();
-            
-            // Determine number of rows based on template
-            var rowCount = 1000; // Default row count
-            
-            // Generate simulated data
-            for (int i = 0; i < rowCount; i++)
-            {
-                var row = new Dictionary<string, object>();
-                
-                // Add columns based on template
-                foreach (var column in template.AvailableColumns)
-                {
-                    if (request.SelectedColumns.Count == 0 || request.SelectedColumns.Contains(column))
-                    {
-                        row[column] = GenerateValueForColumn(column, random);
-                    }
-                }
-                
-                result.Add(row);
-            }
-            
-            // Apply filters
-            foreach (var filter in request.Filters)
-            {
-                result = ApplyFilter(result, filter);
-            }
-            
-            // Apply grouping
-            if (request.Groupings.Any())
-            {
-                result = ApplyGrouping(result, request.Groupings);
-            }
-            
-            // Apply sorting
-            if (request.SortBy.Any())
-            {
-                result = ApplySorting(result, request.SortBy);
-            }
-            
-            return result;
-        }
-
-        private object GenerateValueForColumn(string column, Random random)
-        {
-            // Generate example values based on column name
-            if (IsDateColumn(column))
-            {
-                return DateTime.UtcNow.AddDays(-random.Next(1, 365));
-            }
-            else if (IsNumericColumn(column))
-            {
-                if (column.Contains("Amount") || column.Contains("Value"))
-                {
-                    return Math.Round(random.NextDouble() * 10000, 2);
-                }
-                else
-                {
-                    return random.Next(1, 1000);
-                }
-            }
-            else if (column.Contains("Name") || column.Contains("Title"))
-            {
-                var names = new[] { "Alice", "Bob", "Charlie", "David", "Emma", "Frank", "Grace", "Henry" };
-                return names[random.Next(names.Length)];
-            }
-            else if (column.Contains("Status"))
-            {
-                var statuses = new[] { "Active", "Inactive", "Pending", "Completed", "Rejected" };
-                return statuses[random.Next(statuses.Length)];
-            }
-            else if (column.Contains("Type") || column.Contains("Category"))
-            {
-                var types = new[] { "Type A", "Type B", "Type C", "Type D", "Type E" };
-                return types[random.Next(types.Length)];
-            }
-            else
-            {
-                return $"Value-{random.Next(1, 1000)}";
-            }
-        }
-
         private List<Dictionary<string, object>> ApplyFilter(
-            List<Dictionary<string, object>> data, 
+            List<Dictionary<string, object>> data,
             FilterCriteriaDto filter)
         {
             return data.Where(row =>
@@ -504,7 +413,7 @@ namespace PPrePorter.Infrastructure.Services
                 {
                     return true;
                 }
-                
+
                 var value = row[filter.Field];
                 switch (filter.Operator)
                 {
@@ -514,14 +423,14 @@ namespace PPrePorter.Infrastructure.Services
                             return dateVal.Date == filter.DateValue.Value.Date;
                         }
                         return value?.ToString() == filter.Value;
-                    
+
                     case "notEquals":
                         return value?.ToString() != filter.Value;
-                    
+
                     case "contains":
                         if (value == null) return false;
                         return value.ToString().Contains(filter.Value ?? "", StringComparison.OrdinalIgnoreCase);
-                    
+
                     case "greaterThan":
                         if (value is double dblVal && double.TryParse(filter.Value, out double compareVal))
                         {
@@ -536,7 +445,7 @@ namespace PPrePorter.Infrastructure.Services
                             return dateTimeVal > filter.DateValue.Value;
                         }
                         return false;
-                    
+
                     case "lessThan":
                         if (value is double dblVal2 && double.TryParse(filter.Value, out double compareVal2))
                         {
@@ -551,14 +460,14 @@ namespace PPrePorter.Infrastructure.Services
                             return dateTimeVal2 < filter.DateValue.Value;
                         }
                         return false;
-                    
+
                     case "in":
                         if (filter.Values == null || value == null) return false;
                         string valueStr = value.ToString() ?? "";
                         return filter.Values.Contains(valueStr);
-                    
+
                     case "between":
-                        if (value is double dblVal3 && double.TryParse(filter.Value, out double start) && 
+                        if (value is double dblVal3 && double.TryParse(filter.Value, out double start) &&
                             filter.Values != null && filter.Values.Count > 0 && double.TryParse(filter.Values[0], out double end))
                         {
                             return dblVal3 >= start && dblVal3 <= end;
@@ -568,7 +477,7 @@ namespace PPrePorter.Infrastructure.Services
                             return dateTimeVal3 >= filter.DateValue.Value && dateTimeVal3 <= filter.DateEnd.Value;
                         }
                         return false;
-                    
+
                     default:
                         return true;
                 }
@@ -576,7 +485,7 @@ namespace PPrePorter.Infrastructure.Services
         }
 
         private List<Dictionary<string, object>> ApplyGrouping(
-            List<Dictionary<string, object>> data, 
+            List<Dictionary<string, object>> data,
             List<GroupingDto> groupings)
         {
             // For simplicity, just return the original data
@@ -585,14 +494,14 @@ namespace PPrePorter.Infrastructure.Services
         }
 
         private List<Dictionary<string, object>> ApplySorting(
-            List<Dictionary<string, object>> data, 
+            List<Dictionary<string, object>> data,
             List<SortingDto> sortBy)
         {
             // Apply sorting based on the first sort field (for simplicity)
             if (sortBy.Any())
             {
                 var firstSort = sortBy.First();
-                
+
                 if (firstSort.Descending)
                 {
                     data = data.OrderByDescending(row => row.ContainsKey(firstSort.Field) ? row[firstSort.Field] : null).ToList();
@@ -602,20 +511,20 @@ namespace PPrePorter.Infrastructure.Services
                     data = data.OrderBy(row => row.ContainsKey(firstSort.Field) ? row[firstSort.Field] : null).ToList();
                 }
             }
-            
+
             return data;
         }
 
         private bool IsNumericColumn(string column)
         {
-            return column.Contains("Count") || column.Contains("Amount") || column.Contains("Value") || 
+            return column.Contains("Count") || column.Contains("Amount") || column.Contains("Value") ||
                    column.Contains("Number") || column.Contains("Id") || column.Contains("Quantity") ||
                    column.Contains("Total") || column.Contains("Sum") || column.Contains("Average");
         }
 
         private bool IsDateColumn(string column)
         {
-            return column.Contains("Date") || column.Contains("Time") || column.Contains("Created") || 
+            return column.Contains("Date") || column.Contains("Time") || column.Contains("Created") ||
                    column.Contains("Updated") || column.Contains("Modified") || column.Contains("Timestamp") ||
                    column.Contains("Birthday") || column.Contains("Anniversary");
         }
@@ -628,7 +537,7 @@ namespace PPrePorter.Infrastructure.Services
             }
             else if (IsNumericColumn(column))
             {
-                if (column.Contains("Amount") || column.Contains("Value") || column.Contains("Price") || 
+                if (column.Contains("Amount") || column.Contains("Value") || column.Contains("Price") ||
                     column.Contains("Total") || column.Contains("Sum") || column.Contains("Average"))
                 {
                     return "number";
@@ -652,7 +561,7 @@ namespace PPrePorter.Infrastructure.Services
             }
             else if (IsNumericColumn(column))
             {
-                if (column.Contains("Amount") || column.Contains("Value") || column.Contains("Price") || 
+                if (column.Contains("Amount") || column.Contains("Value") || column.Contains("Price") ||
                     column.Contains("Total") || column.Contains("Sum") || column.Contains("Average"))
                 {
                     return "C2";
@@ -662,7 +571,7 @@ namespace PPrePorter.Infrastructure.Services
                     return "N0";
                 }
             }
-            
+
             return null;
         }
 
@@ -674,7 +583,7 @@ namespace PPrePorter.Infrastructure.Services
                 "([A-Z])",
                 " $1"
             ).Trim().Split(' ');
-            
+
             return string.Join(" ", words.Select(w => w.Length > 0 ? char.ToUpper(w[0]) + w.Substring(1) : ""));
         }
 
@@ -682,56 +591,56 @@ namespace PPrePorter.Infrastructure.Services
         {
             // Set license context
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            
+
             using (var package = new ExcelPackage())
             {
                 // Add a new worksheet to the workbook
                 var worksheet = package.Workbook.Worksheets.Add("Report");
-                
+
                 // Create headers
                 for (int i = 0; i < report.Columns.Count; i++)
                 {
                     worksheet.Cells[1, i + 1].Value = report.Columns[i].DisplayName;
-                    
+
                     // Format header
                     worksheet.Cells[1, i + 1].Style.Font.Bold = true;
                     worksheet.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
                     worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(Color.LightGray);
                     worksheet.Cells[1, i + 1].Style.Border.BorderAround(ExcelBorderStyle.Thin);
                 }
-                
+
                 // Add data
                 for (int rowIndex = 0; rowIndex < report.Data.Count; rowIndex++)
                 {
                     var dataRow = report.Data[rowIndex];
-                    
+
                     for (int colIndex = 0; colIndex < report.Columns.Count; colIndex++)
                     {
                         var column = report.Columns[colIndex];
                         var value = dataRow.ContainsKey(column.Name) ? dataRow[column.Name] : null;
-                        
+
                         worksheet.Cells[rowIndex + 2, colIndex + 1].Value = value;
-                        
+
                         // Apply formatting based on data type
                         if (column.IsNumeric)
                         {
-                            worksheet.Cells[rowIndex + 2, colIndex + 1].Style.Numberformat.Format = 
+                            worksheet.Cells[rowIndex + 2, colIndex + 1].Style.Numberformat.Format =
                                 column.Format ?? "#,##0.00";
                         }
                         else if (column.IsDate && value is DateTime)
                         {
-                            worksheet.Cells[rowIndex + 2, colIndex + 1].Style.Numberformat.Format = 
+                            worksheet.Cells[rowIndex + 2, colIndex + 1].Style.Numberformat.Format =
                                 column.Format ?? "yyyy-mm-dd";
                         }
                     }
                 }
-                
+
                 // Autofit columns
                 worksheet.Cells.AutoFitColumns();
-                
+
                 // Save file
                 package.SaveAs(new FileInfo(filePath));
-                
+
                 return new FileInfo(filePath).Length;
             }
         }
@@ -743,11 +652,11 @@ namespace PPrePorter.Infrastructure.Services
                 // Write headers
                 var headerRow = string.Join(",", report.Columns.Select(c => $"\"{c.DisplayName}\""));
                 writer.WriteLine(headerRow);
-                
+
                 // Write data
                 foreach (var dataRow in report.Data)
                 {
-                    var row = string.Join(",", report.Columns.Select(column => 
+                    var row = string.Join(",", report.Columns.Select(column =>
                     {
                         var value = dataRow.ContainsKey(column.Name) ? dataRow[column.Name] : null;
                         if (value == null)
@@ -768,11 +677,11 @@ namespace PPrePorter.Infrastructure.Services
                             return $"\"{value}\"";
                         }
                     }));
-                    
+
                     writer.WriteLine(row);
                 }
             }
-            
+
             return new FileInfo(filePath).Length;
         }
 
@@ -794,7 +703,7 @@ namespace PPrePorter.Infrastructure.Services
                 writer.WriteLine();
                 writer.WriteLine($"Total rows: {report.TotalRows}");
             }
-            
+
             return new FileInfo(filePath).Length;
         }
 

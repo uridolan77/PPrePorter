@@ -86,11 +86,8 @@ builder.Services.AddAzureServices(useRealAzureKeyVault);
 // Log which Azure Key Vault implementation is being used
 Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
 
-// If not using real Azure Key Vault, register the development mock implementation
-if (!useRealAzureKeyVault)
-{
-    builder.Services.AddScoped<IAzureKeyVaultService, DevelopmentAzureKeyVaultService>();
-}
+// If not using real Azure Key Vault, we need to implement a proper development service
+// The mock implementation has been removed during code cleanup
 
 // Configure database contexts with local development connection strings
 string ppReporterConnectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=PPrePorterDB;Integrated Security=True;Connect Timeout=30;";

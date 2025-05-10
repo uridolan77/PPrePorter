@@ -19,22 +19,22 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import InfoIcon from '@mui/icons-material/Info';
 
-// Mock data for fallback and development
-const getMockData = () => ({
+// Default empty data structure
+const getEmptyData = () => ({
   users: {
-    total: 5248 + Math.floor(Math.random() * 200),
-    trend: 12.5 + (Math.random() * 2 - 1),
-    isUp: true
+    total: 0,
+    trend: 0,
+    isUp: false
   },
   revenue: {
-    total: 138750 + Math.floor(Math.random() * 5000),
-    trend: -2.3 + (Math.random() * 2 - 1),
+    total: 0,
+    trend: 0,
     isUp: false
   },
   games: {
-    total: 325 + Math.floor(Math.random() * 10),
-    trend: 5.7 + (Math.random() * 2 - 1),
-    isUp: true
+    total: 0,
+    trend: 0,
+    isUp: false
   }
 });
 
@@ -56,7 +56,7 @@ const MetricCard = ({ title, value, trend, icon, loading, error }) => {
             {icon}
           </Box>
         </Box>
-        
+
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" height="60px">
             <CircularProgress size={24} />
@@ -91,28 +91,28 @@ const MetricCard = ({ title, value, trend, icon, loading, error }) => {
 const DashboardSimple = () => {
   const dispatch = useDispatch();
   const { isLoading, error, summaryStats } = useSelector(state => state.dashboard || {});
-  const [localData, setLocalData] = useState(getMockData());
-  
+  const [localData, setLocalData] = useState(getEmptyData());
+
   const handleRefresh = () => {
-    // Dispatch action to fetch dashboard data (using mock data for example)
+    // Dispatch action to fetch dashboard data
     dispatch({ type: 'dashboard/fetchDataStart' });
-    
-    // For development, we'll just update local state with mock data
+
+    // For development, we'll just update local state with empty data
     setTimeout(() => {
-      const newData = getMockData();
+      const newData = getEmptyData();
       setLocalData(newData);
       dispatch({ type: 'dashboard/fetchDataSuccess', payload: newData });
     }, 1000);
   };
-  
+
   useEffect(() => {
     // Initial data load
     handleRefresh();
   }, []);
-  
-  // Use real data from Redux if available, otherwise fall back to mock data
+
+  // Use real data from Redux if available, otherwise fall back to empty data
   const dashboardData = summaryStats || localData;
-  
+
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -125,40 +125,40 @@ const DashboardSimple = () => {
           </IconButton>
         </Tooltip>
       </Box>
-      
+
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={4}>
-          <MetricCard 
-            title="Users" 
-            value={dashboardData.users.total} 
-            trend={dashboardData.users.trend} 
-            icon={<PersonAddIcon color="primary" />} 
+          <MetricCard
+            title="Users"
+            value={dashboardData.users.total}
+            trend={dashboardData.users.trend}
+            icon={<PersonAddIcon color="primary" />}
             loading={isLoading}
             error={error}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <MetricCard 
-            title="Revenue" 
-            value={dashboardData.revenue.total} 
-            trend={dashboardData.revenue.trend} 
-            icon={<AttachMoneyIcon color="primary" />} 
+          <MetricCard
+            title="Revenue"
+            value={dashboardData.revenue.total}
+            trend={dashboardData.revenue.trend}
+            icon={<AttachMoneyIcon color="primary" />}
             loading={isLoading}
             error={error}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          <MetricCard 
-            title="Games" 
-            value={dashboardData.games.total} 
-            trend={dashboardData.games.trend} 
-            icon={<SportsEsportsIcon color="primary" />} 
+          <MetricCard
+            title="Games"
+            value={dashboardData.games.total}
+            trend={dashboardData.games.trend}
+            icon={<SportsEsportsIcon color="primary" />}
             loading={isLoading}
             error={error}
           />
         </Grid>
       </Grid>
-      
+
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6" gutterBottom>
           Recent Activity

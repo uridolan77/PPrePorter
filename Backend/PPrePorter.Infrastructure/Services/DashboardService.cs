@@ -14,6 +14,32 @@ using PPrePorter.Infrastructure.Models;
 
 namespace PPrePorter.Infrastructure.Services
 {
+    public static class StringExtensions
+    {
+        public static string ToTitleCase(this string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            // Handle special cases
+            if (text.Equals("id", StringComparison.OrdinalIgnoreCase))
+                return "ID";
+            if (text.Equals("ftd", StringComparison.OrdinalIgnoreCase))
+                return "FTD";
+
+            // Convert to title case
+            var words = text.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i].Length > 0)
+                {
+                    words[i] = char.ToUpper(words[i][0]) + words[i].Substring(1).ToLower();
+                }
+            }
+            return string.Join(" ", words);
+        }
+    }
+
     public class DashboardService : IDashboardService
     {
         private readonly IPPRePorterDbContext _dbContext;
@@ -545,18 +571,87 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<List<PlayerJourneySankeyData>> FetchPlayerJourneySankeyDataAsync(DashboardRequest request)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would query the database for player journey data
-            await Task.Delay(10); // Just to make it async
-
-            return new List<PlayerJourneySankeyData>
+            try
             {
-                new PlayerJourneySankeyData { SourceNode = "Registration", TargetNode = "First Deposit", Value = 100, Color = "#4caf50" },
-                new PlayerJourneySankeyData { SourceNode = "First Deposit", TargetNode = "First Game", Value = 80, Color = "#2196f3" },
-                new PlayerJourneySankeyData { SourceNode = "First Game", TargetNode = "Second Deposit", Value = 50, Color = "#ff9800" },
-                new PlayerJourneySankeyData { SourceNode = "Second Deposit", TargetNode = "Regular Player", Value = 30, Color = "#9c27b0" },
-                new PlayerJourneySankeyData { SourceNode = "Registration", TargetNode = "Abandoned", Value = 20, Color = "#f44336" }
-            };
+                var endDate = DateTime.UtcNow.Date;
+                var startDate = endDate.AddDays(-30); // Get data for the last 30 days
+                var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
+
+                if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
+                {
+                    whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
+                }
+
+                // Get player journey data from transactions and player activities
+                var playerJourneyData = new List<PlayerJourneySankeyData>();
+
+                // Get registration to first deposit flow
+                var registrationToDeposit = await _dbContext.Players
+                    .Where(p => whiteLabelIds.Contains(p.CasinoID) && p.CreatedAt >= startDate)
+                    .GroupBy(p => 1)
+                    .Select(g => new
+                    {
+                        TotalRegistrations = g.Count(),
+                        WithFirstDeposit = g.Count(p => p.FirstDeposit != null)
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (registrationToDeposit != null)
+                {
+                    playerJourneyData.Add(new PlayerJourneySankeyData
+                    {
+                        SourceNode = "Registration",
+                        TargetNode = "First Deposit",
+                        Value = registrationToDeposit.WithFirstDeposit,
+                        Color = "#4caf50"
+                    });
+
+                    playerJourneyData.Add(new PlayerJourneySankeyData
+                    {
+                        SourceNode = "Registration",
+                        TargetNode = "No Deposit",
+                        Value = registrationToDeposit.TotalRegistrations - registrationToDeposit.WithFirstDeposit,
+                        Color = "#f44336"
+                    });
+                }
+
+                // Get first deposit to first game flow
+                var depositToGame = await _dbContext.Players
+                    .Where(p => whiteLabelIds.Contains(p.CasinoID) && p.FirstDeposit != null && p.FirstDeposit >= startDate)
+                    .GroupBy(p => 1)
+                    .Select(g => new
+                    {
+                        TotalFirstDeposits = g.Count(),
+                        WithFirstGame = g.Count(p => p.FirstGame != null)
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (depositToGame != null)
+                {
+                    playerJourneyData.Add(new PlayerJourneySankeyData
+                    {
+                        SourceNode = "First Deposit",
+                        TargetNode = "First Game",
+                        Value = depositToGame.WithFirstGame,
+                        Color = "#2196f3"
+                    });
+
+                    playerJourneyData.Add(new PlayerJourneySankeyData
+                    {
+                        SourceNode = "First Deposit",
+                        TargetNode = "No Game",
+                        Value = depositToGame.TotalFirstDeposits - depositToGame.WithFirstGame,
+                        Color = "#ff9800"
+                    });
+                }
+
+                return playerJourneyData;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching player journey sankey data");
+                throw;
+            }
         }
 
         public async Task<HeatmapData> GetHeatmapDataAsync(DashboardRequest request)
@@ -661,22 +756,154 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<SegmentComparisonData> FetchSegmentComparisonDataAsync(SegmentComparisonRequest request)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would query the database for segment comparison data
-            await Task.Delay(10); // Just to make it async
-
-            return new SegmentComparisonData
+            try
             {
-                SegmentType = request.SegmentType,
-                MetricName = request.MetricToCompare,
-                Segments = new List<SegmentMetricData>
+                var endDate = DateTime.UtcNow.Date;
+                var startDate = endDate.AddDays(-30); // Get data for the last 30 days
+                var previousStartDate = startDate.AddDays(-30); // Previous period for comparison
+                var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
+
+                if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
-                    new SegmentMetricData { SegmentName = "Segment 1", Value = 1000, PercentChange = 5.2m },
-                    new SegmentMetricData { SegmentName = "Segment 2", Value = 1500, PercentChange = -2.1m },
-                    new SegmentMetricData { SegmentName = "Segment 3", Value = 800, PercentChange = 10.5m },
-                    new SegmentMetricData { SegmentName = "Segment 4", Value = 1200, PercentChange = 0.8m }
+                    whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
                 }
-            };
+
+                var result = new SegmentComparisonData
+                {
+                    SegmentType = request.SegmentType,
+                    MetricName = request.MetricToCompare,
+                    Segments = new List<SegmentMetricData>()
+                };
+
+                // Process based on segment type
+                switch (request.SegmentType?.ToLower())
+                {
+                    case "country":
+                        await ProcessCountrySegmentComparisonAsync(request, result, whiteLabelIds, startDate, endDate, previousStartDate);
+                        break;
+                    case "platform":
+                        await ProcessPlatformSegmentComparisonAsync(request, result, whiteLabelIds, startDate, endDate, previousStartDate);
+                        break;
+                    case "game_type":
+                        await ProcessGameTypeSegmentComparisonAsync(request, result, whiteLabelIds, startDate, endDate, previousStartDate);
+                        break;
+                    case "player_type":
+                        await ProcessPlayerTypeSegmentComparisonAsync(request, result, whiteLabelIds, startDate, endDate, previousStartDate);
+                        break;
+                    default:
+                        // Default to white label comparison
+                        await ProcessWhiteLabelSegmentComparisonAsync(request, result, whiteLabelIds, startDate, endDate, previousStartDate);
+                        break;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching segment comparison data");
+                throw;
+            }
+        }
+
+        private async Task ProcessWhiteLabelSegmentComparisonAsync(SegmentComparisonRequest request, SegmentComparisonData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate, DateTime previousStartDate)
+        {
+            // Get current period data by white label
+            var currentPeriodData = await _dbContext.DailyActions
+                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= startDate && da.Date <= endDate)
+                .GroupBy(da => da.WhiteLabelID)
+                .Select(g => new
+                {
+                    WhiteLabelId = g.Key,
+                    Value = GetMetricValue(g, request.MetricToCompare)
+                })
+                .ToListAsync();
+
+            // Get previous period data by white label
+            var previousPeriodData = await _dbContext.DailyActions
+                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= previousStartDate && da.Date < startDate)
+                .GroupBy(da => da.WhiteLabelID)
+                .Select(g => new
+                {
+                    WhiteLabelId = g.Key,
+                    Value = GetMetricValue(g, request.MetricToCompare)
+                })
+                .ToListAsync();
+
+            // Get white label names
+            var whiteLabelNames = await _dbContext.WhiteLabels
+                .Where(wl => whiteLabelIds.Contains(wl.LabelID))
+                .ToDictionaryAsync(wl => wl.LabelID, wl => wl.LabelName);
+
+            // Create segment data
+            foreach (var current in currentPeriodData)
+            {
+                var previous = previousPeriodData.FirstOrDefault(p => p.WhiteLabelId == current.WhiteLabelId);
+                var previousValue = previous?.Value ?? 0;
+                var percentChange = CalculateChangePercentage(current.Value, previousValue);
+
+                result.Segments.Add(new SegmentMetricData
+                {
+                    SegmentName = whiteLabelNames.GetValueOrDefault(current.WhiteLabelId, $"White Label {current.WhiteLabelId}"),
+                    Value = current.Value,
+                    PercentChange = percentChange
+                });
+            }
+
+            // Sort by value descending
+            result.Segments = result.Segments.OrderByDescending(s => s.Value).ToList();
+        }
+
+        private decimal GetMetricValue(IGrouping<int, DailyAction> group, string metricName)
+        {
+            switch (metricName?.ToLower())
+            {
+                case "revenue":
+                    return GetTotalRevenue(group, string.Empty);
+                case "bets":
+                    return GetTotalBets(group, string.Empty);
+                case "wins":
+                    return GetTotalWins(group, string.Empty);
+                case "deposits":
+                    return group.Sum(da => da.Deposits ?? 0);
+                case "cashouts":
+                    return group.Sum(da => da.PaidCashouts ?? 0);
+                case "registrations":
+                    return group.Sum(da => da.Registration);
+                case "ftd":
+                    return group.Sum(da => da.FTD);
+                default:
+                    return 0;
+            }
+        }
+
+        private async Task ProcessCountrySegmentComparisonAsync(SegmentComparisonRequest request, SegmentComparisonData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate, DateTime previousStartDate)
+        {
+            // Implementation for country segment comparison
+            // This would be similar to the white label implementation but grouped by country
+            await Task.CompletedTask; // Placeholder until implementation is complete
+        }
+
+        private async Task ProcessPlatformSegmentComparisonAsync(SegmentComparisonRequest request, SegmentComparisonData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate, DateTime previousStartDate)
+        {
+            // Implementation for platform segment comparison
+            await Task.CompletedTask; // Placeholder until implementation is complete
+        }
+
+        private async Task ProcessGameTypeSegmentComparisonAsync(SegmentComparisonRequest request, SegmentComparisonData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate, DateTime previousStartDate)
+        {
+            // Implementation for game type segment comparison
+            await Task.CompletedTask; // Placeholder until implementation is complete
+        }
+
+        private async Task ProcessPlayerTypeSegmentComparisonAsync(SegmentComparisonRequest request, SegmentComparisonData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate, DateTime previousStartDate)
+        {
+            // Implementation for player type segment comparison
+            await Task.CompletedTask; // Placeholder until implementation is complete
         }
 
         public async Task<List<MicroChartData>> GetMicroChartDataAsync(DashboardRequest request)
@@ -794,64 +1021,192 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<DashboardPreferences> FetchUserDashboardPreferencesAsync(string userId)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would query the database for user preferences
-            await Task.Delay(10); // Just to make it async
-
-            // Return default preferences
-            return new DashboardPreferences
+            try
             {
-                UserId = userId,
-                ColorScheme = new ColorSchemePreference
+                // Try to get user preferences from the database
+                int userIdInt;
+                if (!int.TryParse(userId, out userIdInt))
+                {
+                    _logger.LogWarning("Invalid user ID format: {UserId}", userId);
+                    userIdInt = 0;
+                }
+
+                var userPreferences = await _dbContext.UserPreferences
+                    .FirstOrDefaultAsync(up => up.UserId == userIdInt);
+
+                if (userPreferences != null)
+                {
+                    // Convert from database entity to DTO
+                    return new DashboardPreferences
+                    {
+                        UserId = userId,
+                        ColorScheme = new ColorSchemePreference
+                        {
+                            UserId = userId,
+                            BaseTheme = userPreferences.BaseTheme ?? "light",
+                            ColorMode = userPreferences.ColorMode ?? "standard",
+                            PrimaryColor = userPreferences.PrimaryColor ?? "#1976d2",
+                            SecondaryColor = userPreferences.SecondaryColor ?? "#dc004e",
+                            PositiveColor = userPreferences.PositiveColor ?? "#4caf50",
+                            NegativeColor = userPreferences.NegativeColor ?? "#f44336",
+                            NeutralColor = userPreferences.NeutralColor ?? "#9e9e9e",
+                            ContrastLevel = userPreferences.ContrastLevel ?? 3
+                        },
+                        InformationDensity = userPreferences.InformationDensity ?? "medium",
+                        PreferredChartTypes = userPreferences.PreferredChartTypes != null
+                            ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(userPreferences.PreferredChartTypes)
+                            : GetDefaultChartTypes(),
+                        PinnedMetrics = userPreferences.PinnedMetrics != null
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(userPreferences.PinnedMetrics)
+                            : new List<string> { "Revenue", "Registrations", "FTD" },
+                        ShowAnnotations = userPreferences.ShowAnnotations ?? true,
+                        ShowInsights = userPreferences.ShowInsights ?? true,
+                        ShowAnomalies = userPreferences.ShowAnomalies ?? true,
+                        ShowForecasts = userPreferences.ShowForecasts ?? true,
+                        DefaultTimeRange = userPreferences.DefaultTimeRange ?? "week",
+                        DefaultDataGranularity = userPreferences.DefaultDataGranularity ?? 7,
+                        InsightImportanceThreshold = userPreferences.InsightImportanceThreshold ?? 4,
+                        ComponentVisibility = userPreferences.ComponentVisibility != null
+                            ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, bool>>(userPreferences.ComponentVisibility)
+                            : GetDefaultComponentVisibility(),
+                        LastUpdated = userPreferences.LastUpdated ?? DateTime.UtcNow
+                    };
+                }
+
+                // If no preferences found, return default preferences
+                return new DashboardPreferences
                 {
                     UserId = userId,
-                    BaseTheme = "light",
-                    ColorMode = "standard",
-                    PrimaryColor = "#1976d2",
-                    SecondaryColor = "#dc004e",
-                    PositiveColor = "#4caf50",
-                    NegativeColor = "#f44336",
-                    NeutralColor = "#9e9e9e",
-                    ContrastLevel = 3
-                },
-                InformationDensity = "medium",
-                PreferredChartTypes = new Dictionary<string, string>
-                {
-                    { "revenue", "line" },
-                    { "registrations", "bar" },
-                    { "topGames", "bar" },
-                    { "transactions", "table" }
-                },
-                PinnedMetrics = new List<string> { "Revenue", "Registrations", "FTD" },
-                ShowAnnotations = true,
-                ShowInsights = true,
-                ShowAnomalies = true,
-                ShowForecasts = true,
-                DefaultTimeRange = "week",
-                DefaultDataGranularity = 7,
-                InsightImportanceThreshold = 4,
-                ComponentVisibility = new Dictionary<string, bool>
-                {
-                    { "summary", true },
-                    { "revenueChart", true },
-                    { "registrationChart", true },
-                    { "topGames", true },
-                    { "transactions", true },
-                    { "story", true }
-                },
-                LastUpdated = DateTime.UtcNow
+                    ColorScheme = new ColorSchemePreference
+                    {
+                        UserId = userId,
+                        BaseTheme = "light",
+                        ColorMode = "standard",
+                        PrimaryColor = "#1976d2",
+                        SecondaryColor = "#dc004e",
+                        PositiveColor = "#4caf50",
+                        NegativeColor = "#f44336",
+                        NeutralColor = "#9e9e9e",
+                        ContrastLevel = 3
+                    },
+                    InformationDensity = "medium",
+                    PreferredChartTypes = GetDefaultChartTypes(),
+                    PinnedMetrics = new List<string> { "Revenue", "Registrations", "FTD" },
+                    ShowAnnotations = true,
+                    ShowInsights = true,
+                    ShowAnomalies = true,
+                    ShowForecasts = true,
+                    DefaultTimeRange = "week",
+                    DefaultDataGranularity = 7,
+                    InsightImportanceThreshold = 4,
+                    ComponentVisibility = GetDefaultComponentVisibility(),
+                    LastUpdated = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching user dashboard preferences for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        private Dictionary<string, string> GetDefaultChartTypes()
+        {
+            return new Dictionary<string, string>
+            {
+                { "revenue", "line" },
+                { "registrations", "bar" },
+                { "topGames", "bar" },
+                { "transactions", "table" }
+            };
+        }
+
+        private Dictionary<string, bool> GetDefaultComponentVisibility()
+        {
+            return new Dictionary<string, bool>
+            {
+                { "summary", true },
+                { "revenueChart", true },
+                { "registrationChart", true },
+                { "topGames", true },
+                { "transactions", true },
+                { "story", true }
             };
         }
 
         public async Task SaveUserDashboardPreferencesAsync(string userId, DashboardPreferences preferences)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would save the preferences to the database
-            await Task.Delay(10); // Just to make it async
+            try
+            {
+                if (preferences == null)
+                {
+                    throw new ArgumentNullException(nameof(preferences));
+                }
 
-            // Update the cache
-            var cacheKey = $"dashboard:preferences:{userId}";
-            await _cachingService.RemoveAsync(cacheKey);
+                // Find existing preferences or create new
+                int userIdInt;
+                if (!int.TryParse(userId, out userIdInt))
+                {
+                    _logger.LogWarning("Invalid user ID format: {UserId}", userId);
+                    userIdInt = 0;
+                }
+
+                var userPreferences = await _dbContext.UserPreferences
+                    .FirstOrDefaultAsync(up => up.UserId == userIdInt);
+
+                if (userPreferences == null)
+                {
+                    // Create new preferences
+                    userPreferences = new UserPreference
+                    {
+                        UserId = userIdInt,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _dbContext.UserPreferences.Add(userPreferences);
+                }
+
+                // Update preferences
+                userPreferences.BaseTheme = preferences.ColorScheme?.BaseTheme;
+                userPreferences.ColorMode = preferences.ColorScheme?.ColorMode;
+                userPreferences.PrimaryColor = preferences.ColorScheme?.PrimaryColor;
+                userPreferences.SecondaryColor = preferences.ColorScheme?.SecondaryColor;
+                userPreferences.PositiveColor = preferences.ColorScheme?.PositiveColor;
+                userPreferences.NegativeColor = preferences.ColorScheme?.NegativeColor;
+                userPreferences.NeutralColor = preferences.ColorScheme?.NeutralColor;
+                userPreferences.ContrastLevel = preferences.ColorScheme?.ContrastLevel;
+                userPreferences.InformationDensity = preferences.InformationDensity;
+                userPreferences.PreferredChartTypes = preferences.PreferredChartTypes != null
+                    ? System.Text.Json.JsonSerializer.Serialize(preferences.PreferredChartTypes)
+                    : null;
+                userPreferences.PinnedMetrics = preferences.PinnedMetrics != null
+                    ? System.Text.Json.JsonSerializer.Serialize(preferences.PinnedMetrics)
+                    : null;
+                userPreferences.ShowAnnotations = preferences.ShowAnnotations;
+                userPreferences.ShowInsights = preferences.ShowInsights;
+                userPreferences.ShowAnomalies = preferences.ShowAnomalies;
+                userPreferences.ShowForecasts = preferences.ShowForecasts;
+                userPreferences.DefaultTimeRange = preferences.DefaultTimeRange;
+                userPreferences.DefaultDataGranularity = preferences.DefaultDataGranularity;
+                userPreferences.InsightImportanceThreshold = preferences.InsightImportanceThreshold;
+                userPreferences.ComponentVisibility = preferences.ComponentVisibility != null
+                    ? System.Text.Json.JsonSerializer.Serialize(preferences.ComponentVisibility)
+                    : null;
+                userPreferences.LastUpdated = DateTime.UtcNow;
+
+                // Save changes
+                await _dbContext.SaveChangesAsync();
+
+                // Update the cache
+                var cacheKey = $"dashboard:preferences:{userId}";
+                await _cachingService.RemoveAsync(cacheKey);
+
+                _logger.LogInformation("Saved dashboard preferences for user {UserId}", userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving dashboard preferences for user {UserId}", userId);
+                throw;
+            }
         }
 
         public async Task<AccessibilityOptimizedData> GetAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
@@ -867,23 +1222,157 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<AccessibilityOptimizedData> FetchAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
         {
-            // This is a placeholder implementation
-            // In a real implementation, you would query the database and transform the data
-            await Task.Delay(10); // Just to make it async
-
-            return new AccessibilityOptimizedData
+            try
             {
-                Title = $"Accessibility Optimized {request.MetricKey} Data",
-                Description = $"This is an accessibility optimized view of {request.MetricKey} data in {request.VisualizationType} format.",
-                Format = request.VisualizationType,
-                Data = new { placeholder = "Sample data - replace with actual data" },
-                KeyInsights = new List<string>
+                var endDate = DateTime.UtcNow.Date;
+                var startDate = endDate.AddDays(-30); // Get data for the last 30 days
+                var whiteLabelIds = await _dataFilterService.GetAccessibleWhiteLabelIdsAsync(request.UserId);
+
+                if (request.WhiteLabelId.HasValue && whiteLabelIds.Contains(request.WhiteLabelId.Value))
                 {
-                    $"{request.MetricKey} has increased by 5% compared to last week",
-                    $"The highest {request.MetricKey} was recorded on Monday",
-                    $"The trend for {request.MetricKey} is positive over the last 30 days"
+                    whiteLabelIds = new List<int> { request.WhiteLabelId.Value };
                 }
-            };
+
+                // Get data based on metric key
+                var result = new AccessibilityOptimizedData
+                {
+                    Title = $"Accessibility Optimized {request.MetricKey} Data",
+                    Description = $"This is an accessibility optimized view of {request.MetricKey} data in {request.VisualizationType} format.",
+                    Format = request.VisualizationType,
+                    KeyInsights = new List<string>()
+                };
+
+                // Process based on metric key
+                switch (request.MetricKey?.ToLower())
+                {
+                    case "revenue":
+                        await ProcessRevenueAccessibilityDataAsync(request, result, whiteLabelIds, startDate, endDate);
+                        break;
+                    case "registrations":
+                        await ProcessRegistrationsAccessibilityDataAsync(request, result, whiteLabelIds, startDate, endDate);
+                        break;
+                    case "deposits":
+                        await ProcessDepositsAccessibilityDataAsync(request, result, whiteLabelIds, startDate, endDate);
+                        break;
+                    case "games":
+                        await ProcessGamesAccessibilityDataAsync(request, result, whiteLabelIds, startDate, endDate);
+                        break;
+                    default:
+                        // Default to summary data
+                        await ProcessSummaryAccessibilityDataAsync(request, result, whiteLabelIds, startDate, endDate);
+                        break;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching accessibility optimized data");
+                throw;
+            }
+        }
+
+        private async Task ProcessRevenueAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
+        {
+            // Get revenue data
+            var revenueData = await _dbContext.DailyActions
+                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= startDate && da.Date <= endDate)
+                .GroupBy(da => da.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = GetTotalRevenue(g, request.PlayMode)
+                })
+                .OrderBy(x => x.Date)
+                .ToListAsync();
+
+            // Transform data based on visualization type
+            switch (request.VisualizationType?.ToLower())
+            {
+                case "table":
+                    result.Data = revenueData.Select(x => new
+                    {
+                        Date = x.Date.ToString("yyyy-MM-dd"),
+                        Revenue = x.Revenue.ToString("C2")
+                    }).ToList();
+                    break;
+                case "text":
+                    result.Data = string.Join("\n", revenueData.Select(x => $"Date: {x.Date:yyyy-MM-dd}, Revenue: {x.Revenue:C2}"));
+                    break;
+                default:
+                    // Default to JSON data
+                    result.Data = revenueData;
+                    break;
+            }
+
+            // Generate insights
+            var totalRevenue = revenueData.Sum(x => x.Revenue);
+            var averageRevenue = revenueData.Count > 0 ? totalRevenue / revenueData.Count : 0;
+            var maxRevenue = revenueData.Count > 0 ? revenueData.Max(x => x.Revenue) : 0;
+            var maxRevenueDate = revenueData.FirstOrDefault(x => x.Revenue == maxRevenue)?.Date;
+
+            result.KeyInsights.Add($"Total revenue for the period: {totalRevenue:C2}");
+            result.KeyInsights.Add($"Average daily revenue: {averageRevenue:C2}");
+
+            if (maxRevenueDate.HasValue)
+            {
+                result.KeyInsights.Add($"Highest revenue of {maxRevenue:C2} was recorded on {maxRevenueDate:yyyy-MM-dd}");
+            }
+
+            // Calculate trend
+            if (revenueData.Count >= 7)
+            {
+                var lastWeekRevenue = revenueData.TakeLast(7).Sum(x => x.Revenue);
+                var previousWeekRevenue = revenueData.Skip(revenueData.Count - 14).Take(7).Sum(x => x.Revenue);
+                var percentChange = CalculateChangePercentage(lastWeekRevenue, previousWeekRevenue);
+
+                result.KeyInsights.Add($"Revenue has {(percentChange >= 0 ? "increased" : "decreased")} by {Math.Abs(percentChange):F1}% compared to the previous week");
+            }
+        }
+
+        private async Task ProcessRegistrationsAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
+        {
+            // Implementation for registrations accessibility data
+            await Task.CompletedTask; // Placeholder until implementation is complete
+
+            // Add default insights
+            result.KeyInsights.Add($"Registration data is being processed for accessibility format: {request.VisualizationType}");
+            result.Data = new { message = "Registration data processing is not yet implemented" };
+        }
+
+        private async Task ProcessDepositsAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
+        {
+            // Implementation for deposits accessibility data
+            await Task.CompletedTask; // Placeholder until implementation is complete
+
+            // Add default insights
+            result.KeyInsights.Add($"Deposit data is being processed for accessibility format: {request.VisualizationType}");
+            result.Data = new { message = "Deposit data processing is not yet implemented" };
+        }
+
+        private async Task ProcessGamesAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
+        {
+            // Implementation for games accessibility data
+            await Task.CompletedTask; // Placeholder until implementation is complete
+
+            // Add default insights
+            result.KeyInsights.Add($"Game data is being processed for accessibility format: {request.VisualizationType}");
+            result.Data = new { message = "Game data processing is not yet implemented" };
+        }
+
+        private async Task ProcessSummaryAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+            List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
+        {
+            // Implementation for summary accessibility data
+            await Task.CompletedTask; // Placeholder until implementation is complete
+
+            // Add default insights
+            result.KeyInsights.Add($"Summary data is being processed for accessibility format: {request.VisualizationType}");
+            result.Data = new { message = "Summary data processing is not yet implemented" };
         }
 
         public async Task<ContextualDataExplorerResult> GetContextualDataExplorerResultAsync(ContextualDataExplorerRequest request)
@@ -1295,76 +1784,654 @@ namespace PPrePorter.Infrastructure.Services
 
         private async Task<TrendAnalysis> GenerateTrendAnalysisAsync(List<DataPoint> dataPoints, ContextualDataExplorerRequest request)
         {
-            // Implementation for trend analysis
-            // This will analyze the data points and identify trends
-            // For now, return a placeholder implementation
-
-            var trendAnalysis = new TrendAnalysis
+            try
             {
-                PrimaryTrend = "stable",
-                TrendMagnitude = 0,
-                DimensionalTrends = new Dictionary<string, string>(),
-                Anomalies = new List<Anomaly>()
-            };
+                if (dataPoints == null || dataPoints.Count == 0)
+                {
+                    return new TrendAnalysis
+                    {
+                        PrimaryTrend = "unknown",
+                        TrendMagnitude = 0,
+                        DimensionalTrends = new Dictionary<string, string>(),
+                        Anomalies = new List<Anomaly>()
+                    };
+                }
 
-            // Further implementation will be added in the future
+                // Initialize trend analysis result
+                var trendAnalysis = new TrendAnalysis
+                {
+                    DimensionalTrends = new Dictionary<string, string>(),
+                    Anomalies = new List<Anomaly>()
+                };
 
-            await Task.CompletedTask; // Placeholder for async implementation
+                // Get time-based data points if available
+                var timeBasedPoints = dataPoints
+                    .Where(dp => dp.Timestamp.HasValue)
+                    .OrderBy(dp => dp.Timestamp)
+                    .ToList();
 
-            return trendAnalysis;
+                if (timeBasedPoints.Count >= 3)
+                {
+                    // Calculate trend for time-based data
+                    await CalculateTimeBasedTrendAsync(timeBasedPoints, trendAnalysis, request);
+                }
+                else
+                {
+                    // Calculate trend for non-time-based data
+                    await CalculateNonTimeBasedTrendAsync(dataPoints, trendAnalysis, request);
+                }
+
+                // Detect anomalies
+                await DetectAnomaliesAsync(dataPoints, trendAnalysis, request);
+
+                return trendAnalysis;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating trend analysis");
+
+                // Return a basic trend analysis in case of error
+                return new TrendAnalysis
+                {
+                    PrimaryTrend = "unknown",
+                    TrendMagnitude = 0,
+                    DimensionalTrends = new Dictionary<string, string>(),
+                    Anomalies = new List<Anomaly>()
+                };
+            }
+        }
+
+        private async Task CalculateTimeBasedTrendAsync(List<DataPoint> timeBasedPoints, TrendAnalysis trendAnalysis, ContextualDataExplorerRequest request)
+        {
+            // Get the primary metric from the request
+            var primaryMetric = request.Metrics?.FirstOrDefault() ?? "revenue";
+
+            // Extract values for the primary metric
+            var values = timeBasedPoints
+                .Select(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0))
+                .ToList();
+
+            // Calculate simple linear regression
+            var n = values.Count;
+            var timestamps = Enumerable.Range(0, n).Select(i => (decimal)i).ToList();
+            var sumX = timestamps.Sum();
+            var sumY = values.Sum();
+            var sumXY = timestamps.Zip(values, (x, y) => x * y).Sum();
+            var sumX2 = timestamps.Sum(x => x * x);
+
+            var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            var intercept = (sumY - slope * sumX) / n;
+
+            // Determine trend direction and magnitude
+            if (Math.Abs(slope) < 0.01m)
+            {
+                trendAnalysis.PrimaryTrend = "stable";
+                trendAnalysis.TrendMagnitude = 0;
+            }
+            else if (slope > 0)
+            {
+                trendAnalysis.PrimaryTrend = "increasing";
+                trendAnalysis.TrendMagnitude = Math.Min(10, Math.Abs(slope) * 10); // Scale to 0-10
+            }
+            else
+            {
+                trendAnalysis.PrimaryTrend = "decreasing";
+                trendAnalysis.TrendMagnitude = Math.Min(10, Math.Abs(slope) * 10); // Scale to 0-10
+            }
+
+            // Calculate trends for different dimensions if available
+            foreach (var dimension in request.Dimensions ?? new List<string>())
+            {
+                if (dimension != "time")
+                {
+                    var dimensionValues = timeBasedPoints
+                        .Where(dp => dp.Dimensions.ContainsKey(dimension))
+                        .GroupBy(dp => dp.Dimensions[dimension].ToString())
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Average(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0))
+                        );
+
+                    if (dimensionValues.Count > 0)
+                    {
+                        var maxValue = dimensionValues.OrderByDescending(kv => kv.Value).First();
+                        trendAnalysis.DimensionalTrends[dimension] = $"highest in {maxValue.Key}";
+                    }
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private async Task CalculateNonTimeBasedTrendAsync(List<DataPoint> dataPoints, TrendAnalysis trendAnalysis, ContextualDataExplorerRequest request)
+        {
+            // For non-time-based data, we'll just report the distribution
+            var primaryMetric = request.Metrics?.FirstOrDefault() ?? "revenue";
+
+            // Set a neutral trend for non-time-based data
+            trendAnalysis.PrimaryTrend = "not_applicable";
+            trendAnalysis.TrendMagnitude = 0;
+
+            // Calculate distribution across dimensions
+            foreach (var dimension in request.Dimensions ?? new List<string>())
+            {
+                var dimensionValues = dataPoints
+                    .Where(dp => dp.Dimensions.ContainsKey(dimension))
+                    .GroupBy(dp => dp.Dimensions[dimension].ToString())
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Average(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0))
+                    );
+
+                if (dimensionValues.Count > 0)
+                {
+                    var maxValue = dimensionValues.OrderByDescending(kv => kv.Value).First();
+                    trendAnalysis.DimensionalTrends[dimension] = $"highest in {maxValue.Key}";
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private async Task DetectAnomaliesAsync(List<DataPoint> dataPoints, TrendAnalysis trendAnalysis, ContextualDataExplorerRequest request)
+        {
+            // Simple anomaly detection using Z-score
+            var primaryMetric = request.Metrics?.FirstOrDefault() ?? "revenue";
+
+            // Get values for the primary metric
+            var values = dataPoints
+                .Select(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0))
+                .ToList();
+
+            if (values.Count < 3)
+            {
+                // Not enough data for anomaly detection
+                return;
+            }
+
+            // Calculate mean and standard deviation
+            var mean = values.Average();
+            var stdDev = Math.Sqrt(values.Average(v => Math.Pow((double)(v - mean), 2)));
+
+            // Detect anomalies (Z-score > 2 or < -2)
+            for (int i = 0; i < dataPoints.Count; i++)
+            {
+                var value = values[i];
+                var zScore = stdDev > 0 ? (double)(value - mean) / stdDev : 0;
+
+                if (Math.Abs(zScore) > 2)
+                {
+                    var anomaly = new Anomaly
+                    {
+                        Dimension = "time",
+                        Metric = primaryMetric,
+                        Value = value,
+                        ExpectedValue = mean,
+                        Deviation = (decimal)zScore,
+                        Severity = Math.Abs(zScore) > 3 ? "high" : "medium",
+                        Timestamp = dataPoints[i].Timestamp
+                    };
+
+                    trendAnalysis.Anomalies.Add(anomaly);
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
         }
 
         private async Task<PredictiveModelingResult> GeneratePredictiveModelingResultsAsync(ContextualDataExplorerRequest request, List<DataPoint> dataPoints)
         {
-            // Implementation for predictive modeling
-            // This will generate predictions based on the scenario parameters
-            // For now, return a placeholder implementation
-
-            var predictiveResult = new PredictiveModelingResult
+            try
             {
-                ScenarioName = "Default Scenario",
-                InputParameters = request.ScenarioParameters,
-                PredictedDataPoints = new List<PredictedDataPoint>(),
-                PredictedAggregations = new Dictionary<string, decimal>(),
-                ConfidenceScore = 0.5m,
-                SensitivityAnalysis = new Dictionary<string, decimal>()
+                if (dataPoints == null || dataPoints.Count == 0 || request.ScenarioParameters == null || request.ScenarioParameters.Count == 0)
+                {
+                    return new PredictiveModelingResult
+                    {
+                        ScenarioName = "Default Scenario",
+                        InputParameters = request.ScenarioParameters ?? new Dictionary<string, object>(),
+                        PredictedDataPoints = new List<PredictedDataPoint>(),
+                        PredictedAggregations = new Dictionary<string, decimal>(),
+                        ConfidenceScore = 0.5m,
+                        SensitivityAnalysis = new Dictionary<string, decimal>()
+                    };
+                }
+
+                // Get time-based data points if available
+                var timeBasedPoints = dataPoints
+                    .Where(dp => dp.Timestamp.HasValue)
+                    .OrderBy(dp => dp.Timestamp)
+                    .ToList();
+
+                // Initialize result
+                var result = new PredictiveModelingResult
+                {
+                    ScenarioName = request.ScenarioParameters.GetValueOrDefault("scenario_name", "Default Scenario").ToString(),
+                    InputParameters = request.ScenarioParameters,
+                    PredictedDataPoints = new List<PredictedDataPoint>(),
+                    PredictedAggregations = new Dictionary<string, decimal>(),
+                    ConfidenceScore = 0.7m, // Default confidence score
+                    SensitivityAnalysis = new Dictionary<string, decimal>()
+                };
+
+                // Get the primary metric from the request
+                var primaryMetric = request.Metrics?.FirstOrDefault() ?? "revenue";
+
+                if (timeBasedPoints.Count >= 3)
+                {
+                    // Generate predictions for time-based data
+                    await GenerateTimeBasedPredictionsAsync(timeBasedPoints, result, request, primaryMetric);
+                }
+                else
+                {
+                    // Generate predictions for non-time-based data
+                    await GenerateNonTimeBasedPredictionsAsync(dataPoints, result, request, primaryMetric);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating predictive modeling results");
+
+                // Return a basic result in case of error
+                return new PredictiveModelingResult
+                {
+                    ScenarioName = "Default Scenario",
+                    InputParameters = request.ScenarioParameters ?? new Dictionary<string, object>(),
+                    PredictedDataPoints = new List<PredictedDataPoint>(),
+                    PredictedAggregations = new Dictionary<string, decimal>(),
+                    ConfidenceScore = 0.5m,
+                    SensitivityAnalysis = new Dictionary<string, decimal>()
+                };
+            }
+        }
+
+        private async Task GenerateTimeBasedPredictionsAsync(List<DataPoint> timeBasedPoints, PredictiveModelingResult result,
+            ContextualDataExplorerRequest request, string primaryMetric)
+        {
+            // Extract values for the primary metric
+            var values = timeBasedPoints
+                .Select(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0))
+                .ToList();
+
+            // Calculate simple linear regression for prediction
+            var n = values.Count;
+            var timestamps = Enumerable.Range(0, n).Select(i => (decimal)i).ToList();
+            var sumX = timestamps.Sum();
+            var sumY = values.Sum();
+            var sumXY = timestamps.Zip(values, (x, y) => x * y).Sum();
+            var sumX2 = timestamps.Sum(x => x * x);
+
+            var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            var intercept = (sumY - slope * sumX) / n;
+
+            // Get prediction horizon from scenario parameters
+            var horizon = 7; // Default to 7 days
+            if (request.ScenarioParameters.TryGetValue("prediction_horizon", out var horizonObj) &&
+                int.TryParse(horizonObj.ToString(), out var parsedHorizon))
+            {
+                horizon = parsedHorizon;
+            }
+
+            // Get growth factor from scenario parameters
+            var growthFactor = 1.0m; // Default to no adjustment
+            if (request.ScenarioParameters.TryGetValue("growth_factor", out var growthObj) &&
+                decimal.TryParse(growthObj.ToString(), out var parsedGrowth))
+            {
+                growthFactor = parsedGrowth;
+            }
+
+            // Generate predictions
+            var lastTimestamp = timeBasedPoints.Last().Timestamp.Value;
+            for (int i = 1; i <= horizon; i++)
+            {
+                var predictedValue = (intercept + slope * (n + i - 1)) * growthFactor;
+                predictedValue = Math.Max(0, predictedValue); // Ensure non-negative values
+
+                var predictedPoint = new PredictedDataPoint
+                {
+                    Timestamp = lastTimestamp.AddDays(i),
+                    Metrics = new Dictionary<string, decimal>
+                    {
+                        { primaryMetric, predictedValue }
+                    },
+                    Dimensions = new Dictionary<string, object>(),
+                    ConfidenceInterval = 0.1m // 10% confidence interval
+                };
+
+                result.PredictedDataPoints.Add(predictedPoint);
+            }
+
+            // Calculate predicted aggregations
+            result.PredictedAggregations[$"total_{primaryMetric}"] = result.PredictedDataPoints.Sum(dp => dp.Metrics[primaryMetric]);
+            result.PredictedAggregations[$"average_{primaryMetric}"] = result.PredictedDataPoints.Count > 0
+                ? result.PredictedDataPoints.Average(dp => dp.Metrics[primaryMetric])
+                : 0;
+
+            // Calculate sensitivity analysis
+            result.SensitivityAnalysis["growth_factor"] = 0.5m; // High sensitivity to growth factor
+            result.SensitivityAnalysis["seasonality"] = 0.3m; // Medium sensitivity to seasonality
+            result.SensitivityAnalysis["external_factors"] = 0.2m; // Low sensitivity to external factors
+
+            // Adjust confidence score based on data quality
+            result.ConfidenceScore = CalculatePredictionConfidence(timeBasedPoints.Count, slope, growthFactor);
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private async Task GenerateNonTimeBasedPredictionsAsync(List<DataPoint> dataPoints, PredictiveModelingResult result,
+            ContextualDataExplorerRequest request, string primaryMetric)
+        {
+            // For non-time-based data, we'll use a simple average-based prediction
+            var avgValue = dataPoints.Average(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0));
+
+            // Get growth factor from scenario parameters
+            var growthFactor = 1.0m; // Default to no adjustment
+            if (request.ScenarioParameters.TryGetValue("growth_factor", out var growthObj) &&
+                decimal.TryParse(growthObj.ToString(), out var parsedGrowth))
+            {
+                growthFactor = parsedGrowth;
+            }
+
+            // Generate a single prediction
+            var predictedValue = avgValue * growthFactor;
+
+            var predictedPoint = new PredictedDataPoint
+            {
+                Timestamp = DateTime.UtcNow.AddDays(1),
+                Metrics = new Dictionary<string, decimal>
+                {
+                    { primaryMetric, predictedValue }
+                },
+                Dimensions = new Dictionary<string, object>(),
+                ConfidenceInterval = 0.2m // 20% confidence interval
             };
 
-            // Further implementation will be added in the future
+            result.PredictedDataPoints.Add(predictedPoint);
 
-            await Task.CompletedTask; // Placeholder for async implementation
+            // Calculate predicted aggregations
+            result.PredictedAggregations[$"predicted_{primaryMetric}"] = predictedValue;
 
-            return predictiveResult;
+            // Set a lower confidence score for non-time-based predictions
+            result.ConfidenceScore = 0.5m;
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private decimal CalculatePredictionConfidence(int dataPointCount, decimal trendSlope, decimal growthFactor)
+        {
+            // Calculate confidence score based on data quality and prediction parameters
+            var baseConfidence = 0.7m; // Base confidence
+
+            // Adjust based on data point count
+            var dataPointFactor = Math.Min(1.0m, dataPointCount / 30.0m); // More data points = higher confidence
+
+            // Adjust based on trend stability
+            var trendFactor = Math.Max(0.5m, 1.0m - Math.Abs(trendSlope) * 0.5m); // More stable trend = higher confidence
+
+            // Adjust based on growth factor deviation from 1.0
+            var growthFactorDeviation = Math.Abs(growthFactor - 1.0m);
+            var growthFactorConfidence = Math.Max(0.5m, 1.0m - growthFactorDeviation); // More extreme growth factors = lower confidence
+
+            // Calculate final confidence score
+            var confidenceScore = baseConfidence * dataPointFactor * trendFactor * growthFactorConfidence;
+
+            // Ensure confidence is between 0.1 and 0.95
+            return Math.Max(0.1m, Math.Min(0.95m, confidenceScore));
         }
 
         private async Task<List<DataInsight>> GenerateInsightsAsync(ContextualDataExplorerResult result, ContextualDataExplorerRequest request)
         {
-            // Implementation for insight generation
-            // This will analyze the data and generate insights
-            // For now, return a placeholder implementation
-
-            var insights = new List<DataInsight>
+            try
             {
-                new DataInsight
+                if (result.DataPoints == null || result.DataPoints.Count == 0)
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    Title = "Sample Insight",
-                    Description = "This is a placeholder insight. Actual insights will be generated based on data analysis.",
-                    Importance = "medium",
-                    RelatedDimensions = request.Dimensions ?? new List<string>(),
-                    RelatedMetrics = request.Metrics ?? new List<string>(),
-                    SupportingData = new Dictionary<string, object>()
+                    return new List<DataInsight>
+                    {
+                        new DataInsight
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Title = "Insufficient Data",
+                            Description = "There is not enough data to generate meaningful insights.",
+                            Importance = "low",
+                            RelatedDimensions = request.Dimensions ?? new List<string>(),
+                            RelatedMetrics = request.Metrics ?? new List<string>(),
+                            SupportingData = new Dictionary<string, object>()
+                        }
+                    };
                 }
-            };
 
-            // Further implementation will be added in the future
+                var insights = new List<DataInsight>();
+                var primaryMetric = request.Metrics?.FirstOrDefault() ?? "revenue";
 
-            await Task.CompletedTask; // Placeholder for async implementation
+                // Generate insights based on the data
+                await GenerateMetricInsightsAsync(result, request, insights, primaryMetric);
+                await GenerateDimensionalInsightsAsync(result, request, insights, primaryMetric);
+                await GenerateAnomalyInsightsAsync(result, request, insights, primaryMetric);
+                await GenerateTrendInsightsAsync(result, request, insights, primaryMetric);
 
-            return insights;
+                // Sort insights by importance
+                insights = insights
+                    .OrderByDescending(i => i.Importance == "high" ? 3 : i.Importance == "medium" ? 2 : 1)
+                    .ToList();
+
+                return insights;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating insights");
+
+                // Return a basic insight in case of error
+                return new List<DataInsight>
+                {
+                    new DataInsight
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Title = "Error Generating Insights",
+                        Description = "An error occurred while generating insights. Please try again later.",
+                        Importance = "low",
+                        RelatedDimensions = request.Dimensions ?? new List<string>(),
+                        RelatedMetrics = request.Metrics ?? new List<string>(),
+                        SupportingData = new Dictionary<string, object>()
+                    }
+                };
+            }
+        }
+
+        private async Task GenerateMetricInsightsAsync(ContextualDataExplorerResult result, ContextualDataExplorerRequest request,
+            List<DataInsight> insights, string primaryMetric)
+        {
+            // Generate insights based on metric aggregations
+            if (result.Aggregations.Count > 0)
+            {
+                // Get total and average values
+                if (result.Aggregations.TryGetValue($"total_{primaryMetric}", out var totalValue) ||
+                    result.Aggregations.TryGetValue($"total_revenue", out totalValue))
+                {
+                    insights.Add(new DataInsight
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Title = $"Total {primaryMetric.ToTitleCase()}",
+                        Description = $"The total {primaryMetric} for the selected period is {totalValue:C2}.",
+                        Importance = "medium",
+                        RelatedMetrics = new List<string> { primaryMetric },
+                        SupportingData = new Dictionary<string, object>
+                        {
+                            { "value", totalValue }
+                        }
+                    });
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private async Task GenerateDimensionalInsightsAsync(ContextualDataExplorerResult result, ContextualDataExplorerRequest request,
+            List<DataInsight> insights, string primaryMetric)
+        {
+            // Generate insights based on dimensions
+            if (request.Dimensions?.Count > 0 && result.DataPoints.Count > 0)
+            {
+                foreach (var dimension in request.Dimensions)
+                {
+                    if (dimension != "time")
+                    {
+                        // Group data points by dimension value
+                        var dimensionValues = result.DataPoints
+                            .Where(dp => dp.Dimensions.ContainsKey(dimension))
+                            .GroupBy(dp => dp.Dimensions[dimension].ToString())
+                            .ToDictionary(
+                                g => g.Key,
+                                g => g.Sum(dp => dp.Metrics.GetValueOrDefault(primaryMetric, 0))
+                            );
+
+                        if (dimensionValues.Count > 0)
+                        {
+                            // Find top and bottom performers
+                            var topPerformer = dimensionValues.OrderByDescending(kv => kv.Value).First();
+                            var bottomPerformer = dimensionValues.OrderBy(kv => kv.Value).First();
+
+                            // Add insight for top performer
+                            insights.Add(new DataInsight
+                            {
+                                Id = Guid.NewGuid().ToString(),
+                                Title = $"Top {dimension.ToTitleCase()} Performance",
+                                Description = $"{topPerformer.Key} has the highest {primaryMetric} at {topPerformer.Value:C2}.",
+                                Importance = "high",
+                                RelatedDimensions = new List<string> { dimension },
+                                RelatedMetrics = new List<string> { primaryMetric },
+                                SupportingData = new Dictionary<string, object>
+                                {
+                                    { "dimension", dimension },
+                                    { "value", topPerformer.Key },
+                                    { "metric", primaryMetric },
+                                    { "amount", topPerformer.Value }
+                                }
+                            });
+
+                            // Add insight for bottom performer if different from top
+                            if (topPerformer.Key != bottomPerformer.Key)
+                            {
+                                insights.Add(new DataInsight
+                                {
+                                    Id = Guid.NewGuid().ToString(),
+                                    Title = $"Lowest {dimension.ToTitleCase()} Performance",
+                                    Description = $"{bottomPerformer.Key} has the lowest {primaryMetric} at {bottomPerformer.Value:C2}.",
+                                    Importance = "medium",
+                                    RelatedDimensions = new List<string> { dimension },
+                                    RelatedMetrics = new List<string> { primaryMetric },
+                                    SupportingData = new Dictionary<string, object>
+                                    {
+                                        { "dimension", dimension },
+                                        { "value", bottomPerformer.Key },
+                                        { "metric", primaryMetric },
+                                        { "amount", bottomPerformer.Value }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private async Task GenerateAnomalyInsightsAsync(ContextualDataExplorerResult result, ContextualDataExplorerRequest request,
+            List<DataInsight> insights, string primaryMetric)
+        {
+            // Generate insights based on anomalies
+            if (result.TrendInfo?.Anomalies?.Count > 0)
+            {
+                foreach (var anomaly in result.TrendInfo.Anomalies)
+                {
+                    // Only report high severity anomalies as insights
+                    if (anomaly.Severity == "high")
+                    {
+                        insights.Add(new DataInsight
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Title = "Anomaly Detected",
+                            Description = $"An unusual {primaryMetric} value of {anomaly.Value:C2} was detected (expected around {anomaly.ExpectedValue:C2}).",
+                            Importance = "high",
+                            RelatedMetrics = new List<string> { primaryMetric },
+                            SupportingData = new Dictionary<string, object>
+                            {
+                                { "anomaly", anomaly }
+                            }
+                        });
+                    }
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
+        }
+
+        private async Task GenerateTrendInsightsAsync(ContextualDataExplorerResult result, ContextualDataExplorerRequest request,
+            List<DataInsight> insights, string primaryMetric)
+        {
+            // Generate insights based on trend information
+            if (result.TrendInfo != null)
+            {
+                // Report primary trend
+                if (!string.IsNullOrEmpty(result.TrendInfo.PrimaryTrend) && result.TrendInfo.PrimaryTrend != "unknown" && result.TrendInfo.PrimaryTrend != "not_applicable")
+                {
+                    var trendDescription = result.TrendInfo.PrimaryTrend switch
+                    {
+                        "increasing" => "increasing",
+                        "decreasing" => "decreasing",
+                        "stable" => "stable",
+                        _ => "changing"
+                    };
+
+                    var importance = result.TrendInfo.PrimaryTrend switch
+                    {
+                        "increasing" => "high",
+                        "decreasing" => "high",
+                        "stable" => "medium",
+                        _ => "low"
+                    };
+
+                    insights.Add(new DataInsight
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Title = $"{primaryMetric.ToTitleCase()} Trend",
+                        Description = $"The {primaryMetric} is {trendDescription} over the selected period.",
+                        Importance = importance,
+                        RelatedMetrics = new List<string> { primaryMetric },
+                        SupportingData = new Dictionary<string, object>
+                        {
+                            { "trend", result.TrendInfo.PrimaryTrend },
+                            { "magnitude", result.TrendInfo.TrendMagnitude }
+                        }
+                    });
+                }
+
+                // Report dimensional trends
+                foreach (var dimensionalTrend in result.TrendInfo.DimensionalTrends)
+                {
+                    insights.Add(new DataInsight
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Title = $"{dimensionalTrend.Key.ToTitleCase()} Distribution",
+                        Description = $"{primaryMetric.ToTitleCase()} is {dimensionalTrend.Value}.",
+                        Importance = "medium",
+                        RelatedDimensions = new List<string> { dimensionalTrend.Key },
+                        RelatedMetrics = new List<string> { primaryMetric },
+                        SupportingData = new Dictionary<string, object>
+                        {
+                            { "dimension", dimensionalTrend.Key },
+                            { "trend", dimensionalTrend.Value }
+                        }
+                    });
+                }
+            }
+
+            await Task.CompletedTask; // For async compatibility
         }
 
         // Helper methods
+
         private IQueryable<DailyAction> ApplyPlayModeFilter(IQueryable<DailyAction> query, string playMode)
         {
             switch (playMode.ToLower())
@@ -1382,7 +2449,7 @@ namespace PPrePorter.Infrastructure.Services
             }
         }
 
-        private decimal CalculateChangePercentage(decimal current, decimal previous)
+        private static decimal CalculateChangePercentage(decimal current, decimal previous)
         {
             if (previous == 0)
             {
