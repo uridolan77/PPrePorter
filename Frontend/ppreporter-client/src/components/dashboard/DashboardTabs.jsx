@@ -7,6 +7,7 @@ import EmptyState from '../common/EmptyState';
 
 // Tab components
 import OverviewTab from './tabs/OverviewTab';
+import EnhancedOverviewTab from './tabs/EnhancedOverviewTab';
 import PerformanceTab from './tabs/PerformanceTab';
 import PlayersTab from './tabs/PlayersTab';
 import GamesTab from './tabs/GamesTab';
@@ -70,7 +71,7 @@ const DashboardTabs = ({
             />
           }
         >
-          <OverviewTab
+          <EnhancedOverviewTab
             dashboardData={dashboardData}
             isLoading={isLoading}
             error={error}
