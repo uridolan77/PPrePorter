@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a free spins offer for a game
     /// </summary>
-    [Table("GamesFreeSpinsOffers")]
+    [Table("GamesFreeSpinsOffers", Schema = "dbo")]
     public class GameFreeSpinsOffer
     {
         [Key]

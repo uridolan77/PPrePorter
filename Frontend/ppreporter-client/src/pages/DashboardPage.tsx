@@ -4,7 +4,7 @@ import ContextualDataExplorer from '../components/dashboard/ContextualDataExplor
 import TabPanel from '../components/common/TabPanel';
 import VisualQueryBuilder from '../components/reports/VisualQueryBuilder';
 import InteractiveDrillDownExplorer from '../components/dashboard/InteractiveDrillDownExplorer';
-import DataAnnotation from '../components/visualization/DataAnnotation';
+import DataAnnotation, { AnnotationData } from '../components/visualization/DataAnnotation';
 import { DashboardTab } from '../types/dashboard';
 
 // Type definitions
@@ -35,11 +35,7 @@ interface Metric {
   [key: string]: any;
 }
 
-interface AnnotationData {
-  title: string;
-  description: string;
-  insights: string[];
-}
+
 
 // Sample dashboard layout configurations
 const dashboardConfig: DashboardConfig = {
@@ -85,19 +81,22 @@ const DashboardPage: React.FC = () => {
 
   // Handle filter changes
   const handleFilterChange = (newFilters: Partial<Filters>): void => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters
-    }));
+    setFilters((prev: Filters) => {
+      const updatedFilters: Filters = {
+        ...prev,
+        ...newFilters as Filters
+      };
+      return updatedFilters;
+    });
   };
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 3, 
-          mb: 3, 
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mb: 3,
           backgroundColor: theme.palette.background.paper,
           borderRadius: 2
         }}
@@ -110,17 +109,17 @@ const DashboardPage: React.FC = () => {
         </Typography>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
+          <Tabs
+            value={activeTab}
             onChange={handleTabChange}
             textColor="primary"
             indicatorColor="primary"
           >
             {dashboardConfig.tabs.map((tab, index) => (
-              <Tab 
-                key={tab.id} 
-                label={tab.label} 
-                id={`dashboard-tab-${index}`} 
+              <Tab
+                key={tab.id}
+                label={tab.label}
+                id={`dashboard-tab-${index}`}
                 aria-controls={`dashboard-tabpanel-${index}`}
               />
             ))}
@@ -131,17 +130,15 @@ const DashboardPage: React.FC = () => {
       <TabPanel value={activeTab} index={0}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <Paper 
-              sx={{ 
-                p: 3, 
+            <Paper
+              sx={{
+                p: 3,
                 borderRadius: 2,
                 height: '100%'
               }}
             >
-              <ContextualDataExplorer 
-                onViewChange={handleViewChange}
-                onDataPointSelect={handleDataPointSelect}
-                onFilterChange={handleFilterChange}
+              <ContextualDataExplorer
+                onAnnotationCreate={(annotation) => console.log('Annotation created:', annotation)}
               />
             </Paper>
           </Grid>
@@ -151,9 +148,9 @@ const DashboardPage: React.FC = () => {
       <TabPanel value={activeTab} index={1}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <Paper 
-              sx={{ 
-                p: 3, 
+            <Paper
+              sx={{
+                p: 3,
                 borderRadius: 2,
                 height: '100%',
                 minHeight: '600px'
@@ -170,9 +167,9 @@ const DashboardPage: React.FC = () => {
       <TabPanel value={activeTab} index={2}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <Paper 
-              sx={{ 
-                p: 3, 
+            <Paper
+              sx={{
+                p: 3,
                 borderRadius: 2,
                 height: '100%',
                 minHeight: '600px'
@@ -189,9 +186,9 @@ const DashboardPage: React.FC = () => {
       <TabPanel value={activeTab} index={3}>
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <Paper 
-              sx={{ 
-                p: 3, 
+            <Paper
+              sx={{
+                p: 3,
                 borderRadius: 2,
                 height: '100%',
                 minHeight: '600px'
@@ -201,7 +198,7 @@ const DashboardPage: React.FC = () => {
               <Divider sx={{ mb: 3 }} />
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" gutterBottom>Player Retention Analysis</Typography>
-                <DataAnnotation 
+                <DataAnnotation
                   data={{
                     title: "Player Retention Trend",
                     description: "This chart shows the 30-day retention rate for new players",
@@ -213,10 +210,10 @@ const DashboardPage: React.FC = () => {
                   } as AnnotationData}
                 />
               </Box>
-              
+
               <Box>
                 <Typography variant="h6" gutterBottom>Revenue Distribution</Typography>
-                <DataAnnotation 
+                <DataAnnotation
                   data={{
                     title: "Revenue Distribution by Game Type",
                     description: "Breakdown of revenue across different game categories",

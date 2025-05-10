@@ -38,7 +38,7 @@ interface ChartRenderProps {
  */
 export const renderLineChart = ({ data, metrics, handleDataPointClick }: ChartRenderProps): React.ReactNode => {
   const theme = useTheme();
-  
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
@@ -70,7 +70,7 @@ export const renderLineChart = ({ data, metrics, handleDataPointClick }: ChartRe
             stroke={COLORS[index % COLORS.length]}
             strokeWidth={2}
             dot={{ r: 2 }}
-            activeDot={{ r: 6, onClick: (e) => handleDataPointClick(e.payload) }}
+            activeDot={{ r: 6, onClick: (e: any) => handleDataPointClick(e.payload) }}
             name={metric.charAt(0).toUpperCase() + metric.slice(1)}
           />
         ))}
@@ -84,7 +84,7 @@ export const renderLineChart = ({ data, metrics, handleDataPointClick }: ChartRe
  */
 export const renderBarChart = ({ data, dataSource, metrics, handleDataPointClick }: ChartRenderProps): React.ReactNode => {
   const theme = useTheme();
-  
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
@@ -117,7 +117,7 @@ export const renderBarChart = ({ data, dataSource, metrics, handleDataPointClick
             dataKey={metric}
             fill={COLORS[index % COLORS.length]}
             name={metric.charAt(0).toUpperCase() + metric.slice(1)}
-            onClick={(data) => handleDataPointClick(data)}
+            onClick={(data: any) => handleDataPointClick(data)}
           />
         ))}
       </BarChart>
@@ -131,7 +131,7 @@ export const renderBarChart = ({ data, dataSource, metrics, handleDataPointClick
 export const renderPieChart = ({ data, dataSource, metrics, handleDataPointClick }: ChartRenderProps): React.ReactNode => {
   const theme = useTheme();
   const isMobile = window.innerWidth < 600;
-  
+
   let pieData;
   if (dataSource === 'playerSegmentData') {
     pieData = data.playerSegmentData;
@@ -146,7 +146,7 @@ export const renderPieChart = ({ data, dataSource, metrics, handleDataPointClick
       value: data.timeSeriesData.slice(-1)[0][metric]
     }));
   }
-  
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
@@ -158,8 +158,8 @@ export const renderPieChart = ({ data, dataSource, metrics, handleDataPointClick
           outerRadius={isMobile ? 80 : 150}
           fill="#8884d8"
           dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          onClick={(data) => handleDataPointClick(data)}
+          label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          onClick={(data: any) => handleDataPointClick(data)}
         >
           {pieData && pieData.map((entry: any, index: number) => (
             <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
@@ -182,7 +182,7 @@ export const renderPieChart = ({ data, dataSource, metrics, handleDataPointClick
  */
 export const renderAreaChart = ({ data, metrics, handleDataPointClick }: ChartRenderProps): React.ReactNode => {
   const theme = useTheme();
-  
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart
@@ -216,7 +216,7 @@ export const renderAreaChart = ({ data, metrics, handleDataPointClick }: ChartRe
             fill={COLORS[index % COLORS.length]}
             fillOpacity={0.3}
             name={metric.charAt(0).toUpperCase() + metric.slice(1)}
-            onClick={(data) => handleDataPointClick(data)}
+            onClick={(data: any) => handleDataPointClick(data)}
           />
         ))}
       </AreaChart>
@@ -229,7 +229,7 @@ export const renderAreaChart = ({ data, metrics, handleDataPointClick }: ChartRe
  */
 export const renderScatterChart = ({ data, dataSource, metrics, handleDataPointClick }: ChartRenderProps): React.ReactNode => {
   const theme = useTheme();
-  
+
   // Use revenue vs players for game performance scatter plot
   const scatterData = dataSource === 'gamePerformanceData'
     ? data.gamePerformanceData
@@ -278,7 +278,7 @@ export const renderScatterChart = ({ data, dataSource, metrics, handleDataPointC
           name={`${xMetric} vs ${yMetric}`}
           data={scatterData}
           fill={COLORS[0]}
-          onClick={(data) => handleDataPointClick(data)}
+          onClick={(data: any) => handleDataPointClick(data)}
         />
       </ScatterChart>
     </ResponsiveContainer>
@@ -290,7 +290,7 @@ export const renderScatterChart = ({ data, dataSource, metrics, handleDataPointC
  */
 export const renderTableView = ({ data, dataSource }: ChartRenderProps): React.ReactNode => {
   const theme = useTheme();
-  
+
   let tableData: any[] = [];
   let columns: string[] = [];
 

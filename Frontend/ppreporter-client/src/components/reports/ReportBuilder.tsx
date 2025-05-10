@@ -185,7 +185,7 @@ const ReportBuilder: React.FC<ReportBuilderProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent): void => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent<string | number>): void => {
     const name = event.target.name as keyof ReportConfiguration;
     const value = (event.target as HTMLInputElement).type === 'checkbox'
       ? (event.target as HTMLInputElement).checked
@@ -635,11 +635,11 @@ const ReportBuilder: React.FC<ReportBuilderProps> = ({
 
             <FormControl fullWidth margin="normal">
               <InputLabel id="refresh-interval-label">Refresh Interval</InputLabel>
-              <Select
+              <Select<number>
                 labelId="refresh-interval-label"
                 name="refreshInterval"
                 value={reportConfig.refreshInterval}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange(e as SelectChangeEvent<number>)}
                 label="Refresh Interval"
               >
                 <MenuItem value={0}>Manual refresh only</MenuItem>

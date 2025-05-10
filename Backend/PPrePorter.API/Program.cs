@@ -8,6 +8,7 @@ using PPrePorter.API.Features.Authentication.Models;
 using PPrePorter.API.Features.Authentication.Services;
 using PPrePorter.API.Features.Configuration;
 using PPrePorter.API.Middleware;
+using PPrePorter.Core;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Services;
 using PPrePorter.Infrastructure.Data;
@@ -71,10 +72,13 @@ builder.Services.AddSwaggerGen(c =>
 
     // Add operation filter to add authorization header to all endpoints
     c.OperationFilter<SwaggerAuthorizationOperationFilter>();
+
+    // Add operation filter to set default values for parameters
+    c.OperationFilter<SwaggerDefaultValueOperationFilter>();
 });
 
-// Register the real ConnectionStringResolverService to handle Azure Key Vault placeholders
-builder.Services.AddScoped<IConnectionStringResolverService, ConnectionStringResolverService>();
+// Register core services including the ConnectionStringResolverService
+builder.Services.AddCoreServices();
 
 // Determine whether to use the real Azure Key Vault service or the development mock
 bool useRealAzureKeyVault = builder.Environment.IsProduction() ||
@@ -85,6 +89,12 @@ builder.Services.AddAzureServices(useRealAzureKeyVault);
 
 // Log which Azure Key Vault implementation is being used
 Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
+
+// Log Azure Key Vault configuration
+Console.WriteLine("Azure Key Vault Configuration:");
+Console.WriteLine($"  Environment.IsProduction(): {builder.Environment.IsProduction()}");
+Console.WriteLine($"  UseRealAzureKeyVault setting: {builder.Configuration.GetValue<bool>("UseRealAzureKeyVault", false)}");
+Console.WriteLine($"  Final useRealAzureKeyVault value: {useRealAzureKeyVault}");
 
 // If not using real Azure Key Vault, we need to implement a proper development service
 // The mock implementation has been removed during code cleanup
@@ -111,6 +121,9 @@ bool enableAuthentication = appSettings?.EnableAuthentication ?? true;
 
 // Configure rate limiting settings
 builder.Services.Configure<RateLimitingSettings>(builder.Configuration.GetSection("RateLimitingSettings"));
+
+// Configure cache settings
+builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("CacheSettings"));
 
 // Configure JWT Authentication
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -202,8 +215,22 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Controllers
-builder.Services.AddControllers();
+// Add Controllers with cache filter
+builder.Services.AddControllers(options =>
+{
+    // Add cache control filter to properly set cache headers
+    options.Filters.Add<PPrePorter.API.Filters.CacheControlFilter>();
+});
+
+// Add Response Caching
+builder.Services.AddResponseCaching(options =>
+{
+    // Get cache settings from configuration or use defaults
+    var cacheSettings = builder.Configuration.GetSection("CacheSettings").Get<CacheSettings>() ?? new CacheSettings();
+
+    options.MaximumBodySize = cacheSettings.MaxResponseBodySizeMB * 1024 * 1024; // Convert MB to bytes
+    options.UseCaseSensitivePaths = cacheSettings.UseCaseSensitivePaths;
+});
 
 // Register dashboard services
 builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -234,9 +261,11 @@ builder.Services.AddScoped<ICachingService, RedisCachingService>();
 
 // Register Data Storytelling related services
 builder.Services.AddScoped<IInsightGenerationService, InsightGenerationService>();
+builder.Services.AddScoped<IAnomalyDetectionService, AnomalyDetectionService>();
+builder.Services.AddScoped<ITrendAnalysisService, TrendAnalysisService>();
+builder.Services.AddScoped<IContextualExplanationService, ContextualExplanationService>();
 
-// TODO: Replace with real implementations
-// These mock services have been removed during code cleanup
+// These services now have real implementations
 
 // Register the User Context Service
 builder.Services.AddHttpContextAccessor();
@@ -249,40 +278,23 @@ builder.Services.AddNLPServices(builder.Configuration);
 builder.Services.AddSemanticLayer(builder.Configuration);
 
 // Register DailyActionsDB services
-// Use the real database with the correct credentials
+// Always use the real database with hardcoded credentials
 bool useLocalDatabase = false; // Set to false to use the real database
 
-// Log the connection string we're going to use (without sensitive info)
-string connectionStringName = useLocalDatabase ? "DailyActionsDB_Local" : "DailyActionsDB";
-string connectionString = builder.Configuration.GetConnectionString(connectionStringName) ?? "";
+// Get the connection string from configuration
+string connectionStringName = "DailyActionsDB";
+string connectionString = builder.Configuration.GetConnectionString(connectionStringName);
 
-// Log the template connection string
+// Log the connection string (without sensitive info)
 string sanitizedConnectionString = connectionString;
-if (sanitizedConnectionString.Contains("password="))
+if (sanitizedConnectionString != null && sanitizedConnectionString.Contains("password="))
 {
     sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
         sanitizedConnectionString,
         "password=[^;]*",
         "password=***");
 }
-Console.WriteLine($"Using {connectionStringName} connection string template: {sanitizedConnectionString}");
-
-// Check if the connection string contains Azure Key Vault placeholders
-if (connectionString.Contains("{azurevault:"))
-{
-    Console.WriteLine("Connection string contains Azure Key Vault placeholders that will be resolved at runtime");
-
-    // Log the placeholders
-    var placeholderRegex = new Regex(@"\{azurevault:([^:]+):([^}]+)\}", RegexOptions.IgnoreCase);
-    var matches = placeholderRegex.Matches(connectionString);
-    foreach (Match match in matches)
-    {
-        string placeholder = match.Value;
-        string vaultName = match.Groups[1].Value;
-        string secretName = match.Groups[2].Value;
-        Console.WriteLine($"  Found placeholder: {placeholder} (Vault: {vaultName}, Secret: {secretName})");
-    }
-}
+Console.WriteLine($"Using connection string from configuration: {sanitizedConnectionString}");
 
 builder.Services.AddDailyActionsServices(builder.Configuration, useLocalDatabase);
 
@@ -317,149 +329,190 @@ builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerVersi
 
 var app = builder.Build();
 
-// Verify database connection by checking if we can retrieve currencies
+// Verify database connection with a clear success/failure message
+Console.WriteLine("\n=== CHECKING DATABASE CONNECTION ===");
+Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<PPrePorter.DailyActionsDB.Data.DailyActionsDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
     try
     {
-        // Log the actual connection string being used (without sensitive info)
-        var actualConnectionString = dbContext.Database.GetConnectionString();
-        if (actualConnectionString != null)
+        // Get the connection string resolver service
+        var connectionStringResolver = scope.ServiceProvider.GetRequiredService<IConnectionStringResolverService>();
+
+        // Check which Azure Key Vault service implementation is being used
+        var keyVaultService = scope.ServiceProvider.GetRequiredService<IAzureKeyVaultService>();
+        logger.LogInformation("Using Azure Key Vault service implementation: {Implementation}", keyVaultService.GetType().Name);
+
+        // Get the connection string from configuration
+        string connectionStringTemplate = builder.Configuration.GetConnectionString("DailyActionsDB");
+
+        // Log the template connection string (without sensitive info)
+        string sanitizedTemplate = connectionStringTemplate;
+        if (sanitizedTemplate != null && sanitizedTemplate.Contains("password="))
         {
-            var actualSanitizedConnectionString = Regex.Replace(
-                actualConnectionString,
+            sanitizedTemplate = Regex.Replace(
+                sanitizedTemplate,
                 "password=[^;]*",
                 "password=***");
-            logger.LogInformation("Actual connection string being used: {ConnectionString}", actualSanitizedConnectionString);
+        }
+        logger.LogInformation("Connection string template: {ConnectionString}", sanitizedTemplate);
+
+        // Explicitly resolve the connection string
+        Console.WriteLine("Resolving connection string placeholders using " + keyVaultService.GetType().Name + "...");
+        string resolvedConnectionString = connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)
+            .GetAwaiter().GetResult();
+
+        // Check if the connection string still contains placeholders
+        if (resolvedConnectionString.Contains("{azurevault:"))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("CONNECTION STRING RESOLUTION FAILED - PLACEHOLDERS STILL PRESENT");
+            Console.ResetColor();
+
+            throw new InvalidOperationException("Connection string still contains Azure Key Vault placeholders after resolution. The ConnectionStringResolverService failed to replace the placeholders with actual values.");
         }
 
-        logger.LogInformation("Verifying database connection by retrieving currencies...");
-        var currencies = dbContext.Currencies.Take(5).ToList();
-        logger.LogInformation("Successfully connected to DailyActionsDB and retrieved {Count} currencies", currencies.Count);
+        // Log the actual values being used (for debugging purposes)
+        Console.WriteLine("Connection string successfully resolved with all placeholders replaced.");
 
-        // Also check if we can access the tbl_Daily_actions table
-        logger.LogInformation("Verifying access to tbl_Daily_actions table...");
-        var dailyActions = dbContext.DailyActions.Take(1).ToList();
-        logger.LogInformation("Successfully accessed tbl_Daily_actions table and retrieved {Count} records", dailyActions.Count);
-
-        // Check database schema information using raw SQL
-        logger.LogInformation("Checking database schema information...");
-        var connection = dbContext.Database.GetDbConnection();
-        if (connection.State != System.Data.ConnectionState.Open)
+        // Log the resolved connection string (without sensitive info)
+        string sanitizedResolvedConnectionString = resolvedConnectionString;
+        if (sanitizedResolvedConnectionString.Contains("password="))
         {
+            sanitizedResolvedConnectionString = Regex.Replace(
+                sanitizedResolvedConnectionString,
+                "password=[^;]*",
+                "password=***");
+        }
+        logger.LogInformation("Resolved connection string: {ConnectionString}", sanitizedResolvedConnectionString);
+
+        // Create a connection using the resolved connection string
+        using (var connection = new Microsoft.Data.SqlClient.SqlConnection(resolvedConnectionString))
+        {
+            var dataSource = connection.DataSource;
+            var database = connection.Database;
+
+            // Simple connection test - no fallbacks
+            logger.LogInformation("Testing connection to database server {Server}, database {Database}...", dataSource, database);
+
+            // Try to open the connection
             connection.Open();
-        }
 
-        using (var command = connection.CreateCommand())
-        {
-            // Check if the common schema exists
-            command.CommandText = "SELECT SCHEMA_ID('common') AS SchemaID";
-            var schemaId = command.ExecuteScalar();
-            logger.LogInformation("Schema 'common' exists: {Exists}", schemaId != DBNull.Value && Convert.ToInt32(schemaId) > 0);
-
-            // Check if the tbl_Daily_actions table exists in the common schema
-            command.CommandText = "SELECT OBJECT_ID('common.tbl_Daily_actions') AS TableID";
-            var tableId = command.ExecuteScalar();
-            logger.LogInformation("Table 'common.tbl_Daily_actions' exists: {Exists}", tableId != DBNull.Value && Convert.ToInt32(tableId) > 0);
-
-            // Get column information for the daily actions table
-            command.CommandText = @"
-                SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = 'common' AND TABLE_NAME = 'tbl_Daily_actions'
-                ORDER BY ORDINAL_POSITION";
-
-            using (var reader = command.ExecuteReader())
+            // Execute a simple query to verify database access
+            using (var command = connection.CreateCommand())
             {
-                logger.LogInformation("Columns in common.tbl_Daily_actions:");
-                while (reader.Read())
+                command.CommandText = "SELECT 1";
+                var result = command.ExecuteScalar();
+
+                if (result != null)
                 {
-                    var columnName = reader.GetString(0);
-                    var dataType = reader.GetString(1);
-                    var maxLength = reader.IsDBNull(2) ? "NULL" : reader.GetInt32(2).ToString();
-                    logger.LogInformation("  {ColumnName} ({DataType}, MaxLength: {MaxLength})", columnName, dataType, maxLength);
+                    // Connection successful
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"CONNECTED SUCCESSFULLY TO {dataSource}\\{database}");
+                    Console.ResetColor();
+
+                    // Try a simple query to verify we can access a specific table
+                    try
+                    {
+                        command.CommandText = "SELECT TOP 1 * FROM common.tbl_Currencies";
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                logger.LogInformation("Successfully queried the Currencies table");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Connected to database but failed to query the Currencies table");
+                    }
                 }
-            }
-
-            // Check if the tbl_White_labels table exists in the common schema
-            command.CommandText = "SELECT OBJECT_ID('common.tbl_White_labels') AS TableID";
-            var whiteLabelsTableId = command.ExecuteScalar();
-            logger.LogInformation("Table 'common.tbl_White_labels' exists: {Exists}",
-                whiteLabelsTableId != DBNull.Value && Convert.ToInt32(whiteLabelsTableId) > 0);
-
-            // Try to retrieve some white labels
-            logger.LogInformation("Retrieving white labels from the database...");
-            var whiteLabels = dbContext.WhiteLabels.Take(5).ToList();
-            logger.LogInformation("Successfully retrieved {Count} white labels", whiteLabels.Count);
-            foreach (var whiteLabel in whiteLabels)
-            {
-                logger.LogInformation("  White Label: ID={Id}, Name={Name}", whiteLabel.Id, whiteLabel.Name);
-            }
-
-            // Check if the tbl_Countries table exists in the common schema
-            command.CommandText = "SELECT OBJECT_ID('common.tbl_Countries') AS TableID";
-            var countriesTableId = command.ExecuteScalar();
-            logger.LogInformation("Table 'common.tbl_Countries' exists: {Exists}",
-                countriesTableId != DBNull.Value && Convert.ToInt32(countriesTableId) > 0);
-
-            // Try to retrieve some countries
-            logger.LogInformation("Retrieving countries from the database...");
-            var countries = dbContext.Countries.Take(5).ToList();
-            logger.LogInformation("Successfully retrieved {Count} countries", countries.Count);
-
-            // Check if the tbl_Currencies table exists in the common schema
-            command.CommandText = "SELECT OBJECT_ID('common.tbl_Currencies') AS TableID";
-            var currenciesTableId = command.ExecuteScalar();
-            logger.LogInformation("Table 'common.tbl_Currencies' exists: {Exists}",
-                currenciesTableId != DBNull.Value && Convert.ToInt32(currenciesTableId) > 0);
-
-            // Display the currencies we retrieved earlier
-            logger.LogInformation("Currencies retrieved from the database:");
-            foreach (var currency in currencies)
-            {
-                logger.LogInformation("  Currency: ID={Id}, Code={Code}, Name={Name}",
-                    currency.CurrencyID, currency.CurrencyCode, currency.CurrencyName);
+                else
+                {
+                    // This shouldn't happen, but just in case
+                    throw new Exception("Database query returned null");
+                }
             }
         }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Failed to connect to DailyActionsDB or retrieve data");
+        // Connection failed
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("CONNECTION TO DB FAILED");
+        Console.ResetColor();
+
+        logger.LogError(ex, "Failed to connect to database");
 
         // Log more detailed information about the exception
         if (ex is Microsoft.Data.SqlClient.SqlException sqlEx)
         {
-            logger.LogError("SQL Exception: Number={Number}, State={State}, Class={Class}, Message={Message}",
+            logger.LogError("SQL Exception Number: {Number}, State: {State}, Class: {Class}, Message: {Message}",
                 sqlEx.Number, sqlEx.State, sqlEx.Class, sqlEx.Message);
-
-            // Log connection information
-            logger.LogError("Connection: Server={Server}",
-                sqlEx.Server);
-
-            // Check for specific error numbers
-            if (sqlEx.Number == 18456)
-            {
-                logger.LogError("Login failed. Please check the username and password.");
-            }
-            else if (sqlEx.Number == 4060)
-            {
-                logger.LogError("Database does not exist or is not accessible.");
-            }
-            else if (sqlEx.Number == 208)
-            {
-                logger.LogError("Object (table or view) does not exist.");
-            }
         }
-
-        // Don't throw the exception - we want the application to start even if the check fails
-        // This will help with debugging
+        else if (ex is InvalidOperationException && ex.Message.Contains("Azure Key Vault placeholders"))
+        {
+            logger.LogError("Connection string resolution error: {Message}", ex.Message);
+            logger.LogError("The ConnectionStringResolverService failed to replace Azure Key Vault placeholders");
+        }
     }
 
-    logger.LogInformation("Database connection check completed. If no errors were reported, the connection to DailyActionsDB is working correctly.");
-    logger.LogInformation("=== END DATABASE CONNECTION CHECK ===");
+    Console.WriteLine("=== DATABASE CONNECTION CHECK COMPLETE ===\n");
+}
+
+// Initialize the cache
+Console.WriteLine("\n=== INITIALIZING CACHE ===");
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Get the cache service
+        var cacheService = scope.ServiceProvider.GetRequiredService<IGlobalCacheService>();
+        logger.LogInformation("Using cache service implementation: {Implementation}", cacheService.GetType().Name);
+
+        // Get the cache statistics
+        var cacheStats = cacheService.GetStatistics();
+        logger.LogInformation("Initial cache statistics: {CacheStats}", cacheStats);
+
+        // Get the DailyActionsService
+        var dailyActionsService = scope.ServiceProvider.GetRequiredService<PPrePorter.DailyActionsDB.Interfaces.IDailyActionsService>();
+        logger.LogInformation("Using DailyActionsService implementation: {Implementation}", dailyActionsService.GetType().Name);
+
+        // Prewarm the cache
+        Console.WriteLine("Prewarming cache with commonly accessed data...");
+        dailyActionsService.PrewarmCacheAsync().GetAwaiter().GetResult();
+
+        // Get the cache statistics after prewarming
+        cacheStats = cacheService.GetStatistics();
+        logger.LogInformation("Cache statistics after prewarming: {CacheStats}", cacheStats);
+
+        // Get all cache keys
+        var allKeys = cacheService.GetAllKeys();
+        var dailyActionsKeys = allKeys.Where(k => k.Contains("DailyActions")).ToList();
+
+        logger.LogInformation("Total cache keys: {TotalCount}, DailyActions cache keys: {DailyActionsCount}",
+            allKeys.Count, dailyActionsKeys.Count);
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"CACHE INITIALIZED SUCCESSFULLY WITH {allKeys.Count} KEYS");
+        Console.ResetColor();
+    }
+    catch (Exception ex)
+    {
+        // Cache initialization failed
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("CACHE INITIALIZATION FAILED");
+        Console.ResetColor();
+
+        logger.LogError(ex, "Failed to initialize cache");
+    }
+
+    Console.WriteLine("=== CACHE INITIALIZATION COMPLETE ===\n");
 }
 
 // Configure the HTTP request pipeline.
@@ -537,15 +590,67 @@ else
     Console.WriteLine("Authentication is DISABLED - No token required for API access");
 }
 
-// Add global exception handling middleware
+// Add global exception handling middleware first
+// This ensures it can catch exceptions from other middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// Add rate limiting middleware
-app.UseMiddleware<RateLimitingMiddleware>();
-
-// Add performance monitoring middleware
+// Add performance monitoring middleware early in the pipeline
+// This ensures it can monitor the performance of other middleware
 app.UseMiddleware<PerformanceMonitoringMiddleware>();
 
+// Add routing early in the pipeline
+// This is required for the authorization middleware to work correctly
+app.UseRouting();
+
+// Add authentication and authorization middleware
+// These must be after UseRouting() but before UseEndpoints()
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Add rate limiting middleware after auth but before response caching
+// This prevents caching rate-limited responses
+app.UseMiddleware<RateLimitingMiddleware>();
+
+// Add response cache diagnostics middleware
+// This helps diagnose caching issues
+app.UseMiddleware<ResponseCacheDiagnosticsMiddleware>();
+
+// Add response caching middleware
+// This allows caching of entire responses for better performance
+app.UseResponseCaching();
+
+// Add cache response headers middleware to ensure proper caching
+app.Use(async (context, next) =>
+{
+    // Check if this is a GET or HEAD request (cacheable methods)
+    if (context.Request.Method == "GET" || context.Request.Method == "HEAD")
+    {
+        // Check if the path is for a cache test endpoint
+        bool isCacheTestEndpoint = context.Request.Path.StartsWithSegments("/api/cache-test") ||
+                                  context.Request.Path.StartsWithSegments("/api/cache-diagnostics");
+
+        if (isCacheTestEndpoint)
+        {
+            // Add stronger cache control headers for test endpoints
+            context.Response.GetTypedHeaders().CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+            {
+                Public = true,
+                MaxAge = TimeSpan.FromSeconds(60),
+                MustRevalidate = false
+            };
+
+            // Add debug headers
+            context.Response.Headers["X-Response-Cache-Middleware"] = "Applied";
+            context.Response.Headers["X-Cache-Test-Endpoint"] = "True";
+        }
+    }
+
+    await next();
+});
+
+// Map controllers after all middleware is configured
+// This is the endpoint execution middleware
+// The AllowAnonymous attribute on controllers will be respected
 app.MapControllers();
 
 // Map health check endpoints

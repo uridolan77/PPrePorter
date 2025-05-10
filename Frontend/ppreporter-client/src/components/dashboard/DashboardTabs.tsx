@@ -61,7 +61,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           dashboardData={dashboardData}
           isLoading={isLoading}
           error={error}
-          theme={theme}
         />
       )
     },
@@ -73,7 +72,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           dashboardData={dashboardData}
           isLoading={isLoading}
           error={error}
-          theme={theme}
         />
       )
     },
@@ -84,8 +82,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
         <PlayersTab
           dashboardData={dashboardData}
           isLoading={isLoading}
-          error={error}
-          theme={theme}
         />
       )
     },
@@ -96,8 +92,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
         <GamesTab
           dashboardData={dashboardData}
           isLoading={isLoading}
-          error={error}
-          theme={theme}
         />
       )
     }

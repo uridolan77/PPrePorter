@@ -29,12 +29,18 @@ export const selectDashboardState = (state: RootState) => state.dashboard;
 
 export const selectDashboardData = createSelector(
   [selectDashboardState],
-  (dashboard) => dashboard.data
+  (dashboard) => ({
+    summaryStats: dashboard.summaryStats,
+    casinoRevenue: dashboard.casinoRevenue,
+    playerRegistrations: dashboard.playerRegistrations,
+    topGames: dashboard.topGames,
+    recentTransactions: dashboard.recentTransactions
+  })
 );
 
 export const selectDashboardLoading = createSelector(
   [selectDashboardState],
-  (dashboard) => dashboard.loading
+  (dashboard) => dashboard.isLoading
 );
 
 export const selectDashboardError = createSelector(
@@ -123,17 +129,20 @@ export const selectReportsState = (state: RootState) => state.reports;
 
 export const selectReportsData = createSelector(
   [selectReportsState],
-  (reports) => reports.data
+  (reports) => ({
+    players: reports.players.data,
+    dailyActions: reports.dailyActions.data
+  })
 );
 
 export const selectReportsLoading = createSelector(
   [selectReportsState],
-  (reports) => reports.loading
+  (reports) => reports.players.loading || reports.dailyActions.loading
 );
 
 export const selectReportsError = createSelector(
   [selectReportsState],
-  (reports) => reports.error
+  (reports) => reports.players.error || reports.dailyActions.error
 );
 
 // UI selectors

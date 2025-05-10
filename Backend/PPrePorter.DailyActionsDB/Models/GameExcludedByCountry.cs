@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a game excluded in a specific country
     /// </summary>
-    [Table("GamesExcludedByCountry")]
+    [Table("GamesExcludedByCountry", Schema = "dbo")]
     public class GameExcludedByCountry
     {
         [Key]

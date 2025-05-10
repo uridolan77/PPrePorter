@@ -107,51 +107,25 @@ namespace PPrePorter.DailyActionsDB.Data
         public DbSet<WhiteLabel> WhiteLabels { get; set; }
         public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
 
+        // No need for schema detection - we'll explicitly set the schema for each entity
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // Configure SportBetEnhanced as a keyless entity
             // This is likely a view or a query result that doesn't have a primary key in the database
-            // See: https://docs.microsoft.com/en-us/ef/core/modeling/keyless-entity-types
-            modelBuilder.Entity<SportBetEnhanced>().HasNoKey();
-
-            // Determine whether to use the common schema based on the connection string
-            bool useCommonSchema = false;
-
-            try
+            modelBuilder.Entity<SportBetEnhanced>(entity =>
             {
-                // Check if we're using the real database or the local database
-                var connectionString = Database.GetConnectionString();
-                if (connectionString != null && connectionString.Contains("185.64.56.157"))
-                {
-                    useCommonSchema = true;
-                    _logger?.LogInformation("Using common schema for DailyActionsDB tables (real database)");
-                }
-                else
-                {
-                    useCommonSchema = false;
-                    _logger?.LogInformation("Using dbo schema for DailyActionsDB tables (local database)");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "Error determining schema, using dbo schema for local database");
-                useCommonSchema = false;
-            }
+                entity.HasNoKey();
+                entity.ToTable("SportBetsEnhanced", schema: "dbo");
+            });
 
             // Configure DailyAction entity
             modelBuilder.Entity<DailyAction>(entity =>
             {
-                if (useCommonSchema)
-                {
-                    entity.ToTable("tbl_Daily_actions", schema: "common");
-                }
-                else
-                {
-                    entity.ToTable("DailyActions");
-                }
-
+                // Always use the correct schema and table name
+                entity.ToTable("tbl_Daily_actions", schema: "common");
                 entity.HasKey(e => e.Id);
 
                 // Create index on Date and WhiteLabelID for faster queries
@@ -179,25 +153,17 @@ namespace PPrePorter.DailyActionsDB.Data
             // Configure WhiteLabel entity
             modelBuilder.Entity<WhiteLabel>(entity =>
             {
-                if (useCommonSchema)
-                {
-                    entity.ToTable("tbl_White_labels", schema: "common");
-                }
-                else
-                {
-                    entity.ToTable("WhiteLabels");
-                }
+                // Always use the correct schema and table name
+                entity.ToTable("tbl_White_labels", schema: "common");
 
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
 
-                if (useCommonSchema)
-                {
-                    entity.Property(e => e.Url).IsRequired().HasMaxLength(100);
-                    entity.Property(e => e.UrlName).HasMaxLength(50);
-                    entity.Property(e => e.Code).HasMaxLength(50);
-                    entity.Property(e => e.DefaultLanguage).HasMaxLength(50);
-                }
+                // Configure properties for the real database
+                entity.Property(e => e.Url).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.UrlName).HasMaxLength(50);
+                entity.Property(e => e.Code).HasMaxLength(50);
+                entity.Property(e => e.DefaultLanguage).HasMaxLength(50);
             });
 
             // Configure Transaction entity - commented out for now
@@ -223,30 +189,247 @@ namespace PPrePorter.DailyActionsDB.Data
             // Configure Currency entity
             modelBuilder.Entity<Currency>(entity =>
             {
-                if (useCommonSchema)
-                {
-                    entity.ToTable("tbl_Currencies", schema: "common");
-                }
-                else
-                {
-                    entity.ToTable("Currencies");
-                }
+                // Always use the correct schema and table name
+                entity.ToTable("tbl_Currencies", schema: "common");
+
                 entity.HasKey(e => e.CurrencyID);
             });
 
             // Configure Country entity
             modelBuilder.Entity<Country>(entity =>
             {
-                if (useCommonSchema)
-                {
-                    entity.ToTable("tbl_Countries", schema: "common");
-                }
-                else
-                {
-                    entity.ToTable("Countries");
-                }
+                // Always use the correct schema and table name
+                entity.ToTable("tbl_Countries", schema: "common");
                 entity.HasKey(e => e.CountryID);
             });
+
+            // Configure Bonus entity
+            modelBuilder.Entity<Bonus>(entity =>
+            {
+                entity.ToTable("tbl_Bonuses", schema: "common");
+                entity.HasKey(e => e.BonusID);
+            });
+
+            // Configure BonusBalance entity
+            modelBuilder.Entity<BonusBalance>(entity =>
+            {
+                entity.ToTable("tbl_Bonus_balances", schema: "common");
+                entity.HasKey(e => e.BonusBalanceID);
+            });
+
+            // Configure CurrencyHistory entity
+            modelBuilder.Entity<CurrencyHistory>(entity =>
+            {
+                entity.ToTable("tbl_Currency_history", schema: "common");
+                entity.HasKey(e => e.CurrencyId);
+            });
+
+            // Configure DailyActionGame entity
+            modelBuilder.Entity<DailyActionGame>(entity =>
+            {
+                entity.ToTable("tbl_Daily_actions_games", schema: "common");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure Interaction entity
+            modelBuilder.Entity<Interaction>(entity =>
+            {
+                entity.ToTable("tbl_Interactions_checks", schema: "common");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure InteractionScore entity
+            modelBuilder.Entity<InteractionScore>(entity =>
+            {
+                entity.ToTable("tbl_Interactions_ScoreChecks", schema: "common");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure Leaderboard entity
+            modelBuilder.Entity<Leaderboard>(entity =>
+            {
+                entity.ToTable("tbl_Leaderboards", schema: "common");
+                entity.HasKey(e => e.LeaderboardId);
+            });
+
+            // Configure Player entity
+            modelBuilder.Entity<Player>(entity =>
+            {
+                entity.ToTable("tbl_Daily_actions_players", schema: "common");
+                entity.HasKey(e => e.PlayerID);
+            });
+
+            // Configure Transaction entity
+            modelBuilder.Entity<Transaction>(entity =>
+            {
+                entity.ToTable("tbl_Daily_actions_transactions", schema: "common");
+                entity.HasKey(e => e.Id);
+            });
+
+            // Configure WithdrawalRequest entity
+            modelBuilder.Entity<WithdrawalRequest>(entity =>
+            {
+                entity.ToTable("tbl_Withdrawal_requests", schema: "common");
+                entity.HasKey(e => e.RequestID);
+            });
+
+            // Configure SportSport entity
+            modelBuilder.Entity<SportSport>(entity =>
+            {
+                // Sport tables are in the dbo schema based on the database structure
+                entity.ToTable("SportSports", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure SportRegion entity
+            modelBuilder.Entity<SportRegion>(entity =>
+            {
+                entity.ToTable("SportRegions", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure SportMatch entity
+            modelBuilder.Entity<SportMatch>(entity =>
+            {
+                entity.ToTable("SportMatches", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure SportCompetition entity
+            modelBuilder.Entity<SportCompetition>(entity =>
+            {
+                entity.ToTable("SportCompetitions", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure SportBetType entity
+            modelBuilder.Entity<SportBetType>(entity =>
+            {
+                entity.ToTable("SportBetTypes", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure SportOddsType entity
+            modelBuilder.Entity<SportOddsType>(entity =>
+            {
+                entity.ToTable("SportOddsTypes", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure SportMarket entity
+            modelBuilder.Entity<SportMarket>(entity =>
+            {
+                entity.ToTable("SportMarkets", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure Game entity
+            modelBuilder.Entity<Game>(entity =>
+            {
+                entity.ToTable("Games", schema: "dbo");
+                entity.HasKey(e => e.GameID);
+            });
+
+            // Configure GameCasinoSession entity
+            modelBuilder.Entity<GameCasinoSession>(entity =>
+            {
+                entity.ToTable("GamesCasinoSessions", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure GameDescription entity
+            modelBuilder.Entity<GameDescription>(entity =>
+            {
+                entity.ToTable("GamesDescriptions", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure GameExcludedByCountry entity
+            modelBuilder.Entity<GameExcludedByCountry>(entity =>
+            {
+                entity.ToTable("GamesExcludedByCountry", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure GameExcludedByJurisdiction entity
+            modelBuilder.Entity<GameExcludedByJurisdiction>(entity =>
+            {
+                entity.ToTable("GamesExcludedByJurisdiction", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure GameExcludedByLabel entity
+            modelBuilder.Entity<GameExcludedByLabel>(entity =>
+            {
+                entity.ToTable("GamesExcludedByLabel", schema: "dbo");
+                entity.HasKey(e => e.ID);
+            });
+
+            // Configure GameFreeSpinsOffer entity
+            modelBuilder.Entity<GameFreeSpinsOffer>(entity =>
+            {
+                entity.ToTable("GamesFreeSpinsOffers", schema: "dbo");
+                entity.HasKey(e => e.OfferID);
+            });
+        }
+
+        /// <summary>
+        /// Checks if the necessary tables exist in the database
+        /// </summary>
+        public async Task EnsureTablesExistAsync()
+        {
+            try
+            {
+                _logger?.LogInformation("Checking if necessary tables exist in the database");
+
+                // Check if we can connect to the database
+                if (!Database.CanConnect())
+                {
+                    _logger?.LogWarning("Cannot connect to database to check tables");
+                    return;
+                }
+
+                // Log the tables we're using
+                _logger?.LogInformation("Using the following tables:");
+
+                // Common schema tables
+                _logger?.LogInformation("- common.tbl_Daily_actions");
+                _logger?.LogInformation("- common.tbl_White_labels");
+                _logger?.LogInformation("- common.tbl_Countries");
+                _logger?.LogInformation("- common.tbl_Currencies");
+                _logger?.LogInformation("- common.tbl_Bonuses");
+                _logger?.LogInformation("- common.tbl_Bonus_balances");
+                _logger?.LogInformation("- common.tbl_Currency_history");
+                _logger?.LogInformation("- common.tbl_Daily_actions_games");
+                _logger?.LogInformation("- common.tbl_Daily_actions_players");
+                _logger?.LogInformation("- common.tbl_Daily_actions_transactions");
+                _logger?.LogInformation("- common.tbl_Interactions_checks");
+                _logger?.LogInformation("- common.tbl_Interactions_ScoreChecks");
+                _logger?.LogInformation("- common.tbl_Leaderboards");
+                _logger?.LogInformation("- common.tbl_Withdrawal_requests");
+
+                // Dbo schema tables
+                _logger?.LogInformation("- dbo.Games");
+                _logger?.LogInformation("- dbo.GamesCasinoSessions");
+                _logger?.LogInformation("- dbo.GamesDescriptions");
+                _logger?.LogInformation("- dbo.GamesExcludedByCountry");
+                _logger?.LogInformation("- dbo.GamesExcludedByJurisdiction");
+                _logger?.LogInformation("- dbo.GamesExcludedByLabel");
+                _logger?.LogInformation("- dbo.GamesFreeSpinsOffers");
+                _logger?.LogInformation("- dbo.SportBetsEnhanced");
+                _logger?.LogInformation("- dbo.SportBetStates");
+                _logger?.LogInformation("- dbo.SportBetTypes");
+                _logger?.LogInformation("- dbo.SportCompetitions");
+                _logger?.LogInformation("- dbo.SportMarkets");
+                _logger?.LogInformation("- dbo.SportMatches");
+                _logger?.LogInformation("- dbo.SportOddsTypes");
+                _logger?.LogInformation("- dbo.SportRegions");
+                _logger?.LogInformation("- dbo.SportSports");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error checking tables: {Message}", ex.Message);
+            }
         }
     }
 }

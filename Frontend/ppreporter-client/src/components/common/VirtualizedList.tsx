@@ -52,7 +52,7 @@ function VirtualizedList<T>({
 
   // Memoized row renderer to prevent unnecessary re-renders
   const Row = useCallback(
-    ({ index, style }: ListChildComponentProps) => 
+    ({ index, style }: ListChildComponentProps) =>
       renderRow({ index, style, data: data[index] }),
     [data, renderRow]
   );
@@ -64,6 +64,7 @@ function VirtualizedList<T>({
         width={width}
         itemCount={data.length}
         itemSize={itemSize}
+        itemData={data}
       >
         {Row}
       </FixedSizeList>

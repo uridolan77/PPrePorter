@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a casino game session
     /// </summary>
-    [Table("GamesCasinoSessions")]
+    [Table("GamesCasinoSessions", Schema = "dbo")]
     public class GameCasinoSession
     {
         [Key]

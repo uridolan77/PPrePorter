@@ -16,12 +16,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     // Update state so the next render will show the fallback UI
-    return { 
-      hasError: true, 
+    return {
+      hasError: true,
       error: {
         message: error.message,
         stack: error.stack
-      } 
+      }
     };
   }
 
@@ -44,9 +44,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (hasError) {
       // Custom fallback UI
       if (fallback) {
-        return typeof fallback === 'function' && error 
-          ? fallback(error) 
-          : fallback;
+        if (typeof fallback === 'function' && error) {
+          const result = fallback(error);
+          return result as ReactNode;
+        } else {
+          return fallback as ReactNode;
+        }
       }
 
       // Default fallback UI

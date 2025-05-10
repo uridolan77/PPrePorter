@@ -589,9 +589,8 @@ const UnifiedDataTable: React.FC<UnifiedDataTableProps> = ({
             <VirtualizedList
               height={parseInt(maxHeight) - 56} // Subtract header height
               width="100%"
-              itemCount={sortedAndFilteredData.length}
               itemSize={53} // Default MUI TableRow height
-              itemData={sortedAndFilteredData}
+              data={sortedAndFilteredData}
               renderRow={renderRow}
             />
           </Box>

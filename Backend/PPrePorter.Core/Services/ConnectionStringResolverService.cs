@@ -77,11 +77,18 @@ namespace PPrePorter.Core.Services
                     {
                         // If not in cache, retrieve from Azure Key Vault
                         _logger.LogInformation("Retrieving secret '{SecretName}' from vault '{VaultName}' using key '{Key}'", secretName, vaultName, cacheKey);
+
+                        // Add more detailed logging before calling Azure Key Vault
+                        _logger.LogInformation("Attempting to call Azure Key Vault service for vault '{VaultName}' and secret '{SecretName}'", vaultName, secretName);
+
                         secretValue = await _keyVaultService.GetSecretAsync(vaultName, secretName);
+
+                        _logger.LogInformation("Call to Azure Key Vault service completed for vault '{VaultName}' and secret '{SecretName}'", vaultName, secretName);
 
                         if (secretValue == null)
                         {
                             _logger.LogWarning("Secret '{SecretName}' from vault '{VaultName}' returned null", secretName, vaultName);
+                            // No fallback values here - let the caller handle null values
                         }
                         else
                         {
@@ -110,6 +117,8 @@ namespace PPrePorter.Core.Services
                                 ex.InnerException.GetType().Name, ex.InnerException.Message);
                         }
 
+                        // Log the exception but don't provide fallback values
+                        _logger.LogWarning("Secret '{SecretName}' could not be retrieved due to an exception", secretName);
                         continue; // Skip to the next placeholder
                     }
                 }
@@ -117,11 +126,18 @@ namespace PPrePorter.Core.Services
                 if (secretValue == null)
                 {
                     _logger.LogWarning("Secret '{SecretName}' from vault '{VaultName}' resolved to null. Placeholder '{Placeholder}' will not be replaced.", secretName, vaultName, placeholder);
+
+                    // Log a more detailed warning about the placeholder not being replaced
+                    _logger.LogWarning("The placeholder '{Placeholder}' will remain in the connection string. This will likely cause connection failures.", placeholder);
                 }
                 else
                 {
                     resolvedConnectionString = resolvedConnectionString.Replace(placeholder, secretValue);
                     _logger.LogDebug("Successfully replaced placeholder '{Placeholder}' with secret from vault '{VaultName}'.", placeholder, vaultName);
+
+                    // Log a more detailed message about the replacement
+                    string logValue = secretName.Contains("Password") ? "***" : secretValue;
+                    _logger.LogInformation("Placeholder '{Placeholder}' was replaced with value: {Value}", placeholder, logValue);
                 }
             }
 

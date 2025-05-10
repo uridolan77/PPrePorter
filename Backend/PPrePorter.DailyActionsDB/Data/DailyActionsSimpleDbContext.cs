@@ -27,7 +27,7 @@ namespace PPrePorter.DailyActionsDB.Data
             // Configure DailyActionSimple entity
             modelBuilder.Entity<DailyActionSimple>(entity =>
             {
-                entity.ToTable("DailyActions");
+                entity.ToTable("tbl_Daily_actions", schema: "common");
                 entity.HasKey(e => e.Id);
 
                 // Create index on Date and WhiteLabelID for faster queries

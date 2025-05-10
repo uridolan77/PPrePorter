@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a daily action game record
     /// </summary>
-    [Table("tbl_Daily_actions_games")]
+    [Table("tbl_Daily_actions_games", Schema = "common")]
     public class DailyActionGame
     {
         [Key]

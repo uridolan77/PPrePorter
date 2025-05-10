@@ -13,6 +13,10 @@ interface TopGamesChartProps {
   error?: Error | null;
   onRetry?: () => void;
   sx?: any;
+  emptyStateMessage?: string;
+  errorFallback?: (error: Error) => React.ReactElement;
+  valueKey?: string;
+  nameKey?: string;
 }
 
 /**
@@ -58,7 +62,11 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
   showLegend = true,
   error = null,
   onRetry,
-  sx
+  sx,
+  emptyStateMessage = "No game data available",
+  errorFallback,
+  valueKey = "revenue",
+  nameKey = "name"
 }) => {
   const theme = useTheme();
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
@@ -96,6 +104,14 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
     ];
   }, [theme]);
 
+  // Table columns
+  const tableColumns = useMemo(() => [
+    { id: 'name', label: 'Game Name', align: 'left' as const },
+    { id: 'category', label: 'Category', align: 'left' as const },
+    { id: 'revenue', label: 'Revenue', align: 'right' as const, format: (value: number) => formatCurrency(value) },
+    { id: 'players', label: 'Players', align: 'right' as const, format: (value: number) => value.toLocaleString() }
+  ], []);
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
@@ -105,6 +121,9 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
   }
 
   if (error) {
+    if (errorFallback) {
+      return errorFallback(error);
+    }
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
         <Typography variant="body1" color="error">
@@ -123,19 +142,11 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
         <Typography variant="body1" color="text.secondary">
-          No game data available
+          {emptyStateMessage}
         </Typography>
       </Box>
     );
   }
-
-  // Table columns
-  const tableColumns = useMemo(() => [
-    { id: 'name', label: 'Game Name', align: 'left' as const },
-    { id: 'category', label: 'Category', align: 'left' as const },
-    { id: 'revenue', label: 'Revenue', align: 'right' as const, format: (value: number) => formatCurrency(value) },
-    { id: 'players', label: 'Players', align: 'right' as const, format: (value: number) => value.toLocaleString() }
-  ], []);
 
   return (
     <Box sx={{ width: '100%', ...sx }}>

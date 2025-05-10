@@ -358,7 +358,7 @@ const ReportFilter: React.FC<ReportFilterProps> = ({
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Value"
-                value={filter.value ? new Date(filter.value as Date) : null}
+                value={filter.value instanceof Date ? filter.value : null}
                 onChange={(date: Date | null) => handleValueChange(filter.id, date)}
                 slotProps={{
                   textField: {
@@ -418,7 +418,7 @@ const ReportFilter: React.FC<ReportFilterProps> = ({
             <FormControl fullWidth size="small">
               <InputLabel>Value</InputLabel>
               <Select
-                value={filter.value || ""}
+                value={filter.value ? String(filter.value) : ""}
                 onChange={(e: SelectChangeEvent<string>) => handleValueChange(filter.id, e.target.value)}
                 label="Value"
               >

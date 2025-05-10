@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Grid, Typography, Box } from '@mui/material';
+import { Grid, Typography, Box, Button } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PeopleIcon from '@mui/icons-material/People';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
@@ -38,7 +38,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
       <EmptyState
         message={`Error loading metrics: ${error.message}`}
         icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
-        action={onRetry ? { label: 'Retry', onClick: onRetry } : undefined}
+        action={onRetry ? <Button onClick={onRetry}>Retry</Button> : undefined}
       />
     );
   }

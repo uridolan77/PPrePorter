@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a sport region
     /// </summary>
-    [Table("SportRegions")]
+    [Table("SportRegions", Schema = "dbo")]
     public class SportRegion
     {
         [Key]

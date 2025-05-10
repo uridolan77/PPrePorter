@@ -33,8 +33,8 @@ interface CasinoRevenueChartProps extends CommonProps {
  * Casino Revenue Chart component that displays revenue data over time
  * with responsive behavior for mobile devices
  */
-const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({ 
-  data, 
+const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
+  data,
   isLoading = false,
   height = 300,
   error = null,
@@ -43,6 +43,18 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Format data for chart display - memoized to prevent unnecessary recalculations
+  const chartData: ChartDataItem[] = useMemo(() => {
+    if (!data || data.length === 0) return [];
+
+    return data.map(item => ({
+      date: formatDate(item.date),
+      fullDate: item.date,
+      revenue: parseFloat((item.revenue || item.value || 0).toString()),
+      formattedValue: formatCurrency(item.revenue || item.value || 0)
+    }));
+  }, [data]);
 
   // Handle loading state
   if (isLoading) {
@@ -80,18 +92,6 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
     );
   }
 
-  // Format data for chart display - memoized to prevent unnecessary recalculations
-  const chartData: ChartDataItem[] = useMemo(() => {
-    if (!data || data.length === 0) return [];
-
-    return data.map(item => ({
-      date: formatDate(item.date),
-      fullDate: item.date,
-      revenue: parseFloat((item.revenue || item.value || 0).toString()),
-      formattedValue: formatCurrency(item.revenue || item.value || 0)
-    }));
-  }, [data]);
-
   // Mobile view - Line chart (simpler, less CPU intensive)
   if (isMobile) {
     return (
@@ -108,7 +108,7 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
               interval="preserveStartEnd"
             />
             <YAxis
-              tickFormatter={(value) => formatCurrency(value, 'GBP').replace('£', '')}
+              tickFormatter={(value: number) => formatCurrency(value, 'GBP').replace('£', '')}
               tick={{ fontSize: 10 }}
               width={40}
             />
@@ -145,7 +145,7 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis
-            tickFormatter={(value) => formatCurrency(value, 'GBP').replace('£', '')}
+            tickFormatter={(value: number) => formatCurrency(value, 'GBP').replace('£', '')}
           />
           <Tooltip
             formatter={(value: number) => [formatCurrency(value), 'Revenue']}

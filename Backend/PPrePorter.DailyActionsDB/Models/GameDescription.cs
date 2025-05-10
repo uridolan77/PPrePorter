@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a game description in a specific language
     /// </summary>
-    [Table("GamesDescriptions")]
+    [Table("GamesDescriptions", Schema = "dbo")]
     public class GameDescription
     {
         [Key]

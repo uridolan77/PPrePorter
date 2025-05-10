@@ -34,6 +34,14 @@ namespace PPrePorter.API.Middleware
 
         private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
+            // Check if the response has already started
+            if (context.Response.HasStarted)
+            {
+                // If the response has already started, we can't modify the status code or headers
+                // Just log the error and return
+                return;
+            }
+
             context.Response.ContentType = "application/json";
 
             var response = new ApiErrorResponse

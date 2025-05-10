@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents an interaction check
     /// </summary>
-    [Table("tbl_Interactions_checks")]
+    [Table("tbl_Interactions_checks", Schema = "common")]
     public class Interaction
     {
         [Key]

@@ -35,28 +35,8 @@ import {
   selectNaturalLanguage
 } from '../../store/slices/naturalLanguageSlice';
 import { AppDispatch } from '../../store/store';
-import { QueryResult, ExtractedEntities } from '../../types/naturalLanguage';
+import { QueryResult, ExtractedEntities, ClarificationPrompt } from '../../types/naturalLanguage';
 import { CommonProps } from '../../types/common';
-
-/**
- * Clarification prompt interface
- */
-interface ClarificationPrompt {
-  /**
-   * Conflict ID
-   */
-  conflictId: string;
-
-  /**
-   * Prompt question
-   */
-  question: string;
-
-  /**
-   * Prompt options
-   */
-  options: string[];
-}
 
 /**
  * Recent query interface
@@ -186,7 +166,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
         setIsListening(true);
       };
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
         setIsListening(false);
@@ -233,10 +213,10 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
 
             <FormControl component="fieldset">
               <RadioGroup
-                value={clarificationResponses[prompt.conflictId] || ''}
-                onChange={(e) => handleClarificationResponse(prompt.conflictId, e.target.value)}
+                value={clarificationResponses[(prompt as any).conflictId || prompt.id] || ''}
+                onChange={(e) => handleClarificationResponse((prompt as any).conflictId || prompt.id, e.target.value)}
               >
-                {prompt.options.map((option, i) => (
+                {prompt.options?.map((option, i) => (
                   <FormControlLabel
                     key={i}
                     value={option}

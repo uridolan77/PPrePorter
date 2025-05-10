@@ -167,6 +167,11 @@ interface ExtendedNaturalLanguageState extends NaturalLanguageState {
    * Maximum number of queries to store in history
    */
   maxQueryHistory: number;
+
+  /**
+   * Suggested queries
+   */
+  suggestedQueries: string[];
 }
 
 const initialState: ExtendedNaturalLanguageState = {
@@ -180,7 +185,9 @@ const initialState: ExtendedNaturalLanguageState = {
   recentQueries: [],
   queryHistory: [],
   // Maximum number of queries to store in history
-  maxQueryHistory: 10
+  maxQueryHistory: 10,
+  // Suggested queries
+  suggestedQueries: []
 };
 
 export const naturalLanguageSlice = createSlice({

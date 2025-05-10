@@ -1,5 +1,4 @@
-import { useSelector, useDispatch } from 'react-redux';
-import { AppDispatch } from '../store/store';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
   login as loginAction,
   logout as logoutAction,
@@ -11,12 +10,12 @@ import {
   loginWithMicrosoft as loginWithMicrosoftAction,
   selectAuth
 } from '../store/slices/authSlice';
-import { 
-  User, 
-  LoginCredentials, 
-  RegistrationData, 
-  PasswordResetRequest, 
-  PasswordResetConfirmation 
+import {
+  User,
+  LoginCredentials,
+  RegistrationData,
+  PasswordResetRequest,
+  PasswordResetConfirmation
 } from '../types/auth';
 
 /**
@@ -27,57 +26,57 @@ export interface UseAuthReturn {
    * Current user
    */
   user: User | null;
-  
+
   /**
    * Loading state
    */
   loading: boolean;
-  
+
   /**
    * Error message
    */
   error: string | null;
-  
+
   /**
    * Login user
    */
   login: (credentials: LoginCredentials) => Promise<User>;
-  
+
   /**
    * Register user
    */
   register: (userData: RegistrationData) => Promise<User>;
-  
+
   /**
    * Logout user
    */
   logout: () => Promise<null>;
-  
+
   /**
    * Reset password
    */
   resetPassword: (resetData: PasswordResetConfirmation) => Promise<void>;
-  
+
   /**
    * Forgot password
    */
   forgotPassword: (email: PasswordResetRequest) => Promise<void>;
-  
+
   /**
    * Refresh authentication token
    */
   refreshToken: () => Promise<User>;
-  
+
   /**
    * Login with Google OAuth
    */
   loginWithGoogle: () => Promise<User>;
-  
+
   /**
    * Login with Microsoft OAuth
    */
   loginWithMicrosoft: () => Promise<User>;
-  
+
   /**
    * Check if user is authenticated
    */
@@ -92,8 +91,8 @@ export interface UseAuthReturn {
  * @returns Authentication methods and state
  */
 export const useAuth = (): UseAuthReturn => {
-  const dispatch = useDispatch<AppDispatch>();
-  const auth = useSelector(selectAuth);
+  const dispatch = useAppDispatch();
+  const auth = useAppSelector(selectAuth);
 
   /**
    * Login user
@@ -106,7 +105,10 @@ export const useAuth = (): UseAuthReturn => {
       if (loginAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Login failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Login failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -124,7 +126,10 @@ export const useAuth = (): UseAuthReturn => {
       if (registerAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Registration failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Registration failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -141,7 +146,10 @@ export const useAuth = (): UseAuthReturn => {
       if (logoutAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Logout failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Logout failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -155,11 +163,17 @@ export const useAuth = (): UseAuthReturn => {
    */
   const resetPassword = async (resetData: PasswordResetConfirmation): Promise<void> => {
     try {
-      const resultAction = await dispatch(resetPasswordAction(resetData));
+      const resultAction = await dispatch(resetPasswordAction({
+        token: resetData.token,
+        newPassword: resetData.password
+      }));
       if (resetPasswordAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Password reset failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Password reset failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -177,7 +191,10 @@ export const useAuth = (): UseAuthReturn => {
       if (forgotPasswordAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Forgot password request failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Forgot password request failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -194,7 +211,10 @@ export const useAuth = (): UseAuthReturn => {
       if (refreshTokenAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Token refresh failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Token refresh failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -211,7 +231,10 @@ export const useAuth = (): UseAuthReturn => {
       if (loginWithGoogleAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Google login failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Google login failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -228,7 +251,10 @@ export const useAuth = (): UseAuthReturn => {
       if (loginWithMicrosoftAction.fulfilled.match(resultAction)) {
         return resultAction.payload;
       } else {
-        throw new Error(resultAction.payload || 'Microsoft login failed');
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Microsoft login failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       throw error;
@@ -246,7 +272,7 @@ export const useAuth = (): UseAuthReturn => {
   return {
     user: auth.user,
     loading: auth.loading,
-    error: auth.error,
+    error: auth.error ? (typeof auth.error === 'string' ? auth.error : auth.error.message) : null,
     login,
     register,
     logout,

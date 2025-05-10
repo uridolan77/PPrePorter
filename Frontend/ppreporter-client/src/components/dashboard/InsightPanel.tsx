@@ -186,7 +186,8 @@ const InsightPanel: React.FC<InsightPanelProps> = ({
   isLoading = false,
   onInsightAction = () => {},
   onRefreshInsights = () => {},
-  onFeedback = () => {}
+  onFeedback = () => {},
+  sx
 }) => {
   const theme = useTheme();
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({

@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a withdrawal request
     /// </summary>
-    [Table("tbl_Withdrawal_requests")]
+    [Table("tbl_Withdrawal_requests", Schema = "common")]
     public class WithdrawalRequest
     {
         [Key]

@@ -22,6 +22,7 @@ interface RecentTransactionsTableProps {
   isLoading?: boolean;
   maxHeight?: number | string;
   showHeader?: boolean;
+  errorFallback?: (error: Error) => React.ReactElement;
 }
 
 /**

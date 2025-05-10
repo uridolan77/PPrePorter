@@ -22,25 +22,15 @@ interface DashboardChartsProps extends CommonProps {
  * DashboardCharts component
  * Displays charts and visualizations for dashboard data
  */
-const DashboardCharts: React.FC<DashboardChartsProps> = ({ 
-  data, 
-  loading, 
-  error, 
+const DashboardCharts: React.FC<DashboardChartsProps> = ({
+  data,
+  loading,
+  error,
   title = 'Performance Metrics',
   timePeriod = 'week',
   onTimePeriodChange,
   sx
 }) => {
-  // If there's an error, return an error message
-  if (error) {
-    return (
-      <EmptyState 
-        message={`Error loading charts: ${error.message}`}
-        icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
-      />
-    );
-  }
-
   // Default data if none is provided
   const chartsData: DashboardChartData = data || {
     revenueByDay: [],
@@ -55,12 +45,34 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
     }));
   }, [chartsData.revenueByDay]);
 
+  // Memoize the games data to convert from GameDataPoint to GameData
+  const preparedGamesData = useMemo(() => {
+    return chartsData.playersByGame.map((item, index) => ({
+      id: `game-${index}`,
+      name: item.game,
+      revenue: item.value,
+      players: item.value,
+      sessions: 0,
+      category: 'Unknown'
+    }));
+  }, [chartsData.playersByGame]);
+
   // Handle time period change
   const handleTimePeriodChange = (event: SelectChangeEvent<string>) => {
     if (onTimePeriodChange) {
       onTimePeriodChange(event.target.value as TimePeriod);
     }
   };
+
+  // If there's an error, return an error message
+  if (error) {
+    return (
+      <EmptyState
+        message={`Error loading charts: ${error.message}`}
+        icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
+      />
+    );
+  }
 
   return (
     <ErrorBoundary fallback={<EmptyState message="Error displaying charts" />}>
@@ -112,7 +124,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
                 </Box>
               ) : (
                 <TopGamesChart
-                  data={chartsData.playersByGame}
+                  data={preparedGamesData}
                   isLoading={loading}
                 />
               )}

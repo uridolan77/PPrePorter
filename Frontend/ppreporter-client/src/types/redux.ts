@@ -22,7 +22,20 @@ export interface DashboardState {
   playerRegistrations: RegistrationData[];
   topGames: GameData[];
   recentTransactions: TransactionData[];
+  heatmapData: any | null;
+  heatmapLoading: boolean;
+  heatmapError: string | null;
+  nlQueryResults: any | null;
+  nlQueryLoading: boolean;
+  nlQueryError: string | null;
+  favoriteQueries: Array<{ text: string }>;
   isLoading: boolean;
+  playerJourneyData: any | null;
+  playerJourneyLoading: boolean;
+  playerJourneyError: string | null;
+  segmentComparisonData: any | null;
+  segmentComparisonLoading: boolean;
+  segmentComparisonError: string | null;
   componentErrors: DashboardComponentErrors;
   error: Error | string | null;
 }
@@ -32,10 +45,10 @@ export interface DashboardState {
  */
 export interface RevenueData {
   date: string;
-  day?: string;
+  day: string;
   fullDate?: string | Date;
   revenue: number;
-  value?: number;
+  value: number;
 }
 
 /**
@@ -57,6 +70,8 @@ export interface GameData {
   players: number;
   sessions: number;
   category: string;
+  game?: string;
+  value?: number;
 }
 
 /**
@@ -87,14 +102,95 @@ export interface AuthState {
  * User interface
  */
 export interface User {
-  id?: string;
-  username?: string;
-  email?: string;
+  /**
+   * User ID
+   */
+  id: string;
+
+  /**
+   * Username
+   */
+  username: string;
+
+  /**
+   * User's email address
+   */
+  email: string;
+
+  /**
+   * User's full name
+   */
   fullName?: string;
+
+  /**
+   * User's first name
+   */
   firstName?: string;
+
+  /**
+   * User's last name
+   */
   lastName?: string;
-  role?: string;
-  permissions?: string[];
+
+  /**
+   * User's avatar URL
+   */
+  avatar?: string;
+
+  /**
+   * User's role
+   */
+  role?: 'admin' | 'manager' | 'analyst' | 'viewer' | 'guest';
+
+  /**
+   * User's permissions
+   */
+  permissions?: ('view_dashboard' | 'view_reports' | 'create_reports' | 'edit_reports' | 'delete_reports' | 'export_data' | 'manage_users' | 'manage_settings' | 'view_audit_logs')[];
+
+  /**
+   * Whether the user is active
+   */
+  active?: boolean;
+
+  /**
+   * Last login date
+   */
+  lastLogin?: string | Date;
+
+  /**
+   * User's preferences
+   */
+  preferences?: Record<string, any>;
+
+  /**
+   * User's organization
+   */
+  organization?: string;
+
+  /**
+   * User's department
+   */
+  department?: string;
+
+  /**
+   * User's position
+   */
+  position?: string;
+
+  /**
+   * User's phone number
+   */
+  phone?: string;
+
+  /**
+   * User's creation date
+   */
+  createdAt?: string | Date;
+
+  /**
+   * User's last update date
+   */
+  updatedAt?: string | Date;
 }
 
 /**
@@ -170,6 +266,7 @@ export interface LoginCredentials {
   username?: string;
   email?: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 /**

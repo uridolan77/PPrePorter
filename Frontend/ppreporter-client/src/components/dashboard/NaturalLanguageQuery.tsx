@@ -109,7 +109,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
   const handleSubmitQuery = (): void => {
     if (!query.trim()) return;
 
-    dispatch(submitNaturalLanguageQuery(query.trim()));
+    dispatch(submitNaturalLanguageQuery(query.trim()) as any);
 
     // Add to recent queries if not already there
     if (!recentQueries.includes(query.trim())) {
@@ -365,9 +365,9 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
               data={data}
               margin={{ top: 60, right: 140, bottom: 70, left: 90 }}
               xScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-              xFormat={d => `${d} ${xAxis}`}
+              xFormat={(d: any) => `${d} ${xAxis}`}
               yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-              yFormat={d => `${d} ${yAxis}`}
+              yFormat={(d: any) => `${d} ${yAxis}`}
               blendMode="multiply"
               axisTop={null}
               axisRight={null}
@@ -508,7 +508,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
           Insights
         </Typography>
         <Paper sx={{ p: 2 }}>
-          {nlQueryResults.insights.map((insight, index) => (
+          {nlQueryResults.insights.map((insight: string, index: number) => (
             <Box key={index} sx={{ mb: index < nlQueryResults.insights.length - 1 ? 2 : 0 }}>
               <Typography variant="body1">
                 {insight}
@@ -669,7 +669,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
           </Collapse>
 
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-            {favoriteQueries.slice(0, 5).map((fav, index) => (
+            {favoriteQueries.slice(0, 5).map((fav: { text: string }, index: number) => (
               <Chip
                 key={index}
                 label={fav.text}

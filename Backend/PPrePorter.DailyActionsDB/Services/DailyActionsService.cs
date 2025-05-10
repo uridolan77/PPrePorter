@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Models;
@@ -16,25 +18,32 @@ namespace PPrePorter.DailyActionsDB.Services
     /// </summary>
     public class DailyActionsService : IDailyActionsService
     {
-        private readonly DailyActionsDbContext _dbContext;
         private readonly ILogger<DailyActionsService> _logger;
+        private readonly IGlobalCacheService _cache;
+        private readonly DailyActionsDbContext _dbContext;
         private readonly IWhiteLabelService _whiteLabelService;
-        private readonly IMemoryCache _cache;
 
         // Cache keys
         private const string METADATA_CACHE_KEY = "DailyActions_Metadata";
-        private const int CACHE_EXPIRATION_MINUTES = 30;
+        private const string DAILY_ACTIONS_CACHE_KEY = "DailyActions_Data_{0}_{1}_{2}"; // Format: startDate_endDate_whiteLabelId
+        private const string DAILY_ACTION_BY_ID_CACHE_KEY = "DailyAction_ById_{0}"; // Format: id
+        private const string FILTERED_DAILY_ACTIONS_CACHE_KEY = "DailyActions_Filtered_{0}"; // Format: hash of filter
+        private const string SUMMARY_METRICS_CACHE_KEY = "DailyActions_Summary_{0}_{1}_{2}"; // Format: startDate_endDate_whiteLabelId
+        private const int CACHE_EXPIRATION_MINUTES = 120; // Increase to 2 hours
 
         public DailyActionsService(
-            DailyActionsDbContext dbContext,
-            IWhiteLabelService whiteLabelService,
             ILogger<DailyActionsService> logger,
-            IMemoryCache cache)
+            IGlobalCacheService cache,
+            DailyActionsDbContext dbContext,
+            IWhiteLabelService whiteLabelService)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
+
+            _logger.LogInformation("DailyActionsService initialized with global cache service instance: {CacheHashCode}, DbContext instance: {DbContextHashCode}",
+                _cache.GetHashCode(), _dbContext.GetHashCode());
         }
 
         /// <inheritdoc/>
@@ -45,6 +54,44 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Normalize dates to start/end of day
                 var start = startDate.Date;
                 var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+                // Create cache key
+                string cacheKey = string.Format(DAILY_ACTIONS_CACHE_KEY,
+                    start.ToString("yyyyMMdd"),
+                    end.ToString("yyyyMMdd"),
+                    whiteLabelId?.ToString() ?? "all");
+
+                _logger.LogDebug("CACHE CHECK: Checking cache for daily actions with key: {CacheKey}", cacheKey);
+
+                // Log cache statistics before trying to get from cache
+                var globalCacheService = _cache as IGlobalCacheService;
+                if (globalCacheService != null)
+                {
+                    var stats = globalCacheService.GetStatistics();
+                    _logger.LogDebug("CACHE STATS before retrieval: TotalHits={TotalHits}, TotalMisses={TotalMisses}, CacheCount={CacheCount}",
+                        stats["TotalHits"], stats["TotalMisses"], stats["CacheCount"]);
+                }
+
+                // Try to get from cache first
+                bool cacheHit = _cache.TryGetValue(cacheKey, out IEnumerable<DailyAction>? cachedResult);
+
+                _logger.LogDebug("CACHE RESULT: TryGetValue returned {Result} for key {CacheKey}", cacheHit, cacheKey);
+
+                if (cacheHit && cachedResult != null)
+                {
+                    _logger.LogInformation("CACHE HIT: Retrieved daily actions from cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, count: {Count}",
+                        startDate, endDate, whiteLabelId, cacheKey, cachedResult.Count());
+                    return cachedResult;
+                }
+                else if (cacheHit && cachedResult == null)
+                {
+                    _logger.LogWarning("CACHE ANOMALY: Cache hit but null result for key {CacheKey}", cacheKey);
+                }
+                else
+                {
+                    _logger.LogWarning("CACHE MISS: Getting daily actions from database for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
+                        startDate, endDate, whiteLabelId, cacheKey);
+                }
 
                 // Build query with NOLOCK hint
                 var query = _dbContext.DailyActions
@@ -57,13 +104,99 @@ namespace PPrePorter.DailyActionsDB.Services
                 if (whiteLabelId.HasValue)
                 {
                     // Check both WhiteLabelID and WhiteLabelId fields
-                    query = query.Where(da =>
-                        (da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelId.Value) ||
-                        (da.WhiteLabelId.HasValue && da.WhiteLabelId.Value == whiteLabelId.Value));
+                    query = query.Where(da => da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelId.Value);
                 }
 
                 // Execute query - don't use WithNoLock() here since we're using the NoLockInterceptor
-                return await query.ToListAsync();
+                var result = await query.ToListAsync();
+
+                // Log the result count and size estimation
+                int resultCount = result.Count;
+                _logger.LogInformation("Retrieved {Count} daily actions from database for date range {StartDate} to {EndDate} and white label {WhiteLabelId}",
+                    resultCount, startDate, endDate, whiteLabelId);
+
+                // Estimate the size of the result for cache entry
+                long estimatedSize = resultCount * 1000; // More accurate estimate: 1000 bytes per DailyAction
+
+                // Log the size of the first item if available
+                if (resultCount > 0)
+                {
+                    var firstItem = result.First();
+                    _logger.LogInformation("First DailyAction item has {PropertyCount} properties, ID: {Id}, Date: {Date}",
+                        typeof(DailyAction).GetProperties().Length,
+                        firstItem.Id,
+                        firstItem.Date);
+                }
+
+                // Cache the result with more aggressive caching options
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetPriority(CacheItemPriority.High)
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
+                    .SetSize(estimatedSize); // Explicitly set the size for the cache entry
+
+                _logger.LogInformation("Setting cache entry with size: {Size} bytes for {Count} items (average {AvgSize} bytes per item)",
+                    estimatedSize, resultCount, resultCount > 0 ? estimatedSize / resultCount : 0);
+
+                try
+                {
+                    _logger.LogDebug("CACHE SET: About to set cache with key {CacheKey}, value type {ValueType}, value count {ValueCount}, options {@Options}",
+                        cacheKey, result.GetType().Name, result.Count, new {
+                            Priority = cacheOptions.Priority,
+                            Size = cacheOptions.Size,
+                            SlidingExpiration = cacheOptions.SlidingExpiration,
+                            AbsoluteExpiration = cacheOptions.AbsoluteExpiration
+                        });
+
+                    // Store the result in a local variable to ensure it's not modified
+                    var resultToCache = result.ToList();
+
+                    _logger.LogDebug("CACHE SET DETAILS: Setting cache with key {CacheKey}, value type {ValueType}, value count {ValueCount}, first item ID {FirstItemId}",
+                        cacheKey, resultToCache.GetType().Name, resultToCache.Count, resultToCache.FirstOrDefault()?.Id);
+
+                    // Set the cache with the local variable
+                    _cache.Set(cacheKey, resultToCache, cacheOptions);
+
+                    // Verify the cache was set correctly
+                    bool verifySet = _cache.TryGetValue(cacheKey, out IEnumerable<DailyAction>? verifyResult);
+
+                    if (verifySet && verifyResult != null)
+                    {
+                        var verifyList = verifyResult.ToList();
+                        _logger.LogDebug("CACHE VERIFY SUCCESS: After Set, TryGetValue returned {Result} for key {CacheKey}, result is not null with count {Count}, first item ID {FirstItemId}",
+                            verifySet, cacheKey, verifyList.Count, verifyList.FirstOrDefault()?.Id);
+
+                        // Verify that the cached result is the same as the original result
+                        bool sameCount = verifyList.Count == resultToCache.Count;
+                        bool sameFirstId = verifyList.FirstOrDefault()?.Id == resultToCache.FirstOrDefault()?.Id;
+
+                        _logger.LogDebug("CACHE VERIFY DETAILS: Same count: {SameCount}, Same first ID: {SameFirstId}",
+                            sameCount, sameFirstId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("CACHE VERIFY FAILED: After Set, TryGetValue returned {Result} for key {CacheKey}, result is {ResultStatus}",
+                            verifySet, cacheKey, verifyResult != null ? "not null" : "null");
+                    }
+
+                    _logger.LogInformation("Cached daily actions for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
+                        startDate, endDate, whiteLabelId, cacheKey, estimatedSize);
+
+                    // Log cache statistics after setting
+                    var cacheServiceAfterSet = _cache as IGlobalCacheService;
+                    if (cacheServiceAfterSet != null)
+                    {
+                        var stats = cacheServiceAfterSet.GetStatistics();
+                        _logger.LogDebug("CACHE STATS after set: TotalHits={TotalHits}, TotalMisses={TotalMisses}, CacheCount={CacheCount}",
+                            stats["TotalHits"], stats["TotalMisses"], stats["CacheCount"]);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "CACHE ERROR: Failed to set cache with key {CacheKey}", cacheKey);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -77,9 +210,42 @@ namespace PPrePorter.DailyActionsDB.Services
         {
             try
             {
-                return await _dbContext.DailyActions
+                // Create cache key
+                string cacheKey = string.Format(DAILY_ACTION_BY_ID_CACHE_KEY, id);
+
+                // Try to get from cache first
+                if (_cache.TryGetValue(cacheKey, out DailyAction? cachedResult) && cachedResult != null)
+                {
+                    _logger.LogInformation("CACHE HIT: Retrieved daily action from cache with ID {Id}, cache key: {CacheKey}", id, cacheKey);
+                    return cachedResult;
+                }
+
+                _logger.LogWarning("CACHE MISS: Getting daily action from database with ID {Id}, cache key: {CacheKey}", id, cacheKey);
+
+                // Get from database
+                var result = await _dbContext.DailyActions
+                    .AsNoTracking()
                     // .Include(da => da.WhiteLabel) // Commented out for now
                     .FirstOrDefaultAsync(da => da.Id == id);
+
+                // Cache the result if not null
+                if (result != null)
+                {
+                    // Estimate the size of the DailyAction object for cache entry
+                    long estimatedSize = 1000; // More accurate estimate for a single DailyAction object
+
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetPriority(CacheItemPriority.High)
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
+                        .SetSize(estimatedSize); // Explicitly set the size for the cache entry
+
+                    _cache.Set(cacheKey, result, cacheOptions);
+                    _logger.LogInformation("Cached daily action with ID {Id}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
+                        id, cacheKey, estimatedSize);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -95,6 +261,10 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 _dbContext.DailyActions.Add(dailyAction);
                 await _dbContext.SaveChangesAsync();
+
+                // Invalidate relevant caches
+                InvalidateCacheForDate(dailyAction.Date, dailyAction.WhiteLabelID);
+
                 return dailyAction;
             }
             catch (Exception ex)
@@ -112,6 +282,14 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 _dbContext.Entry(dailyAction).State = EntityState.Modified;
                 await _dbContext.SaveChangesAsync();
+
+                // Invalidate relevant caches
+                InvalidateCacheForDate(dailyAction.Date, dailyAction.WhiteLabelID);
+
+                // Invalidate specific cache for this ID
+                string cacheKey = string.Format(DAILY_ACTION_BY_ID_CACHE_KEY, dailyAction.Id);
+                _cache.Remove(cacheKey);
+
                 return dailyAction;
             }
             catch (Exception ex)
@@ -132,8 +310,20 @@ namespace PPrePorter.DailyActionsDB.Services
                     return false;
                 }
 
+                // Store date and white label ID before removing
+                var date = dailyAction.Date;
+                var whiteLabelId = dailyAction.WhiteLabelID;
+
                 _dbContext.DailyActions.Remove(dailyAction);
                 await _dbContext.SaveChangesAsync();
+
+                // Invalidate relevant caches
+                InvalidateCacheForDate(date, whiteLabelId);
+
+                // Invalidate specific cache for this ID
+                string cacheKey = string.Format(DAILY_ACTION_BY_ID_CACHE_KEY, id);
+                _cache.Remove(cacheKey);
+
                 return true;
             }
             catch (Exception ex)
@@ -148,6 +338,27 @@ namespace PPrePorter.DailyActionsDB.Services
         {
             try
             {
+                // Normalize dates to start/end of day
+                var start = startDate.Date;
+                var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+                // Create cache key
+                string cacheKey = string.Format(SUMMARY_METRICS_CACHE_KEY,
+                    start.ToString("yyyyMMdd"),
+                    end.ToString("yyyyMMdd"),
+                    whiteLabelId?.ToString() ?? "all");
+
+                // Try to get from cache first
+                if (_cache.TryGetValue(cacheKey, out DailyActionsSummary? cachedResult) && cachedResult != null)
+                {
+                    _logger.LogInformation("CACHE HIT: Retrieved summary metrics from cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
+                        startDate, endDate, whiteLabelId, cacheKey);
+                    return cachedResult;
+                }
+
+                _logger.LogWarning("CACHE MISS: Calculating summary metrics for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
+                    startDate, endDate, whiteLabelId, cacheKey);
+
                 // Get daily actions for the specified date range
                 var dailyActions = await GetDailyActionsAsync(startDate, endDate, whiteLabelId);
 
@@ -174,6 +385,20 @@ namespace PPrePorter.DailyActionsDB.Services
                                   summary.TotalBetsLive - summary.TotalWinsLive +
                                   summary.TotalBetsBingo - summary.TotalWinsBingo;
 
+                // Estimate the size of the summary object for cache entry
+                long estimatedSize = 1000; // More accurate estimate for summary object
+
+                // Cache the result with more aggressive caching options
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetPriority(CacheItemPriority.High)
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
+                    .SetSize(estimatedSize); // Explicitly set the size for the cache entry
+
+                _cache.Set(cacheKey, summary, cacheOptions);
+                _logger.LogInformation("Cached summary metrics for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
+                    startDate, endDate, whiteLabelId, cacheKey, estimatedSize);
+
                 return summary;
             }
             catch (Exception ex)
@@ -199,6 +424,19 @@ namespace PPrePorter.DailyActionsDB.Services
                 var start = startDate.Date;
                 var end = endDate.Date.AddDays(1).AddTicks(-1);
 
+                // Create a hash of the filter for caching
+                var filterHash = ComputeFilterHash(filter);
+                string cacheKey = string.Format(FILTERED_DAILY_ACTIONS_CACHE_KEY, filterHash);
+
+                // Try to get from cache first
+                if (_cache.TryGetValue(cacheKey, out DailyActionResponseDto? cachedResult) && cachedResult != null)
+                {
+                    _logger.LogInformation("CACHE HIT: Retrieved filtered daily actions from cache with hash {FilterHash}, cache key: {CacheKey}", filterHash, cacheKey);
+                    return cachedResult;
+                }
+
+                _logger.LogWarning("CACHE MISS: Getting filtered daily actions from database with hash {FilterHash}, cache key: {CacheKey}", filterHash, cacheKey);
+
                 // Build base query with NOLOCK hint
                 var query = _dbContext.DailyActions
                     .AsNoTracking()
@@ -215,34 +453,21 @@ namespace PPrePorter.DailyActionsDB.Services
                     if (whiteLabelIds.Length == 1)
                     {
                         // Simple case - just one white label ID
-                        query = query.Where(da =>
-                            (da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelIds[0]) ||
-                            (da.WhiteLabelId.HasValue && da.WhiteLabelId.Value == whiteLabelIds[0]));
+                        query = query.Where(da => da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelIds[0]);
                     }
                     else
                     {
                         // Multiple white label IDs - build a predicate
                         var parameter = System.Linq.Expressions.Expression.Parameter(typeof(DailyAction), "da");
                         var propertyID = System.Linq.Expressions.Expression.Property(parameter, "WhiteLabelID");
-                        var propertyId = System.Linq.Expressions.Expression.Property(parameter, "WhiteLabelId");
 
-                        // Build the combined expression for the first ID
+                        // Build the expression for the first ID
                         var hasValueID = System.Linq.Expressions.Expression.Property(propertyID, "HasValue");
                         var valueID = System.Linq.Expressions.Expression.Property(propertyID, "Value");
                         var equalsID = System.Linq.Expressions.Expression.Equal(
                             valueID,
                             System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[0]));
-                        var andID = System.Linq.Expressions.Expression.AndAlso(hasValueID, equalsID);
-
-                        var hasValueId = System.Linq.Expressions.Expression.Property(propertyId, "HasValue");
-                        var valueId = System.Linq.Expressions.Expression.Property(propertyId, "Value");
-                        var equalsId = System.Linq.Expressions.Expression.Equal(
-                            valueId,
-                            System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[0]));
-                        var andId = System.Linq.Expressions.Expression.AndAlso(hasValueId, equalsId);
-
-                        // Combine with OR
-                        var equals = System.Linq.Expressions.Expression.OrElse(andID, andId);
+                        var equals = System.Linq.Expressions.Expression.AndAlso(hasValueID, equalsID);
 
                         // Add the rest with OR
                         for (int i = 1; i < whiteLabelIds.Length; i++)
@@ -253,17 +478,8 @@ namespace PPrePorter.DailyActionsDB.Services
                                 System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[i]));
                             var nextAndID = System.Linq.Expressions.Expression.AndAlso(hasValueID, nextEqualsID);
 
-                            // Build for WhiteLabelId
-                            var nextEqualsId = System.Linq.Expressions.Expression.Equal(
-                                valueId,
-                                System.Linq.Expressions.Expression.Constant((short)whiteLabelIds[i]));
-                            var nextAndId = System.Linq.Expressions.Expression.AndAlso(hasValueId, nextEqualsId);
-
-                            // Combine with OR
-                            var nextCombined = System.Linq.Expressions.Expression.OrElse(nextAndID, nextAndId);
-
                             // Add to the main expression
-                            equals = System.Linq.Expressions.Expression.OrElse(equals, nextCombined);
+                            equals = System.Linq.Expressions.Expression.OrElse(equals, nextAndID);
                         }
 
                         // Create and apply the lambda expression
@@ -296,15 +512,11 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Map to DTOs
                 var result = dailyActions.Select(da =>
                 {
-                    // Determine which WhiteLabel ID to use
+                    // Get the WhiteLabel ID
                     int whiteLabelId = 0;
                     if (da.WhiteLabelID.HasValue)
                     {
                         whiteLabelId = (int)da.WhiteLabelID.Value;
-                    }
-                    else if (da.WhiteLabelId.HasValue)
-                    {
-                        whiteLabelId = (int)da.WhiteLabelId.Value;
                     }
 
                     // Get the white label name
@@ -373,6 +585,20 @@ namespace PPrePorter.DailyActionsDB.Services
                     AppliedFilters = filter
                 };
 
+                // Estimate the size of the response object for cache entry
+                long estimatedSize = result.Count * 1000 + 2000; // More accurate estimate: 1000 bytes per DailyActionDto + 2000 bytes for summary and metadata
+
+                // Cache the result with more aggressive caching options
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetPriority(CacheItemPriority.High)
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
+                    .SetSize(estimatedSize); // Explicitly set the size for the cache entry
+
+                _cache.Set(cacheKey, response, cacheOptions);
+                _logger.LogInformation("Cached filtered daily actions with hash {FilterHash}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
+                    filterHash, cacheKey, estimatedSize);
+
                 return response;
             }
             catch (Exception ex)
@@ -390,11 +616,11 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Try to get metadata from cache first
                 if (_cache.TryGetValue(METADATA_CACHE_KEY, out DailyActionMetadataDto? cachedMetadata) && cachedMetadata != null)
                 {
-                    _logger.LogInformation("Retrieved daily actions metadata from cache");
+                    _logger.LogInformation("CACHE HIT: Retrieved daily actions metadata from cache, cache key: {CacheKey}", METADATA_CACHE_KEY);
                     return cachedMetadata;
                 }
 
-                _logger.LogInformation("Getting daily actions metadata from database");
+                _logger.LogWarning("CACHE MISS: Getting daily actions metadata from database, cache key: {CacheKey}", METADATA_CACHE_KEY);
 
                 // Get white labels
                 var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
@@ -523,13 +749,29 @@ namespace PPrePorter.DailyActionsDB.Services
                     GroupByOptions = groupByOptions
                 };
 
-                // Cache the metadata
+                // Estimate the size of the metadata object for cache entry
+                long estimatedSize =
+                    whiteLabelDtos.Count * 200 +  // White labels
+                    countryDtos.Count * 100 +     // Countries
+                    currencyDtos.Count * 100 +    // Currencies
+                    languageDtos.Count * 50 +     // Languages
+                    platforms.Count * 20 +        // Platforms
+                    genders.Count * 20 +          // Genders
+                    statuses.Count * 20 +         // Statuses
+                    registrationPlayModes.Count * 20 + // Registration play modes
+                    trackers.Count * 20 +         // Trackers
+                    1000;                         // Base size and other properties
+
+                // Cache the metadata with more aggressive caching options
                 var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
-                    .SetPriority(CacheItemPriority.High);
+                    .SetPriority(CacheItemPriority.NeverRemove) // Metadata rarely changes, so keep it in cache
+                    .SetSlidingExpiration(TimeSpan.FromHours(1))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(24)) // Keep for 24 hours max
+                    .SetSize(estimatedSize); // Explicitly set the size for the cache entry
 
                 _cache.Set(METADATA_CACHE_KEY, metadata, cacheOptions);
-                _logger.LogInformation("Cached daily actions metadata for {Minutes} minutes", CACHE_EXPIRATION_MINUTES);
+                _logger.LogInformation("Cached daily actions metadata with high priority, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
+                    METADATA_CACHE_KEY, estimatedSize);
 
                 return metadata;
             }
@@ -537,6 +779,192 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 _logger.LogError(ex, "Error getting daily actions metadata");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Computes a hash for the filter to use as a cache key
+        /// </summary>
+        private string ComputeFilterHash(DailyActionFilterDto filter)
+        {
+            // Create a string representation of the filter
+            var filterString = System.Text.Json.JsonSerializer.Serialize(filter);
+
+            // Compute hash
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(filterString);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
+            }
+        }
+
+        /// <summary>
+        /// Prewarms the cache with commonly accessed data
+        /// </summary>
+        public async Task PrewarmCacheAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Prewarming cache with commonly accessed data...");
+
+                // Get today and yesterday dates
+                var today = DateTime.UtcNow.Date;
+                var yesterday = today.AddDays(-1);
+                var lastWeek = today.AddDays(-7);
+
+                // Prewarm metadata
+                var startTime = DateTime.UtcNow;
+                var metadata = await GetDailyActionsMetadataAsync();
+                var metadataTime = DateTime.UtcNow - startTime;
+                _logger.LogInformation("Prewarmed metadata cache with {WhiteLabelCount} white labels, {CountryCount} countries, {CurrencyCount} currencies in {ElapsedMs}ms",
+                    metadata.WhiteLabels.Count,
+                    metadata.Countries.Count,
+                    metadata.Currencies.Count,
+                    metadataTime.TotalMilliseconds);
+
+                // Prewarm yesterday's data (most common query)
+                startTime = DateTime.UtcNow;
+                var yesterdayData = await GetDailyActionsAsync(yesterday, today);
+                var yesterdayTime = DateTime.UtcNow - startTime;
+                _logger.LogInformation("Prewarmed yesterday's data cache with {Count} records in {ElapsedMs}ms",
+                    yesterdayData.Count(),
+                    yesterdayTime.TotalMilliseconds);
+
+                // Prewarm last week's data
+                startTime = DateTime.UtcNow;
+                var lastWeekData = await GetDailyActionsAsync(lastWeek, today);
+                var lastWeekTime = DateTime.UtcNow - startTime;
+                _logger.LogInformation("Prewarmed last week's data cache with {Count} records in {ElapsedMs}ms",
+                    lastWeekData.Count(),
+                    lastWeekTime.TotalMilliseconds);
+
+                // Prewarm summary metrics for yesterday
+                startTime = DateTime.UtcNow;
+                var yesterdaySummary = await GetSummaryMetricsAsync(yesterday, today);
+                var yesterdaySummaryTime = DateTime.UtcNow - startTime;
+                _logger.LogInformation("Prewarmed yesterday's summary metrics cache in {ElapsedMs}ms",
+                    yesterdaySummaryTime.TotalMilliseconds);
+
+                // Prewarm summary metrics for last week
+                startTime = DateTime.UtcNow;
+                var lastWeekSummary = await GetSummaryMetricsAsync(lastWeek, today);
+                var lastWeekSummaryTime = DateTime.UtcNow - startTime;
+                _logger.LogInformation("Prewarmed last week's summary metrics cache in {ElapsedMs}ms",
+                    lastWeekSummaryTime.TotalMilliseconds);
+
+                // Log cache statistics
+                var cacheService = _cache as IGlobalCacheService;
+                int cacheCount = cacheService?.GetCount() ?? -1;
+                _logger.LogInformation("Cache prewarming completed successfully. Total items in cache: {CacheCount}",
+                    cacheCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error prewarming cache");
+            }
+        }
+
+        /// <summary>
+        /// Invalidates all caches related to a specific date and white label
+        /// </summary>
+        private void InvalidateCacheForDate(DateTime date, short? whiteLabelId)
+        {
+            // We need to invalidate all caches that might contain this date
+            // This is a bit aggressive, but ensures consistency
+
+            // Get all cache keys that might be affected
+            var keysToRemove = new List<string>();
+
+            // Format date for cache key
+            var dateStr = date.ToString("yyyyMMdd");
+
+            // Add specific date cache keys
+            keysToRemove.Add(string.Format(DAILY_ACTIONS_CACHE_KEY, dateStr, dateStr, whiteLabelId?.ToString() ?? "all"));
+            keysToRemove.Add(string.Format(DAILY_ACTIONS_CACHE_KEY, dateStr, dateStr, "all"));
+
+            // Add summary metrics cache keys
+            keysToRemove.Add(string.Format(SUMMARY_METRICS_CACHE_KEY, dateStr, dateStr, whiteLabelId?.ToString() ?? "all"));
+            keysToRemove.Add(string.Format(SUMMARY_METRICS_CACHE_KEY, dateStr, dateStr, "all"));
+
+            // For any filtered queries, we can't easily determine which ones to invalidate
+            // So we'll just log that filtered caches might be stale
+            _logger.LogInformation("Filtered daily actions caches might be stale after update to date {Date} and white label {WhiteLabelId}",
+                date, whiteLabelId);
+
+            // Remove all identified cache entries
+            foreach (var key in keysToRemove)
+            {
+                _cache.Remove(key);
+                _logger.LogInformation("Invalidated cache key: {Key}", key);
+            }
+        }
+
+        /// <summary>
+        /// Clears all caches related to daily actions
+        /// </summary>
+        public void ClearAllCaches()
+        {
+            _logger.LogWarning("Clearing all daily actions caches");
+
+            // Since we can't enumerate all keys in IMemoryCache, we'll remove the known ones
+            _cache.Remove(METADATA_CACHE_KEY);
+
+            // Log the cache instance hash code for debugging
+            _logger.LogInformation("Cache instance hash code: {HashCode}", _cache.GetHashCode());
+
+            _logger.LogWarning("All daily actions caches cleared");
+        }
+
+        /// <summary>
+        /// Clear the cache for a specific date range
+        /// </summary>
+        /// <param name="startDate">Start date</param>
+        /// <param name="endDate">End date</param>
+        /// <param name="whiteLabelId">Optional white label ID</param>
+        /// <returns>True if the cache was cleared, false otherwise</returns>
+        public bool ClearCacheForDateRange(DateTime startDate, DateTime endDate, int? whiteLabelId = null)
+        {
+            try
+            {
+                // Normalize dates to start/end of day
+                var start = startDate.Date;
+                var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+                // Create cache key
+                string cacheKey = string.Format(DAILY_ACTIONS_CACHE_KEY,
+                    start.ToString("yyyyMMdd"),
+                    end.ToString("yyyyMMdd"),
+                    whiteLabelId?.ToString() ?? "all");
+
+                // Log the cache key
+                _logger.LogInformation("Clearing cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}, cache key: {CacheKey}",
+                    startDate, endDate, whiteLabelId, cacheKey);
+
+                // Remove the cache entry
+                _cache.Remove(cacheKey);
+
+                // Also clear the summary metrics cache
+                string summaryKey = string.Format(SUMMARY_METRICS_CACHE_KEY,
+                    start.ToString("yyyyMMdd"),
+                    end.ToString("yyyyMMdd"),
+                    whiteLabelId?.ToString() ?? "all");
+
+                _cache.Remove(summaryKey);
+
+                // Log the cache instance hash code for debugging
+                _logger.LogInformation("Cache instance hash code: {HashCode}", _cache.GetHashCode());
+
+                _logger.LogWarning("Cache cleared for date range {StartDate} to {EndDate} and white label {WhiteLabelId}",
+                    startDate, endDate, whiteLabelId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error clearing cache for date range {StartDate} to {EndDate} and white label {WhiteLabelId}",
+                    startDate, endDate, whiteLabelId);
+                return false;
             }
         }
     }

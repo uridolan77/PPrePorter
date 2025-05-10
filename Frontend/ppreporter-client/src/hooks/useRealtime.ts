@@ -19,31 +19,31 @@ export interface UseRealtimeReturn {
    * Whether the connection is established
    */
   isConnected: boolean;
-  
+
   /**
    * Whether the connection is being established
    */
   isConnecting: boolean;
-  
+
   /**
    * Connection error
    */
   error: Error | null;
-  
+
   /**
    * Connect to WebSocket
    */
   connect: () => Promise<void>;
-  
+
   /**
    * Disconnect from WebSocket
    */
   disconnect: () => void;
-  
+
   /**
    * Send a message
    */
-  send: <T>(message: T) => Promise<boolean>;
+  send: <T extends Record<string, any>>(message: T) => Promise<boolean>;
 }
 
 /**
@@ -61,14 +61,14 @@ export const useRealtime = <T = any>(
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
-  
+
   // Connect to WebSocket
   const connect = useCallback(async (): Promise<void> => {
     if (isConnected || isConnecting) return;
-    
+
     setIsConnecting(true);
     setError(null);
-    
+
     try {
       await realtimeService.connect();
       setIsConnected(true);
@@ -80,15 +80,15 @@ export const useRealtime = <T = any>(
       setIsConnecting(false);
     }
   }, [isConnected, isConnecting]);
-  
+
   // Disconnect from WebSocket
   const disconnect = useCallback((): void => {
     realtimeService.disconnect();
     setIsConnected(false);
   }, []);
-  
+
   // Send a message
-  const send = useCallback(async <M>(message: M): Promise<boolean> => {
+  const send = useCallback(async <M extends Record<string, any>>(message: M): Promise<boolean> => {
     try {
       await realtimeService.send(message);
       return true;
@@ -99,30 +99,30 @@ export const useRealtime = <T = any>(
       return false;
     }
   }, []);
-  
+
   // Subscribe to message type
   useEffect(() => {
     if (!messageType || !onMessage) return;
-    
+
     const unsubscribe = realtimeService.subscribe(messageType, onMessage);
-    
+
     return () => {
       unsubscribe();
     };
   }, [messageType, onMessage]);
-  
+
   // Auto-connect if enabled
   useEffect(() => {
     if (autoConnect) {
       connect();
     }
-    
+
     return () => {
       // Don't disconnect on unmount as other components might be using the connection
       // Only disconnect if explicitly called
     };
   }, [autoConnect, connect]);
-  
+
   return {
     isConnected,
     isConnecting,
@@ -141,12 +141,12 @@ export interface DashboardUpdate {
    * Update timestamp
    */
   timestamp: string;
-  
+
   /**
    * Update data
    */
   data: any;
-  
+
   /**
    * Update type
    */
@@ -161,17 +161,17 @@ export interface PlayerActivity {
    * Player ID
    */
   playerId: string;
-  
+
   /**
    * Activity timestamp
    */
   timestamp: string;
-  
+
   /**
    * Activity type
    */
   activityType: string;
-  
+
   /**
    * Activity data
    */

@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a leaderboard entry
     /// </summary>
-    [Table("tbl_Leaderboards")]
+    [Table("tbl_Leaderboards", Schema = "common")]
     public class Leaderboard
     {
         [Key]

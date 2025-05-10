@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a sport bet type
     /// </summary>
-    [Table("SportBetTypes")]
+    [Table("SportBetTypes", Schema = "dbo")]
     public class SportBetType
     {
         [Key]

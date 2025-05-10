@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a bonus balance
     /// </summary>
-    [Table("tbl_Bonus_balances")]
+    [Table("tbl_Bonus_balances", Schema = "common")]
     public class BonusBalance
     {
         [Key]

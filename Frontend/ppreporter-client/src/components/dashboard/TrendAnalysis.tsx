@@ -111,7 +111,16 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({
         throw new Error('Unsupported metric type');
       }
 
-      setTrendData(data);
+      // Ensure data conforms to the expected TrendData type
+      const typedData: TrendData = {
+        ...data,
+        IdentifiedPatterns: data.IdentifiedPatterns?.map(pattern => ({
+          ...pattern,
+          Confidence: pattern.Confidence || 0.5 // Default confidence if not provided
+        }))
+      };
+
+      setTrendData(typedData);
 
       // Use forecast data from the API if available
       if (data && data.ForecastData) {
@@ -383,3 +392,420 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({
                 </Grid>
               </Grid>
             </Paper>
+
+            {/* Overall trend summary */}
+            <Paper sx={{ p: 2, mb: 3, backgroundColor: 'background.paper' }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={9}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {getTrendIcon(trendData.TrendDirection)}
+                    <Typography variant="h6" sx={{ ml: 1 }}>
+                      Overall {metricName || metricKey} Trend: {trendData.TrendDirection}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ mt: 1 }}>
+                    {metricName || metricKey} is {trendData.TrendDirection.toLowerCase()} with a
+                    {trendData.PercentageChange !== null && trendData.PercentageChange !== undefined
+                      ? ` ${Math.abs(trendData.PercentageChange).toFixed(1)}% ${trendData.PercentageChange >= 0 ? 'increase' : 'decrease'}`
+                      : ' stable pattern'} over the selected period.
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                    <Typography variant="h4" sx={{
+                      color: getTrendColor(trendData.TrendDirection),
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}>
+                      {trendData.PercentageChange !== null && trendData.PercentageChange !== undefined
+                        ? `${trendData.PercentageChange >= 0 ? '+' : ''}${trendData.PercentageChange.toFixed(1)}%`
+                        : '0%'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Change over period
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* Data visualization */}
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Box sx={{ height: 400 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  {viewType === 'line' ? (
+                    <LineChart
+                      data={getChartData()}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="Date"
+                        tickFormatter={formatDate}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis />
+                      <RechartsTooltip
+                        formatter={(value: number, name: string | undefined, props: any) => [
+                          props.payload.isForecasted ?
+                            `${value.toFixed(2)} (forecast)` :
+                            value.toFixed(2),
+                          metricName || metricKey
+                        ] as [string, string]}
+                        labelFormatter={(label: string) => formatDate(label)}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="Value"
+                        name={metricName || metricKey}
+                        stroke={getTrendColor(trendData.TrendDirection)}
+                        activeDot={{ r: 8 }}
+                        dot={(props: any) => {
+                          const { cx, cy, payload } = props;
+
+                          // Skip null values
+                          if (!cx || !cy) return null;
+
+                          // Different styling for forecasted points
+                          if (payload.isForecasted) {
+                            return (
+                              <svg x={cx - 5} y={cy - 5} width={10} height={10} fill={theme.palette.grey[400]}>
+                                <rect x="0" y="0" width="10" height="10" />
+                              </svg>
+                            );
+                          }
+
+                          // Highlight outliers
+                          if (showOutliers && isOutlier(payload.Date, trendData.OutlierPoints)) {
+                            return (
+                              <svg x={cx - 10} y={cy - 10} width={20} height={20} fill="red">
+                                <circle cx="10" cy="10" r="6" stroke="red" strokeWidth="2" fill="white" />
+                              </svg>
+                            );
+                          }
+
+                          // Highlight pattern points
+                          if (showPatterns && trendData.IdentifiedPatterns) {
+                            const pattern = isInPattern(payload.Date, trendData.IdentifiedPatterns);
+                            if (pattern) {
+                              const patternColor =
+                                pattern.PatternType === 'Spike' ? theme.palette.success.main :
+                                pattern.PatternType === 'Dip' ? theme.palette.error.main :
+                                theme.palette.warning.main;
+
+                              return (
+                                <svg x={cx - 5} y={cy - 5} width={10} height={10} fill={patternColor}>
+                                  <circle cx="5" cy="5" r="5" />
+                                </svg>
+                              );
+                            }
+                          }
+
+                          // Default dot
+                          return (
+                            <svg x={cx - 3} y={cy - 3} width={6} height={6} fill={getTrendColor(trendData.TrendDirection)}>
+                              <circle cx="3" cy="3" r="3" />
+                            </svg>
+                          );
+                        }}
+                      />
+                      {showForecast && forecastData && forecastData.length > 0 && (
+                        <Area
+                          type="monotone"
+                          dataKey="Value"
+                          stroke="none"
+                          fill="none"
+                          activeDot={false}
+                        />
+                      )}
+                      {showForecast && forecastData && forecastData.length > 0 && (
+                        <ReferenceLine
+                          x={forecastData[0].Date}
+                          stroke={theme.palette.grey[400]}
+                          strokeDasharray="3 3"
+                          label={{ value: 'Forecast Start', position: 'insideTopRight', fill: theme.palette.text.secondary, fontSize: 12 }}
+                        />
+                      )}
+                      {showSeasonality && trendData.SeasonalityDetected && trendData.Seasonality && (
+                        <ReferenceLine
+                          y={trendData.OutlierPoints.reduce((sum, point) => sum + point.Value, 0) / trendData.OutlierPoints.length}
+                          stroke={theme.palette.info.main}
+                          strokeDasharray="3 3"
+                          label={{ value: 'Average', position: 'right', fill: theme.palette.info.main }}
+                        />
+                      )}
+                    </LineChart>
+                  ) : viewType === 'bar' ? (
+                    <BarChart
+                      data={getChartData()}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="Date"
+                        tickFormatter={formatDate}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis />
+                      <RechartsTooltip
+                        formatter={(value: number, name: string | undefined, props: any) => [
+                          props.payload.isForecasted ?
+                            `${value.toFixed(2)} (forecast)` :
+                            value.toFixed(2),
+                          metricName || metricKey
+                        ] as [string, string]}
+                        labelFormatter={(label: string) => formatDate(label)}
+                      />
+                      <Legend />
+                      <Bar
+                        dataKey="Value"
+                        name={metricName || metricKey}
+                        fill={getTrendColor(trendData.TrendDirection)}
+                        shape={(props: any) => {
+                          const { x, y, width, height, payload } = props;
+
+                          // Different styling for forecasted points
+                          if (payload.isForecasted) {
+                            return (
+                              <rect
+                                x={x}
+                                y={y}
+                                width={width}
+                                height={height}
+                                fill={theme.palette.grey[400]}
+                                stroke={theme.palette.grey[600]}
+                                strokeWidth={1}
+                                strokeDasharray="3 3"
+                              />
+                            );
+                          }
+
+                          // Highlight outliers
+                          if (showOutliers && isOutlier(payload.Date, trendData.OutlierPoints)) {
+                            return (
+                              <rect
+                                x={x}
+                                y={y}
+                                width={width}
+                                height={height}
+                                fill={theme.palette.error.main}
+                                stroke={theme.palette.error.dark}
+                                strokeWidth={1}
+                              />
+                            );
+                          }
+
+                          // Highlight pattern points
+                          if (showPatterns && trendData.IdentifiedPatterns) {
+                            const pattern = isInPattern(payload.Date, trendData.IdentifiedPatterns);
+                            if (pattern) {
+                              const patternColor =
+                                pattern.PatternType === 'Spike' ? theme.palette.success.main :
+                                pattern.PatternType === 'Dip' ? theme.palette.error.main :
+                                theme.palette.warning.main;
+
+                              return (
+                                <rect
+                                  x={x}
+                                  y={y}
+                                  width={width}
+                                  height={height}
+                                  fill={patternColor}
+                                  stroke={theme.palette.grey[800]}
+                                  strokeWidth={1}
+                                />
+                              );
+                            }
+                          }
+
+                          // Default bar
+                          return (
+                            <rect
+                              x={x}
+                              y={y}
+                              width={width}
+                              height={height}
+                              fill={getTrendColor(trendData.TrendDirection)}
+                            />
+                          );
+                        }}
+                      />
+                      {showForecast && forecastData && forecastData.length > 0 && (
+                        <ReferenceLine
+                          x={forecastData[0].Date}
+                          stroke={theme.palette.grey[400]}
+                          strokeDasharray="3 3"
+                          label={{ value: 'Forecast Start', position: 'insideTopRight', fill: theme.palette.text.secondary, fontSize: 12 }}
+                        />
+                      )}
+                    </BarChart>
+                  ) : (
+                    <AreaChart
+                      data={getChartData()}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="Date"
+                        tickFormatter={formatDate}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis />
+                      <RechartsTooltip
+                        formatter={(value: number, name: string | undefined, props: any) => [
+                          props.payload.isForecasted ?
+                            `${value.toFixed(2)} (forecast)` :
+                            value.toFixed(2),
+                          metricName || metricKey
+                        ] as [string, string]}
+                        labelFormatter={(label: string) => formatDate(label)}
+                      />
+                      <Legend />
+                      <defs>
+                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={getTrendColor(trendData.TrendDirection)} stopOpacity={0.8} />
+                          <stop offset="95%" stopColor={getTrendColor(trendData.TrendDirection)} stopOpacity={0.1} />
+                        </linearGradient>
+                        <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={theme.palette.grey[400]} stopOpacity={0.8} />
+                          <stop offset="95%" stopColor={theme.palette.grey[400]} stopOpacity={0.1} />
+                        </linearGradient>
+                      </defs>
+                      <Area
+                        type="monotone"
+                        dataKey="Value"
+                        name={metricName || metricKey}
+                        stroke={getTrendColor(trendData.TrendDirection)}
+                        fillOpacity={1}
+                        fill="url(#colorValue)"
+                        activeDot={(props: any) => {
+                          const { cx, cy, payload } = props;
+
+                          // Skip null values
+                          if (!cx || !cy) return null;
+
+                          // Different styling for forecasted points
+                          if (payload.isForecasted) {
+                            return (
+                              <svg x={cx - 5} y={cy - 5} width={10} height={10} fill={theme.palette.grey[400]}>
+                                <rect x="0" y="0" width="10" height="10" />
+                              </svg>
+                            );
+                          }
+
+                          // Highlight outliers
+                          if (showOutliers && isOutlier(payload.Date, trendData.OutlierPoints)) {
+                            return (
+                              <svg x={cx - 10} y={cy - 10} width={20} height={20} fill="red">
+                                <circle cx="10" cy="10" r="6" stroke="red" strokeWidth="2" fill="white" />
+                              </svg>
+                            );
+                          }
+
+                          return (
+                            <svg x={cx - 5} y={cy - 5} width={10} height={10} fill={getTrendColor(trendData.TrendDirection)}>
+                              <circle cx="5" cy="5" r="5" />
+                            </svg>
+                          );
+                        }}
+                      />
+                      {showForecast && forecastData && forecastData.length > 0 && (
+                        <ReferenceLine
+                          x={forecastData[0].Date}
+                          stroke={theme.palette.grey[400]}
+                          strokeDasharray="3 3"
+                          label={{ value: 'Forecast Start', position: 'insideTopRight', fill: theme.palette.text.secondary, fontSize: 12 }}
+                        />
+                      )}
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              </Box>
+            </Paper>
+
+            {/* Patterns and Insights */}
+            {trendData.IdentifiedPatterns && trendData.IdentifiedPatterns.length > 0 && showPatterns && (
+              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Identified Patterns
+                </Typography>
+                <Grid container spacing={2}>
+                  {trendData.IdentifiedPatterns.map((pattern, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderLeft: '4px solid',
+                          borderLeftColor:
+                            pattern.PatternType === 'Spike' ? theme.palette.success.main :
+                            pattern.PatternType === 'Dip' ? theme.palette.error.main :
+                            theme.palette.warning.main
+                        }}
+                      >
+                        <Typography variant="subtitle1" gutterBottom>
+                          {pattern.PatternType} Pattern
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          {formatDate(pattern.StartDate)} - {formatDate(pattern.EndDate)}
+                        </Typography>
+                        <Typography variant="body2">
+                          {pattern.Description || `A ${pattern.PatternType.toLowerCase()} pattern was detected with ${(pattern.Confidence * 100).toFixed(0)}% confidence.`}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Paper>
+            )}
+
+            {/* Seasonality Insights */}
+            {trendData.SeasonalityDetected && trendData.Seasonality && showSeasonality && (
+              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Seasonality Analysis
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <EventRepeatIcon sx={{ mr: 1, color: theme.palette.info.main }} />
+                      <Typography variant="subtitle1">
+                        {trendData.Seasonality.Type} Seasonality Detected
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" paragraph>
+                      This metric shows a {trendData.Seasonality.Type.toLowerCase()} pattern with a period of approximately {trendData.Seasonality.PeriodDays} days.
+                    </Typography>
+                    <Typography variant="body2">
+                      Seasonality strength: <strong>{(trendData.Seasonality.Strength * 100).toFixed(0)}%</strong>
+                      {trendData.Seasonality.Strength > 0.7 ? ' (Strong)' :
+                       trendData.Seasonality.Strength > 0.4 ? ' (Moderate)' : ' (Weak)'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Alert severity="info" sx={{ height: '100%' }}>
+                      <Typography variant="body2">
+                        Understanding seasonality can help with forecasting and planning. Consider this pattern when setting targets and evaluating performance.
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                </Grid>
+              </Paper>
+            )}
+          </Box>
+        ) : (
+          <Typography sx={{ textAlign: 'center', py: 3 }}>
+            Select a metric to analyze trends
+          </Typography>
+        )}
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default TrendAnalysis;

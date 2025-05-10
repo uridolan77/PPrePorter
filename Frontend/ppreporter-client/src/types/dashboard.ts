@@ -1,6 +1,36 @@
 import { ReactNode } from 'react';
 
 /**
+ * Dashboard data structure
+ */
+export interface DashboardData {
+  /**
+   * Dashboard statistics
+   */
+  stats: DashboardStats;
+
+  /**
+   * Top games
+   */
+  topGames: TopGame[];
+
+  /**
+   * Recent transactions
+   */
+  recentTransactions: Transaction[];
+
+  /**
+   * Player registrations
+   */
+  playerRegistrations: PlayerRegistration[];
+
+  /**
+   * Chart data
+   */
+  charts: DashboardChartData;
+}
+
+/**
  * Dashboard statistics data structure
  */
 export interface DashboardStats {
@@ -69,6 +99,9 @@ export interface DashboardComponentErrors {
   registrations?: Error | null;
   topGames?: Error | null;
   transactions?: Error | null;
+  heatmap?: Error | null;
+  playerJourney?: Error | null;
+  segmentComparison?: Error | null;
   [key: string]: Error | null | undefined;
 }
 
@@ -89,7 +122,7 @@ export interface DashboardTab {
   /**
    * Tab icon name or React node
    */
-  icon?: ReactNode | string;
+  icon?: React.ReactElement | string;
 
   /**
    * Tab content
@@ -269,4 +302,89 @@ export interface ChartData {
      */
     [key: string]: any;
   }>;
+}
+
+/**
+ * Transaction data structure
+ */
+export interface Transaction {
+  /**
+   * Transaction ID
+   */
+  id: string;
+
+  /**
+   * Transaction type
+   */
+  type: string;
+
+  /**
+   * Transaction amount
+   */
+  amount: number;
+
+  /**
+   * Transaction date
+   */
+  date: string;
+
+  /**
+   * Transaction status
+   */
+  status: string;
+
+  /**
+   * Player ID
+   */
+  playerId?: string;
+
+  /**
+   * Player name
+   */
+  playerName?: string;
+
+  /**
+   * Transaction currency
+   */
+  currency?: string;
+
+  /**
+   * Transaction timestamp
+   */
+  timestamp?: string;
+}
+
+/**
+ * Top game data structure
+ */
+export interface TopGame {
+  /**
+   * Game ID
+   */
+  id: string;
+
+  /**
+   * Game name
+   */
+  name: string;
+
+  /**
+   * Game category
+   */
+  category: string;
+
+  /**
+   * Game revenue
+   */
+  revenue: number;
+
+  /**
+   * Number of players
+   */
+  players: number;
+
+  /**
+   * Game sessions
+   */
+  sessions?: number;
 }

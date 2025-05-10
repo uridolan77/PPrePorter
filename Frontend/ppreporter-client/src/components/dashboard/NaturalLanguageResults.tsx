@@ -64,7 +64,7 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
   sx
 }) => {
   const theme = useTheme();
-  const { queryResult, isProcessing } = useSelector((state: RootState) => state.naturalLanguage);
+  const { nlQueryResults: queryResult, nlQueryLoading: isProcessing } = useSelector((state: RootState) => state.dashboard);
 
   const [activeTab, setActiveTab] = useState<number>(0);
   const [chartType, setChartType] = useState<ChartType>('bar');
@@ -143,7 +143,7 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
     }
 
     // Determine if this is time-series data
-    const hasTimeField = entities?.Dimensions?.some(d => d.isTimeField);
+    const hasTimeField = entities?.Dimensions?.some((d: any) => d.isTimeField);
 
     // Determine chart type based on data structure
     const hasSingleMetric = entities?.Metrics?.length === 1;
@@ -153,13 +153,13 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
     // Prepare data for visualization
     if (hasTimeField && chartType === 'line') {
       // Line chart for time series data
-      const timeField = entities.Dimensions.find(d => d.isTimeField)?.Name;
-      const metrics = entities.Metrics.map(m => m.Name);
+      const timeField = entities.Dimensions.find((d: any) => d.isTimeField)?.Name;
+      const metrics = entities.Metrics.map((m: any) => m.Name);
 
       // Transform data for line chart
-      const lineData = metrics.map(metric => ({
+      const lineData = metrics.map((metric: string) => ({
         id: metric,
-        data: data.map(item => ({
+        data: data.map((item: any) => ({
           x: item[timeField as string],
           y: item[metric]
         }))
@@ -235,15 +235,15 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
     } else if (hasSingleDimension && chartType === 'bar') {
       // Bar chart for categorical data
       const dimension = entities.Dimensions[0]?.Name;
-      const metrics = entities.Metrics.map(m => m.Name);
+      const metrics = entities.Metrics.map((m: any) => m.Name);
 
       // Transform data for bar chart
-      const barData = data.map(item => {
+      const barData = data.map((item: any) => {
         const result: Record<string, any> = {
           [dimension as string]: item[dimension as string],
         };
 
-        metrics.forEach(metric => {
+        metrics.forEach((metric: string) => {
           result[metric] = item[metric];
         });
 
@@ -317,7 +317,7 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
       const metric = entities.Metrics[0]?.Name;
 
       // Transform data for pie chart
-      const pieData = data.map(item => ({
+      const pieData = data.map((item: any) => ({
         id: item[dimension as string],
         label: item[dimension as string],
         value: item[metric as string]
@@ -407,9 +407,9 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((row, rowIndex) => (
+            {data.map((row: any, rowIndex: number) => (
               <TableRow key={rowIndex}>
-                {columns.map(column => (
+                {columns.map((column: string) => (
                   <TableCell key={`${rowIndex}-${column}`}>
                     {row[column]}
                   </TableCell>
@@ -433,7 +433,7 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>Metrics</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {entities.Metrics.map((metric, index) => (
+              {entities.Metrics.map((metric: any, index: number) => (
                 <Chip
                   key={index}
                   label={metric.Name}
@@ -450,7 +450,7 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>Dimensions</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {entities.Dimensions.map((dimension, index) => (
+              {entities.Dimensions.map((dimension: any, index: number) => (
                 <Chip
                   key={index}
                   label={dimension.Name}
@@ -467,7 +467,7 @@ const NaturalLanguageResults: React.FC<NaturalLanguageResultsProps> = ({
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>Filters</Typography>
             <List dense>
-              {entities.Filters.map((filter, index) => (
+              {entities.Filters.map((filter: any, index: number) => (
                 <ListItem key={index}>
                   <ListItemText
                     primary={`${filter.Dimension} ${filter.Operator} ${filter.Value}`}

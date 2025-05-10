@@ -21,9 +21,8 @@ namespace PPrePorter.AzureServices
             }
             else
             {
-                // The development mock implementation has been removed during code cleanup
-                // A proper development service needs to be implemented
-                throw new System.NotImplementedException("Development Azure Key Vault service is not implemented. Please use the real Azure Key Vault service.");
+                // Register the development mock implementation
+                services.AddScoped<IAzureKeyVaultService, DevelopmentAzureKeyVaultService>();
             }
 
             return services;

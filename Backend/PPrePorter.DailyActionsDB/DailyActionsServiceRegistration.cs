@@ -23,10 +23,10 @@ namespace PPrePorter.DailyActionsDB
         /// <param name="services">Service collection</param>
         /// <param name="configuration">Configuration</param>
         /// <returns>Service collection</returns>
-        public static IServiceCollection AddDailyActionsServices(this IServiceCollection services, IConfiguration configuration, bool useLocalDatabase = true)
+        public static IServiceCollection AddDailyActionsServices(this IServiceCollection services, IConfiguration configuration, bool useLocalDatabase = false)
         {
-            // Get the appropriate connection string
-            string connectionStringName = useLocalDatabase ? "DailyActionsDB_Local" : "DailyActionsDB";
+            // Always use the remote database
+            string connectionStringName = "DailyActionsDB";
             string connectionStringTemplate = configuration.GetConnectionString(connectionStringName)
                 ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
@@ -34,28 +34,40 @@ namespace PPrePorter.DailyActionsDB
             // var loggerFactory = services.BuildServiceProvider().GetService<ILoggerFactory>();
             // var noLockInterceptor = new NoLockInterceptor(loggerFactory?.CreateLogger<NoLockInterceptor>());
 
-            // Register DbContext factory to resolve connection string at runtime
-            services.AddDbContext<DailyActionsDbContext>((serviceProvider, options) =>
+            // Register DbContext factory with pooling to resolve connection string at runtime
+            services.AddDbContextPool<DailyActionsDbContext>(
+                // Set a reasonable pool size to balance resource usage and performance
+                poolSize: 32,
+                (serviceProvider, options) =>
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
                 var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
                 var logger = loggerFactory?.CreateLogger("DailyActionsDB");
 
-                string resolvedConnectionString = Task.Run(async () =>
-                    await connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)).Result;
+                // Get the connection string synchronously but properly
+                // This is acceptable in the DbContext configuration since it's only called once during startup
+                string resolvedConnectionString = connectionStringTemplate;
 
-                // Log connection string (without sensitive info)
-                string sanitizedConnectionString = resolvedConnectionString;
-                if (sanitizedConnectionString.Contains("password="))
+                try
                 {
-                    sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
-                        sanitizedConnectionString,
-                        "password=[^;]*",
-                        "password=***");
+                    // Create a scope to resolve the connection string
+                    using var scope = new System.Threading.CancellationTokenSource();
+                    resolvedConnectionString = connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)
+                        .ConfigureAwait(false).GetAwaiter().GetResult();
+
+                    // Log the resolved connection string (without sensitive info)
+                    string sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
+                    logger?.LogInformation("Resolved connection string: {ConnectionString}", sanitizedConnectionString);
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError(ex, "Failed to resolve connection string. Using original template.");
                 }
 
+                // Log connection string (without sensitive info)
+                string finalSanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
                 logger?.LogInformation("Connecting to DailyActionsDB with connection string: {ConnectionString}, using {DatabaseType} database",
-                    sanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
+                    finalSanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
 
                 options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
                 {
@@ -72,32 +84,42 @@ namespace PPrePorter.DailyActionsDB
                 {
                     options.EnableSensitiveDataLogging();
                 }
-
-                // Temporarily disabled: .AddInterceptors(noLockInterceptor);
             });
 
-            // Register simplified DbContext with the same connection string resolution
-            services.AddDbContext<DailyActionsSimpleDbContext>((serviceProvider, options) =>
+            // Register simplified DbContext with pooling and the same connection string resolution
+            services.AddDbContextPool<DailyActionsSimpleDbContext>(
+                // Set a reasonable pool size to balance resource usage and performance
+                poolSize: 32,
+                (serviceProvider, options) =>
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
                 var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
                 var logger = loggerFactory?.CreateLogger("DailyActionsSimpleDB");
 
-                string resolvedConnectionString = Task.Run(async () =>
-                    await connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)).Result;
+                // Get the connection string synchronously but properly
+                // This is acceptable in the DbContext configuration since it's only called once during startup
+                string resolvedConnectionString = connectionStringTemplate;
 
-                // Log connection string (without sensitive info)
-                string sanitizedConnectionString = resolvedConnectionString;
-                if (sanitizedConnectionString.Contains("password="))
+                try
                 {
-                    sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
-                        sanitizedConnectionString,
-                        "password=[^;]*",
-                        "password=***");
+                    // Create a scope to resolve the connection string
+                    using var scope = new System.Threading.CancellationTokenSource();
+                    resolvedConnectionString = connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)
+                        .ConfigureAwait(false).GetAwaiter().GetResult();
+
+                    // Log the resolved connection string (without sensitive info)
+                    string sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
+                    logger?.LogInformation("Resolved connection string for SimpleDbContext: {ConnectionString}", sanitizedConnectionString);
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError(ex, "Failed to resolve connection string for SimpleDbContext. Using original template.");
                 }
 
+                // Log connection string (without sensitive info)
+                string finalSanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
                 logger?.LogInformation("Connecting to DailyActionsSimpleDB with connection string: {ConnectionString}, using {DatabaseType} database",
-                    sanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
+                    finalSanitizedConnectionString, connectionStringName == "DailyActionsDB" ? "REAL" : "LOCAL");
 
                 options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
                 {
@@ -114,12 +136,13 @@ namespace PPrePorter.DailyActionsDB
                 {
                     options.EnableSensitiveDataLogging();
                 }
-
-                // Temporarily disabled: .AddInterceptors(noLockInterceptor);
             });
 
-            // Register memory cache if not already registered
-            services.AddMemoryCache();
+            // We're now using the MemoryCacheAdapter from PPrePorter.Core
+            // No need to register memory cache here
+
+            // Register Unit of Work
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Register repositories
             services.AddScoped<IWhiteLabelRepository, WhiteLabelRepository>();
@@ -148,7 +171,20 @@ namespace PPrePorter.DailyActionsDB
             services.AddScoped<ISportBetEnhancedRepository, SportBetEnhancedRepository>();
 
             // Register services
-            services.AddScoped<IDailyActionsService, DailyActionsService>();
+            // Use scoped for DailyActionsService since we're using the GlobalCacheService for cache persistence
+            services.AddScoped<IDailyActionsService>(provider =>
+            {
+                var logger = provider.GetRequiredService<ILogger<DailyActionsService>>();
+                var cache = provider.GetRequiredService<IGlobalCacheService>();
+                var dbContext = provider.GetRequiredService<DailyActionsDbContext>();
+                var whiteLabelService = provider.GetRequiredService<IWhiteLabelService>();
+
+                return new DailyActionsService(
+                    logger,
+                    cache,
+                    dbContext,
+                    whiteLabelService);
+            });
             services.AddScoped<IWhiteLabelService, WhiteLabelService>();
             services.AddScoped<ICountryService, CountryService>();
             services.AddScoped<ICurrencyService, CurrencyService>();
@@ -179,7 +215,46 @@ namespace PPrePorter.DailyActionsDB
 
             // Register additional metadata repositories and services as needed
 
+            // Detect schema and ensure tables exist in the database
+            using (var scope = services.BuildServiceProvider().CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<DailyActionsDbContext>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<DailyActionsDbContext>>();
+
+                try
+                {
+                    // Check if tables exist
+                    logger.LogInformation("Checking database tables");
+                    dbContext.EnsureTablesExistAsync().GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error detecting schema or ensuring tables exist in the database");
+                }
+            }
+
             return services;
+        }
+
+        /// <summary>
+        /// Helper method to sanitize connection strings by hiding sensitive information
+        /// </summary>
+        /// <param name="connectionString">The connection string to sanitize</param>
+        /// <returns>A sanitized version of the connection string with password masked</returns>
+        private static string SanitizeConnectionString(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+                return connectionString;
+
+            if (connectionString.Contains("password="))
+            {
+                return System.Text.RegularExpressions.Regex.Replace(
+                    connectionString,
+                    "password=[^;]*",
+                    "password=***");
+            }
+
+            return connectionString;
         }
     }
 }

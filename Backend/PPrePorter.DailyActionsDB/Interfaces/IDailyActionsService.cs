@@ -68,6 +68,25 @@ namespace PPrePorter.DailyActionsDB.Interfaces
         /// <param name="whiteLabelId">Optional white label ID filter</param>
         /// <returns>Summary metrics</returns>
         Task<DailyActionsSummary> GetSummaryMetricsAsync(DateTime startDate, DateTime endDate, int? whiteLabelId = null);
+
+        /// <summary>
+        /// Prewarms the cache with commonly accessed data
+        /// </summary>
+        Task PrewarmCacheAsync();
+
+        /// <summary>
+        /// Clears all caches related to daily actions
+        /// </summary>
+        void ClearAllCaches();
+
+        /// <summary>
+        /// Clear the cache for a specific date range
+        /// </summary>
+        /// <param name="startDate">Start date</param>
+        /// <param name="endDate">End date</param>
+        /// <param name="whiteLabelId">Optional white label ID</param>
+        /// <returns>True if the cache was cleared, false otherwise</returns>
+        bool ClearCacheForDateRange(DateTime startDate, DateTime endDate, int? whiteLabelId = null);
     }
 
     /// <summary>

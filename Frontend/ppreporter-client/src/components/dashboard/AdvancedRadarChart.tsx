@@ -832,12 +832,12 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
 
                 <PolarRadiusAxis
                   angle={90}
-                  domain={[0, normalizeData ? 100 : 'auto']}
+                  domain={[0, normalizeData ? 100 : 'auto' as any]}
                   tick={{ fill: theme.palette.text.secondary, fontSize: 10 }}
                   tickCount={5}
                   axisLine={{ stroke: theme.palette.divider }}
                   tickLine={{ stroke: theme.palette.divider }}
-                  tickFormatter={(value) => normalizeData ? `${value}%` : value.toString()}
+                  tickFormatter={(value: number) => normalizeData ? `${value}%` : value.toString()}
                 />
 
                 {/* Benchmark radar if enabled */}

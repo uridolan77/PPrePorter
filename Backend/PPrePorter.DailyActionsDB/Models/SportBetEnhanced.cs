@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents an enhanced sport bet
     /// </summary>
-    [Table("SportBetsEnhanced")]
+    [Table("SportBetsEnhanced", Schema = "dbo")]
     public class SportBetEnhanced
     {
         // This is a view or a query result, so we'll mark it as keyless in the DbContext

@@ -10,23 +10,23 @@ export type FieldType = 'number' | 'string' | 'date' | 'boolean' | 'enum';
 /**
  * Operator type
  */
-export type OperatorType = 
-  | 'equals' 
-  | 'not_equals' 
-  | 'greater_than' 
-  | 'less_than' 
-  | 'greater_than_or_equals' 
+export type OperatorType =
+  | 'equals'
+  | 'not_equals'
+  | 'greater_than'
+  | 'less_than'
+  | 'greater_than_or_equals'
   | 'less_than_or_equals'
-  | 'contains' 
-  | 'not_contains' 
-  | 'starts_with' 
+  | 'contains'
+  | 'not_contains'
+  | 'starts_with'
   | 'ends_with'
-  | 'before' 
-  | 'after' 
+  | 'before'
+  | 'after'
   | 'between'
-  | 'in' 
+  | 'in'
   | 'not_in'
-  | 'is_empty' 
+  | 'is_empty'
   | 'is_not_empty';
 
 /**
@@ -37,7 +37,7 @@ export interface FieldOption {
    * Option value
    */
   value: string;
-  
+
   /**
    * Option label
    */
@@ -52,27 +52,27 @@ export interface Field {
    * Field ID
    */
   id: string;
-  
+
   /**
    * Field label
    */
   label: string;
-  
+
   /**
    * Field type
    */
   type: FieldType;
-  
+
   /**
    * Field description
    */
   description?: string;
-  
+
   /**
    * Field options (for enum type)
    */
   options?: FieldOption[];
-  
+
   /**
    * Field category
    */
@@ -87,7 +87,7 @@ export interface DateRange {
    * Start date
    */
   start: Date | null;
-  
+
   /**
    * End date
    */
@@ -97,7 +97,7 @@ export interface DateRange {
 /**
  * Filter value type
  */
-export type FilterValue = string | number | boolean | string[] | DateRange | null;
+export type FilterValue = string | number | boolean | string[] | DateRange | Date | null;
 
 /**
  * Filter interface
@@ -107,17 +107,17 @@ export interface Filter {
    * Filter ID
    */
   id: string;
-  
+
   /**
    * Field ID
    */
   fieldId: string;
-  
+
   /**
    * Operator
    */
   operator: OperatorType;
-  
+
   /**
    * Filter value
    */
@@ -132,7 +132,7 @@ export interface Operator {
    * Operator value
    */
   value: OperatorType;
-  
+
   /**
    * Operator label
    */
@@ -147,22 +147,22 @@ export interface FilterPreset {
    * Preset ID
    */
   id?: string;
-  
+
   /**
    * Preset name
    */
   name: string;
-  
+
   /**
    * Preset filters
    */
   filters: Filter[];
-  
+
   /**
    * Whether the preset is a system preset
    */
   isSystem?: boolean;
-  
+
   /**
    * Preset description
    */
@@ -177,47 +177,47 @@ export interface Report {
    * Report ID
    */
   id: string;
-  
+
   /**
    * Report name
    */
   name: string;
-  
+
   /**
    * Report description
    */
   description?: string;
-  
+
   /**
    * Report type
    */
   type: string;
-  
+
   /**
    * Report filters
    */
   filters: Filter[];
-  
+
   /**
    * Report creation date
    */
   createdAt: string;
-  
+
   /**
    * Report update date
    */
   updatedAt: string;
-  
+
   /**
    * Report owner
    */
   owner: string;
-  
+
   /**
    * Report schedule
    */
   schedule?: ReportSchedule;
-  
+
   /**
    * Report sharing settings
    */
@@ -232,32 +232,32 @@ export interface ReportSchedule {
    * Schedule ID
    */
   id: string;
-  
+
   /**
    * Schedule frequency
    */
   frequency: 'daily' | 'weekly' | 'monthly';
-  
+
   /**
    * Schedule time
    */
   time: string;
-  
+
   /**
    * Schedule day (for weekly and monthly)
    */
   day?: number;
-  
+
   /**
    * Schedule recipients
    */
   recipients: string[];
-  
+
   /**
    * Schedule format
    */
   format: 'pdf' | 'excel' | 'csv';
-  
+
   /**
    * Whether the schedule is active
    */
@@ -272,17 +272,17 @@ export interface ReportSharing {
    * Whether the report is public
    */
   isPublic: boolean;
-  
+
   /**
    * Shared with users
    */
   sharedWith: string[];
-  
+
   /**
    * Shared with teams
    */
   sharedWithTeams: string[];
-  
+
   /**
    * Sharing permissions
    */

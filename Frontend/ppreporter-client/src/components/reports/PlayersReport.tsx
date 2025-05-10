@@ -18,13 +18,12 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Paper
 } from '@mui/material';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DateRangePicker } from '@mui/x-date-pickers-pro';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import DateRangePicker from '../common/DateRangePicker';
 import { CommonProps } from '../../types/common';
 
 // Icons
@@ -918,6 +917,8 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
                       defaultValue: 'last30days'
                     }
                   ]}
+                  values={{}}
+                  onChange={(id, value) => console.log(`Changed ${id} to ${value}`)}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -945,6 +946,8 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
                       defaultValue: 'last30days'
                     }
                   ]}
+                  values={{}}
+                  onChange={(id, value) => console.log(`Changed ${id} to ${value}`)}
                 />
               </Grid>
               <Grid item xs={12} sx={{ textAlign: 'center' }}>

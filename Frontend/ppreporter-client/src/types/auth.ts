@@ -10,15 +10,15 @@ export type UserRole = 'admin' | 'manager' | 'analyst' | 'viewer' | 'guest';
 /**
  * User permission type
  */
-export type UserPermission = 
-  | 'view_dashboard' 
-  | 'view_reports' 
-  | 'create_reports' 
-  | 'edit_reports' 
-  | 'delete_reports' 
-  | 'export_data' 
-  | 'manage_users' 
-  | 'manage_settings' 
+export type UserPermission =
+  | 'view_dashboard'
+  | 'view_reports'
+  | 'create_reports'
+  | 'edit_reports'
+  | 'delete_reports'
+  | 'export_data'
+  | 'manage_users'
+  | 'manage_settings'
   | 'view_audit_logs';
 
 /**
@@ -29,87 +29,87 @@ export interface User {
    * User ID
    */
   id: string;
-  
+
   /**
    * Username
    */
   username: string;
-  
+
   /**
    * User's email address
    */
   email: string;
-  
+
   /**
    * User's full name
    */
   fullName?: string;
-  
+
   /**
    * User's first name
    */
   firstName?: string;
-  
+
   /**
    * User's last name
    */
   lastName?: string;
-  
+
   /**
    * User's avatar URL
    */
   avatar?: string;
-  
+
   /**
    * User's role
    */
   role?: UserRole;
-  
+
   /**
    * User's permissions
    */
   permissions?: UserPermission[];
-  
+
   /**
    * Whether the user is active
    */
   active?: boolean;
-  
+
   /**
    * Last login date
    */
   lastLogin?: string | Date;
-  
+
   /**
    * User's preferences
    */
   preferences?: Record<string, any>;
-  
+
   /**
    * User's organization
    */
   organization?: string;
-  
+
   /**
    * User's department
    */
   department?: string;
-  
+
   /**
    * User's position
    */
   position?: string;
-  
+
   /**
    * User's phone number
    */
   phone?: string;
-  
+
   /**
    * User's creation date
    */
   createdAt?: string | Date;
-  
+
   /**
    * User's last update date
    */
@@ -124,32 +124,32 @@ export interface AuthState {
    * Current user
    */
   user: User | null;
-  
+
   /**
    * Authentication token
    */
   token: string | null;
-  
+
   /**
    * Whether the user is authenticated
    */
   isAuthenticated: boolean;
-  
+
   /**
    * Whether authentication is loading
    */
   loading: boolean;
-  
+
   /**
    * Authentication error
    */
   error: string | null;
-  
+
   /**
    * Token expiration date
    */
   expiresAt?: string | Date | null;
-  
+
   /**
    * Refresh token
    */
@@ -161,15 +161,20 @@ export interface AuthState {
  */
 export interface LoginCredentials {
   /**
-   * Username or email
+   * Username
    */
   username: string;
-  
+
+  /**
+   * Email (alternative to username)
+   */
+  email?: string;
+
   /**
    * Password
    */
   password: string;
-  
+
   /**
    * Remember me flag
    */
@@ -184,37 +189,37 @@ export interface RegistrationData {
    * Username
    */
   username: string;
-  
+
   /**
    * Email
    */
   email: string;
-  
+
   /**
    * Password
    */
   password: string;
-  
+
   /**
    * Password confirmation
    */
   confirmPassword: string;
-  
+
   /**
    * First name
    */
   firstName?: string;
-  
+
   /**
    * Last name
    */
   lastName?: string;
-  
+
   /**
    * Organization
    */
   organization?: string;
-  
+
   /**
    * Terms acceptance
    */
@@ -239,12 +244,12 @@ export interface PasswordResetConfirmation {
    * Reset token
    */
   token: string;
-  
+
   /**
    * New password
    */
   password: string;
-  
+
   /**
    * Password confirmation
    */
@@ -259,17 +264,17 @@ export interface AuthResponse {
    * User data
    */
   user: User;
-  
+
   /**
    * Authentication token
    */
   token: string;
-  
+
   /**
    * Refresh token
    */
   refreshToken?: string;
-  
+
   /**
    * Token expiration
    */

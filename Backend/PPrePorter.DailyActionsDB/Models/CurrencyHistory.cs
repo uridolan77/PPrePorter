@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a currency history record
     /// </summary>
-    [Table("tbl_Currency_history")]
+    [Table("tbl_Currency_history", Schema = "common")]
     public class CurrencyHistory
     {
         [Key]

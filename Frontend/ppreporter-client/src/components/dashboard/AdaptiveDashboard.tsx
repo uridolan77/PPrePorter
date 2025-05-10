@@ -65,7 +65,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // Dashboard configuration state
   const [dashConfig, setDashConfig] = useState<DashboardConfig>({
     layout: 'grid', // grid, list
@@ -74,9 +74,9 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
     animations: true,
     fullscreenWidget: null,
     visibleWidgets: [
-      'revenue', 
-      'registrations', 
-      'topGames', 
+      'revenue',
+      'registrations',
+      'topGames',
       'playerAnalysis',
       'recentActivity'
     ],
@@ -89,7 +89,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
   const handleConfigChange = (changes: Partial<DashboardConfig>): void => {
     const newConfig = { ...dashConfig, ...changes };
     setDashConfig(newConfig);
-    
+
     if (onConfigChange) {
       onConfigChange(newConfig);
     }
@@ -97,8 +97,8 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
 
   // Toggle fullscreen for a widget
   const toggleFullscreen = (widgetId: string | null): void => {
-    handleConfigChange({ 
-      fullscreenWidget: dashConfig.fullscreenWidget === widgetId ? null : widgetId 
+    handleConfigChange({
+      fullscreenWidget: dashConfig.fullscreenWidget === widgetId ? null : widgetId
     });
   };
 
@@ -108,7 +108,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
     if (dashConfig.fullscreenWidget === widgetId) {
       return { xs: 12, sm: 12, md: 12 };
     }
-    
+
     // Default sizes based on widget type and layout
     switch (widgetId) {
       case 'revenue':
@@ -129,7 +129,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
     if (dashConfig.fullscreenWidget === widgetId) {
       return 600; // Fullscreen height
     }
-    
+
     switch (dashConfig.density) {
       case 'compact':
         return 280;
@@ -142,8 +142,8 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
 
   // Render a widget with consistent styling
   const renderWidget = (
-    widgetId: string, 
-    title: string, 
+    widgetId: string,
+    title: string,
     content: React.ReactNode,
     description?: string
   ): React.ReactNode => {
@@ -151,20 +151,20 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
     if (!dashConfig.visibleWidgets.includes(widgetId) && dashConfig.fullscreenWidget !== widgetId) {
       return null;
     }
-    
+
     // Skip if another widget is in fullscreen mode
     if (dashConfig.fullscreenWidget && dashConfig.fullscreenWidget !== widgetId) {
       return null;
     }
-    
+
     const gridSize = getGridSize(widgetId);
     const height = getWidgetHeight(widgetId);
-    
+
     return (
       <Grid item xs={gridSize.xs} sm={gridSize.sm} md={gridSize.md} key={widgetId}>
-        <Paper 
-          elevation={2} 
-          sx={{ 
+        <Paper
+          elevation={2}
+          sx={{
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
@@ -172,10 +172,10 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
             borderRadius: 2
           }}
         >
-          <Box 
-            sx={{ 
-              p: 2, 
-              display: 'flex', 
+          <Box
+            sx={{
+              p: 2,
+              display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}
@@ -184,7 +184,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
               <Typography variant="h6" component="h2">
                 {title}
               </Typography>
-              
+
               {description && (
                 <Tooltip title={description}>
                   <IconButton size="small" sx={{ ml: 0.5 }}>
@@ -193,26 +193,26 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
                 </Tooltip>
               )}
             </Box>
-            
+
             <Box>
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={() => toggleFullscreen(widgetId)}
                 aria-label={dashConfig.fullscreenWidget === widgetId ? "Exit fullscreen" : "Fullscreen"}
               >
-                {dashConfig.fullscreenWidget === widgetId ? 
-                  <FullscreenExitIcon fontSize="small" /> : 
+                {dashConfig.fullscreenWidget === widgetId ?
+                  <FullscreenExitIcon fontSize="small" /> :
                   <FullscreenIcon fontSize="small" />
                 }
               </IconButton>
             </Box>
           </Box>
-          
+
           <Divider />
-          
-          <Box 
-            sx={{ 
-              p: 2, 
+
+          <Box
+            sx={{
+              p: 2,
               flex: 1,
               height: height,
               overflow: 'auto'
@@ -247,79 +247,89 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
             {renderWidget(
               'revenue',
               'Revenue Trend',
-              <CasinoRevenueChart 
-                data={data?.revenue ? [{ date: 'Today', revenue: data.revenue.value }] : []} 
-                isLoading={isLoading} 
+              <CasinoRevenueChart
+                data={data?.revenue ? [{ date: 'Today', revenue: data.revenue.value }] : []}
+                isLoading={isLoading}
               />,
               'Revenue trend over time'
             )}
-            
+
             {renderWidget(
               'registrations',
               'Player Registrations',
-              <PlayerRegistrationsChart 
-                data={data?.players ? [{ date: 'Today', registrations: data.players.value, ftd: 0 }] : []} 
-                isLoading={isLoading} 
+              <PlayerRegistrationsChart
+                data={data?.players ? [{ date: 'Today', registrations: data.players.value, ftd: 0, username: '', email: '', password: '' }] : []}
+                isLoading={isLoading}
               />,
               'New player registrations over time'
             )}
-            
+
             {renderWidget(
               'topGames',
               'Top Games',
-              <TopGamesChart 
-                data={data?.games ? [{ id: '1', name: 'Game 1', revenue: 1000, players: 100, sessions: 200, category: 'Slots' }] : []} 
-                isLoading={isLoading} 
+              <TopGamesChart
+                data={data?.games ? [{ id: '1', name: 'Game 1', revenue: 1000, players: 100, sessions: 200, category: 'Slots' }] : []}
+                isLoading={isLoading}
               />,
               'Top performing games by revenue'
             )}
-            
+
             {renderWidget(
               'playerAnalysis',
               'Player Analysis',
-              <MultiDimensionalRadarChart 
+              <MultiDimensionalRadarChart
                 data={[
-                  { name: 'Engagement', value: 80 },
-                  { name: 'Retention', value: 65 },
-                  { name: 'Conversion', value: 90 },
-                  { name: 'Satisfaction', value: 75 },
-                  { name: 'Activity', value: 85 }
-                ]} 
-                isLoading={isLoading} 
+                  { entityId: 'engagement', values: { score: 80 } },
+                  { entityId: 'retention', values: { score: 65 } },
+                  { entityId: 'conversion', values: { score: 90 } },
+                  { entityId: 'satisfaction', values: { score: 75 } },
+                  { entityId: 'activity', values: { score: 85 } }
+                ]}
+                entities={[
+                  { id: 'engagement', name: 'Engagement' },
+                  { id: 'retention', name: 'Retention' },
+                  { id: 'conversion', name: 'Conversion' },
+                  { id: 'satisfaction', name: 'Satisfaction' },
+                  { id: 'activity', name: 'Activity' }
+                ]}
+                metrics={[
+                  { id: 'score', label: 'Score' }
+                ]}
+                isLoading={isLoading}
               />,
               'Multi-dimensional analysis of player metrics'
             )}
           </Grid>
         );
-        
+
       case 'performance':
         return (
           <Grid container spacing={3}>
             {/* Performance-specific widgets */}
           </Grid>
         );
-        
+
       case 'players':
         return (
           <Grid container spacing={3}>
             {/* Player-specific widgets */}
           </Grid>
         );
-        
+
       case 'games':
         return (
           <Grid container spacing={3}>
             {/* Game-specific widgets */}
           </Grid>
         );
-        
+
       case 'comparison':
         return (
           <Grid container spacing={3}>
             {/* Comparison-specific widgets */}
           </Grid>
         );
-        
+
       default:
         return (
           <Typography>Select a dashboard tab to view content</Typography>
@@ -330,10 +340,10 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
   return (
     <Box sx={{ ...sx }}>
       {/* Dashboard Header */}
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           mb: 3
         }}
@@ -341,10 +351,10 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
         <Typography variant="h5" component="h1">
           {tab.charAt(0).toUpperCase() + tab.slice(1)} Dashboard
         </Typography>
-        
+
         <Box>
           <Tooltip title="Refresh data">
-            <IconButton 
+            <IconButton
               onClick={onRefresh}
               disabled={isLoading}
               color="primary"
@@ -352,9 +362,9 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Dashboard settings">
-            <IconButton 
+            <IconButton
               onClick={() => {/* Open settings */}}
               color="primary"
             >
@@ -363,7 +373,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
           </Tooltip>
         </Box>
       </Box>
-      
+
       {/* Dashboard Content */}
       {renderDashboardContent()}
     </Box>

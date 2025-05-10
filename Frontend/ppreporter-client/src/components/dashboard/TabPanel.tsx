@@ -1,9 +1,9 @@
 import React, { useState, MouseEvent } from 'react';
-import { 
-  Box, 
-  Tabs, 
-  Tab, 
-  Typography, 
+import {
+  Box,
+  Tabs,
+  Tab,
+  Typography,
   Divider,
   useTheme,
   useMediaQuery,
@@ -84,18 +84,18 @@ const TabPanel: React.FC<TabPanelProps> = ({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   // Handle tab change
   const handleTabChange = (_event: React.SyntheticEvent, newValue: string): void => {
     setSelectedTab(newValue);
     onTabChange(newValue);
   };
-  
+
   // Handle menu open
   const handleMenuClick = (event: MouseEvent<HTMLButtonElement>): void => {
     setAnchorEl(event.currentTarget);
   };
-  
+
   // Handle menu close
   const handleMenuClose = (): void => {
     setAnchorEl(null);
@@ -111,7 +111,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
   const getCurrentTab = (): TabType | undefined => {
     return tabs.find(tab => tab.id === selectedTab);
   };
-  
+
   // Render tab controls for mobile
   const renderMobileControls = (): React.ReactNode => (
     <>
@@ -143,7 +143,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
       </Menu>
     </>
   );
-  
+
   // Render tab controls for desktop
   const renderDesktopControls = (): React.ReactNode => (
     <>
@@ -171,7 +171,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
       )}
     </>
   );
-  
+
   return (
     <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', ...sx }}>
       {title && (
@@ -193,11 +193,11 @@ const TabPanel: React.FC<TabPanelProps> = ({
           )}
         </TabPanelHeader>
       )}
-      
+
       <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-        <StyledTabs 
-          value={selectedTab} 
-          onChange={handleTabChange} 
+        <StyledTabs
+          value={selectedTab}
+          onChange={handleTabChange}
           aria-label="dashboard tabs"
           variant={isMobile ? 'scrollable' : 'standard'}
           scrollButtons={isMobile ? 'auto' : 'auto'}
@@ -205,24 +205,24 @@ const TabPanel: React.FC<TabPanelProps> = ({
           sx={{ flexGrow: 1 }}
         >
           {tabs.map((tab) => (
-            <StyledTab 
-              key={tab.id} 
-              label={tab.label} 
-              value={tab.id} 
-              icon={tab.icon ? tab.icon : undefined}
+            <StyledTab
+              key={tab.id}
+              label={tab.label}
+              value={tab.id}
+              icon={tab.icon && (typeof tab.icon === 'string' || React.isValidElement(tab.icon)) ? tab.icon : undefined}
               iconPosition="start"
               disabled={tab.disabled}
             />
           ))}
         </StyledTabs>
-        
+
         {!title && showControls && (
           <TabActions>
             {isMobile ? renderMobileControls() : renderDesktopControls()}
           </TabActions>
         )}
       </Box>
-      
+
       <StyledTabPanel>
         {getCurrentTabContent()}
       </StyledTabPanel>

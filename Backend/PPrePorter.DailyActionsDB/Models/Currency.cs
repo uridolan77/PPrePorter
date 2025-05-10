@@ -31,22 +31,27 @@ namespace PPrePorter.DailyActionsDB.Models
         [Column("RateInEUR", TypeName = "money")]
         public decimal? RateInEUR { get; set; }
 
-        [Column(TypeName = "money")]
+        [Column("RateInUSD", TypeName = "money")]
         public decimal? RateInUSD { get; set; }
 
-        [Column(TypeName = "money")]
+        [Column("RateInGBP", TypeName = "money")]
         public decimal? RateInGBP { get; set; }
 
+        [Column("OrderBy")]
         public byte? OrderBy { get; set; }
 
+        [Column("Multiplier")]
         public int? Multiplier { get; set; }
 
+        [Column("ForLanguagesID")]
         public int? ForLanguagesID { get; set; }
 
         [StringLength(50)]
+        [Column("ForLanguages")]
         public string? ForLanguages { get; set; }
 
         [Required]
+        [Column("UpdatedDate")]
         public DateTime UpdatedDate { get; set; }
     }
 }

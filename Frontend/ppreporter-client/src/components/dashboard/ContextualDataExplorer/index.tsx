@@ -275,20 +275,23 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
         setNlResults(result);
 
         // Apply the results to update visualization
-        if (result.dataSource) {
-          setDataSource(result.dataSource);
+        // Check if result has the expected properties
+        const nlResult = result as NLQueryResult;
+
+        if (nlResult.dataSource) {
+          setDataSource(nlResult.dataSource);
         }
 
-        if (result.metrics && result.metrics.length > 0) {
-          setMetrics(result.metrics);
+        if (nlResult.metrics && nlResult.metrics.length > 0) {
+          setMetrics(nlResult.metrics);
         }
 
-        if (result.chartType) {
-          setChartType(result.chartType);
+        if (nlResult.chartType) {
+          setChartType(nlResult.chartType);
         }
 
-        if (result.timeRange) {
-          setTimeRange(result.timeRange);
+        if (nlResult.timeRange) {
+          setTimeRange(nlResult.timeRange);
         }
 
         // Show success feedback
@@ -338,20 +341,23 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
         setNlResults(result);
 
         // Apply the results to update visualization
-        if (result.dataSource) {
-          setDataSource(result.dataSource);
+        // Check if result has the expected properties
+        const nlResult = result as NLQueryResult;
+
+        if (nlResult.dataSource) {
+          setDataSource(nlResult.dataSource);
         }
 
-        if (result.metrics && result.metrics.length > 0) {
-          setMetrics(result.metrics);
+        if (nlResult.metrics && nlResult.metrics.length > 0) {
+          setMetrics(nlResult.metrics);
         }
 
-        if (result.chartType) {
-          setChartType(result.chartType);
+        if (nlResult.chartType) {
+          setChartType(nlResult.chartType);
         }
 
-        if (result.timeRange) {
-          setTimeRange(result.timeRange);
+        if (nlResult.timeRange) {
+          setTimeRange(nlResult.timeRange);
         }
       }
     } catch (error) {

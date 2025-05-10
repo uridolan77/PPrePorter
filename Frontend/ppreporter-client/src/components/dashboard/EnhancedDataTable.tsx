@@ -31,8 +31,8 @@ import VirtualizedList from '../common/VirtualizedList';
 import { CommonProps, ColumnDef } from '../../types/common';
 
 // Column definition with additional properties for enhanced data table
-interface EnhancedColumnDef extends ColumnDef {
-  type?: 'text' | 'number' | 'currency' | 'percentage' | 'status' | 'sparkline' | 'progress' | 'datetime';
+interface EnhancedColumnDef extends Omit<ColumnDef, 'type'> {
+  type?: 'text' | 'number' | 'currency' | 'percentage' | 'status' | 'sparkline' | 'progress' | 'date' | 'datetime';
   valueKey?: string;
   comparativeKey?: string;
   target?: number;
@@ -67,7 +67,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
   columns = [],
   title = '',
   isLoading = false,
-  onRowClick = null,
+  onRowClick,
   onExport = () => {},
   initialSortBy = 'id',
   initialSortDirection = 'asc',
@@ -108,21 +108,21 @@ function EnhancedDataTable<T extends Record<string, any>>({
   // Render cell content based on column type
   const renderCellContent = useCallback((column: EnhancedColumnDef, row: T): React.ReactNode => {
     const value = row[column.id];
-    
+
     if (value === undefined || value === null) {
       return '-';
     }
-    
+
     switch (column.type) {
       case 'currency':
         return formatCurrency(value);
-      
+
       case 'number':
         return formatNumber(value);
-      
+
       case 'percentage':
         return formatPercentage(value);
-      
+
       case 'status':
         return (
           <Chip
@@ -132,7 +132,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
             variant="outlined"
           />
         );
-      
+
       case 'sparkline':
         // Assume trendData is provided in the row
         return row.trendData ? (
@@ -146,19 +146,19 @@ function EnhancedDataTable<T extends Record<string, any>>({
         ) : (
           '-'
         );
-      
+
       case 'progress':
         return (
           <MicroBulletChart
-            percentComplete={value}
+            actual={value}
             target={column.target || 100}
-            comparative={row[column.comparativeKey]}
+            comparative={column.comparativeKey && row[column.comparativeKey]}
             width={60}
             height={24}
             accessibilityLabel={column.label}
           />
         );
-      
+
       case 'datetime':
         // Format date if it's a valid date string
         try {
@@ -167,7 +167,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
         } catch (e) {
           return value;
         }
-      
+
       default:
         return value;
     }
@@ -188,25 +188,25 @@ function EnhancedDataTable<T extends Record<string, any>>({
         });
       });
     }
-    
+
     // Sort data based on sort column and direction
     return [...filteredData].sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
-      
+
       // Handle null or undefined values
       if (aValue === undefined || aValue === null) return sortDirection === 'asc' ? -1 : 1;
       if (bValue === undefined || bValue === null) return sortDirection === 'asc' ? 1 : -1;
-      
+
       // Handle different value types
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
-          ? aValue.localeCompare(bValue) 
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-      
+
       // Default numeric comparison
-      return sortDirection === 'asc' 
+      return sortDirection === 'asc'
         ? (aValue < bValue ? -1 : aValue > bValue ? 1 : 0)
         : (bValue < aValue ? -1 : bValue > aValue ? 1 : 0);
     });
@@ -220,11 +220,11 @@ function EnhancedDataTable<T extends Record<string, any>>({
           hover
           key={row.id || index}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
-          sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+          sx={{ cursor: onRowClick !== undefined ? 'pointer' : 'default' }}
         >
           {columns.map((column) => (
-            <TableCell 
-              key={column.id} 
+            <TableCell
+              key={column.id}
               align={column.align || 'left'}
               sx={{
                 whiteSpace: column.wrap ? 'normal' : 'nowrap',
@@ -236,8 +236,8 @@ function EnhancedDataTable<T extends Record<string, any>>({
               {renderCellContent(column, row)}
             </TableCell>
           ))}
-          
-          {onRowClick && (
+
+          {onRowClick !== undefined && (
             <TableCell padding="checkbox">
               <IconButton size="small">
                 <VisibilityIcon fontSize="small" />
@@ -265,7 +265,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
         <Typography variant="h6" component="div">
           {title}
         </Typography>
-        
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TextField
             size="small"
@@ -281,13 +281,13 @@ function EnhancedDataTable<T extends Record<string, any>>({
             }}
             sx={{ width: isMobile ? 120 : 200 }}
           />
-          
+
           <Tooltip title="Filter data">
             <IconButton size="small">
               <FilterListIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Export data">
             <IconButton size="small" onClick={onExport}>
               <GetAppIcon fontSize="small" />
@@ -295,7 +295,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
           </Tooltip>
         </Box>
       </Box>
-      
+
       {/* Table content */}
       <TableContainer sx={{ maxHeight }}>
         <Table stickyHeader size="small" aria-label={title}>
@@ -306,7 +306,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
                   key={column.id}
                   align={column.align || 'left'}
                   sortDirection={sortBy === column.id ? sortDirection : false}
-                  sx={{ 
+                  sx={{
                     fontWeight: 'bold',
                     whiteSpace: 'nowrap',
                     minWidth: column.minWidth || 'auto',
@@ -326,17 +326,17 @@ function EnhancedDataTable<T extends Record<string, any>>({
                   )}
                 </TableCell>
               ))}
-              
-              {onRowClick && (
+
+              {onRowClick !== undefined && (
                 <TableCell padding="checkbox" />
               )}
             </TableRow>
           </TableHead>
-          
+
           <TableBody>
             {sortedAndFilteredData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length + (onRowClick ? 1 : 0)} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={columns.length + (onRowClick !== undefined ? 1 : 0)} align="center" sx={{ py: 3 }}>
                   <Typography variant="body2" color="text.secondary">
                     {emptyMessage}
                   </Typography>
@@ -345,7 +345,7 @@ function EnhancedDataTable<T extends Record<string, any>>({
             ) : useVirtualization ? (
               // Virtualized view for large datasets
               <TableRow>
-                <TableCell colSpan={columns.length + (onRowClick ? 1 : 0)} padding="none">
+                <TableCell colSpan={columns.length + (onRowClick !== undefined ? 1 : 0)} padding="none">
                   <Box sx={{ height: typeof maxHeight === 'number' ? maxHeight - 100 : 400 }}>
                     <VirtualizedList
                       data={sortedAndFilteredData}
@@ -365,11 +365,11 @@ function EnhancedDataTable<T extends Record<string, any>>({
                   hover
                   key={row.id || index}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                  sx={{ cursor: onRowClick !== undefined ? 'pointer' : 'default' }}
                 >
                   {columns.map((column) => (
-                    <TableCell 
-                      key={column.id} 
+                    <TableCell
+                      key={column.id}
                       align={column.align || 'left'}
                       sx={{
                         whiteSpace: column.wrap ? 'normal' : 'nowrap',
@@ -381,8 +381,8 @@ function EnhancedDataTable<T extends Record<string, any>>({
                       {renderCellContent(column, row)}
                     </TableCell>
                   ))}
-                  
-                  {onRowClick && (
+
+                  {onRowClick !== undefined && (
                     <TableCell padding="checkbox">
                       <IconButton size="small">
                         <VisibilityIcon fontSize="small" />

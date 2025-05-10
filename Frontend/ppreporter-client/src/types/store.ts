@@ -13,22 +13,22 @@ export interface RootState {
    * Authentication state
    */
   auth: AuthState;
-  
+
   /**
    * Dashboard state
    */
   dashboard: DashboardState;
-  
+
   /**
    * Reports state
    */
   reports: ReportsState;
-  
+
   /**
    * UI state
    */
   ui: UIState;
-  
+
   /**
    * Settings state
    */
@@ -43,17 +43,37 @@ export interface DashboardState {
    * Dashboard data
    */
   data: any;
-  
+
   /**
    * Dashboard loading state
    */
   loading: boolean;
-  
+
   /**
    * Dashboard error
    */
   error: string | null;
-  
+
+  /**
+   * Natural language query results
+   */
+  nlQueryResults: any | null;
+
+  /**
+   * Natural language query loading state
+   */
+  nlQueryLoading: boolean;
+
+  /**
+   * Natural language query error
+   */
+  nlQueryError: string | null;
+
+  /**
+   * Favorite queries
+   */
+  favoriteQueries: Array<{ text: string }>;
+
   /**
    * Dashboard filters
    */
@@ -62,33 +82,33 @@ export interface DashboardState {
      * Date range
      */
     dateRange: [Date | null, Date | null];
-    
+
     /**
      * Selected white labels
      */
     whiteLabels: string[];
-    
+
     /**
      * Selected countries
      */
     countries: string[];
-    
+
     /**
      * Selected game types
      */
     gameTypes: string[];
-    
+
     /**
      * Selected player tiers
      */
     playerTiers: string[];
-    
+
     /**
      * Additional filters
      */
     [key: string]: any;
   };
-  
+
   /**
    * Dashboard preferences
    */
@@ -103,22 +123,22 @@ export interface ReportsState {
    * List of reports
    */
   list: any[];
-  
+
   /**
    * Current report
    */
   current: any | null;
-  
+
   /**
    * Reports loading state
    */
   loading: boolean;
-  
+
   /**
    * Reports error
    */
   error: string | null;
-  
+
   /**
    * Saved report configurations
    */
@@ -133,22 +153,22 @@ export interface UIState {
    * Sidebar open state
    */
   sidebarOpen: boolean;
-  
+
   /**
    * Current theme
    */
   theme: 'light' | 'dark' | 'system';
-  
+
   /**
    * Current language
    */
   language: string;
-  
+
   /**
    * Notifications
    */
   notifications: Notification[];
-  
+
   /**
    * Modal state
    */
@@ -157,12 +177,12 @@ export interface UIState {
      * Modal open state
      */
     open: boolean;
-    
+
     /**
      * Modal type
      */
     type: string | null;
-    
+
     /**
      * Modal data
      */
@@ -178,22 +198,22 @@ export interface Notification {
    * Notification ID
    */
   id: string;
-  
+
   /**
    * Notification type
    */
   type: 'info' | 'success' | 'warning' | 'error';
-  
+
   /**
    * Notification message
    */
   message: string;
-  
+
   /**
    * Notification timestamp
    */
   timestamp: number;
-  
+
   /**
    * Whether the notification has been read
    */
@@ -212,33 +232,33 @@ export interface SettingsState {
      * Default language
      */
     defaultLanguage: string;
-    
+
     /**
      * Default theme
      */
     defaultTheme: 'light' | 'dark' | 'system';
-    
+
     /**
      * Default date format
      */
     dateFormat: string;
-    
+
     /**
      * Default time format
      */
     timeFormat: string;
-    
+
     /**
      * Default currency
      */
     currency: string;
-    
+
     /**
      * Default timezone
      */
     timezone: string;
   };
-  
+
   /**
    * User settings
    */
@@ -251,18 +271,18 @@ export interface SettingsState {
        * Email notifications enabled
        */
       email: boolean;
-      
+
       /**
        * Push notifications enabled
        */
       push: boolean;
-      
+
       /**
        * In-app notifications enabled
        */
       inApp: boolean;
     };
-    
+
     /**
      * Privacy settings
      */
@@ -271,7 +291,7 @@ export interface SettingsState {
        * Share usage data
        */
       shareUsageData: boolean;
-      
+
       /**
        * Show online status
        */

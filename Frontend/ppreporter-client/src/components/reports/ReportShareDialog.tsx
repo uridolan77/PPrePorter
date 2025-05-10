@@ -461,7 +461,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                           label="Expiration date"
                           value={tempExpirationDate}
                           onChange={handleExpirationDateChange}
-                          renderInput={(params) => <TextField {...params} size="small" />}
+                          slotProps={{ textField: { size: 'small' } }}
                           minDate={new Date()}
                           disabled={loading}
                         />

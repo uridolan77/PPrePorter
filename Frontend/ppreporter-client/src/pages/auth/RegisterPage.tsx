@@ -11,6 +11,16 @@ import RegisterForm from '../../components/auth/RegisterForm';
 import { useAuth } from '../../hooks/useAuth';
 import { RegistrationData } from '../../types/auth';
 
+// Define RegisterFormData interface to match the component's expected props
+interface RegisterFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  agreeToTerms: boolean;
+}
+
 /**
  * Registration page component
  */
@@ -24,18 +34,19 @@ const RegisterPage: React.FC = () => {
    * Handle registration form submission
    * @param formData - Registration form data
    */
-  const handleRegister = async (formData: RegistrationData): Promise<void> => {
+  const handleRegister = async (formData: RegisterFormData): Promise<void> => {
     setLoading(true);
     setError('');
 
     try {
       await register({
+        username: formData.email.split('@')[0], // Generate username from email
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        acceptTerms: formData.acceptTerms
+        acceptTerms: formData.agreeToTerms
       });
 
       // Navigate to login page upon successful registration

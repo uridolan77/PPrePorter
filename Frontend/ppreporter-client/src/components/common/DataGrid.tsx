@@ -84,18 +84,21 @@ function DataGrid<T extends Record<string, any>>({
   // Handle row selection click
   const handleSelectClick = (event: React.MouseEvent, id: string | number): void => {
     event.stopPropagation();
-    
+
     if (onSelectRows) {
-      const selectedIndex = selectedRows.indexOf(id);
+      // Cast selectedRows to (string | number)[] to fix TypeScript error
+      const typedSelectedRows = selectedRows as (string | number)[];
+      const selectedIndex = typedSelectedRows.indexOf(id);
       let newSelected: (string | number)[] = [];
 
       if (selectedIndex === -1) {
-        newSelected = [...selectedRows, id];
+        newSelected = [...typedSelectedRows, id];
       } else {
-        newSelected = selectedRows.filter((rowId) => rowId !== id);
+        newSelected = typedSelectedRows.filter((rowId) => rowId !== id);
       }
 
-      onSelectRows(newSelected);
+      // Cast back to expected type for the callback
+      onSelectRows(newSelected as any);
     }
   };
 
@@ -127,45 +130,45 @@ function DataGrid<T extends Record<string, any>>({
   };
 
   // Check if a row is selected
-  const isSelected = (id: string | number): boolean => selectedRows.indexOf(id) !== -1;
+  const isSelected = (id: string | number): boolean => (selectedRows as (string | number)[]).indexOf(id) !== -1;
 
   // Calculate empty rows to maintain consistent page height
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
-  
+
   // Toggle virtualization
   const handleVirtualizationToggle = useCallback((): void => {
     setUseVirtualization(prev => !prev);
   }, []);
-  
+
   // Get sorted and paginated data
   const displayData = useMemo(() => {
     // Sort the data
     const sortedData = [...data].sort((a, b) => {
       const aValue = a[orderBy];
       const bValue = b[orderBy];
-      
+
       if (aValue === bValue) return 0;
-      
+
       if (order === 'asc') {
         return aValue < bValue ? -1 : 1;
       } else {
         return aValue > bValue ? -1 : 1;
       }
     });
-    
+
     // Apply pagination if not using virtualization
     if (!useVirtualization) {
       return sortedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
     }
-    
+
     return sortedData;
   }, [data, orderBy, order, page, rowsPerPage, useVirtualization]);
-  
+
   // Memoized row renderer for virtualized list
   const renderRow = useCallback(({ style, data: row, index }: { style: React.CSSProperties; data: T; index: number }) => {
     const isItemSelected = selectable && isSelected(row[idField]);
     const labelId = `enhanced-table-checkbox-${index}`;
-    
+
     return (
       <div style={style}>
         <TableRow

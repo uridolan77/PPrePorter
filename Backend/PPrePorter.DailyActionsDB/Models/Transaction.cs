@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents a player transaction in the system
     /// </summary>
-    [Table("DailyActionTransactions")]
+    [Table("tbl_Daily_actions_transactions", Schema = "common")]
     public class Transaction
     {
         [Key]

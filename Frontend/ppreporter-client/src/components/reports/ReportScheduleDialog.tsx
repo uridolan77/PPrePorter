@@ -305,11 +305,20 @@ const ReportScheduleDialog: React.FC<ReportScheduleDialogProps> = ({
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel id="weekday-label">Day of Week</InputLabel>
-                    <Select
+                    <Select<number>
                       labelId="weekday-label"
                       name="weekday"
                       value={newSchedule.weekday}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const event = {
+                          target: {
+                            name: 'weekday',
+                            value: Number(e.target.value),
+                            type: 'select'
+                          }
+                        } as unknown as React.ChangeEvent<HTMLInputElement>;
+                        handleInputChange(event);
+                      }}
                       label="Day of Week"
                       disabled={loading}
                     >
@@ -329,11 +338,20 @@ const ReportScheduleDialog: React.FC<ReportScheduleDialogProps> = ({
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel id="monthday-label">Day of Month</InputLabel>
-                    <Select
+                    <Select<number>
                       labelId="monthday-label"
                       name="monthDay"
                       value={newSchedule.monthDay}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const event = {
+                          target: {
+                            name: 'monthDay',
+                            value: Number(e.target.value),
+                            type: 'select'
+                          }
+                        } as unknown as React.ChangeEvent<HTMLInputElement>;
+                        handleInputChange(event);
+                      }}
                       label="Day of Month"
                       disabled={loading}
                     >
@@ -351,7 +369,7 @@ const ReportScheduleDialog: React.FC<ReportScheduleDialogProps> = ({
                     label="Time"
                     value={newSchedule.time}
                     onChange={handleTimeChange}
-                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    slotProps={{ textField: { fullWidth: true } }}
                     disabled={loading}
                   />
                 </LocalizationProvider>

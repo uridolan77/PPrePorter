@@ -44,26 +44,6 @@ function VirtualizedTable<T extends Record<string, any>>({
   headerHeight = 56,
   sx = {}
 }: VirtualizedTableProps<T>): React.ReactElement {
-  // If loading, return a loading message
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // If no data, return an empty message
-  if (!data || data.length === 0) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
-        <Typography variant="body1" color="text.secondary">
-          {emptyMessage}
-        </Typography>
-      </Box>
-    );
-  }
-
   // Memoized row renderer to prevent unnecessary re-renders
   const Row = useCallback(
     ({ index, style }: ListChildComponentProps) => {
@@ -84,7 +64,7 @@ function VirtualizedTable<T extends Record<string, any>>({
           {columns.map((column) => {
             const value = row[column.id];
             const cellWidth = `${100 / columns.length}%`;
-            
+
             return (
               <TableCell
                 component="div"
@@ -110,6 +90,26 @@ function VirtualizedTable<T extends Record<string, any>>({
     [data, columns, onRowClick]
   );
 
+  // If loading, return a loading message
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // If no data, return an empty message
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+        <Typography variant="body1" color="text.secondary">
+          {emptyMessage}
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Paper sx={{ height, width, overflow: 'hidden', ...sx }}>
       <TableContainer component="div" sx={{ height: '100%', width: '100%' }}>
@@ -126,7 +126,7 @@ function VirtualizedTable<T extends Record<string, any>>({
             >
               {columns.map((column) => {
                 const cellWidth = `${100 / columns.length}%`;
-                
+
                 return (
                   <TableCell
                     component="div"
@@ -146,7 +146,7 @@ function VirtualizedTable<T extends Record<string, any>>({
               })}
             </TableRow>
           </TableHead>
-          
+
           <TableBody
             component="div"
             sx={{

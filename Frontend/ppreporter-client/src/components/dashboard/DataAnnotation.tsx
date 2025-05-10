@@ -313,7 +313,7 @@ const DataAnnotation: React.FC<DataAnnotationProps> = ({
     }
   };
 
-  const getAnnotationTypeIcon = (type: AnnotationType): React.ReactNode => {
+  const getAnnotationTypeIcon = (type: AnnotationType): React.ReactElement => {
     switch (type) {
       case 'note': return <CommentIcon />;
       case 'insight': return <InsightsIcon />;
@@ -324,7 +324,7 @@ const DataAnnotation: React.FC<DataAnnotationProps> = ({
     }
   };
 
-  const getVisibilityIcon = (visibility: AnnotationVisibility): React.ReactNode => {
+  const getVisibilityIcon = (visibility: AnnotationVisibility): React.ReactElement => {
     switch (visibility) {
       case 'private': return <VisibilityOffIcon fontSize="small" />;
       case 'team': return <VisibilityIcon fontSize="small" />;
@@ -447,7 +447,7 @@ const DataAnnotation: React.FC<DataAnnotationProps> = ({
                       label="Associated Date"
                       value={newAnnotation.associatedDate}
                       onChange={handleDateChange}
-                      renderInput={(params) => <TextField {...params} fullWidth />}
+                      slotProps={{ textField: { fullWidth: true } }}
                     />
                   </LocalizationProvider>
                 </Grid>
@@ -557,7 +557,7 @@ const DataAnnotation: React.FC<DataAnnotationProps> = ({
                           }
                         >
                           <ListItemAvatar>
-                            <Avatar alt={user.name} src={user.avatar}>
+                            <Avatar alt={user.name} src={user.avatar || undefined}>
                               <PersonIcon />
                             </Avatar>
                           </ListItemAvatar>

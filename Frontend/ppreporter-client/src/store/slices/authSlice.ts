@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import authService from '../../services/authService';
-import { AuthState, LoginCredentials, User, ThunkConfig } from '../../types/redux';
+import { LoginCredentials, User } from '../../types/auth';
+import { AuthState, ThunkConfig, RootState } from '../../types/redux';
 
 // Async thunks for authentication actions
 export const login = createAsyncThunk<
@@ -9,17 +10,19 @@ export const login = createAsyncThunk<
   ThunkConfig
 >(
   'auth/login',
-  async ({ username, email, password }, { rejectWithValue }) => {
+  async ({ username, email, password, rememberMe }, { rejectWithValue }) => {
     try {
       // Support both username and email
-      const credentials = {
-        username: username || email,
-        password
+      const credentials: LoginCredentials = {
+        username: username || email || '',
+        password,
+        rememberMe
       };
       const response = await authService.login(credentials);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Login failed');
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -35,7 +38,8 @@ export const register = createAsyncThunk<
       const response = await authService.register(userData);
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Registration failed');
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -51,7 +55,8 @@ export const logout = createAsyncThunk<
       await authService.logout();
       return null;
     } catch (error) {
-      return rejectWithValue(error.message || 'Logout failed');
+      const errorMessage = error instanceof Error ? error.message : 'Logout failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -67,7 +72,8 @@ export const refreshToken = createAsyncThunk<
       const response = await authService.refreshToken();
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Token refresh failed');
+      const errorMessage = error instanceof Error ? error.message : 'Token refresh failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -82,7 +88,8 @@ export const forgotPassword = createAsyncThunk<
     try {
       await authService.requestPasswordReset(email);
     } catch (error) {
-      return rejectWithValue(error.message || 'Password reset request failed');
+      const errorMessage = error instanceof Error ? error.message : 'Password reset request failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -97,7 +104,8 @@ export const resetPassword = createAsyncThunk<
     try {
       await authService.resetPassword(token, newPassword);
     } catch (error) {
-      return rejectWithValue(error.message || 'Password reset failed');
+      const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -113,7 +121,8 @@ export const loginWithGoogle = createAsyncThunk<
       const response = await authService.loginWithGoogle();
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Google login failed');
+      const errorMessage = error instanceof Error ? error.message : 'Google login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -129,7 +138,8 @@ export const loginWithMicrosoft = createAsyncThunk<
       const response = await authService.loginWithMicrosoft();
       return response;
     } catch (error) {
-      return rejectWithValue(error.message || 'Microsoft login failed');
+      const errorMessage = error instanceof Error ? error.message : 'Microsoft login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -171,7 +181,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       })
       // Register
       .addCase(register.pending, (state) => {
@@ -185,7 +195,7 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       })
       // Logout
       .addCase(logout.pending, (state) => {
@@ -198,7 +208,7 @@ const authSlice = createSlice({
       })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       })
       // Reset Password
       .addCase(resetPassword.pending, (state) => {
@@ -210,7 +220,7 @@ const authSlice = createSlice({
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       })
       // Forgot Password
       .addCase(forgotPassword.pending, (state) => {
@@ -222,7 +232,7 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       })
       // Refresh Token
       .addCase(refreshToken.pending, (state) => {
@@ -236,7 +246,7 @@ const authSlice = createSlice({
       })
       .addCase(refreshToken.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
         // If token refresh fails, we should log the user out
         state.user = null;
         state.isAuthenticated = false;
@@ -253,7 +263,7 @@ const authSlice = createSlice({
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       })
       // Microsoft Login
       .addCase(loginWithMicrosoft.pending, (state) => {
@@ -267,13 +277,16 @@ const authSlice = createSlice({
       })
       .addCase(loginWithMicrosoft.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || null;
       });
   }
 });
 
 // Export actions
 export const { clearError, updateUserProfile } = authSlice.actions;
+
+// Export selectors
+export const selectAuth = (state: RootState) => state.auth;
 
 // Export reducer
 export default authSlice.reducer;

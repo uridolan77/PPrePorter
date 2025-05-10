@@ -7,7 +7,7 @@ namespace PPrePorter.DailyActionsDB.Models
     /// <summary>
     /// Represents an interaction score check
     /// </summary>
-    [Table("tbl_Interactions_ScoreChecks")]
+    [Table("tbl_Interactions_ScoreChecks", Schema = "common")]
     public class InteractionScore
     {
         [Key]

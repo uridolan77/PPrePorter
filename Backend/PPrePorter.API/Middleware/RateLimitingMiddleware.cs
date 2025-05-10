@@ -79,13 +79,24 @@ namespace PPrePorter.API.Middleware
             }
 
             // Store the updated counter
-            _cache.Set(cacheKey, counter, TimeSpan.FromSeconds(_settings.WindowSeconds * 2));
+            var cacheOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(_settings.WindowSeconds * 2))
+                .SetSize(1); // Set a small size for the counter object
+
+            _cache.Set(cacheKey, counter, cacheOptions);
 
             // Check if the request limit has been exceeded
             if (counter.Count > _settings.MaxRequests)
             {
                 _logger.LogWarning("Rate limit exceeded for IP: {ClientIp}, Endpoint: {Endpoint}", clientIp, endpoint);
-                
+
+                // Check if the response has already started
+                if (context.Response.HasStarted)
+                {
+                    _logger.LogWarning("Response has already started, cannot apply rate limiting headers");
+                    return;
+                }
+
                 context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
                 context.Response.ContentType = "application/json";
 
@@ -96,15 +107,22 @@ namespace PPrePorter.API.Middleware
                     RetryAfter = _settings.WindowSeconds - (int)(DateTime.UtcNow - counter.FirstRequest).TotalSeconds
                 };
 
-                // Add retry-after header
-                context.Response.Headers.Add("Retry-After", response.RetryAfter.ToString());
-
-                var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
+                try
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
+                    // Add retry-after header
+                    context.Response.Headers.Add("Retry-After", response.RetryAfter.ToString());
 
-                await context.Response.WriteAsync(jsonResponse);
+                    var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    });
+
+                    await context.Response.WriteAsync(jsonResponse);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error writing rate limit response");
+                }
                 return;
             }
 
@@ -116,13 +134,13 @@ namespace PPrePorter.API.Middleware
         {
             // Try to get the IP from X-Forwarded-For header
             string ip = context.Request.Headers["X-Forwarded-For"].ToString();
-            
+
             // If not available, use the remote IP address
             if (string.IsNullOrEmpty(ip))
             {
                 ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             }
-            
+
             return ip;
         }
     }
