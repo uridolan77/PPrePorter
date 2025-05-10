@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly IBonusBalanceRepository _bonusBalanceRepository;
         private readonly ILogger<BonusBalanceService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _bonusBalanceRepository = bonusBalanceRepository ?? throw new ArgumentNullException(nameof(bonusBalanceRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<BonusBalance>> GetAllBonusBalancesAsync()
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<BonusBalance?> GetBonusBalanceByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<BonusBalance>> GetBonusBalancesByPlayerIdAsync(long playerId)
         {
@@ -71,7 +71,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<BonusBalance>> GetBonusBalancesByBonusIdAsync(int bonusId)
         {
@@ -86,7 +86,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<BonusBalance>> GetBonusBalancesByStatusAsync(string status)
         {
@@ -94,7 +94,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Status cannot be null or empty", nameof(status));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting bonus balances by status {Status}", status);
@@ -106,7 +106,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<BonusBalance>> GetBonusBalancesByPlayerIdAndBonusIdAsync(long playerId, int bonusId)
         {
@@ -121,7 +121,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<BonusBalance> AddBonusBalanceAsync(BonusBalance bonusBalance)
         {
@@ -129,7 +129,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(bonusBalance));
             }
-            
+
             try
             {
                 _logger.LogInformation("Adding new bonus balance for player ID {PlayerId} and bonus ID {BonusId}", bonusBalance.PlayerID, bonusBalance.BonusID);
@@ -141,7 +141,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<BonusBalance> UpdateBonusBalanceAsync(BonusBalance bonusBalance)
         {
@@ -149,27 +149,27 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(bonusBalance));
             }
-            
+
             try
             {
-                _logger.LogInformation("Updating bonus balance with ID {Id}", bonusBalance.ID);
-                
+                _logger.LogInformation("Updating bonus balance with ID {Id}", bonusBalance.BonusBalanceID);
+
                 // Check if the bonus balance exists
-                var existingBonusBalance = await _bonusBalanceRepository.GetByIdAsync(bonusBalance.ID);
+                var existingBonusBalance = await _bonusBalanceRepository.GetByIdAsync((int)bonusBalance.BonusBalanceID);
                 if (existingBonusBalance == null)
                 {
-                    throw new InvalidOperationException($"Bonus balance with ID {bonusBalance.ID} not found");
+                    throw new InvalidOperationException($"Bonus balance with ID {bonusBalance.BonusBalanceID} not found");
                 }
-                
+
                 return await _bonusBalanceRepository.UpdateAsync(bonusBalance);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating bonus balance with ID {Id}", bonusBalance.ID);
+                _logger.LogError(ex, "Error updating bonus balance with ID {Id}", bonusBalance.BonusBalanceID);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteBonusBalanceAsync(int id)
         {

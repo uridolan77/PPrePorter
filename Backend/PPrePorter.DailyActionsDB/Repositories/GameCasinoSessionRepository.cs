@@ -16,7 +16,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
     public class GameCasinoSessionRepository : BaseRepository<GameCasinoSession>, IGameCasinoSessionRepository
     {
         private readonly DailyActionsDbContext _dailyActionsDbContext;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -30,24 +30,24 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             _dailyActionsDbContext = dbContext;
         }
-        
+
         /// <summary>
         /// Get game casino sessions by player ID
         /// </summary>
         public async Task<IEnumerable<GameCasinoSession>> GetByPlayerIdAsync(long playerId)
         {
             string cacheKey = $"{_cacheKeyPrefix}PlayerId_{playerId}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameCasinoSession> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -55,14 +55,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .TagWith("WITH (NOLOCK)")
                     .Where(gcs => gcs.PlayerID == playerId)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -71,24 +71,24 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get game casino sessions by game ID
         /// </summary>
         public async Task<IEnumerable<GameCasinoSession>> GetByGameIdAsync(int gameId)
         {
             string cacheKey = $"{_cacheKeyPrefix}GameId_{gameId}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameCasinoSession> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -96,14 +96,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .TagWith("WITH (NOLOCK)")
                     .Where(gcs => gcs.GameID == gameId)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -112,39 +112,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get game casino sessions by date range
         /// </summary>
         public async Task<IEnumerable<GameCasinoSession>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             string cacheKey = $"{_cacheKeyPrefix}DateRange_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameCasinoSession> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(gcs => gcs.SessionStartDate >= startDate && gcs.SessionStartDate <= endDate)
+                    .Where(gcs => gcs.CreationDate >= startDate && gcs.CreationDate <= endDate)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -153,39 +153,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get game casino sessions by player ID and date range
         /// </summary>
         public async Task<IEnumerable<GameCasinoSession>> GetByPlayerIdAndDateRangeAsync(long playerId, DateTime startDate, DateTime endDate)
         {
             string cacheKey = $"{_cacheKeyPrefix}PlayerId_{playerId}_DateRange_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameCasinoSession> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(gcs => gcs.PlayerID == playerId && gcs.SessionStartDate >= startDate && gcs.SessionStartDate <= endDate)
+                    .Where(gcs => gcs.PlayerID == playerId && gcs.CreationDate >= startDate && gcs.CreationDate <= endDate)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -194,39 +194,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get game casino sessions by game ID and date range
         /// </summary>
         public async Task<IEnumerable<GameCasinoSession>> GetByGameIdAndDateRangeAsync(int gameId, DateTime startDate, DateTime endDate)
         {
             string cacheKey = $"{_cacheKeyPrefix}GameId_{gameId}_DateRange_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameCasinoSession> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(gcs => gcs.GameID == gameId && gcs.SessionStartDate >= startDate && gcs.SessionStartDate <= endDate)
+                    .Where(gcs => gcs.GameID == gameId && gcs.CreationDate >= startDate && gcs.CreationDate <= endDate)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)

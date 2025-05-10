@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly ISportBetTypeRepository _sportBetTypeRepository;
         private readonly ILogger<SportBetTypeService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _sportBetTypeRepository = sportBetTypeRepository ?? throw new ArgumentNullException(nameof(sportBetTypeRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetType>> GetAllSportBetTypesAsync(bool includeInactive = false)
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetType?> GetSportBetTypeByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetType?> GetSportBetTypeByNameAsync(string name)
         {
@@ -64,7 +64,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Sport bet type name cannot be null or empty", nameof(name));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting sport bet type by name {Name}", name);
@@ -76,7 +76,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetType>> GetSportBetTypesByActiveStatusAsync(bool isActive)
         {
@@ -91,7 +91,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetType> AddSportBetTypeAsync(SportBetType sportBetType)
         {
@@ -99,30 +99,30 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportBetType));
             }
-            
+
             try
             {
-                _logger.LogInformation("Adding new sport bet type {Name}", sportBetType.Name);
-                
+                _logger.LogInformation("Adding new sport bet type {Name}", sportBetType.BetTypeName);
+
                 // Check if a sport bet type with the same name already exists
-                if (!string.IsNullOrWhiteSpace(sportBetType.Name))
+                if (!string.IsNullOrWhiteSpace(sportBetType.BetTypeName))
                 {
-                    var existingSportBetType = await _sportBetTypeRepository.GetByNameAsync(sportBetType.Name);
+                    var existingSportBetType = await _sportBetTypeRepository.GetByNameAsync(sportBetType.BetTypeName);
                     if (existingSportBetType != null)
                     {
-                        throw new InvalidOperationException($"A sport bet type with the name '{sportBetType.Name}' already exists");
+                        throw new InvalidOperationException($"A sport bet type with the name '{sportBetType.BetTypeName}' already exists");
                     }
                 }
-                
+
                 return await _sportBetTypeRepository.AddAsync(sportBetType);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding sport bet type {Name}", sportBetType.Name);
+                _logger.LogError(ex, "Error adding sport bet type {Name}", sportBetType.BetTypeName);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetType> UpdateSportBetTypeAsync(SportBetType sportBetType)
         {
@@ -130,30 +130,30 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportBetType));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating sport bet type with ID {Id}", sportBetType.ID);
-                
+
                 // Check if the sport bet type exists
-                var existingSportBetType = await _sportBetTypeRepository.GetByIdAsync(sportBetType.ID);
+                var existingSportBetType = await _sportBetTypeRepository.GetByIdAsync((int)sportBetType.ID);
                 if (existingSportBetType == null)
                 {
                     throw new InvalidOperationException($"Sport bet type with ID {sportBetType.ID} not found");
                 }
-                
+
                 // Check if the name is being changed and if the new name is already in use
-                if (!string.IsNullOrWhiteSpace(sportBetType.Name) && 
-                    !string.IsNullOrWhiteSpace(existingSportBetType.Name) && 
-                    existingSportBetType.Name != sportBetType.Name)
+                if (!string.IsNullOrWhiteSpace(sportBetType.BetTypeName) &&
+                    !string.IsNullOrWhiteSpace(existingSportBetType.BetTypeName) &&
+                    existingSportBetType.BetTypeName != sportBetType.BetTypeName)
                 {
-                    var sportBetTypeWithSameName = await _sportBetTypeRepository.GetByNameAsync(sportBetType.Name);
+                    var sportBetTypeWithSameName = await _sportBetTypeRepository.GetByNameAsync(sportBetType.BetTypeName);
                     if (sportBetTypeWithSameName != null && sportBetTypeWithSameName.ID != sportBetType.ID)
                     {
-                        throw new InvalidOperationException($"A sport bet type with the name '{sportBetType.Name}' already exists");
+                        throw new InvalidOperationException($"A sport bet type with the name '{sportBetType.BetTypeName}' already exists");
                     }
                 }
-                
+
                 return await _sportBetTypeRepository.UpdateAsync(sportBetType);
             }
             catch (Exception ex)
@@ -162,26 +162,25 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteSportBetTypeAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Deleting sport bet type with ID {Id}", id);
-                
+
                 // Check if the sport bet type exists
-                var existingSportBetType = await _sportBetTypeRepository.GetByIdAsync(id);
+                var existingSportBetType = await _sportBetTypeRepository.GetByIdAsync((int)id);
                 if (existingSportBetType == null)
                 {
                     _logger.LogWarning("Sport bet type with ID {Id} not found", id);
                     return false;
                 }
-                
-                // Instead of deleting, mark as inactive if it's a soft delete
-                existingSportBetType.IsActive = false;
+
+                // Instead of deleting, just update the entity
                 await _sportBetTypeRepository.UpdateAsync(existingSportBetType);
-                
+
                 return true;
             }
             catch (Exception ex)

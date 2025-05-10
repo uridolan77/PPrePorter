@@ -25,21 +25,75 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import { CommonProps } from '../../types/common';
+
+// Add WebkitSpeechRecognition to the Window interface
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+// Type definitions
+export interface QueryItem {
+  text: string;
+  timestamp?: string | number | Date;
+  name?: string;
+  description?: string;
+}
+
+export interface NaturalLanguageQueryPanelProps extends CommonProps {
+  /**
+   * Function called when a search is executed
+   */
+  onSearch: (query: string) => void;
+
+  /**
+   * Function called when a query is saved
+   */
+  onSaveQuery?: (query: string) => void;
+
+  /**
+   * List of recent queries
+   */
+  recentQueries?: QueryItem[];
+
+  /**
+   * List of saved queries
+   */
+  savedQueries?: QueryItem[];
+
+  /**
+   * Whether a query is currently being processed
+   */
+  loading?: boolean;
+
+  /**
+   * Error message to display
+   */
+  error?: string | null;
+
+  /**
+   * Whether to show query suggestions
+   */
+  showSuggestions?: boolean;
+
+  /**
+   * List of query suggestions
+   */
+  suggestions?: string[];
+
+  /**
+   * Function called when a suggestion is applied
+   */
+  onApplySuggestion?: (suggestion: string) => void;
+}
 
 /**
  * NaturalLanguageQueryPanel component for enabling natural language queries for reports
- * @param {Object} props - Component props
- * @param {Function} props.onSearch - Function called when a search is executed
- * @param {Function} props.onSaveQuery - Function called when a query is saved
- * @param {Array} props.recentQueries - List of recent queries
- * @param {Array} props.savedQueries - List of saved queries
- * @param {boolean} props.loading - Whether a query is currently being processed
- * @param {string} props.error - Error message to display
- * @param {boolean} props.showSuggestions - Whether to show query suggestions
- * @param {Array} props.suggestions - List of query suggestions
- * @param {Function} props.onApplySuggestion - Function called when a suggestion is applied
  */
-const NaturalLanguageQueryPanel = ({
+const NaturalLanguageQueryPanel: React.FC<NaturalLanguageQueryPanelProps> = ({
   onSearch,
   onSaveQuery,
   recentQueries = [],
@@ -48,12 +102,13 @@ const NaturalLanguageQueryPanel = ({
   error = null,
   showSuggestions = true,
   suggestions = [],
-  onApplySuggestion
+  onApplySuggestion,
+  sx
 }) => {
-  const [query, setQuery] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState(null);
+  const [query, setQuery] = useState<string>('');
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [recognition, setRecognition] = useState<any>(null);
 
   // Set up speech recognition if available
   useEffect(() => {
@@ -62,62 +117,65 @@ const NaturalLanguageQueryPanel = ({
       const recognitionInstance = new SpeechRecognition();
       recognitionInstance.continuous = false;
       recognitionInstance.interimResults = false;
-      
-      recognitionInstance.onresult = (event) => {
+
+      recognitionInstance.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setQuery(transcript);
         setIsListening(false);
       };
-      
+
       recognitionInstance.onerror = () => {
         setIsListening(false);
       };
-      
+
       recognitionInstance.onend = () => {
         setIsListening(false);
       };
-      
+
       setRecognition(recognitionInstance);
     }
   }, []);
 
-  const handleQueryChange = (event) => {
+  const handleQueryChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setQuery(event.target.value);
   };
 
-  const handleSearch = () => {
+  const handleSearch = (): void => {
     if (query.trim() && onSearch) {
       onSearch(query.trim());
     }
   };
 
-  const handleKeyPress = (event) => {
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Enter') {
       handleSearch();
     }
   };
 
-  const handleClearQuery = () => {
+  const handleClearQuery = (): void => {
     setQuery('');
   };
 
-  const handleToggleHistory = () => {
+  const handleToggleHistory = (): void => {
     setShowHistory(!showHistory);
   };
 
-  const handleSelectQuery = (selectedQuery) => {
+  const handleSelectQuery = (selectedQuery: string): void => {
     setQuery(selectedQuery);
+    if (onApplySuggestion) {
+      onApplySuggestion(selectedQuery);
+    }
   };
 
-  const handleSaveQuery = () => {
+  const handleSaveQuery = (): void => {
     if (query.trim() && onSaveQuery) {
       onSaveQuery(query.trim());
     }
   };
 
-  const toggleSpeechRecognition = () => {
+  const toggleSpeechRecognition = (): void => {
     if (!recognition) return;
-    
+
     if (isListening) {
       recognition.stop();
     } else {
@@ -126,12 +184,12 @@ const NaturalLanguageQueryPanel = ({
     }
   };
 
-  const isSaved = (queryText) => {
+  const isSaved = (queryText: string): boolean => {
     return savedQueries.some(saved => saved.text === queryText);
   };
 
   // Example query suggestions based on report context
-  const defaultSuggestions = [
+  const defaultSuggestions: string[] = [
     "Show me total revenue by month for the last quarter",
     "What are the top 5 performing products?",
     "Compare conversion rates between desktop and mobile",
@@ -139,10 +197,10 @@ const NaturalLanguageQueryPanel = ({
     "Identify customers with declining activity"
   ];
 
-  const queryExamples = suggestions.length > 0 ? suggestions : defaultSuggestions;
+  const queryExamples: string[] = suggestions.length > 0 ? suggestions : defaultSuggestions;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 1 }}>
+    <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 1, ...sx }}>
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 1, display: 'flex', alignItems: 'center' }}>
           <SearchIcon sx={{ mr: 1, fontSize: 20 }} />
@@ -171,9 +229,9 @@ const NaturalLanguageQueryPanel = ({
                   )}
                   {recognition && (
                     <Tooltip title={isListening ? "Stop listening" : "Voice search"}>
-                      <IconButton 
-                        size="small" 
-                        onClick={toggleSpeechRecognition} 
+                      <IconButton
+                        size="small"
+                        onClick={toggleSpeechRecognition}
                         color={isListening ? "primary" : "default"}
                         edge="end"
                       >
@@ -204,19 +262,19 @@ const NaturalLanguageQueryPanel = ({
               <HistoryIcon fontSize="small" sx={{ ml: 0.5 }} />
             </IconButton>
           </Tooltip>
-          
+
           {query.trim() && (
             <Tooltip title={isSaved(query.trim()) ? "Query already saved" : "Save this query"}>
-              <IconButton 
-                size="small" 
-                onClick={handleSaveQuery} 
+              <IconButton
+                size="small"
+                onClick={handleSaveQuery}
                 disabled={isSaved(query.trim()) || !query.trim()}
               >
                 {isSaved(query.trim()) ? <BookmarkIcon color="primary" /> : <BookmarkBorderIcon />}
               </IconButton>
             </Tooltip>
           )}
-          
+
           {error && (
             <Typography variant="caption" color="error" sx={{ ml: 2 }}>
               {error}
@@ -234,15 +292,15 @@ const NaturalLanguageQueryPanel = ({
           {recentQueries.length > 0 ? (
             <List dense disablePadding>
               {recentQueries.slice(0, 5).map((item, index) => (
-                <ListItem 
-                  key={index} 
-                  button 
+                <ListItem
+                  key={index}
+                  button
                   onClick={() => handleSelectQuery(item.text)}
                   dense
                   sx={{ borderRadius: 1 }}
                 >
-                  <ListItemText 
-                    primary={item.text} 
+                  <ListItemText
+                    primary={item.text}
                     secondary={item.timestamp && new Date(item.timestamp).toLocaleString()}
                   />
                   {isSaved(item.text) && (
@@ -264,15 +322,15 @@ const NaturalLanguageQueryPanel = ({
               </Typography>
               <List dense disablePadding>
                 {savedQueries.map((item, index) => (
-                  <ListItem 
-                    key={index} 
-                    button 
+                  <ListItem
+                    key={index}
+                    button
                     onClick={() => handleSelectQuery(item.text)}
                     dense
                     sx={{ borderRadius: 1 }}
                   >
-                    <ListItemText 
-                      primary={item.text} 
+                    <ListItemText
+                      primary={item.text}
                       secondary={item.name || item.description}
                     />
                     <BookmarkIcon fontSize="small" color="primary" />

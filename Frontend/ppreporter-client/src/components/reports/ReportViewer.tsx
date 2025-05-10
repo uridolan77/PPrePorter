@@ -18,6 +18,8 @@ import {
   CardActions,
   Tooltip
 } from '@mui/material';
+import { CommonProps } from '../../types/common';
+import { ReportSection, ReportExportFormat } from '../../types/report';
 
 // Icons
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -32,59 +34,147 @@ import PrintIcon from '@mui/icons-material/Print';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CodeIcon from '@mui/icons-material/Code';
 
+// Type definitions
+export interface FilterDefinition {
+  id: string;
+  label: string;
+  type: string;
+  options?: Array<{ value: string | number; label: string }>;
+  defaultValue?: any;
+  [key: string]: any;
+}
+
+// Use ReportExportFormat from report.ts
+export type ExportFormat = ReportExportFormat;
+
+export interface ReportViewerProps extends CommonProps {
+  /**
+   * Report title
+   */
+  title?: string;
+
+  /**
+   * Report description
+   */
+  description?: string;
+
+  /**
+   * Loading state
+   */
+  loading?: boolean;
+
+  /**
+   * Error state
+   */
+  error?: Error | string | null;
+
+  /**
+   * Report sections
+   */
+  sections?: ReportSection[];
+
+  /**
+   * Report data
+   */
+  data?: any;
+
+  /**
+   * Filter definitions
+   */
+  filters?: FilterDefinition[];
+
+  /**
+   * Filter values
+   */
+  filterValues?: Record<string, any>;
+
+  /**
+   * Filter change handler
+   */
+  onFilterChange?: (id: string, value: any) => void;
+
+  /**
+   * Filter apply handler
+   */
+  onFilterApply?: () => void;
+
+  /**
+   * Refresh handler
+   */
+  onRefresh?: () => void;
+
+  /**
+   * Export handler
+   */
+  onExport?: (format: ExportFormat, data?: any) => void;
+
+  /**
+   * Save handler
+   */
+  onSave?: (data?: any) => void;
+
+  /**
+   * Share handler
+   */
+  onShare?: (data?: any) => void;
+
+  /**
+   * Whether to show export options
+   */
+  showExport?: boolean;
+
+  /**
+   * Additional header actions
+   */
+  headerActions?: React.ReactNode;
+}
+
 /**
  * ReportViewer - Generic component for displaying report data and sections
- * 
- * @param {Object} props - Component props
- * @param {string} props.title - Report title
- * @param {string} props.description - Report description
- * @param {boolean} props.loading - Whether the report is loading
- * @param {string} props.error - Error message to display if any
- * @param {Array} props.sections - Array of report sections to display
- * @param {Object} props.data - Report data
- * @param {Function} props.onRefresh - Function to call when the report is refreshed
- * @param {Function} props.onExport - Function to call when the report is exported
- * @param {Function} props.onSave - Function to call when the report is saved
- * @param {Function} props.onShare - Function to call when the report is shared
- * @param {boolean} props.showExport - Whether to show export options
  */
-const ReportViewer = ({
+const ReportViewer: React.FC<ReportViewerProps> = ({
   title = 'Report',
   description = 'Report description',
   loading = false,
   error = null,
   sections = [],
   data = {},
+  filters,
+  filterValues,
+  onFilterChange,
+  onFilterApply,
   onRefresh,
   onExport,
   onSave,
   onShare,
-  showExport = true
+  showExport = true,
+  headerActions,
+  sx
 }) => {
-  const [expandedSections, setExpandedSections] = useState(sections.map(section => section.id));
-  const [exportMenuAnchorEl, setExportMenuAnchorEl] = useState(null);
-  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState(null);
-  
+  const [expandedSections, setExpandedSections] = useState<string[]>(sections.map(section => section.id));
+  const [exportMenuAnchorEl, setExportMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLElement | null>(null);
+
   // Handle export menu open/close
-  const handleExportMenuOpen = (event) => {
+  const handleExportMenuOpen = (event: React.MouseEvent<HTMLElement>): void => {
     setExportMenuAnchorEl(event.currentTarget);
   };
-  
-  const handleExportMenuClose = () => {
+
+  const handleExportMenuClose = (): void => {
     setExportMenuAnchorEl(null);
   };
-  
+
   // Handle more menu open/close
-  const handleMoreMenuOpen = (event) => {
+  const handleMoreMenuOpen = (event: React.MouseEvent<HTMLElement>): void => {
     setMoreMenuAnchorEl(event.currentTarget);
   };
-  
-  const handleMoreMenuClose = () => {
+
+  const handleMoreMenuClose = (): void => {
     setMoreMenuAnchorEl(null);
   };
-  
+
   // Toggle section visibility
-  const handleToggleSection = (sectionId) => {
+  const handleToggleSection = (sectionId: string): void => {
     setExpandedSections(prevState => {
       if (prevState.includes(sectionId)) {
         return prevState.filter(id => id !== sectionId);
@@ -93,32 +183,39 @@ const ReportViewer = ({
       }
     });
   };
-  
+
   // Handle section actions
-  const handleCollapseAll = () => {
+  const handleCollapseAll = (): void => {
     setExpandedSections([]);
   };
-  
-  const handleExpandAll = () => {
+
+  const handleExpandAll = (): void => {
     setExpandedSections(sections.map(section => section.id));
   };
-  
+
   // Handle export actions
-  const handleExport = (format) => {
+  const handleExport = (format: ExportFormat): void => {
     if (onExport) {
-      onExport(format);
+      onExport(format, data);
     }
     handleExportMenuClose();
   };
-  
+
   // Handle print
-  const handlePrint = () => {
+  const handlePrint = (): void => {
     window.print();
     handleMoreMenuClose();
   };
-  
+
+  // Format error message
+  const getErrorMessage = (): string => {
+    if (!error) return '';
+    if (typeof error === 'string') return error;
+    return error.message || 'An error occurred';
+  };
+
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', ...sx }}>
       {/* Report Header */}
       <Paper sx={{ p: 3, mb: 3, borderRadius: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -130,19 +227,21 @@ const ReportViewer = ({
               {description}
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', gap: 1 }}>
             {/* Refresh Button */}
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={onRefresh}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
-            
+            {onRefresh && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RefreshIcon />}
+                onClick={onRefresh}
+                disabled={loading}
+              >
+                Refresh
+              </Button>
+            )}
+
             {/* Export Button/Menu */}
             {showExport && (
               <>
@@ -168,33 +267,36 @@ const ReportViewer = ({
                 </Menu>
               </>
             )}
-            
+
             {/* Save Button */}
             {onSave && (
               <Button
                 variant="outlined"
                 size="small"
                 startIcon={<SaveIcon />}
-                onClick={onSave}
+                onClick={() => onSave(data)}
                 disabled={loading}
               >
                 Save
               </Button>
             )}
-            
+
             {/* Share Button */}
             {onShare && (
               <Button
                 variant="outlined"
                 size="small"
                 startIcon={<ShareIcon />}
-                onClick={onShare}
+                onClick={() => onShare(data)}
                 disabled={loading}
               >
                 Share
               </Button>
             )}
-            
+
+            {/* Additional header actions */}
+            {headerActions}
+
             {/* More Options */}
             <IconButton
               size="small"
@@ -231,25 +333,25 @@ const ReportViewer = ({
             </Menu>
           </Box>
         </Box>
-        
+
         {/* Loading Indicator */}
         {loading && (
           <Box sx={{ width: '100%', mt: 2 }}>
             <LinearProgress />
           </Box>
         )}
-        
+
         {/* Error Message */}
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
+            {getErrorMessage()}
           </Alert>
         )}
-        
+
         {/* Report Metadata/Filters Summary */}
         {!loading && !error && data && (
           <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            <Chip 
+            <Chip
               label={`Generated: ${new Date().toLocaleString()}`}
               size="small"
               color="default"
@@ -257,7 +359,7 @@ const ReportViewer = ({
             />
             {data.summary && (
               <Tooltip title="Total records in this report">
-                <Chip 
+                <Chip
                   label={`Records: ${data.byDimension?.length || 0}`}
                   size="small"
                   color="primary"
@@ -268,11 +370,11 @@ const ReportViewer = ({
           </Box>
         )}
       </Paper>
-      
+
       {/* Report Sections */}
       {sections.map((section) => (
-        <Card 
-          key={section.id} 
+        <Card
+          key={section.id}
           sx={{ mb: 3, borderRadius: 1 }}
           variant="outlined"
         >
@@ -301,7 +403,7 @@ const ReportViewer = ({
           </Collapse>
         </Card>
       ))}
-      
+
       {/* No Sections Placeholder */}
       {sections.length === 0 && !loading && (
         <Paper sx={{ p: 4, textAlign: 'center' }}>

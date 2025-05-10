@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent, ChangeEvent } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Container,
@@ -14,22 +14,23 @@ import {
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import { useAuth } from '../../hooks/useAuth';
+import { PasswordResetRequest } from '../../types/auth';
 
 /**
  * Forgot password page component
  */
-const ForgotPasswordPage = () => {
+const ForgotPasswordPage: React.FC = () => {
   const { forgotPassword } = useAuth();
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [success, setSuccess] = useState<boolean>(false);
 
   /**
    * Handle form submission
-   * @param {Object} e - Event object
+   * @param e - Form event
    */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (!email) {
@@ -46,11 +47,13 @@ const ForgotPasswordPage = () => {
     setError('');
 
     try {
-      await forgotPassword(email);
+      const resetRequest: PasswordResetRequest = { email };
+      await forgotPassword(resetRequest);
       setSuccess(true);
     } catch (err) {
       console.error('Password reset request error:', err);
-      setError(err.message || 'Failed to send password reset email. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Failed to send password reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,9 +61,9 @@ const ForgotPasswordPage = () => {
 
   /**
    * Handle email input change
-   * @param {Object} e - Event object
+   * @param e - Change event
    */
-  const handleEmailChange = (e) => {
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setEmail(e.target.value);
     setError('');
   };
@@ -99,7 +102,7 @@ const ForgotPasswordPage = () => {
                 src="/email-sent.png"
                 alt="Email Sent"
                 style={{ height: 100, width: 'auto', marginBottom: 16 }}
-                onError={(e) => { e.target.style.display = 'none'; }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
                 Check your email
@@ -130,7 +133,7 @@ const ForgotPasswordPage = () => {
                   src="/logo.png"
                   alt="Logo"
                   style={{ height: 60, width: 'auto', marginBottom: 16 }}
-                  onError={(e) => { e.target.style.display = 'none'; }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
                   Forgot Password

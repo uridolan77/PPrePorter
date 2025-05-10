@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Drawer,
@@ -12,6 +12,7 @@ import {
   useTheme
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { CommonProps } from '../../types/common';
 
 // Icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -28,44 +29,74 @@ import LiveTvIcon from '@mui/icons-material/LiveTv';
 import SportsIcon from '@mui/icons-material/Sports';
 import CampaignIcon from '@mui/icons-material/Campaign';
 
+// Type definitions
+interface ExpandedItems {
+  [key: string]: boolean;
+}
+
+interface NavItemChild {
+  label: string;
+  path: string;
+  active: boolean;
+  icon?: React.ReactNode;
+}
+
+interface NavItem {
+  label: string;
+  icon: React.ReactNode;
+  path?: string;
+  active?: boolean;
+  children?: NavItemChild[];
+  expanded?: boolean;
+}
+
+export interface SidebarProps extends CommonProps {
+  /**
+   * Whether the sidebar is open
+   */
+  open: boolean;
+  
+  /**
+   * Function to close the sidebar
+   */
+  onClose: () => void;
+}
+
 /**
  * Sidebar navigation component with collapsible sections
- * @param {Object} props - Component props
- * @param {boolean} props.open - Whether the sidebar is open
- * @param {Function} props.onClose - Function to close the sidebar
  */
-const Sidebar = ({ open, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [expandedItems, setExpandedItems] = React.useState({
+  const [expandedItems, setExpandedItems] = useState<ExpandedItems>({
     reports: false,
     players: false,
     games: false
   });
 
-  const handleNavigate = (path) => {
+  const handleNavigate = (path: string): void => {
     navigate(path);
     if (window.innerWidth < theme.breakpoints.values.md) {
       onClose();
     }
   };
 
-  const handleToggle = (section) => {
+  const handleToggle = (section: string): void => {
     setExpandedItems({
       ...expandedItems,
       [section]: !expandedItems[section]
     });
   };
 
-  const isActive = (path) => {
+  const isActive = (path: string): boolean => {
     return location.pathname === path;
   };
 
   const drawerWidth = 240;
 
   // Sidebar navigation items
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       label: 'Dashboard',
       icon: <DashboardIcon />,
@@ -142,7 +173,10 @@ const Sidebar = ({ open, onClose }) => {
           src="/logo.png"
           alt="ProgressPlay Logo"
           style={{ height: 40, width: 'auto' }}
-          onError={(e) => { e.target.src = '/fallback-logo.png'; }}
+          onError={(e) => { 
+            const target = e.target as HTMLImageElement;
+            target.src = '/fallback-logo.png'; 
+          }}
         />
       </Box>
       <Divider />
@@ -177,7 +211,7 @@ const Sidebar = ({ open, onClose }) => {
           ) : (
             <ListItem key={item.label} disablePadding>
               <ListItemButton
-                onClick={() => handleNavigate(item.path)}
+                onClick={() => item.path && handleNavigate(item.path)}
                 selected={item.active}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
@@ -202,6 +236,7 @@ const Sidebar = ({ open, onClose }) => {
           width: drawerWidth,
           boxSizing: 'border-box',
         },
+        ...sx
       }}
     >
       {drawer}

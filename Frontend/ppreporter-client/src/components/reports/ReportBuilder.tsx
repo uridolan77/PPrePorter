@@ -24,7 +24,8 @@ import {
   ListItemIcon,
   ListItemSecondaryAction,
   Tooltip,
-  Alert
+  Alert,
+  SelectChangeEvent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -37,20 +38,76 @@ import SaveIcon from '@mui/icons-material/Save';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import { CommonProps } from '../../types/common';
+
+// Type definitions
+export interface DataSource {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface VisualizationType {
+  id: string;
+  name: string;
+  icon?: React.ReactNode;
+  description?: string;
+}
+
+export interface Column {
+  id: string;
+  name: string;
+  dataType: string;
+  description?: string;
+}
+
+export interface Filter {
+  column: string;
+  operator: string;
+  value: string;
+}
+
+export interface SortConfig {
+  column: Column;
+  direction: 'asc' | 'desc';
+}
+
+export interface ReportConfiguration {
+  title: string;
+  description: string;
+  dataSource: string;
+  visualizationType: string;
+  selectedColumns: Column[];
+  filters: Filter[];
+  groupBy: Column[];
+  sortBy: SortConfig | null;
+  isPublic: boolean;
+  refreshInterval: number;
+}
+
+export interface ReportBuilderProps extends CommonProps {
+  dataSources?: DataSource[];
+  visualizationTypes?: VisualizationType[];
+  columns?: Column[];
+  onSave?: (config: ReportConfiguration) => void;
+  onPreview?: (config: ReportConfiguration) => void;
+  onLoadDataSource?: (dataSourceId: string) => void;
+  initialReport?: ReportConfiguration | null;
+  onCancel?: () => void;
+}
+
+interface FormErrors {
+  title?: string;
+  dataSource?: string;
+  selectedColumns?: string;
+  visualizationType?: string;
+  [key: string]: string | undefined;
+}
 
 /**
  * ReportBuilder component for creating and editing custom reports
- * @param {Object} props - Component props
- * @param {Array} props.dataSources - Available data sources
- * @param {Array} props.visualizationTypes - Available visualization types
- * @param {Array} props.columns - Available columns for selected data source
- * @param {Function} props.onSave - Function called when report is saved
- * @param {Function} props.onPreview - Function called when report is previewed
- * @param {Function} props.onLoadDataSource - Function called when data source is selected
- * @param {Object} props.initialReport - Initial report configuration for editing
- * @param {Function} props.onCancel - Function called when report building is cancelled
  */
-const ReportBuilder = ({
+const ReportBuilder: React.FC<ReportBuilderProps> = ({
   dataSources = [],
   visualizationTypes = [],
   columns = [],
@@ -58,10 +115,11 @@ const ReportBuilder = ({
   onPreview,
   onLoadDataSource,
   initialReport = null,
-  onCancel
+  onCancel,
+  sx
 }) => {
-  const [activeStep, setActiveStep] = useState(0);
-  const [reportConfig, setReportConfig] = useState({
+  const [activeStep, setActiveStep] = useState<number>(0);
+  const [reportConfig, setReportConfig] = useState<ReportConfiguration>({
     title: initialReport?.title || '',
     description: initialReport?.description || '',
     dataSource: initialReport?.dataSource || '',
@@ -73,17 +131,17 @@ const ReportBuilder = ({
     isPublic: initialReport?.isPublic || false,
     refreshInterval: initialReport?.refreshInterval || 0,
   });
-  
-  const [errors, setErrors] = useState({});
-  
+
+  const [errors, setErrors] = useState<FormErrors>({});
+
   // Load columns when data source changes
   useEffect(() => {
     if (reportConfig.dataSource && onLoadDataSource) {
       onLoadDataSource(reportConfig.dataSource);
     }
   }, [reportConfig.dataSource, onLoadDataSource]);
-  
-  const steps = [
+
+  const steps: string[] = [
     'Basic Information',
     'Data Source',
     'Column Selection',
@@ -91,20 +149,20 @@ const ReportBuilder = ({
     'Visualization',
     'Schedule & Share'
   ];
-  
-  const handleNext = () => {
+
+  const handleNext = (): void => {
     if (validateStep(activeStep)) {
       setActiveStep((prevStep) => prevStep + 1);
     }
   };
-  
-  const handleBack = () => {
+
+  const handleBack = (): void => {
     setActiveStep((prevStep) => prevStep - 1);
   };
-  
-  const validateStep = (step) => {
-    const newErrors = {};
-    
+
+  const validateStep = (step: number): boolean => {
+    const newErrors: FormErrors = {};
+
     if (step === 0) {
       if (!reportConfig.title.trim()) {
         newErrors.title = 'Report title is required';
@@ -122,55 +180,59 @@ const ReportBuilder = ({
         newErrors.visualizationType = 'Visualization type is required';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
-  const handleInputChange = (event) => {
-    const { name, value, checked } = event.target;
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }> | SelectChangeEvent): void => {
+    const name = event.target.name as keyof ReportConfiguration;
+    const value = (event.target as HTMLInputElement).type === 'checkbox'
+      ? (event.target as HTMLInputElement).checked
+      : event.target.value;
+
     setReportConfig((prev) => ({
       ...prev,
-      [name]: name === 'isPublic' ? checked : value
+      [name]: value
     }));
-    
+
     // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
-  
-  const handleColumnToggle = (column) => {
+
+  const handleColumnToggle = (column: Column): void => {
     setReportConfig((prev) => {
       const isSelected = prev.selectedColumns.some(col => col.id === column.id);
       let updatedColumns;
-      
+
       if (isSelected) {
         updatedColumns = prev.selectedColumns.filter(col => col.id !== column.id);
       } else {
         updatedColumns = [...prev.selectedColumns, column];
       }
-      
+
       return {
         ...prev,
         selectedColumns: updatedColumns
       };
     });
-    
+
     // Clear selection error if any columns are selected
     if (errors.selectedColumns) {
-      setErrors((prev) => ({ ...prev, selectedColumns: '' }));
+      setErrors((prev) => ({ ...prev, selectedColumns: undefined }));
     }
   };
-  
-  const handleAddFilter = (filter) => {
+
+  const handleAddFilter = (): void => {
     setReportConfig((prev) => ({
       ...prev,
       filters: [...prev.filters, { column: '', operator: '=', value: '' }]
     }));
   };
-  
-  const handleFilterChange = (index, field, value) => {
+
+  const handleFilterChange = (index: number, field: keyof Filter, value: string): void => {
     setReportConfig((prev) => {
       const updatedFilters = [...prev.filters];
       updatedFilters[index] = { ...updatedFilters[index], [field]: value };
@@ -180,52 +242,52 @@ const ReportBuilder = ({
       };
     });
   };
-  
-  const handleRemoveFilter = (index) => {
+
+  const handleRemoveFilter = (index: number): void => {
     setReportConfig((prev) => ({
       ...prev,
       filters: prev.filters.filter((_, i) => i !== index)
     }));
   };
-  
-  const handleGroupByToggle = (column) => {
+
+  const handleGroupByToggle = (column: Column): void => {
     setReportConfig((prev) => {
       const isSelected = prev.groupBy.some(col => col.id === column.id);
       let updatedGroupBy;
-      
+
       if (isSelected) {
         updatedGroupBy = prev.groupBy.filter(col => col.id !== column.id);
       } else {
         updatedGroupBy = [...prev.groupBy, column];
       }
-      
+
       return {
         ...prev,
         groupBy: updatedGroupBy
       };
     });
   };
-  
-  const handleSortByChange = (column, direction) => {
+
+  const handleSortByChange = (column: Column | null, direction: 'asc' | 'desc'): void => {
     setReportConfig((prev) => ({
       ...prev,
-      sortBy: { column, direction }
+      sortBy: column ? { column, direction } : null
     }));
   };
-  
-  const handlePreview = () => {
+
+  const handlePreview = (): void => {
     if (onPreview) {
       onPreview(reportConfig);
     }
   };
-  
-  const handleSave = () => {
+
+  const handleSave = (): void => {
     if (validateAllSteps() && onSave) {
       onSave(reportConfig);
     }
   };
-  
-  const validateAllSteps = () => {
+
+  const validateAllSteps = (): boolean => {
     for (let i = 0; i < steps.length; i++) {
       if (!validateStep(i)) {
         setActiveStep(i);
@@ -234,8 +296,8 @@ const ReportBuilder = ({
     }
     return true;
   };
-  
-  const renderStepContent = (step) => {
+
+  const renderStepContent = (step: number): React.ReactNode => {
     switch (step) {
       case 0:
         return (
@@ -266,7 +328,7 @@ const ReportBuilder = ({
             />
           </Box>
         );
-        
+
       case 1:
         return (
           <Box sx={{ p: 3 }}>
@@ -295,7 +357,7 @@ const ReportBuilder = ({
                 </Typography>
               )}
             </FormControl>
-            
+
             {reportConfig.dataSource && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
@@ -308,20 +370,20 @@ const ReportBuilder = ({
             )}
           </Box>
         );
-        
+
       case 2:
         return (
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Select Columns
             </Typography>
-            
+
             {errors.selectedColumns && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {errors.selectedColumns}
               </Alert>
             )}
-            
+
             <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto', mb: 2 }}>
               <List>
                 {columns.map((column) => {
@@ -331,14 +393,14 @@ const ReportBuilder = ({
                       <ListItemIcon>
                         <ViewColumnIcon color={isSelected ? 'primary' : 'action'} />
                       </ListItemIcon>
-                      <ListItemText 
-                        primary={column.name} 
+                      <ListItemText
+                        primary={column.name}
                         secondary={`${column.dataType} • ${column.description || 'No description'}`}
                       />
                       <ListItemSecondaryAction>
-                        <IconButton 
-                          edge="end" 
-                          onClick={() => handleColumnToggle(column)} 
+                        <IconButton
+                          edge="end"
+                          onClick={() => handleColumnToggle(column)}
                           color={isSelected ? 'primary' : 'default'}
                         >
                           {isSelected ? <RemoveIcon /> : <AddIcon />}
@@ -349,7 +411,7 @@ const ReportBuilder = ({
                 })}
               </List>
             </Paper>
-            
+
             <Box>
               <Typography variant="subtitle1" gutterBottom>
                 Selected Columns ({reportConfig.selectedColumns.length})
@@ -361,11 +423,11 @@ const ReportBuilder = ({
                   </Typography>
                 ) : (
                   reportConfig.selectedColumns.map((column) => (
-                    <Chip 
-                      key={column.id} 
-                      label={column.name} 
-                      onDelete={() => handleColumnToggle(column)} 
-                      color="primary" 
+                    <Chip
+                      key={column.id}
+                      label={column.name}
+                      onDelete={() => handleColumnToggle(column)}
+                      color="primary"
                       variant="outlined"
                     />
                   ))
@@ -374,7 +436,7 @@ const ReportBuilder = ({
             </Box>
           </Box>
         );
-        
+
       case 3:
         return (
           <Box sx={{ p: 3 }}>
@@ -383,7 +445,7 @@ const ReportBuilder = ({
                 <Typography variant="h6" gutterBottom>
                   Filters
                 </Typography>
-                
+
                 {reportConfig.filters.map((filter, index) => (
                   <Box key={index} sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                     <FormControl sx={{ minWidth: 150 }}>
@@ -401,7 +463,7 @@ const ReportBuilder = ({
                         ))}
                       </Select>
                     </FormControl>
-                    
+
                     <FormControl sx={{ minWidth: 120 }}>
                       <InputLabel>Operator</InputLabel>
                       <Select
@@ -421,7 +483,7 @@ const ReportBuilder = ({
                         <MenuItem value="ends_with">Ends with</MenuItem>
                       </Select>
                     </FormControl>
-                    
+
                     <TextField
                       label="Value"
                       value={filter.value}
@@ -429,16 +491,16 @@ const ReportBuilder = ({
                       size="small"
                       sx={{ flexGrow: 1 }}
                     />
-                    
+
                     <IconButton color="error" onClick={() => handleRemoveFilter(index)}>
                       <RemoveIcon />
                     </IconButton>
                   </Box>
                 ))}
-                
-                <Button 
-                  variant="outlined" 
-                  startIcon={<AddIcon />} 
+
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
                   onClick={handleAddFilter}
                   size="small"
                   sx={{ mt: 1 }}
@@ -446,12 +508,12 @@ const ReportBuilder = ({
                   Add Filter
                 </Button>
               </Grid>
-              
+
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>
                   Group By & Sort
                 </Typography>
-                
+
                 <Typography variant="subtitle2" gutterBottom>
                   Group By
                 </Typography>
@@ -468,14 +530,14 @@ const ReportBuilder = ({
                       />
                     );
                   })}
-                  
+
                   {reportConfig.selectedColumns.length === 0 && (
                     <Typography variant="body2" color="text.secondary">
                       Select columns first
                     </Typography>
                   )}
                 </Box>
-                
+
                 <Typography variant="subtitle2" gutterBottom>
                   Sort By
                 </Typography>
@@ -487,7 +549,7 @@ const ReportBuilder = ({
                         value={reportConfig.sortBy?.column?.id || ''}
                         onChange={(e) => {
                           const column = reportConfig.selectedColumns.find(col => col.id === e.target.value);
-                          handleSortByChange(column, reportConfig.sortBy?.direction || 'asc');
+                          handleSortByChange(column || null, reportConfig.sortBy?.direction || 'asc');
                         }}
                         label="Column"
                       >
@@ -505,7 +567,7 @@ const ReportBuilder = ({
                       <InputLabel>Direction</InputLabel>
                       <Select
                         value={reportConfig.sortBy?.direction || 'asc'}
-                        onChange={(e) => handleSortByChange(reportConfig.sortBy?.column, e.target.value)}
+                        onChange={(e) => handleSortByChange(reportConfig.sortBy?.column || null, e.target.value as 'asc' | 'desc')}
                         label="Direction"
                       >
                         <MenuItem value="asc">Ascending</MenuItem>
@@ -518,14 +580,14 @@ const ReportBuilder = ({
             </Grid>
           </Box>
         );
-        
+
       case 4:
         return (
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Visualization
             </Typography>
-            
+
             <FormControl fullWidth margin="normal" error={!!errors.visualizationType}>
               <InputLabel id="visualization-type-label">Visualization Type</InputLabel>
               <Select
@@ -548,13 +610,13 @@ const ReportBuilder = ({
                 </Typography>
               )}
             </FormControl>
-            
+
             {reportConfig.visualizationType && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
                   Visualization Options
                 </Typography>
-                
+
                 {/* Here you would include specific options for each visualization type */}
                 <Alert severity="info" sx={{ mt: 2 }}>
                   Additional configuration options for {visualizationTypes.find(t => t.id === reportConfig.visualizationType)?.name} will be displayed here.
@@ -563,14 +625,14 @@ const ReportBuilder = ({
             )}
           </Box>
         );
-        
+
       case 5:
         return (
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Schedule & Share
             </Typography>
-            
+
             <FormControl fullWidth margin="normal">
               <InputLabel id="refresh-interval-label">Refresh Interval</InputLabel>
               <Select
@@ -589,7 +651,7 @@ const ReportBuilder = ({
                 <MenuItem value={1440}>Every day</MenuItem>
               </Select>
             </FormControl>
-            
+
             <FormControlLabel
               control={
                 <Switch
@@ -601,7 +663,7 @@ const ReportBuilder = ({
               label="Make this report public"
               sx={{ mt: 2 }}
             />
-            
+
             {reportConfig.isPublic && (
               <Alert severity="info" sx={{ mt: 2 }}>
                 Public reports can be viewed by anyone with the link, without requiring login.
@@ -609,20 +671,20 @@ const ReportBuilder = ({
             )}
           </Box>
         );
-        
+
       default:
         return null;
     }
   };
-  
+
   return (
-    <Paper sx={{ borderRadius: 1, overflow: 'hidden' }}>
+    <Paper sx={{ borderRadius: 1, overflow: 'hidden', ...sx }}>
       <Box sx={{ p: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
         <Typography variant="h5" component="h2">
           {initialReport ? 'Edit Report' : 'Create New Report'}
         </Typography>
       </Box>
-      
+
       <Stepper activeStep={activeStep} alternativeLabel sx={{ py: 3 }}>
         {steps.map((label) => (
           <Step key={label}>
@@ -630,23 +692,23 @@ const ReportBuilder = ({
           </Step>
         ))}
       </Stepper>
-      
+
       <Divider />
-      
+
       <Box>
         {renderStepContent(activeStep)}
       </Box>
-      
+
       <Divider />
-      
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 2 }}>
-        <Button 
+        <Button
           onClick={onCancel}
           sx={{ mr: 1 }}
         >
           Cancel
         </Button>
-        
+
         <Box>
           <Button
             disabled={activeStep === 0}
@@ -656,7 +718,7 @@ const ReportBuilder = ({
           >
             Back
           </Button>
-          
+
           {activeStep < steps.length - 1 ? (
             <Button
               variant="contained"

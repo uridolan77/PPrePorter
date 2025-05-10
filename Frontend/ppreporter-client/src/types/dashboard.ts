@@ -76,10 +76,30 @@ export interface DashboardComponentErrors {
  * Dashboard tab structure
  */
 export interface DashboardTab {
+  /**
+   * Tab identifier
+   */
   id: string;
+
+  /**
+   * Tab display label
+   */
   label: string;
-  icon?: ReactNode;
+
+  /**
+   * Tab icon name or React node
+   */
+  icon?: ReactNode | string;
+
+  /**
+   * Tab content
+   */
   content?: ReactNode;
+
+  /**
+   * Whether the tab is disabled
+   */
+  disabled?: boolean;
 }
 
 /**
@@ -109,4 +129,144 @@ export interface DashboardPreferences {
     transactions: string;
     [key: string]: string;
   };
+}
+
+/**
+ * Player registration data point
+ */
+export interface PlayerRegistration {
+  /**
+   * Date of registration
+   */
+  date: string;
+
+  /**
+   * Number of registrations
+   */
+  count: number;
+
+  /**
+   * Source of registration (e.g., 'web', 'mobile', 'affiliate')
+   */
+  source?: string;
+}
+
+/**
+ * Game performance data
+ */
+export interface GamePerformance {
+  /**
+   * Game identifier
+   */
+  id: string;
+
+  /**
+   * Game name
+   */
+  name: string;
+
+  /**
+   * Game category
+   */
+  category: string;
+
+  /**
+   * Number of players
+   */
+  players: number;
+
+  /**
+   * Total bets placed
+   */
+  bets: number;
+
+  /**
+   * Total revenue generated
+   */
+  revenue: number;
+
+  /**
+   * Average session duration in minutes
+   */
+  avgSessionDuration: number;
+
+  /**
+   * Trend data for visualizations
+   */
+  trendData?: Array<{ date: string; value: number }>;
+}
+
+/**
+ * Player segment data
+ */
+export interface PlayerSegment {
+  /**
+   * Segment identifier
+   */
+  id: string;
+
+  /**
+   * Segment name
+   */
+  name: string;
+
+  /**
+   * Number of players in segment
+   */
+  count: number;
+
+  /**
+   * Average revenue per user
+   */
+  arpu: number;
+
+  /**
+   * Retention rate percentage
+   */
+  retention: number;
+
+  /**
+   * Churn rate percentage
+   */
+  churn: number;
+}
+
+/**
+ * Chart data structure
+ */
+export interface ChartData {
+  /**
+   * Labels for the chart (e.g., dates, categories)
+   */
+  labels: string[];
+
+  /**
+   * Datasets for the chart
+   */
+  datasets: Array<{
+    /**
+     * Dataset label
+     */
+    label: string;
+
+    /**
+     * Dataset values
+     */
+    data: number[];
+
+    /**
+     * Background color(s)
+     */
+    backgroundColor?: string | string[];
+
+    /**
+     * Border color(s)
+     */
+    borderColor?: string | string[];
+
+    /**
+     * Additional dataset properties
+     */
+    [key: string]: any;
+  }>;
 }

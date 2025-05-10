@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly IGameCasinoSessionRepository _gameCasinoSessionRepository;
         private readonly ILogger<GameCasinoSessionService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _gameCasinoSessionRepository = gameCasinoSessionRepository ?? throw new ArgumentNullException(nameof(gameCasinoSessionRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameCasinoSession>> GetAllGameCasinoSessionsAsync()
         {
@@ -41,14 +41,14 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameCasinoSession?> GetGameCasinoSessionByIdAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Getting game casino session by ID {Id}", id);
-                return await _gameCasinoSessionRepository.GetByIdAsync(id);
+                return await _gameCasinoSessionRepository.GetByIdAsync((int)id);
             }
             catch (Exception ex)
             {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameCasinoSession>> GetGameCasinoSessionsByPlayerIdAsync(long playerId)
         {
@@ -71,7 +71,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameCasinoSession>> GetGameCasinoSessionsByGameIdAsync(int gameId)
         {
@@ -86,7 +86,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameCasinoSession>> GetGameCasinoSessionsByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
@@ -101,7 +101,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameCasinoSession>> GetGameCasinoSessionsByPlayerIdAndDateRangeAsync(long playerId, DateTime startDate, DateTime endDate)
         {
@@ -116,7 +116,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameCasinoSession>> GetGameCasinoSessionsByGameIdAndDateRangeAsync(int gameId, DateTime startDate, DateTime endDate)
         {
@@ -131,7 +131,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameCasinoSession> AddGameCasinoSessionAsync(GameCasinoSession gameCasinoSession)
         {
@@ -139,7 +139,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(gameCasinoSession));
             }
-            
+
             try
             {
                 _logger.LogInformation("Adding new game casino session for player ID {PlayerId} and game ID {GameId}", gameCasinoSession.PlayerID, gameCasinoSession.GameID);
@@ -151,7 +151,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameCasinoSession> UpdateGameCasinoSessionAsync(GameCasinoSession gameCasinoSession)
         {
@@ -159,18 +159,18 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(gameCasinoSession));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating game casino session with ID {Id}", gameCasinoSession.ID);
-                
+
                 // Check if the game casino session exists
-                var existingGameCasinoSession = await _gameCasinoSessionRepository.GetByIdAsync(gameCasinoSession.ID);
+                var existingGameCasinoSession = await _gameCasinoSessionRepository.GetByIdAsync((int)gameCasinoSession.ID);
                 if (existingGameCasinoSession == null)
                 {
                     throw new InvalidOperationException($"Game casino session with ID {gameCasinoSession.ID} not found");
                 }
-                
+
                 return await _gameCasinoSessionRepository.UpdateAsync(gameCasinoSession);
             }
             catch (Exception ex)
@@ -179,14 +179,14 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteGameCasinoSessionAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Deleting game casino session with ID {Id}", id);
-                return await _gameCasinoSessionRepository.DeleteAsync(id);
+                return await _gameCasinoSessionRepository.DeleteAsync((int)id);
             }
             catch (Exception ex)
             {

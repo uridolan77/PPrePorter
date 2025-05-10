@@ -2,14 +2,54 @@ import React from 'react';
 import { Box, Tooltip, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
+// Type definitions
+interface DataPoint {
+  [key: string]: any;
+  label?: string;
+}
+
+interface MicroSparklineProps {
+  data?: DataPoint[];
+  width?: number;
+  height?: number;
+  color?: string | null;
+  showArea?: boolean;
+  tooltipFormat?: (value: number) => string;
+  accessibilityLabel?: string;
+  valueKey?: string;
+}
+
+interface MicroBarChartProps {
+  data?: DataPoint[];
+  width?: number;
+  height?: number;
+  color?: string | null;
+  tooltipFormat?: (value: number) => string;
+  accessibilityLabel?: string;
+  valueKey?: string;
+}
+
+interface MicroBulletChartProps {
+  actual: number;
+  target: number;
+  comparative?: number | null;
+  width?: number;
+  height?: number;
+  actualColor?: string | null;
+  targetColor?: string | null;
+  comparativeColor?: string | null;
+  tooltipFormat?: (value: number) => string;
+  accessibilityLabel?: string;
+}
+
 /**
  * MicroSparkline component to show a small inline trend line
  * Used for compact visualizations within tables and cards
  */
-const MicroSparkline = ({ 
+const MicroSparkline: React.FC<MicroSparklineProps> = ({
   data = [],
-  width = 60, 
-  height = 20, 
+  width = 60,
+  height = 20,
   color = null,
   showArea = true,
   tooltipFormat = value => value.toLocaleString(),
@@ -17,80 +57,80 @@ const MicroSparkline = ({
   valueKey = 'value'
 }) => {
   const theme = useTheme();
-  
+
   // Get chart color - either from props or based on trend
-  const getColor = () => {
+  const getColor = (): string => {
     if (color) return color;
-    
+
     if (data.length > 1) {
       const firstValue = data[0][valueKey];
       const lastValue = data[data.length - 1][valueKey];
-      
+
       if (lastValue > firstValue) {
         return theme.palette.success.main;
       } else if (lastValue < firstValue) {
         return theme.palette.error.main;
       }
     }
-    
+
     return theme.palette.primary.main;
   };
-  
+
   // If no data, render an empty box
   if (!data || data.length === 0) {
     return <Box sx={{ width, height, display: 'inline-block' }} />;
   }
-  
+
   // Calculate the visualization parameters
   const values = data.map(d => d[valueKey]);
   const maxValue = Math.max(...values);
   const minValue = Math.min(...values);
   const range = maxValue - minValue;
   const chartColor = getColor();
-  
+
   // Convert data to path coordinates
-  const getX = (index) => index * (width / (data.length - 1));
-  const getY = (value) => {
-    return range === 0 
-      ? height / 2 
+  const getX = (index: number): number => index * (width / (data.length - 1));
+  const getY = (value: number): number => {
+    return range === 0
+      ? height / 2
       : height - ((value - minValue) / range) * height;
   };
-  
+
   // Generate SVG path for the sparkline
-  const generateLinePath = () => {
+  const generateLinePath = (): string => {
     return data.map((d, i) => {
       const x = getX(i);
       const y = getY(d[valueKey]);
       return `${i === 0 ? 'M' : 'L'}${x},${y}`;
     }).join(' ');
   };
-  
+
   // Generate SVG path for the area under the sparkline
-  const generateAreaPath = () => {
+  const generateAreaPath = (): string => {
     const linePath = generateLinePath();
     const lastX = getX(data.length - 1);
-    
+
     return `${linePath} L${lastX},${height} L0,${height} Z`;
   };
-  
+
   // Generate a summary of the trend for accessibility
-  const trendSummary = () => {
+  const trendSummary = (): string => {
     if (data.length < 2) return `Single value: ${tooltipFormat(data[0][valueKey])}`;
-    
+
     const firstValue = data[0][valueKey];
     const lastValue = data[data.length - 1][valueKey];
     const change = lastValue - firstValue;
     const percentChange = (change / firstValue) * 100;
-    
+
     let trendDirection = 'unchanged';
     if (change > 0) trendDirection = 'increasing';
     else if (change < 0) trendDirection = 'decreasing';
-    
+
     return `Trend: ${trendDirection}, from ${tooltipFormat(firstValue)} to ${tooltipFormat(lastValue)}, change of ${percentChange.toFixed(1)}%`;
   };
-  
+
   // Render the tooltip content
-  const tooltipContent = () => {
+  const tooltipContent = (): React.ReactNode => {
     return (
       <Box sx={{ p: 1 }}>
         <Box sx={{ fontSize: 12, fontWeight: 'bold' }}>
@@ -104,12 +144,12 @@ const MicroSparkline = ({
       </Box>
     );
   };
-  
+
   return (
     <Tooltip title={tooltipContent()} arrow>
-      <Box 
-        component="span" 
-        sx={{ 
+      <Box
+        component="span"
+        sx={{
           display: 'inline-block',
           width,
           height,
@@ -151,48 +191,48 @@ const MicroSparkline = ({
  * MicroBarChart component to show a small inline bar chart
  * Used for compact visualizations within tables and cards
  */
-const MicroBarChart = ({ 
+const MicroBarChart: React.FC<MicroBarChartProps> = ({
   data = [],
-  width = 60, 
-  height = 20, 
+  width = 60,
+  height = 20,
   color = null,
   tooltipFormat = value => value.toLocaleString(),
   accessibilityLabel = "Bar chart data",
   valueKey = 'value'
 }) => {
   const theme = useTheme();
-  
+
   // Get chart color - either from props or based on values
-  const getColor = (value, index) => {
+  const getColor = (value: number, index: number): string => {
     if (color) return color;
-    
+
     // Color by value (higher values are darker)
     const maxValue = Math.max(...data.map(d => d[valueKey]));
     const intensity = value / maxValue;
-    
+
     return alpha(theme.palette.primary.main, 0.4 + (intensity * 0.6));
   };
-  
+
   // If no data, render an empty box
   if (!data || data.length === 0) {
     return <Box sx={{ width, height, display: 'inline-block' }} />;
   }
-  
+
   // Calculate the visualization parameters
   const values = data.map(d => d[valueKey]);
   const maxValue = Math.max(...values);
   const minValue = Math.min(...values);
   const barWidth = width / data.length - 1;
-  
+
   // Generate a summary of the data for accessibility
-  const dataSummary = () => {
+  const dataSummary = (): string => {
     const average = values.reduce((sum, val) => sum + val, 0) / values.length;
-    
+
     return `${data.length} values, average: ${tooltipFormat(average)}, range: ${tooltipFormat(minValue)} to ${tooltipFormat(maxValue)}`;
   };
-  
+
   // Render the tooltip content
-  const tooltipContent = () => {
+  const tooltipContent = (): React.ReactNode => {
     return (
       <Box sx={{ p: 1 }}>
         <Box sx={{ fontSize: 12, fontWeight: 'bold' }}>
@@ -206,12 +246,12 @@ const MicroBarChart = ({
       </Box>
     );
   };
-  
+
   return (
     <Tooltip title={tooltipContent()} arrow>
-      <Box 
-        component="span" 
-        sx={{ 
+      <Box
+        component="span"
+        sx={{
           display: 'inline-block',
           width,
           height,
@@ -223,7 +263,7 @@ const MicroBarChart = ({
         <svg width={width} height={height} style={{ display: 'block' }}>
           {data.map((d, i) => {
             const barHeight = (d[valueKey] / maxValue) * height;
-            
+
             return (
               <rect
                 key={i}
@@ -247,7 +287,7 @@ const MicroBarChart = ({
  * MicroBulletChart component to show target vs actual in a compact visualization
  * Useful for showing progress toward goals in tables and cards
  */
-const MicroBulletChart = ({ 
+const MicroBulletChart: React.FC<MicroBulletChartProps> = ({
   actual,
   target,
   comparative = null,
@@ -260,11 +300,11 @@ const MicroBulletChart = ({
   accessibilityLabel = "Progress toward target"
 }) => {
   const theme = useTheme();
-  
+
   // Get colors or use defaults
-  const getActualColor = () => {
+  const getActualColor = (): string => {
     if (actualColor) return actualColor;
-    
+
     if (actual >= target) {
       return theme.palette.success.main;
     } else if (actual >= 0.8 * target) {
@@ -273,19 +313,19 @@ const MicroBulletChart = ({
       return theme.palette.error.main;
     }
   };
-  
-  const getTargetColor = () => targetColor || theme.palette.grey[900];
-  const getComparativeColor = () => comparativeColor || theme.palette.grey[400];
-  
+
+  const getTargetColor = (): string => targetColor || theme.palette.grey[900];
+  const getComparativeColor = (): string => comparativeColor || theme.palette.grey[400];
+
   // Calculate the percent of target achieved
   const percentComplete = Math.min(actual / target * 100, 100);
   const comparativePercent = comparative ? (comparative / target * 100) : null;
-  
+
   // Generate a summary of the data for accessibility
-  const progressSummary = () => {
+  const progressSummary = (): string => {
     const percentText = `${percentComplete.toFixed(1)}% of target`;
     let statusText = '';
-    
+
     if (actual >= target) {
       statusText = 'Target achieved';
     } else if (actual >= 0.8 * target) {
@@ -293,17 +333,17 @@ const MicroBulletChart = ({
     } else {
       statusText = 'Below target';
     }
-    
+
     let comparativeText = '';
     if (comparative !== null) {
       comparativeText = `, comparative value: ${tooltipFormat(comparative)}`;
     }
-    
+
     return `${statusText}, ${tooltipFormat(actual)} of ${tooltipFormat(target)} (${percentText})${comparativeText}`;
   };
-  
+
   // Render the tooltip content
-  const tooltipContent = () => {
+  const tooltipContent = (): React.ReactNode => {
     return (
       <Box sx={{ p: 1 }}>
         <Box sx={{ fontSize: 12, fontWeight: 'bold' }}>
@@ -326,12 +366,12 @@ const MicroBulletChart = ({
       </Box>
     );
   };
-  
+
   return (
     <Tooltip title={tooltipContent()} arrow>
-      <Box 
-        component="span" 
-        sx={{ 
+      <Box
+        component="span"
+        sx={{
           display: 'inline-block',
           width,
           height,
@@ -351,7 +391,7 @@ const MicroBulletChart = ({
             rx={2}
             ry={2}
           />
-          
+
           {/* Actual progress bar */}
           <rect
             x={0}
@@ -362,18 +402,18 @@ const MicroBulletChart = ({
             rx={2}
             ry={2}
           />
-          
+
           {/* Comparative marker (if provided) */}
           {comparative !== null && (
             <rect
-              x={(comparativePercent / 100) * width - 1}
+              x={(comparativePercent! / 100) * width - 1}
               y={0}
               width={2}
               height={height}
               fill={getComparativeColor()}
             />
           )}
-          
+
           {/* Target marker */}
           <rect
             x={(target / target) * width - 2}

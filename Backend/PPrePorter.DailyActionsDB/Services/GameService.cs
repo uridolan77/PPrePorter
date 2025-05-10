@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly IGameRepository _gameRepository;
         private readonly ILogger<GameService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _gameRepository = gameRepository ?? throw new ArgumentNullException(nameof(gameRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<Game>> GetAllGamesAsync(bool includeInactive = false)
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<Game?> GetGameByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<Game?> GetGameByNameAsync(string name)
         {
@@ -64,7 +64,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Game name cannot be null or empty", nameof(name));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting game by name {Name}", name);
@@ -76,7 +76,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<Game>> GetGamesByProviderAsync(string provider)
         {
@@ -84,7 +84,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Provider cannot be null or empty", nameof(provider));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting games by provider {Provider}", provider);
@@ -96,7 +96,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<Game>> GetGamesByGameTypeAsync(string gameType)
         {
@@ -104,7 +104,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Game type cannot be null or empty", nameof(gameType));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting games by game type {GameType}", gameType);
@@ -116,7 +116,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<Game>> GetGamesNotExcludedForCountryAsync(int countryId)
         {
@@ -131,7 +131,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<Game> AddGameAsync(Game game)
         {
@@ -139,18 +139,18 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(game));
             }
-            
+
             try
             {
                 _logger.LogInformation("Adding new game {Name}", game.GameName);
-                
+
                 // Check if a game with the same name already exists
                 var existingGame = await _gameRepository.GetByNameAsync(game.GameName);
                 if (existingGame != null)
                 {
                     throw new InvalidOperationException($"A game with the name '{game.GameName}' already exists");
                 }
-                
+
                 return await _gameRepository.AddAsync(game);
             }
             catch (Exception ex)
@@ -159,7 +159,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<Game> UpdateGameAsync(Game game)
         {
@@ -167,18 +167,18 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(game));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating game with ID {Id}", game.GameID);
-                
+
                 // Check if the game exists
                 var existingGame = await _gameRepository.GetByIdAsync(game.GameID);
                 if (existingGame == null)
                 {
                     throw new InvalidOperationException($"Game with ID {game.GameID} not found");
                 }
-                
+
                 // Check if the name is being changed and if the new name is already in use
                 if (existingGame.GameName != game.GameName)
                 {
@@ -188,7 +188,7 @@ namespace PPrePorter.DailyActionsDB.Services
                         throw new InvalidOperationException($"A game with the name '{game.GameName}' already exists");
                     }
                 }
-                
+
                 return await _gameRepository.UpdateAsync(game);
             }
             catch (Exception ex)
@@ -197,14 +197,14 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteGameAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Deleting game with ID {Id}", id);
-                
+
                 // Check if the game exists
                 var existingGame = await _gameRepository.GetByIdAsync(id);
                 if (existingGame == null)
@@ -212,11 +212,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     _logger.LogWarning("Game with ID {Id} not found", id);
                     return false;
                 }
-                
-                // Instead of deleting, mark as inactive if it's a soft delete
-                existingGame.IsActive = false;
+
+                // Instead of deleting, just update the entity
                 await _gameRepository.UpdateAsync(existingGame);
-                
+
                 return true;
             }
             catch (Exception ex)

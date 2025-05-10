@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Location } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -9,25 +9,33 @@ import {
 } from '@mui/material';
 import LoginForm from '../../components/auth/LoginForm';
 import { useAuth } from '../../hooks/useAuth';
+import { LoginCredentials } from '../../types/auth';
+
+// Type definitions
+interface LocationState {
+  from?: {
+    pathname: string;
+  };
+}
 
 /**
  * Login page component
  */
-const LoginPage = () => {
+const LoginPage: React.FC = () => {
   const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation() as Location & { state: LocationState };
 
   // Get the redirect path from location state, or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
 
   /**
    * Handle login form submission
-   * @param {Object} formData - Login form data
+   * @param formData - Login form data
    */
-  const handleLogin = async (formData) => {
+  const handleLogin = async (formData: LoginCredentials): Promise<void> => {
     setLoading(true);
     setError('');
 
@@ -42,7 +50,8 @@ const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      const error = err as Error;
+      setError(error.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -51,7 +60,7 @@ const LoginPage = () => {
   /**
    * Handle Google OAuth login
    */
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (): Promise<void> => {
     setLoading(true);
     setError('');
     try {
@@ -60,7 +69,8 @@ const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Google login error:', err);
-      setError(err.message || 'Google login failed. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Google login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -69,7 +79,7 @@ const LoginPage = () => {
   /**
    * Handle Microsoft OAuth login
    */
-  const handleMicrosoftLogin = async () => {
+  const handleMicrosoftLogin = async (): Promise<void> => {
     setLoading(true);
     setError('');
     try {
@@ -78,7 +88,8 @@ const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (err) {
       console.error('Microsoft login error:', err);
-      setError(err.message || 'Microsoft login failed. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Microsoft login failed. Please try again.');
     } finally {
       setLoading(false);
     }

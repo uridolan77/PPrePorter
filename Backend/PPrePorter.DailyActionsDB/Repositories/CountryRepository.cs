@@ -16,7 +16,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
     public class CountryRepository : BaseRepository<Country>, ICountryRepository
     {
         private readonly DailyActionsDbContext _dailyActionsDbContext;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -30,7 +30,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             _dailyActionsDbContext = dbContext;
         }
-        
+
         /// <summary>
         /// Get country by ISO code
         /// </summary>
@@ -40,33 +40,33 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("ISO code cannot be null or empty", nameof(isoCode));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}IsoCode_{isoCode}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out Country cachedEntity))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedEntity;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var entity = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
                     .FirstOrDefaultAsync(c => c.IsoCode == isoCode);
-                
+
                 // Cache the result if found
                 if (entity != null && _enableCaching)
                 {
                     _cache.Set(cacheKey, entity, _cacheExpiration);
                     _logger.LogDebug("Cached entity for {CacheKey}", cacheKey);
                 }
-                
+
                 return entity;
             }
             catch (Exception ex)
@@ -75,40 +75,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get countries by active status
         /// </summary>
         public async Task<IEnumerable<Country>> GetByActiveStatusAsync(bool isActive)
         {
             string cacheKey = $"{_cacheKeyPrefix}Active_{isActive}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Country> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(c => c.IsActive == isActive)
                     .OrderBy(c => c.CountryName)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -117,13 +116,13 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Apply active filter to query
         /// </summary>
         protected override IQueryable<Country> ApplyActiveFilter(IQueryable<Country> query)
         {
-            return query.Where(c => c.IsActive == true);
+            return query;
         }
     }
 }

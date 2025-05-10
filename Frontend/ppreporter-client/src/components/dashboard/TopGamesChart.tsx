@@ -1,14 +1,18 @@
-import React, { memo, useMemo } from 'react';
-import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
+import React, { memo, useMemo, useState } from 'react';
+import { Box, CircularProgress, Typography, useTheme, Tabs, Tab } from '@mui/material';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 import { formatCurrency } from '../../utils/formatters';
 import { GameData } from '../../types/redux';
+import VirtualizedTable from '../common/VirtualizedTable';
 
 interface TopGamesChartProps {
   data: GameData[];
   isLoading?: boolean;
   height?: number;
   showLegend?: boolean;
+  error?: Error | null;
+  onRetry?: () => void;
+  sx?: any;
 }
 
 /**
@@ -47,18 +51,27 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
  * Top Games Chart component
  * Displays a bar chart of top games by revenue
  */
-const TopGamesChart: React.FC<TopGamesChartProps> = ({ 
-  data, 
-  isLoading = false, 
+const TopGamesChart: React.FC<TopGamesChartProps> = ({
+  data,
+  isLoading = false,
   height = 300,
-  showLegend = true
+  showLegend = true,
+  error = null,
+  onRetry,
+  sx
 }) => {
   const theme = useTheme();
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+
+  // Handle view mode change
+  const handleViewModeChange = (event: React.SyntheticEvent, newValue: 'chart' | 'table') => {
+    setViewMode(newValue);
+  };
 
   // Memoize the chart data to prevent unnecessary recalculations
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    
+
     return data.map((game) => ({
       name: game.name,
       revenue: game.revenue,
@@ -85,15 +98,30 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+        <Typography variant="body1" color="error">
+          Error loading games data: {error.message}
+          {onRetry && (
+            <Box component="span" sx={{ ml: 2, cursor: 'pointer', textDecoration: 'underline' }} onClick={onRetry}>
+              Retry
+            </Box>
+          )}
+        </Typography>
       </Box>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
         <Typography variant="body1" color="text.secondary">
           No game data available
         </Typography>
@@ -101,34 +129,64 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
     );
   }
 
+  // Table columns
+  const tableColumns = useMemo(() => [
+    { id: 'name', label: 'Game Name', align: 'left' as const },
+    { id: 'category', label: 'Category', align: 'left' as const },
+    { id: 'revenue', label: 'Revenue', align: 'right' as const, format: (value: number) => formatCurrency(value) },
+    { id: 'players', label: 'Players', align: 'right' as const, format: (value: number) => value.toLocaleString() }
+  ], []);
+
   return (
-    <Box sx={{ width: '100%', height }}>
-      <ResponsiveContainer>
-        <BarChart
-          data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="name" 
-            angle={-45} 
-            textAnchor="end" 
-            height={70}
-            tick={{ fontSize: 12 }}
-          />
-          <YAxis 
-            tickFormatter={(value) => `£${value.toLocaleString()}`}
-            tick={{ fontSize: 12 }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          {showLegend && <Legend />}
-          <Bar dataKey="revenue" name="Revenue" radius={[4, 4, 0, 0]}>
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <Box sx={{ width: '100%', ...sx }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={viewMode} onChange={handleViewModeChange} aria-label="view mode tabs">
+          <Tab label="Chart" value="chart" />
+          <Tab label="Table" value="table" />
+        </Tabs>
+      </Box>
+
+      {viewMode === 'chart' ? (
+        // Chart view
+        <Box sx={{ width: '100%', height }}>
+          <ResponsiveContainer>
+            <BarChart
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                angle={-45}
+                textAnchor="end"
+                height={70}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                tickFormatter={(value) => `£${value.toLocaleString()}`}
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              {showLegend && <Legend />}
+              <Bar dataKey="revenue" name="Revenue" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
+      ) : (
+        // Table view with virtualization
+        <VirtualizedTable
+          data={data}
+          columns={tableColumns}
+          height={height}
+          rowHeight={53}
+          loading={isLoading}
+          emptyMessage="No games data available"
+        />
+      )}
     </Box>
   );
 };

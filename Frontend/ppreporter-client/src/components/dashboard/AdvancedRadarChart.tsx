@@ -25,7 +25,8 @@ import {
   Chip,
   Collapse,
   Slider,
-  Grid
+  Grid,
+  SelectChangeEvent
 } from '@mui/material';
 import {
   Radar,
@@ -49,12 +50,92 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { formatPercentage, formatCurrency, formatNumber } from '../../utils/formatters';
 import { alpha } from '@mui/material/styles';
 import { MicroSparkline } from './MicroCharts';
+import { CommonProps } from '../../types/common';
+import {
+  Metric,
+  Entity,
+  MetricGroup,
+  Benchmark,
+  RadarDataPoint,
+  HistoricalData,
+  RadarChartData
+} from '../../types/charts';
+
+// Type definitions
+export interface AdvancedRadarChartProps extends CommonProps {
+  /**
+   * Chart data
+   */
+  data?: RadarDataPoint[];
+
+  /**
+   * Chart title
+   */
+  title?: string;
+
+  /**
+   * Loading state
+   */
+  isLoading?: boolean;
+
+  /**
+   * Available metrics
+   */
+  metrics?: Metric[];
+
+  /**
+   * Available entities
+   */
+  entities?: Entity[];
+
+  /**
+   * Benchmark data
+   */
+  benchmarks?: Benchmark[];
+
+  /**
+   * Historical trend data
+   */
+  historicalData?: HistoricalData;
+
+  /**
+   * Metric groups for organization
+   */
+  metricGroups?: MetricGroup[];
+
+  /**
+   * Refresh handler
+   */
+  onRefresh?: () => void;
+
+  /**
+   * Export handler
+   */
+  onExport?: (format: string) => void;
+
+  /**
+   * Drill down handler
+   */
+  onDrillDown?: (entityId: string) => void;
+}
+
+interface TabOption {
+  id: string;
+  label: string;
+  count: number;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
 
 /**
  * AdvancedRadarChart component
- * 
+ *
  * An enhanced radar chart with advanced features for multi-dimensional analysis of key metrics
- * 
+ *
  * Features:
  * - All features of MultiDimensionalRadarChart
  * - Metric grouping for better organization
@@ -66,7 +147,7 @@ import { MicroSparkline } from './MicroCharts';
  * - Animated transitions
  * - Advanced accessibility features
  */
-const AdvancedRadarChart = ({
+const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
   data = [],
   title = 'Multi-Dimensional Analysis',
   isLoading = false,
@@ -77,29 +158,30 @@ const AdvancedRadarChart = ({
   metricGroups = [], // New prop for organizing metrics into logical groups
   onRefresh = () => {},
   onExport = () => {},
-  onDrillDown = () => {} // New prop for handling drill-down interactions
+  onDrillDown = () => {}, // New prop for handling drill-down interactions
+  sx
 }) => {
   const theme = useTheme();
-  const [selectedMetrics, setSelectedMetrics] = useState([]);
-  const [selectedEntities, setSelectedEntities] = useState([]);
-  const [showLabels, setShowLabels] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredData, setFilteredData] = useState([]);
-  const [normalizeData, setNormalizeData] = useState(true);
-  const [highContrastMode, setHighContrastMode] = useState(false);
-  
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [selectedEntities, setSelectedEntities] = useState<string[]>([]);
+  const [showLabels, setShowLabels] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filteredData, setFilteredData] = useState<RadarChartData[]>([]);
+  const [normalizeData, setNormalizeData] = useState<boolean>(true);
+  const [highContrastMode, setHighContrastMode] = useState<boolean>(false);
+
   // New state variables
-  const [showHistoricalTrends, setShowHistoricalTrends] = useState(false);
-  const [showBenchmarks, setShowBenchmarks] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
-  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState('all');
-  const [opacityLevel, setOpacityLevel] = useState(0.2);
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [selectedBenchmark, setSelectedBenchmark] = useState(benchmarks[0]?.id || null);
-  
+  const [showHistoricalTrends, setShowHistoricalTrends] = useState<boolean>(false);
+  const [showBenchmarks, setShowBenchmarks] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<number>(0);
+  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState<boolean>(false);
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [opacityLevel, setOpacityLevel] = useState<number>(0.2);
+  const [strokeWidth, setStrokeWidth] = useState<number>(2);
+  const [selectedBenchmark, setSelectedBenchmark] = useState<string | null>(benchmarks[0]?.id || null);
+
   // Default tab options with counts
-  const tabOptions = useMemo(() => [
+  const tabOptions: TabOption[] = useMemo(() => [
     { id: 'all', label: 'All Metrics', count: metrics.length },
     ...metricGroups.map(group => ({
       id: group.id,
@@ -107,159 +189,161 @@ const AdvancedRadarChart = ({
       count: metrics.filter(m => m.groupId === group.id).length
     }))
   ], [metrics, metricGroups]);
-  
+
   // Initialize with default selections
   useEffect(() => {
     if (metrics.length > 0 && selectedMetrics.length === 0) {
       // Default to showing first 5 metrics or all if less than 5
       setSelectedMetrics(metrics.slice(0, Math.min(5, metrics.length)).map(m => m.id));
     }
-    
+
     if (entities.length > 0 && selectedEntities.length === 0) {
       // Default to showing first 3 entities or all if less than 3
       setSelectedEntities(entities.slice(0, Math.min(3, entities.length)).map(e => e.id));
     }
-    
+
     if (benchmarks.length > 0 && !selectedBenchmark) {
       setSelectedBenchmark(benchmarks[0].id);
     }
   }, [metrics, entities, benchmarks, selectedMetrics.length, selectedEntities.length, selectedBenchmark]);
-  
+
   // Filter metrics based on selected group
   const filteredMetrics = useMemo(() => {
     if (selectedGroup === 'all') return metrics;
     return metrics.filter(metric => metric.groupId === selectedGroup);
   }, [metrics, selectedGroup]);
-  
+
   // Process data for the chart whenever selections change
   useEffect(() => {
     if (!data || data.length === 0) {
       setFilteredData([]);
       return;
     }
-    
+
     // Filter entities by search term
     let filteredEntities = entities;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filteredEntities = entities.filter(entity => 
-        entity.name?.toLowerCase().includes(term) || 
+      filteredEntities = entities.filter(entity =>
+        entity.name?.toLowerCase().includes(term) ||
         entity.category?.toLowerCase().includes(term) ||
         entity.id?.toString().toLowerCase().includes(term)
       );
     }
-    
+
     // Filter data by selected entities
-    const entityFilteredData = data.filter(item => 
+    const entityFilteredData = data.filter(item =>
       selectedEntities.includes(item.entityId)
     );
-    
+
     // Transform data for radar chart with additional features
-    const radarData = selectedMetrics.map(metricId => {
+    const radarData: RadarChartData[] = selectedMetrics.map(metricId => {
       const metric = metrics.find(m => m.id === metricId);
       if (!metric) return null;
-      
-      const metricObj = {
+
+      const metricObj: RadarChartData = {
         subject: metric.label,
         metricId: metricId, // Add metricId to data for easier reference in tooltips
         unit: metric.unit || '',
         description: metric.description || ''
       };
-      
+
       // Find min/max values for this metric (for normalization)
-      const metricValues = data.map(item => 
+      const metricValues = data.map(item =>
         item.values && item.values[metricId] !== undefined ? item.values[metricId] : null
-      ).filter(val => val !== null && val !== undefined);
-      
+      ).filter(val => val !== null && val !== undefined) as number[];
+
       const minValue = Math.min(...metricValues);
       const maxValue = Math.max(...metricValues);
       const range = maxValue - minValue;
-      
+
       // Add benchmark data if available and enabled
       if (showBenchmarks && selectedBenchmark) {
         const benchmark = benchmarks.find(b => b.id === selectedBenchmark);
         if (benchmark && benchmark.values && benchmark.values[metricId] !== undefined) {
           let benchmarkValue = benchmark.values[metricId];
-          
+
           // Normalize if needed
           if (normalizeData && range > 0) {
             benchmarkValue = ((benchmarkValue - minValue) / range) * 100;
           }
-          
+
           metricObj[`${benchmark.name} (Benchmark)`] = benchmarkValue;
         }
       }
-      
+
       // Add values for each selected entity
       selectedEntities.forEach(entityId => {
         const entity = entities.find(e => e.id === entityId);
         if (!entity) return;
-        
+
         const entityData = data.find(item => item.entityId === entityId);
         let value = null;
-        
+
         if (entityData && entityData.values && entityData.values[metricId] !== undefined) {
           value = entityData.values[metricId];
-          
+
           // Normalize if needed
           if (normalizeData && range > 0) {
             value = ((value - minValue) / range) * 100;
           }
         }
-        
+
         metricObj[entity.name] = value;
-        
+
         // Add historical trend data if available and enabled
         if (showHistoricalTrends && historicalData[entityId]?.[metricId]) {
           metricObj[`${entity.name}_history`] = historicalData[entityId][metricId];
         }
       });
-      
+
       return metricObj;
-    }).filter(Boolean);
-    
+    }).filter(Boolean) as RadarChartData[];
+
     setFilteredData(radarData);
   }, [
-    data, 
-    selectedMetrics, 
-    selectedEntities, 
-    normalizeData, 
-    searchTerm, 
-    metrics, 
-    entities, 
-    showBenchmarks, 
-    selectedBenchmark, 
-    benchmarks, 
-    showHistoricalTrends, 
+    data,
+    selectedMetrics,
+    selectedEntities,
+    normalizeData,
+    searchTerm,
+    metrics,
+    entities,
+    showBenchmarks,
+    selectedBenchmark,
+    benchmarks,
+    showHistoricalTrends,
     historicalData
   ]);
-  
+
   // Handle metric selection change
-  const handleMetricChange = (event) => {
-    setSelectedMetrics(event.target.value);
+  const handleMetricChange = (event: SelectChangeEvent<string[]>): void => {
+    const value = event.target.value;
+    setSelectedMetrics(typeof value === 'string' ? value.split(',') : value);
   };
-  
+
   // Handle entity selection change
-  const handleEntityChange = (event) => {
-    setSelectedEntities(event.target.value);
+  const handleEntityChange = (event: SelectChangeEvent<string[]>): void => {
+    const value = event.target.value;
+    setSelectedEntities(typeof value === 'string' ? value.split(',') : value);
   };
-  
+
   // Handle group change
-  const handleGroupChange = (event, newValue) => {
+  const handleGroupChange = (event: React.SyntheticEvent, newValue: string): void => {
     setSelectedGroup(newValue);
-    
+
     // If switching to a group, select all metrics in that group
     if (newValue !== 'all') {
       const groupMetrics = metrics
         .filter(metric => metric.groupId === newValue)
         .map(metric => metric.id);
-      
+
       setSelectedMetrics(groupMetrics);
     }
   };
-  
+
   // Generate color for each entity with improved contrast handling
-  const getEntityColor = (entityName, index) => {
+  const getEntityColor = (entityName: string, index: number): string => {
     if (highContrastMode) {
       const highContrastColors = [
         '#FF0000', // Red
@@ -273,7 +357,7 @@ const AdvancedRadarChart = ({
       ];
       return highContrastColors[index % highContrastColors.length];
     }
-    
+
     // Enhanced color palette with better visual distinction
     const colorPalettes = [
       theme.palette.primary.main,
@@ -287,22 +371,22 @@ const AdvancedRadarChart = ({
       '#ffc658', // Amber
       '#ff8042'  // Orange
     ];
-    
+
     return colorPalettes[index % colorPalettes.length];
   };
-  
+
   // Get benchmark color - always a distinctive color
-  const getBenchmarkColor = () => {
+  const getBenchmarkColor = (): string => {
     return theme.palette.mode === 'dark' ? '#FFFFFF' : '#000000';
   };
-  
+
   // Format value for display
-  const formatValue = (value, metricId) => {
+  const formatValue = (value: number | null | undefined, metricId: string): string => {
     if (value === null || value === undefined) return '-';
-    
+
     const metric = metrics.find(m => m.id === metricId);
     if (!metric) return value.toString();
-    
+
     switch (metric.format) {
       case 'currency':
         return formatCurrency(value);
@@ -314,14 +398,14 @@ const AdvancedRadarChart = ({
         return value.toString();
     }
   };
-  
+
   // Enhanced tooltip with more context
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       // Find the metric for this data point
       const metricId = payload[0]?.payload?.metricId;
       const metric = metrics.find(m => m.id === metricId);
-      
+
       return (
         <Paper sx={{ p: 1.5, boxShadow: 3, maxWidth: 300 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -332,21 +416,21 @@ const AdvancedRadarChart = ({
               </Typography>
             )}
           </Typography>
-          
+
           <Divider sx={{ my: 1 }} />
-          
+
           {payload.map((entry, index) => {
             const isBenchmark = entry.name.includes('Benchmark');
             const isHistorical = entry.name.includes('_history');
-            
+
             // Skip historical data in the main list
             if (isHistorical) return null;
-            
+
             return (
               <Box key={`tooltip-item-${index}`} sx={{ mb: 0.5, display: 'flex', alignItems: 'center' }}>
-                <Box 
-                  component="span" 
-                  sx={{ 
+                <Box
+                  component="span"
+                  sx={{
                     display: 'inline-block',
                     width: 12,
                     height: 12,
@@ -359,14 +443,14 @@ const AdvancedRadarChart = ({
                   {entry.name}:
                 </Typography>
                 <Typography variant="body2" component="span" sx={{ ml: 'auto', fontWeight: 'medium' }}>
-                  {normalizeData 
-                    ? `${entry.value?.toFixed(1)}%` 
+                  {normalizeData
+                    ? `${entry.value?.toFixed(1)}%`
                     : formatValue(entry.value, metricId)}
                 </Typography>
               </Box>
             );
           })}
-          
+
           {/* Show historical trend if available */}
           {showHistoricalTrends && payload.some(entry => entry.name.includes('_history')) && (
             <>
@@ -374,24 +458,24 @@ const AdvancedRadarChart = ({
               <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
                 Historical Trend:
               </Typography>
-              
+
               {payload.map((entry, index) => {
                 if (!entry.name.includes('_history')) return null;
-                
+
                 const entityName = entry.name.split('_history')[0];
                 const entityColor = entry.color;
                 const history = entry.payload[entry.name];
-                
+
                 if (!history || !Array.isArray(history)) return null;
-                
+
                 return (
                   <Box key={`trend-${index}`} sx={{ mb: 1 }}>
                     <Typography variant="caption" sx={{ display: 'block', color: entityColor }}>
                       {entityName}
                     </Typography>
                     <Box sx={{ mt: 0.5 }}>
-                      <MicroSparkline 
-                        data={history.map((val, i) => ({ value: val, label: `${i+1}` }))}
+                      <MicroSparkline
+                        data={history.map((val: number, i: number) => ({ value: val, label: `${i+1}` }))}
                         width={200}
                         height={30}
                         color={entityColor}
@@ -407,26 +491,26 @@ const AdvancedRadarChart = ({
         </Paper>
       );
     }
-    
+
     return null;
   };
-  
+
   // Enhanced entity legend with more information
-  const renderEntityLegend = (props) => {
+  const renderEntityLegend = (props: any) => {
     const { payload } = props;
-    
+
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', mt: 2 }}>
-        {payload.map((entry, index) => {
+        {payload.map((entry: any, index: number) => {
           const isBenchmark = entry.value.includes('Benchmark');
-          
+
           return (
             <Chip
               key={`entity-legend-${index}`}
               size="small"
               label={entry.value}
-              sx={{ 
-                m: 0.5, 
+              sx={{
+                m: 0.5,
                 backgroundColor: alpha(entry.color, 0.1),
                 color: entry.color,
                 borderColor: entry.color,
@@ -449,38 +533,38 @@ const AdvancedRadarChart = ({
       </Box>
     );
   };
-  
+
   // Create controls toolbar with enhanced grouping
   const renderControls = () => {
     return (
       <Box sx={{ mb: 3 }}>
         {/* Metric group tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs 
-            value={selectedGroup} 
+          <Tabs
+            value={selectedGroup}
             onChange={handleGroupChange}
             variant="scrollable"
             scrollButtons="auto"
           >
             {tabOptions.map(tab => (
-              <Tab 
-                key={tab.id} 
+              <Tab
+                key={tab.id}
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     {tab.label}
-                    <Chip 
-                      size="small" 
-                      label={tab.count} 
-                      sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                    <Chip
+                      size="small"
+                      label={tab.count}
+                      sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
                     />
                   </Box>
-                } 
-                value={tab.id} 
+                }
+                value={tab.id}
               />
             ))}
           </Tabs>
         </Box>
-        
+
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1 }}>
             <InputLabel id="metrics-select-label">Metrics</InputLabel>
@@ -499,7 +583,7 @@ const AdvancedRadarChart = ({
               ))}
             </Select>
           </FormControl>
-          
+
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1 }}>
             <InputLabel id="entities-select-label">Entities</InputLabel>
             <Select
@@ -517,10 +601,10 @@ const AdvancedRadarChart = ({
               ))}
             </Select>
           </FormControl>
-          
+
           <TextField
             size="small"
-            label="Search Entities"
+            placeholder="Search entities..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -530,125 +614,81 @@ const AdvancedRadarChart = ({
                 </InputAdornment>
               ),
             }}
-            sx={{ flexGrow: { xs: 1, md: 0 }, width: { xs: '100%', md: 200 } }}
+            sx={{ minWidth: 150 }}
           />
         </Stack>
-        
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 1 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={normalizeData}
-                onChange={(e) => setNormalizeData(e.target.checked)}
-                size="small"
-              />
-            }
-            label="Normalize data"
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showLabels}
-                onChange={(e) => setShowLabels(e.target.checked)}
-                size="small"
-              />
-            }
-            label="Show labels"
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showBenchmarks}
-                onChange={(e) => setShowBenchmarks(e.target.checked)}
-                size="small"
-              />
-            }
-            label="Show benchmarks"
-          />
-          
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showHistoricalTrends}
-                onChange={(e) => setShowHistoricalTrends(e.target.checked)}
-                size="small"
-              />
-            }
-            label="Show historical trends"
-          />
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 1, md: 0 } }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={normalizeData}
+                  onChange={(e) => setNormalizeData(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Normalize"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showLabels}
+                  onChange={(e) => setShowLabels(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Show Labels"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showBenchmarks}
+                  onChange={(e) => setShowBenchmarks(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Benchmarks"
+            />
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              size="small"
+              startIcon={<TuneIcon />}
+              variant={advancedSettingsOpen ? "contained" : "outlined"}
+              onClick={() => setAdvancedSettingsOpen(!advancedSettingsOpen)}
+              endIcon={advancedSettingsOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            >
+              Advanced
+            </Button>
+
+            <IconButton onClick={onRefresh} size="small">
+              <RefreshIcon />
+            </IconButton>
+
+            <IconButton onClick={() => onExport('png')} size="small">
+              <FileDownloadIcon />
+            </IconButton>
+          </Box>
         </Box>
-        
-        <Button
-          size="small"
-          startIcon={advancedSettingsOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          endIcon={<TuneIcon />}
-          onClick={() => setAdvancedSettingsOpen(!advancedSettingsOpen)}
-          sx={{ mb: 1 }}
-        >
-          Advanced settings
-        </Button>
-        
+
         <Collapse in={advancedSettingsOpen}>
-          <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
+          <Paper variant="outlined" sx={{ mt: 2, p: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Typography variant="subtitle2" gutterBottom>
-                  Visual Settings
+                  Benchmark
                 </Typography>
-                
-                <Typography variant="body2" gutterBottom>
-                  Fill Opacity: {opacityLevel}
-                </Typography>
-                <Slider
-                  value={opacityLevel}
-                  onChange={(_, newValue) => setOpacityLevel(newValue)}
-                  min={0.05}
-                  max={0.5}
-                  step={0.05}
-                  valueLabelDisplay="auto"
-                  sx={{ mb: 2 }}
-                />
-                
-                <Typography variant="body2" gutterBottom>
-                  Stroke Width: {strokeWidth}px
-                </Typography>
-                <Slider
-                  value={strokeWidth}
-                  onChange={(_, newValue) => setStrokeWidth(newValue)}
-                  min={1}
-                  max={4}
-                  step={0.5}
-                  valueLabelDisplay="auto"
-                />
-                
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={highContrastMode}
-                      onChange={(e) => setHighContrastMode(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label="High contrast mode"
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Benchmark Selection
-                </Typography>
-                
                 <FormControl fullWidth size="small">
-                  <InputLabel id="benchmark-select-label">Benchmark</InputLabel>
                   <Select
-                    labelId="benchmark-select-label"
                     value={selectedBenchmark || ''}
                     onChange={(e) => setSelectedBenchmark(e.target.value)}
-                    label="Benchmark"
-                    disabled={!showBenchmarks}
+                    displayEmpty
                   >
+                    <MenuItem value="">None</MenuItem>
                     {benchmarks.map((benchmark) => (
                       <MenuItem key={benchmark.id} value={benchmark.id}>
                         {benchmark.name}
@@ -656,10 +696,63 @@ const AdvancedRadarChart = ({
                     ))}
                   </Select>
                 </FormControl>
-                
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                  Benchmarks provide reference points for comparison against industry standards, historical averages, or target values.
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Historical Trends
                 </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showHistoricalTrends}
+                      onChange={(e) => setShowHistoricalTrends(e.target.checked)}
+                    />
+                  }
+                  label="Show Trends"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Fill Opacity
+                </Typography>
+                <Slider
+                  value={opacityLevel}
+                  min={0}
+                  max={0.5}
+                  step={0.05}
+                  onChange={(e, newValue) => setOpacityLevel(newValue as number)}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(value) => `${value * 100}%`}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Stroke Width
+                </Typography>
+                <Slider
+                  value={strokeWidth}
+                  min={1}
+                  max={5}
+                  step={0.5}
+                  onChange={(e, newValue) => setStrokeWidth(newValue as number)}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(value) => `${value}px`}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={highContrastMode}
+                      onChange={(e) => setHighContrastMode(e.target.checked)}
+                    />
+                  }
+                  label="High Contrast Mode (for accessibility)"
+                />
               </Grid>
             </Grid>
           </Paper>
@@ -667,210 +760,128 @@ const AdvancedRadarChart = ({
       </Box>
     );
   };
-  
-  // Accessibility description
-  const getAccessibilityDescription = () => {
-    if (filteredData.length === 0) return "No data available";
-    
-    const entityNames = selectedEntities.map(id => entities.find(e => e.id === id)?.name || id).join(", ");
-    const metricCount = selectedMetrics.length;
-    
-    return `Radar chart comparing ${entityNames} across ${metricCount} metrics. ${
-      normalizeData ? 'Data is normalized to a 0-100 scale.' : 'Data is in original units.'
-    } ${showBenchmarks ? 'Benchmarks are displayed.' : ''} ${
-      showHistoricalTrends ? 'Historical trends are available in tooltips.' : ''
-    }`;
-  };
-  
-  // Render loading state
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  // If no data or no metrics/entities selected, show a message
-  if (filteredData.length === 0 || selectedMetrics.length === 0 || selectedEntities.length === 0) {
-    return (
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" component="div">
-              {title}
-            </Typography>
-            
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title="Refresh data">
-                <IconButton size="small" onClick={onRefresh}>
-                  <RefreshIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-          
-          {renderControls()}
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 400 }}>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No data to display
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {selectedMetrics.length === 0 ? 'Please select metrics to visualize.' : 
-                selectedEntities.length === 0 ? 'Please select entities to compare.' :
-                'No data matches the current selection.'}
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-  
+
+  // Main render
   return (
-    <Card elevation={1}>
+    <Card sx={{ ...sx }}>
       <CardContent>
-        {/* Header with title and controls */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="h6" component="div">
-              {title}
-            </Typography>
-            <Tooltip title="Compare multiple entities across various metrics in a radar chart visualization">
+          <Typography variant="h6" component="h2">
+            {title}
+            <Tooltip title="Multi-dimensional analysis of key metrics across different entities">
               <IconButton size="small" sx={{ ml: 0.5 }}>
                 <InfoOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Refresh data">
-              <IconButton size="small" onClick={onRefresh}>
-                <RefreshIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Export chart">
-              <IconButton size="small" onClick={onExport}>
-                <FileDownloadIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-        
-        {/* Configuration controls */}
-        {renderControls()}
-        
-        {/* Hidden accessibility description */}
-        <Box sx={{ 
-          position: 'absolute', 
-          width: '1px', 
-          height: '1px', 
-          padding: 0, 
-          margin: '-1px', 
-          overflow: 'hidden', 
-          clip: 'rect(0, 0, 0, 0)', 
-          whiteSpace: 'nowrap', 
-          borderWidth: 0 
-        }} 
-          role="region" 
-          aria-live="polite"
-        >
-          {getAccessibilityDescription()}
-        </Box>
-        
-        {/* Radar chart */}
-        <Box sx={{ height: 400 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart 
-              cx="50%" 
-              cy="50%" 
-              outerRadius="80%" 
-              data={filteredData}
-              margin={{ top: 10, right: 30, bottom: 30, left: 30 }}
-            >
-              <PolarGrid stroke={theme.palette.divider} />
-              <PolarAngleAxis 
-                dataKey="subject" 
-                tick={{ 
-                  fill: theme.palette.text.primary,
-                  fontSize: 12
-                }}
-                tickLine={false}
-                axisLine={{ stroke: theme.palette.divider }}
-              />
-              <PolarRadiusAxis 
-                angle={30} 
-                domain={normalizeData ? [0, 100] : 'auto'}
-                tick={{ 
-                  fill: theme.palette.text.secondary,
-                  fontSize: 10
-                }}
-                tickCount={5}
-                axisLine={false}
-                tickLine={false}
-              />
-              
-              {/* Create radar for benchmarks */}
-              {showBenchmarks && selectedBenchmark && (
-                <Radar
-                  name={`${benchmarks.find(b => b.id === selectedBenchmark)?.name || 'Benchmark'} (Benchmark)`}
-                  dataKey={`${benchmarks.find(b => b.id === selectedBenchmark)?.name || 'Benchmark'} (Benchmark)`}
-                  stroke={getBenchmarkColor()}
-                  fill="none"
-                  strokeWidth={1.5}
-                  strokeDasharray="5 5"
-                  isAnimationActive
-                />
-              )}
-              
-              {/* Create radar lines for each selected entity */}
-              {selectedEntities.map((entityId, index) => {
-                const entity = entities.find(e => e.id === entityId);
-                if (!entity) return null;
-                
-                const entityColor = getEntityColor(entity.name, index);
-                
-                return (
-                  <Radar
-                    key={entityId}
-                    name={entity.name}
-                    dataKey={entity.name}
-                    stroke={entityColor}
-                    fill={entityColor}
-                    fillOpacity={opacityLevel}
-                    strokeWidth={strokeWidth}
-                    dot
-                    activeDot={{ r: 5 }}
-                    isAnimationActive
-                  />
-                );
-              })}
-              
-              <RechartsTooltip content={<CustomTooltip />} />
-              <Legend content={renderEntityLegend} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </Box>
-        
-        {/* Context information */}
-        <Paper 
-          variant="outlined" 
-          sx={{ mt: 2, p: 1, backgroundColor: theme.palette.background.default }} 
-          elevation={0}
-        >
-          <Typography variant="body2" color="text.secondary">
-            {normalizeData ? 
-              'Data is normalized to a 0-100 scale for better comparison.' : 
-              'Data is displayed in original units. Consider normalization for better comparison across metrics.'}
-            {showBenchmarks && ' Benchmark values are shown as dashed lines.'}
-            {showHistoricalTrends && ' Historical trends are available in tooltips.'}
           </Typography>
-        </Paper>
+
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {/* Group by button */}
+            <Tooltip title="Group metrics by category">
+              <IconButton size="small" sx={{ mr: 1 }}>
+                <GroupWorkIcon />
+              </IconButton>
+            </Tooltip>
+
+            {/* Compare button */}
+            <Tooltip title="Compare with previous period">
+              <IconButton size="small">
+                <CompareArrowsIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Controls */}
+        {renderControls()}
+
+        {/* Loading state */}
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {/* No data state */}
+        {!isLoading && (!filteredData || filteredData.length === 0) && (
+          <Box sx={{ textAlign: 'center', p: 4 }}>
+            <Typography color="text.secondary">
+              No data available. Please select different metrics or entities.
+            </Typography>
+          </Box>
+        )}
+
+        {/* Radar Chart */}
+        {!isLoading && filteredData && filteredData.length > 0 && (
+          <Box sx={{ height: 500, width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart
+                cx="50%"
+                cy="50%"
+                outerRadius="80%"
+                data={filteredData}
+                margin={{ top: 10, right: 30, left: 30, bottom: 10 }}
+              >
+                <PolarGrid gridType="polygon" />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                  tickLine={{ stroke: theme.palette.divider }}
+                  axisLine={{ stroke: theme.palette.divider }}
+                />
+
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, normalizeData ? 100 : 'auto']}
+                  tick={{ fill: theme.palette.text.secondary, fontSize: 10 }}
+                  tickCount={5}
+                  axisLine={{ stroke: theme.palette.divider }}
+                  tickLine={{ stroke: theme.palette.divider }}
+                  tickFormatter={(value) => normalizeData ? `${value}%` : value.toString()}
+                />
+
+                {/* Benchmark radar if enabled */}
+                {showBenchmarks && selectedBenchmark && (
+                  <Radar
+                    name={`${benchmarks.find(b => b.id === selectedBenchmark)?.name || 'Benchmark'} (Benchmark)`}
+                    dataKey={`${benchmarks.find(b => b.id === selectedBenchmark)?.name || 'Benchmark'} (Benchmark)`}
+                    stroke={getBenchmarkColor()}
+                    fill={getBenchmarkColor()}
+                    fillOpacity={0.1}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    isAnimationActive={true}
+                  />
+                )}
+
+                {/* Entity radars */}
+                {selectedEntities.map((entityId, index) => {
+                  const entity = entities.find(e => e.id === entityId);
+                  if (!entity) return null;
+
+                  const color = getEntityColor(entity.name, index);
+
+                  return (
+                    <Radar
+                      key={entityId}
+                      name={entity.name}
+                      dataKey={entity.name}
+                      stroke={color}
+                      fill={color}
+                      fillOpacity={opacityLevel}
+                      strokeWidth={strokeWidth}
+                      dot={true}
+                      isAnimationActive={true}
+                    />
+                  );
+                })}
+
+                <Legend content={renderEntityLegend} />
+                <RechartsTooltip content={<CustomTooltip />} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

@@ -16,7 +16,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
     public class SportMatchRepository : BaseRepository<SportMatch>, ISportMatchRepository
     {
         private readonly DailyActionsDbContext _dailyActionsDbContext;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -30,7 +30,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             _dailyActionsDbContext = dbContext;
         }
-        
+
         /// <summary>
         /// Get sport match by name
         /// </summary>
@@ -40,33 +40,33 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("Sport match name cannot be null or empty", nameof(name));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}Name_{name}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out SportMatch cachedEntity))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedEntity;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var entity = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .FirstOrDefaultAsync(sm => sm.Name == name);
-                
+                    .FirstOrDefaultAsync(sm => sm.MatchName == name);
+
                 // Cache the result if found
                 if (entity != null && _enableCaching)
                 {
                     _cache.Set(cacheKey, entity, _cacheExpiration);
                     _logger.LogDebug("Cached entity for {CacheKey}", cacheKey);
                 }
-                
+
                 return entity;
             }
             catch (Exception ex)
@@ -75,39 +75,38 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get sport matches by active status
         /// </summary>
         public async Task<IEnumerable<SportMatch>> GetByActiveStatusAsync(bool isActive)
         {
             string cacheKey = $"{_cacheKeyPrefix}IsActive_{isActive}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<SportMatch> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(sm => sm.IsActive == isActive)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -116,39 +115,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get sport matches by competition ID
         /// </summary>
         public async Task<IEnumerable<SportMatch>> GetByCompetitionIdAsync(int competitionId)
         {
             string cacheKey = $"{_cacheKeyPrefix}CompetitionId_{competitionId}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<SportMatch> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(sm => sm.CompetitionID == competitionId)
+                    .Where(sm => sm.MatchID == competitionId)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -157,39 +156,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get sport matches by date range
         /// </summary>
         public async Task<IEnumerable<SportMatch>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             string cacheKey = $"{_cacheKeyPrefix}DateRange_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<SportMatch> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(sm => sm.StartDate >= startDate && sm.StartDate <= endDate)
+                    .Where(sm => sm.CreatedDate >= startDate && sm.CreatedDate <= endDate)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -198,39 +197,39 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get sport matches by competition ID and date range
         /// </summary>
         public async Task<IEnumerable<SportMatch>> GetByCompetitionIdAndDateRangeAsync(int competitionId, DateTime startDate, DateTime endDate)
         {
             string cacheKey = $"{_cacheKeyPrefix}CompetitionId_{competitionId}_DateRange_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<SportMatch> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(sm => sm.CompetitionID == competitionId && sm.StartDate >= startDate && sm.StartDate <= endDate)
+                    .Where(sm => sm.MatchID == competitionId && sm.CreatedDate >= startDate && sm.CreatedDate <= endDate)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -239,35 +238,35 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get upcoming sport matches
         /// </summary>
         public async Task<IEnumerable<SportMatch>> GetUpcomingMatchesAsync(int count = 10)
         {
             string cacheKey = $"{_cacheKeyPrefix}Upcoming_{count}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<SportMatch> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var now = DateTime.UtcNow;
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(sm => sm.StartDate > now && sm.IsActive)
-                    .OrderBy(sm => sm.StartDate)
+                    .Where(sm => sm.CreatedDate > now)
+                    .OrderBy(sm => sm.CreatedDate)
                     .Take(count)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
@@ -276,7 +275,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     _cache.Set(cacheKey, result, shorterExpiration);
                     _logger.LogDebug("Cached result for {CacheKey} with shorter expiration {Expiration}", cacheKey, shorterExpiration);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -285,13 +284,13 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Apply active filter to query
         /// </summary>
         protected override IQueryable<SportMatch> ApplyActiveFilter(IQueryable<SportMatch> query)
         {
-            return query.Where(sm => sm.IsActive);
+            return query;
         }
     }
 }

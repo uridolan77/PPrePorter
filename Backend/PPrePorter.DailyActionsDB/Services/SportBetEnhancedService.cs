@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly ISportBetEnhancedRepository _sportBetEnhancedRepository;
         private readonly ILogger<SportBetEnhancedService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _sportBetEnhancedRepository = sportBetEnhancedRepository ?? throw new ArgumentNullException(nameof(sportBetEnhancedRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetAllSportBetsAsync()
         {
@@ -41,14 +41,14 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetEnhanced?> GetSportBetByIdAsync(long id)
         {
             try
             {
                 _logger.LogInformation("Getting sport bet by ID {Id}", id);
-                return await _sportBetEnhancedRepository.GetByIdAsync(id);
+                return await _sportBetEnhancedRepository.GetByIdAsync((int)id);
             }
             catch (Exception ex)
             {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByPlayerIdAsync(long playerId)
         {
@@ -71,7 +71,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByBetTypeIdAsync(int betTypeId)
         {
@@ -86,7 +86,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByBetStateIdAsync(int betStateId)
         {
@@ -101,7 +101,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
@@ -116,7 +116,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByPlayerIdAndDateRangeAsync(long playerId, DateTime startDate, DateTime endDate)
         {
@@ -131,7 +131,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByBetTypeIdAndDateRangeAsync(int betTypeId, DateTime startDate, DateTime endDate)
         {
@@ -146,7 +146,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportBetEnhanced>> GetSportBetsByBetStateIdAndDateRangeAsync(int betStateId, DateTime startDate, DateTime endDate)
         {
@@ -161,7 +161,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetEnhanced> AddSportBetAsync(SportBetEnhanced sportBet)
         {
@@ -169,19 +169,19 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportBet));
             }
-            
+
             try
             {
-                _logger.LogInformation("Adding new sport bet for player ID {PlayerId}", sportBet.PlayerID);
+                _logger.LogInformation("Adding new sport bet for player ID {PlayerId}", sportBet.PlayerId);
                 return await _sportBetEnhancedRepository.AddAsync(sportBet);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding sport bet for player ID {PlayerId}", sportBet.PlayerID);
+                _logger.LogError(ex, "Error adding sport bet for player ID {PlayerId}", sportBet.PlayerId);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportBetEnhanced> UpdateSportBetAsync(SportBetEnhanced sportBet)
         {
@@ -189,34 +189,34 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportBet));
             }
-            
+
             try
             {
-                _logger.LogInformation("Updating sport bet with ID {Id}", sportBet.ID);
-                
+                _logger.LogInformation("Updating sport bet with ID {Id}", sportBet.BetId);
+
                 // Check if the sport bet exists
-                var existingSportBet = await _sportBetEnhancedRepository.GetByIdAsync(sportBet.ID);
+                var existingSportBet = await _sportBetEnhancedRepository.GetByIdAsync((int)sportBet.BetId);
                 if (existingSportBet == null)
                 {
-                    throw new InvalidOperationException($"Sport bet with ID {sportBet.ID} not found");
+                    throw new InvalidOperationException($"Sport bet with ID {sportBet.BetId} not found");
                 }
-                
+
                 return await _sportBetEnhancedRepository.UpdateAsync(sportBet);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating sport bet with ID {Id}", sportBet.ID);
+                _logger.LogError(ex, "Error updating sport bet with ID {Id}", sportBet.BetId);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteSportBetAsync(long id)
         {
             try
             {
                 _logger.LogInformation("Deleting sport bet with ID {Id}", id);
-                return await _sportBetEnhancedRepository.DeleteAsync(id);
+                return await _sportBetEnhancedRepository.DeleteAsync((int)id);
             }
             catch (Exception ex)
             {

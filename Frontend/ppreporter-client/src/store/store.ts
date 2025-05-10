@@ -3,6 +3,8 @@ import dashboardReducer from './slices/dashboardSlice';
 import authReducer from './slices/authSlice';
 import reportsReducer from './slices/reportsSlice';
 import naturalLanguageReducer from './slices/naturalLanguageSlice';
+import entitiesReducer from './slices/entitiesSlice';
+import uiReducer from './slices/uiSlice';
 import { RootState } from '../types/redux';
 
 // Combine all reducers
@@ -10,7 +12,9 @@ const rootReducer = combineReducers({
   dashboard: dashboardReducer,
   auth: authReducer,
   reports: reportsReducer,
-  naturalLanguage: naturalLanguageReducer
+  naturalLanguage: naturalLanguageReducer,
+  entities: entitiesReducer,
+  ui: uiReducer
 });
 
 // Configure the Redux store
@@ -25,7 +29,9 @@ export const store = configureStore({
         ignoredPaths: [
           'reports.scheduledReports',
           'dashboard.segmentComparisonData',
-          'naturalLanguage.originalEntities'
+          'naturalLanguage.originalEntities',
+          'entities.errors',
+          'ui.notifications'
         ],
       },
     }),

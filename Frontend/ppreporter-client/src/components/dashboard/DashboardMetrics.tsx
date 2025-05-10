@@ -17,25 +17,28 @@ interface DashboardMetricsProps extends CommonProps {
   loading?: boolean;
   error?: Error | null;
   title?: string;
+  onRetry?: () => void;
 }
 
 /**
  * DashboardMetrics component
  * Displays key performance indicators in a grid of cards
  */
-const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ 
-  stats, 
-  loading, 
-  error, 
+const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
+  stats,
+  loading = false,
+  error = null,
   title = 'Key Metrics',
+  onRetry,
   sx
 }) => {
   // If there's an error, return an error message
   if (error) {
     return (
-      <EmptyState 
+      <EmptyState
         message={`Error loading metrics: ${error.message}`}
         icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
+        action={onRetry ? { label: 'Retry', onClick: onRetry } : undefined}
       />
     );
   }

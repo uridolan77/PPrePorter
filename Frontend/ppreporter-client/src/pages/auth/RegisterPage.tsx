@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavigateFunction } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -9,21 +9,22 @@ import {
 } from '@mui/material';
 import RegisterForm from '../../components/auth/RegisterForm';
 import { useAuth } from '../../hooks/useAuth';
+import { RegistrationData } from '../../types/auth';
 
 /**
  * Registration page component
  */
-const RegisterPage = () => {
+const RegisterPage: React.FC = () => {
   const { register, loginWithGoogle, loginWithMicrosoft } = useAuth();
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const navigate: NavigateFunction = useNavigate();
 
   /**
    * Handle registration form submission
-   * @param {Object} formData - Registration form data
+   * @param formData - Registration form data
    */
-  const handleRegister = async (formData) => {
+  const handleRegister = async (formData: RegistrationData): Promise<void> => {
     setLoading(true);
     setError('');
 
@@ -32,7 +33,9 @@ const RegisterPage = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        acceptTerms: formData.acceptTerms
       });
 
       // Navigate to login page upon successful registration
@@ -43,7 +46,8 @@ const RegisterPage = () => {
       });
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'Registration failed. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,7 @@ const RegisterPage = () => {
   /**
    * Handle Google OAuth registration
    */
-  const handleGoogleRegister = async () => {
+  const handleGoogleRegister = async (): Promise<void> => {
     setLoading(true);
     setError('');
     try {
@@ -61,7 +65,8 @@ const RegisterPage = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error('Google registration error:', err);
-      setError(err.message || 'Google sign up failed. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Google sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -70,7 +75,7 @@ const RegisterPage = () => {
   /**
    * Handle Microsoft OAuth registration
    */
-  const handleMicrosoftRegister = async () => {
+  const handleMicrosoftRegister = async (): Promise<void> => {
     setLoading(true);
     setError('');
     try {
@@ -79,7 +84,8 @@ const RegisterPage = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error('Microsoft registration error:', err);
-      setError(err.message || 'Microsoft sign up failed. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Microsoft sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }

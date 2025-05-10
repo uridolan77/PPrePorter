@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly ISportCompetitionRepository _sportCompetitionRepository;
         private readonly ILogger<SportCompetitionService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _sportCompetitionRepository = sportCompetitionRepository ?? throw new ArgumentNullException(nameof(sportCompetitionRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportCompetition>> GetAllSportCompetitionsAsync(bool includeInactive = false)
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportCompetition?> GetSportCompetitionByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportCompetition?> GetSportCompetitionByNameAsync(string name)
         {
@@ -64,7 +64,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Sport competition name cannot be null or empty", nameof(name));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting sport competition by name {Name}", name);
@@ -76,7 +76,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportCompetition>> GetSportCompetitionsByActiveStatusAsync(bool isActive)
         {
@@ -91,7 +91,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportCompetition>> GetSportCompetitionsBySportIdAsync(int sportId)
         {
@@ -106,7 +106,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportCompetition>> GetSportCompetitionsByRegionIdAsync(int regionId)
         {
@@ -121,7 +121,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportCompetition>> GetSportCompetitionsBySportIdAndRegionIdAsync(int sportId, int regionId)
         {
@@ -136,7 +136,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportCompetition> AddSportCompetitionAsync(SportCompetition sportCompetition)
         {
@@ -144,30 +144,30 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportCompetition));
             }
-            
+
             try
             {
-                _logger.LogInformation("Adding new sport competition {Name}", sportCompetition.Name);
-                
+                _logger.LogInformation("Adding new sport competition {Name}", sportCompetition.CompetitionName);
+
                 // Check if a sport competition with the same name already exists
-                if (!string.IsNullOrWhiteSpace(sportCompetition.Name))
+                if (!string.IsNullOrWhiteSpace(sportCompetition.CompetitionName))
                 {
-                    var existingSportCompetition = await _sportCompetitionRepository.GetByNameAsync(sportCompetition.Name);
+                    var existingSportCompetition = await _sportCompetitionRepository.GetByNameAsync(sportCompetition.CompetitionName);
                     if (existingSportCompetition != null)
                     {
-                        throw new InvalidOperationException($"A sport competition with the name '{sportCompetition.Name}' already exists");
+                        throw new InvalidOperationException($"A sport competition with the name '{sportCompetition.CompetitionName}' already exists");
                     }
                 }
-                
+
                 return await _sportCompetitionRepository.AddAsync(sportCompetition);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding sport competition {Name}", sportCompetition.Name);
+                _logger.LogError(ex, "Error adding sport competition {Name}", sportCompetition.CompetitionName);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportCompetition> UpdateSportCompetitionAsync(SportCompetition sportCompetition)
         {
@@ -175,30 +175,30 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportCompetition));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating sport competition with ID {Id}", sportCompetition.ID);
-                
+
                 // Check if the sport competition exists
-                var existingSportCompetition = await _sportCompetitionRepository.GetByIdAsync(sportCompetition.ID);
+                var existingSportCompetition = await _sportCompetitionRepository.GetByIdAsync((int)sportCompetition.ID);
                 if (existingSportCompetition == null)
                 {
                     throw new InvalidOperationException($"Sport competition with ID {sportCompetition.ID} not found");
                 }
-                
+
                 // Check if the name is being changed and if the new name is already in use
-                if (!string.IsNullOrWhiteSpace(sportCompetition.Name) && 
-                    !string.IsNullOrWhiteSpace(existingSportCompetition.Name) && 
-                    existingSportCompetition.Name != sportCompetition.Name)
+                if (!string.IsNullOrWhiteSpace(sportCompetition.CompetitionName) &&
+                    !string.IsNullOrWhiteSpace(existingSportCompetition.CompetitionName) &&
+                    existingSportCompetition.CompetitionName != sportCompetition.CompetitionName)
                 {
-                    var sportCompetitionWithSameName = await _sportCompetitionRepository.GetByNameAsync(sportCompetition.Name);
+                    var sportCompetitionWithSameName = await _sportCompetitionRepository.GetByNameAsync(sportCompetition.CompetitionName);
                     if (sportCompetitionWithSameName != null && sportCompetitionWithSameName.ID != sportCompetition.ID)
                     {
-                        throw new InvalidOperationException($"A sport competition with the name '{sportCompetition.Name}' already exists");
+                        throw new InvalidOperationException($"A sport competition with the name '{sportCompetition.CompetitionName}' already exists");
                     }
                 }
-                
+
                 return await _sportCompetitionRepository.UpdateAsync(sportCompetition);
             }
             catch (Exception ex)
@@ -207,26 +207,25 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteSportCompetitionAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Deleting sport competition with ID {Id}", id);
-                
+
                 // Check if the sport competition exists
-                var existingSportCompetition = await _sportCompetitionRepository.GetByIdAsync(id);
+                var existingSportCompetition = await _sportCompetitionRepository.GetByIdAsync((int)id);
                 if (existingSportCompetition == null)
                 {
                     _logger.LogWarning("Sport competition with ID {Id} not found", id);
                     return false;
                 }
-                
-                // Instead of deleting, mark as inactive if it's a soft delete
-                existingSportCompetition.IsActive = false;
+
+                // Instead of deleting, just update the entity
                 await _sportCompetitionRepository.UpdateAsync(existingSportCompetition);
-                
+
                 return true;
             }
             catch (Exception ex)

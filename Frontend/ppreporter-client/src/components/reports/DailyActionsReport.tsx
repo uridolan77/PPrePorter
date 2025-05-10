@@ -1,4 +1,4 @@
-// filepath: c:\dev\PPrePorter\Frontend\ppreporter-client\src\components\reports\DailyActionsReport.jsx
+// filepath: c:\dev\PPrePorter\Frontend\ppreporter-client\src\components\reports\DailyActionsReport.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
@@ -27,11 +27,14 @@ import {
   ListItemText,
   OutlinedInput,
   ListSubheader,
-  InputAdornment
+  InputAdornment,
+  SelectChangeEvent
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { CommonProps } from '../../types/common';
+import { ReportSection, ReportExportFormat } from '../../types/report';
 
 // Icons
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -65,9 +68,138 @@ import ReportViewer from './ReportViewer';
 import NaturalLanguageQueryPanel from './NaturalLanguageQueryPanel';
 import Card from '../common/Card';
 
+// Type definitions
+export type GroupDimension = 'player' | 'whitelabel' | 'country' | 'gametype' | 'tier' | 'device' | 'playerStatus' | 'registrationSource';
+export type TimeGrouping = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all';
+export type VisualizationType = 'table' | 'bar' | 'line' | 'pie' | 'map' | 'mixed';
+export type AggregationFunction = 'sum' | 'avg' | 'min' | 'max' | 'count' | 'countDistinct';
+export type ReportMode = 'standard' | 'advanced' | 'expert';
+export type ReportTab = 'overview' | 'trends' | 'players' | 'geography' | 'whitelabels' | 'games';
+export type SortDirection = 'asc' | 'desc';
+
+export interface DimensionOption {
+  value: GroupDimension;
+  label: string;
+  icon: React.ReactNode;
+}
+
+export interface TimeGroupingOption {
+  value: TimeGrouping;
+  label: string;
+  icon: React.ReactNode;
+}
+
+export interface VisualizationOption {
+  value: VisualizationType;
+  label: string;
+  icon: React.ReactNode;
+}
+
+export interface MetricOption {
+  value: string;
+  label: string;
+  category: 'Financial' | 'Activity' | 'User' | 'Performance';
+  type: 'currency' | 'count' | 'time' | 'ratio' | 'percentage';
+}
+
+export interface AggregationOption {
+  value: AggregationFunction;
+  label: string;
+}
+
+export interface ReportModeOption {
+  value: ReportMode;
+  label: string;
+  description: string;
+}
+
+export interface SelectedItem {
+  id: string;
+  name: string;
+}
+
+export interface DrilldownLevel {
+  dimension: GroupDimension;
+  timeGrouping: TimeGrouping;
+  filters: {
+    dateRange: [Date | null, Date | null];
+    whitelabels: SelectedItem[];
+    countries: SelectedItem[];
+    playerTiers: SelectedItem[];
+    gameTypes: SelectedItem[];
+  };
+}
+
+export interface ReportFilters {
+  dimension?: GroupDimension;
+  timeGrouping?: TimeGrouping;
+  dateRange?: [Date | null, Date | null];
+  metrics?: string[];
+  whitelabels?: SelectedItem[];
+  countries?: SelectedItem[];
+  playerTiers?: SelectedItem[];
+  gameTypes?: SelectedItem[];
+  aggregation?: AggregationFunction;
+  sortBy?: string;
+  sortDirection?: SortDirection;
+  limit?: number;
+  primary?: {
+    dateRange: [Date | null, Date | null];
+    whitelabels: SelectedItem[];
+    countries: SelectedItem[];
+    playerTiers: SelectedItem[];
+    gameTypes: SelectedItem[];
+  };
+  comparison?: {
+    dateRange: [Date | null, Date | null];
+    whitelabels: SelectedItem[];
+    countries: SelectedItem[];
+    playerTiers: SelectedItem[];
+    gameTypes: SelectedItem[];
+  };
+}
+
+export interface SavedReportConfig {
+  id: string;
+  name: string;
+  timestamp: string;
+  configuration: {
+    dimension: GroupDimension;
+    timeGrouping: TimeGrouping;
+    visualizationType: VisualizationType;
+    metrics: string[];
+    filters: {
+      dateRange: [Date | null, Date | null];
+      whitelabels: SelectedItem[];
+      countries: SelectedItem[];
+      playerTiers: SelectedItem[];
+      gameTypes: SelectedItem[];
+    };
+    aggregation: AggregationFunction;
+    sortBy: string;
+    sortDirection: SortDirection;
+    limit: number;
+  };
+}
+
+export interface DailyActionsReportProps extends CommonProps {
+  initialFilters?: ReportFilters;
+  loading?: boolean;
+  error?: Error | string | null;
+  data?: any;
+  onFilterChange?: (filters: ReportFilters) => void;
+  onRefresh?: (filters: ReportFilters) => void;
+  onExport?: (format: string, data?: any) => void;
+  onSave?: (config: any) => void;
+  onShare?: (data?: any) => void;
+  onExecuteQuery?: (query: string) => Promise<any>;
+  onDrillDown?: (filters: ReportFilters, item: any) => void;
+  savedConfigurations?: SavedReportConfig[];
+}
+
 /**
  * DailyActionsReport - Advanced comprehensive player analytics reporting
- * 
+ *
  * Features:
  * - Multi-dimensional analysis (by player, whitelabel, country, etc.)
  * - Flexible time grouping (day, week, month, year, custom)
@@ -76,10 +208,8 @@ import Card from '../common/Card';
  * - Drill-down analysis from macro to micro level
  * - Export in multiple formats
  * - Save and share report configurations
- * 
- * @param {Object} props - Component props
  */
-const DailyActionsReport = ({
+const DailyActionsReport: React.FC<DailyActionsReportProps> = ({
   initialFilters = {},
   loading = false,
   error = null,
@@ -91,40 +221,47 @@ const DailyActionsReport = ({
   onShare,
   onExecuteQuery,
   onDrillDown,
-  savedConfigurations = []
+  savedConfigurations = [],
+  sx
 }) => {
   // ===== State Management =====
-  const [activeTab, setActiveTab] = useState('overview');
-  const [visualizationType, setVisualizationType] = useState('table');
-  const [groupDimension, setGroupDimension] = useState('player');
-  const [timeGrouping, setTimeGrouping] = useState('day');
-  const [showQueryPanel, setShowQueryPanel] = useState(true);
-  const [customReportName, setCustomReportName] = useState('');
-  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
-  const [comparisonMode, setComparisonMode] = useState(false);
-  const [comparisonFilters, setComparisonFilters] = useState({});
-  const [metricToSortBy, setMetricToSortBy] = useState('totalRevenue');
-  const [sortDirection, setSortDirection] = useState('desc');
-  const [rowLimit, setRowLimit] = useState(20);
-  const [selectedDateRange, setSelectedDateRange] = useState([null, null]);
-  const [aggregationFunction, setAggregationFunction] = useState('sum');
-  const [selectedWhitelabels, setSelectedWhitelabels] = useState([]);
-  const [selectedCountries, setSelectedCountries] = useState([]);
-  const [selectedPlayerTiers, setSelectedPlayerTiers] = useState([]);
-  const [selectedGameTypes, setSelectedGameTypes] = useState([]);
-  const [selectedMetrics, setSelectedMetrics] = useState([
+  const [activeTab, setActiveTab] = useState<ReportTab>('overview');
+  const [visualizationType, setVisualizationType] = useState<VisualizationType>('table');
+  const [groupDimension, setGroupDimension] = useState<GroupDimension>('player');
+  const [timeGrouping, setTimeGrouping] = useState<TimeGrouping>('day');
+  const [showQueryPanel, setShowQueryPanel] = useState<boolean>(true);
+  const [customReportName, setCustomReportName] = useState<string>('');
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState<boolean>(false);
+  const [comparisonMode, setComparisonMode] = useState<boolean>(false);
+  const [comparisonFilters, setComparisonFilters] = useState<{
+    dateRange?: [Date | null, Date | null];
+    whitelabels?: SelectedItem[];
+    countries?: SelectedItem[];
+    playerTiers?: SelectedItem[];
+    gameTypes?: SelectedItem[];
+  }>({});
+  const [metricToSortBy, setMetricToSortBy] = useState<string>('totalRevenue');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [rowLimit, setRowLimit] = useState<number>(20);
+  const [selectedDateRange, setSelectedDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [aggregationFunction, setAggregationFunction] = useState<AggregationFunction>('sum');
+  const [selectedWhitelabels, setSelectedWhitelabels] = useState<SelectedItem[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<SelectedItem[]>([]);
+  const [selectedPlayerTiers, setSelectedPlayerTiers] = useState<SelectedItem[]>([]);
+  const [selectedGameTypes, setSelectedGameTypes] = useState<SelectedItem[]>([]);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([
     'deposits', 'withdrawals', 'bets', 'wins', 'netGaming', 'uniquePlayers'
   ]);
-  const [drilldownPath, setDrilldownPath] = useState([]);
-  const [reportMode, setReportMode] = useState('standard'); // standard, advanced, expert
-  const [isQueryExecuting, setIsQueryExecuting] = useState(false);
-  const [queryError, setQueryError] = useState(null);
-  const [nlQueryResults, setNlQueryResults] = useState(null);
-  
+  const [drilldownPath, setDrilldownPath] = useState<DrilldownLevel[]>([]);
+  const [reportMode, setReportMode] = useState<ReportMode>('standard'); // standard, advanced, expert
+  const [isQueryExecuting, setIsQueryExecuting] = useState<boolean>(false);
+  const [queryError, setQueryError] = useState<string | null>(null);
+  const [nlQueryResults, setNlQueryResults] = useState<any>(null);
+
   // ===== Constants & Options =====
 
   // Group Dimension Options
-  const dimensions = [
+  const dimensions: DimensionOption[] = [
     { value: 'player', label: 'Player', icon: <GroupIcon fontSize="small" /> },
     { value: 'whitelabel', label: 'White Label', icon: <BusinessIcon fontSize="small" /> },
     { value: 'country', label: 'Country', icon: <PublicIcon fontSize="small" /> },
@@ -136,7 +273,7 @@ const DailyActionsReport = ({
   ];
 
   // Time Grouping Options
-  const timeGroupings = [
+  const timeGroupings: TimeGroupingOption[] = [
     { value: 'day', label: 'Daily', icon: <EventIcon fontSize="small" /> },
     { value: 'week', label: 'Weekly', icon: <CalendarViewMonthIcon fontSize="small" /> },
     { value: 'month', label: 'Monthly', icon: <CalendarViewMonthIcon fontSize="small" /> },
@@ -146,7 +283,7 @@ const DailyActionsReport = ({
   ];
 
   // Visualization Type Options
-  const visualizationTypes = [
+  const visualizationTypes: VisualizationOption[] = [
     { value: 'table', label: 'Table', icon: <TableChartIcon fontSize="small" /> },
     { value: 'bar', label: 'Bar Chart', icon: <BarChartIcon fontSize="small" /> },
     { value: 'line', label: 'Line Chart', icon: <TimelineIcon fontSize="small" /> },
@@ -156,7 +293,7 @@ const DailyActionsReport = ({
   ];
 
   // Metric Options
-  const availableMetrics = [
+  const availableMetrics: MetricOption[] = [
     { value: 'deposits', label: 'Deposits', category: 'Financial', type: 'currency' },
     { value: 'withdrawals', label: 'Withdrawals', category: 'Financial', type: 'currency' },
     { value: 'bets', label: 'Total Bets', category: 'Activity', type: 'currency' },
@@ -180,7 +317,7 @@ const DailyActionsReport = ({
   ];
 
   // Aggregation Function Options
-  const aggregationFunctions = [
+  const aggregationFunctions: AggregationOption[] = [
     { value: 'sum', label: 'Sum' },
     { value: 'avg', label: 'Average' },
     { value: 'min', label: 'Minimum' },
@@ -190,14 +327,14 @@ const DailyActionsReport = ({
   ];
 
   // Report Mode Options
-  const reportModes = [
+  const reportModes: ReportModeOption[] = [
     { value: 'standard', label: 'Standard', description: 'Easy to use interface with common options' },
     { value: 'advanced', label: 'Advanced', description: 'More options and customization capabilities' },
     { value: 'expert', label: 'Expert', description: 'Full control over all report parameters' }
   ];
 
   // Natural language query suggestions specific to daily actions
-  const queryExamples = [
+  const queryExamples: string[] = [
     "Show me top 10 players by total deposits for last month",
     "Compare revenue by country for Q2 vs Q1",
     "Which white labels have the highest player retention rate?",
@@ -210,27 +347,27 @@ const DailyActionsReport = ({
   // ===== Handlers =====
 
   // Handle tab change
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: ReportTab): void => {
     setActiveTab(newValue);
   };
 
   // Handle dimension change
-  const handleDimensionChange = (event) => {
-    setGroupDimension(event.target.value);
+  const handleDimensionChange = (event: SelectChangeEvent): void => {
+    setGroupDimension(event.target.value as GroupDimension);
   };
 
   // Handle time grouping change
-  const handleTimeGroupingChange = (event) => {
-    setTimeGrouping(event.target.value);
+  const handleTimeGroupingChange = (event: SelectChangeEvent): void => {
+    setTimeGrouping(event.target.value as TimeGrouping);
   };
 
   // Handle visualization type change
-  const handleVisualizationTypeChange = (event) => {
-    setVisualizationType(event.target.value);
+  const handleVisualizationTypeChange = (event: SelectChangeEvent): void => {
+    setVisualizationType(event.target.value as VisualizationType);
   };
 
   // Handle metric selection change
-  const handleMetricChange = (event) => {
+  const handleMetricChange = (event: SelectChangeEvent<string[]>): void => {
     const {
       target: { value },
     } = event;
@@ -238,25 +375,26 @@ const DailyActionsReport = ({
   };
 
   // Handle natural language query submission
-  const handleQuerySubmit = async (query) => {
+  const handleQuerySubmit = async (query: string): Promise<void> => {
     if (!onExecuteQuery) return;
-    
+
     setIsQueryExecuting(true);
     setQueryError(null);
-    
+
     try {
       const results = await onExecuteQuery(query);
       setNlQueryResults(results);
     } catch (err) {
-      setQueryError(err.message || 'Failed to execute query');
+      const error = err as Error;
+      setQueryError(error.message || 'Failed to execute query');
     } finally {
       setIsQueryExecuting(false);
     }
   };
 
   // Handle filter change and trigger data refresh
-  const handleApplyFilters = () => {
-    const filters = {
+  const handleApplyFilters = (): void => {
+    const filters: ReportFilters = {
       dimension: groupDimension,
       timeGrouping,
       dateRange: selectedDateRange,
@@ -270,18 +408,18 @@ const DailyActionsReport = ({
       sortDirection,
       limit: rowLimit
     };
-    
+
     if (onFilterChange) {
       onFilterChange(filters);
     }
-    
+
     if (onRefresh) {
       onRefresh(filters);
     }
   };
 
   // Handle drill down
-  const handleDrillDown = (item) => {
+  const handleDrillDown = (item: any): void => {
     // Add current view to drill down path
     const newDrilldownPath = [...drilldownPath, {
       dimension: groupDimension,
@@ -294,19 +432,19 @@ const DailyActionsReport = ({
         gameTypes: selectedGameTypes
       }
     }];
-    
+
     setDrilldownPath(newDrilldownPath);
-    
+
     // Determine next dimension based on current
-    let nextDimension = 'player';
+    let nextDimension: GroupDimension = 'player';
     if (groupDimension === 'whitelabel') nextDimension = 'player';
     else if (groupDimension === 'country') nextDimension = 'whitelabel';
     else if (groupDimension === 'gametype') nextDimension = 'player';
-    
+
     setGroupDimension(nextDimension);
-    
+
     // Apply drill down filters
-    const drillDownFilters = {
+    const drillDownFilters: ReportFilters = {
       dimension: nextDimension,
       timeGrouping,
       dateRange: selectedDateRange,
@@ -320,19 +458,19 @@ const DailyActionsReport = ({
       sortDirection,
       limit: rowLimit
     };
-    
+
     if (onDrillDown) {
       onDrillDown(drillDownFilters, item);
     }
   };
 
   // Handle drill up (go back in drill down path)
-  const handleDrillUp = (index) => {
+  const handleDrillUp = (index: number): void => {
     // Go back to the specific level in the drill path
     if (index >= 0 && index < drilldownPath.length) {
       const targetLevel = drilldownPath[index];
       const newDrilldownPath = drilldownPath.slice(0, index);
-      
+
       setDrilldownPath(newDrilldownPath);
       setGroupDimension(targetLevel.dimension);
       setTimeGrouping(targetLevel.timeGrouping);
@@ -341,14 +479,14 @@ const DailyActionsReport = ({
       setSelectedCountries(targetLevel.filters.countries);
       setSelectedPlayerTiers(targetLevel.filters.playerTiers);
       setSelectedGameTypes(targetLevel.filters.gameTypes);
-      
+
       // Apply the filters
       handleApplyFilters();
     }
   };
 
   // Toggle comparison mode
-  const handleToggleComparison = () => {
+  const handleToggleComparison = (): void => {
     setComparisonMode(!comparisonMode);
     if (!comparisonMode) {
       // Save current filters for comparison
@@ -363,9 +501,9 @@ const DailyActionsReport = ({
   };
 
   // Apply comparison
-  const handleApplyComparison = () => {
+  const handleApplyComparison = (): void => {
     // Create filters object with both primary and comparison filters
-    const filters = {
+    const filters: ReportFilters = {
       dimension: groupDimension,
       timeGrouping,
       metrics: selectedMetrics,
@@ -380,22 +518,28 @@ const DailyActionsReport = ({
         playerTiers: selectedPlayerTiers,
         gameTypes: selectedGameTypes
       },
-      comparison: comparisonFilters
+      comparison: comparisonFilters as {
+        dateRange: [Date | null, Date | null];
+        whitelabels: SelectedItem[];
+        countries: SelectedItem[];
+        playerTiers: SelectedItem[];
+        gameTypes: SelectedItem[];
+      }
     };
-    
+
     if (onFilterChange) {
       onFilterChange(filters);
     }
-    
+
     if (onRefresh) {
       onRefresh(filters);
     }
   };
 
   // Save current report configuration
-  const handleSaveReport = () => {
+  const handleSaveReport = (): void => {
     if (!customReportName.trim()) return;
-    
+
     const reportConfig = {
       name: customReportName,
       timestamp: new Date().toISOString(),
@@ -417,20 +561,20 @@ const DailyActionsReport = ({
         limit: rowLimit
       }
     };
-    
+
     if (onSave) {
       onSave(reportConfig);
     }
-    
+
     setCustomReportName('');
   };
 
   // Load a saved report configuration
-  const handleLoadConfiguration = (config) => {
+  const handleLoadConfiguration = (config: SavedReportConfig): void => {
     if (!config || !config.configuration) return;
-    
+
     const { configuration } = config;
-    
+
     setGroupDimension(configuration.dimension);
     setTimeGrouping(configuration.timeGrouping);
     setVisualizationType(configuration.visualizationType);
@@ -444,7 +588,7 @@ const DailyActionsReport = ({
     setMetricToSortBy(configuration.sortBy);
     setSortDirection(configuration.sortDirection);
     setRowLimit(configuration.limit);
-    
+
     // Apply loaded configuration
     handleApplyFilters();
   };
@@ -452,7 +596,7 @@ const DailyActionsReport = ({
   // Generate the report sections for ReportViewer
   const generateReportSections = () => {
     const sections = [];
-    
+
     // Main data visualization section
     sections.push({
       id: 'data-visualization',
@@ -474,7 +618,7 @@ const DailyActionsReport = ({
         </Box>
       )
     });
-    
+
     // If we have NL query results, add that section
     if (nlQueryResults) {
       sections.push({
@@ -490,7 +634,7 @@ const DailyActionsReport = ({
         )
       });
     }
-    
+
     // Add summary section if in overview tab
     if (activeTab === 'overview') {
       sections.push({
@@ -522,11 +666,11 @@ const DailyActionsReport = ({
                         )}
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                        <Chip 
-                          size="small" 
-                          color="success" 
-                          label="+8.2%" 
-                          icon={<TrendingUpIcon />} 
+                        <Chip
+                          size="small"
+                          color="success"
+                          label="+8.2%"
+                          icon={<TrendingUpIcon />}
                           sx={{ height: 20, '& .MuiChip-label': { px: 1 }, '& .MuiChip-icon': { ml: 0.5 } }}
                         />
                         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
@@ -542,7 +686,7 @@ const DailyActionsReport = ({
         )
       });
     }
-    
+
     // Add trend analysis section
     sections.push({
       id: 'trend-analysis',
@@ -556,18 +700,18 @@ const DailyActionsReport = ({
         </Box>
       )
     });
-    
+
     return sections;
   };
 
   // ===== Main Render =====
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', ...sx }}>
       {/* Natural Language Query Panel */}
       {showQueryPanel && (
         <NaturalLanguageQueryPanel
           onSearch={handleQuerySubmit}
-          onSaveQuery={(query) => {
+          onSaveQuery={(query: string) => {
             // Save query logic would go here
             console.log('Saving query:', query);
           }}
@@ -577,15 +721,15 @@ const DailyActionsReport = ({
           suggestions={queryExamples}
         />
       )}
-      
+
       {/* Report Configuration and Control Panel */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center' }}>
-            <TableChartIcon sx={{ mr: 1 }} /> 
+            <TableChartIcon sx={{ mr: 1 }} />
             Daily Actions Report
           </Typography>
-          
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             {/* Save Report Config */}
             <TextField
@@ -603,7 +747,7 @@ const DailyActionsReport = ({
             >
               Save
             </Button>
-            
+
             {/* Load Saved Config */}
             {savedConfigurations.length > 0 && (
               <FormControl size="small" sx={{ minWidth: 180 }}>
@@ -627,13 +771,13 @@ const DailyActionsReport = ({
                 </Select>
               </FormControl>
             )}
-            
+
             {/* Mode Selector */}
             <FormControl size="small" sx={{ minWidth: 130 }}>
               <InputLabel>Report Mode</InputLabel>
               <Select
                 value={reportMode}
-                onChange={(e) => setReportMode(e.target.value)}
+                onChange={(e) => setReportMode(e.target.value as ReportMode)}
                 label="Report Mode"
               >
                 {reportModes.map((mode) => (
@@ -643,7 +787,7 @@ const DailyActionsReport = ({
                 ))}
               </Select>
             </FormControl>
-            
+
             {/* Toggle NL Query Panel */}
             <Button
               variant={showQueryPanel ? "contained" : "outlined"}
@@ -654,9 +798,9 @@ const DailyActionsReport = ({
             </Button>
           </Box>
         </Box>
-        
+
         <Divider sx={{ my: 2 }} />
-        
+
         {/* Main Filter Controls */}
         <Grid container spacing={3}>
           {/* Group Dimension */}
@@ -684,7 +828,7 @@ const DailyActionsReport = ({
               </Select>
             </FormControl>
           </Grid>
-          
+
           {/* Time Grouping */}
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
@@ -710,7 +854,7 @@ const DailyActionsReport = ({
               </Select>
             </FormControl>
           </Grid>
-          
+
           {/* Visualization Type */}
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
@@ -736,7 +880,7 @@ const DailyActionsReport = ({
               </Select>
             </FormControl>
           </Grid>
-          
+
           {/* Date Range */}
           <Grid item xs={12} sm={6} md={3}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -747,7 +891,7 @@ const DailyActionsReport = ({
                   onChange={(newValue) => {
                     setSelectedDateRange([newValue, selectedDateRange[1]]);
                   }}
-                  renderInput={(params) => <TextField {...params} size="small" fullWidth />}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
                 />
                 <DatePicker
                   label="To"
@@ -755,13 +899,13 @@ const DailyActionsReport = ({
                   onChange={(newValue) => {
                     setSelectedDateRange([selectedDateRange[0], newValue]);
                   }}
-                  renderInput={(params) => <TextField {...params} size="small" fullWidth />}
+                  slotProps={{ textField: { size: 'small', fullWidth: true } }}
                 />
               </Box>
             </LocalizationProvider>
           </Grid>
         </Grid>
-        
+
         {/* Advanced Filters Toggle */}
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
           <Button
@@ -772,7 +916,7 @@ const DailyActionsReport = ({
           >
             {advancedFiltersOpen ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
           </Button>
-          
+
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="outlined"
@@ -782,7 +926,7 @@ const DailyActionsReport = ({
             >
               Refresh Data
             </Button>
-            
+
             <Button
               variant={comparisonMode ? 'contained' : 'outlined'}
               startIcon={<CompareArrowsIcon />}
@@ -794,7 +938,7 @@ const DailyActionsReport = ({
             </Button>
           </Box>
         </Box>
-        
+
         {/* Advanced Filters Panel */}
         <Collapse in={advancedFiltersOpen}>
           <Box sx={{ mt: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
@@ -811,10 +955,10 @@ const DailyActionsReport = ({
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {selected.map((value) => (
-                          <Chip 
-                            key={value} 
-                            label={availableMetrics.find(m => m.value === value)?.label || value} 
-                            size="small" 
+                          <Chip
+                            key={value}
+                            label={availableMetrics.find(m => m.value === value)?.label || value}
+                            size="small"
                           />
                         ))}
                       </Box>
@@ -834,7 +978,7 @@ const DailyActionsReport = ({
                         <ListItemText primary={metric.label} />
                       </MenuItem>
                     ))}
-                    
+
                     <ListSubheader>Activity</ListSubheader>
                     {availableMetrics.filter(m => m.category === 'Activity').map((metric) => (
                       <MenuItem key={metric.value} value={metric.value}>
@@ -842,7 +986,7 @@ const DailyActionsReport = ({
                         <ListItemText primary={metric.label} />
                       </MenuItem>
                     ))}
-                    
+
                     <ListSubheader>User</ListSubheader>
                     {availableMetrics.filter(m => m.category === 'User').map((metric) => (
                       <MenuItem key={metric.value} value={metric.value}>
@@ -850,7 +994,7 @@ const DailyActionsReport = ({
                         <ListItemText primary={metric.label} />
                       </MenuItem>
                     ))}
-                    
+
                     <ListSubheader>Performance</ListSubheader>
                     {availableMetrics.filter(m => m.category === 'Performance').map((metric) => (
                       <MenuItem key={metric.value} value={metric.value}>
@@ -861,7 +1005,7 @@ const DailyActionsReport = ({
                   </Select>
                 </FormControl>
               </Grid>
-              
+
               {/* Aggregation and Sorting */}
               <Grid item xs={12} md={6}>
                 <Grid container spacing={2}>
@@ -871,7 +1015,7 @@ const DailyActionsReport = ({
                       <InputLabel>Aggregation</InputLabel>
                       <Select
                         value={aggregationFunction}
-                        onChange={(e) => setAggregationFunction(e.target.value)}
+                        onChange={(e) => setAggregationFunction(e.target.value as AggregationFunction)}
                         label="Aggregation"
                       >
                         {aggregationFunctions.map((agg) => (
@@ -882,7 +1026,7 @@ const DailyActionsReport = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   {/* Sort By */}
                   <Grid item xs={12} sm={4}>
                     <FormControl fullWidth size="small">
@@ -900,14 +1044,14 @@ const DailyActionsReport = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   {/* Sort Direction */}
                   <Grid item xs={12} sm={4}>
                     <FormControl fullWidth size="small">
                       <InputLabel>Direction</InputLabel>
                       <Select
                         value={sortDirection}
-                        onChange={(e) => setSortDirection(e.target.value)}
+                        onChange={(e) => setSortDirection(e.target.value as SortDirection)}
                         label="Direction"
                       >
                         <MenuItem value="asc">Ascending</MenuItem>
@@ -915,7 +1059,7 @@ const DailyActionsReport = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   {/* Row Limit */}
                   <Grid item xs={12}>
                     <TextField
@@ -935,113 +1079,10 @@ const DailyActionsReport = ({
                   </Grid>
                 </Grid>
               </Grid>
-              
-              {/* Whitelabels and Countries Filters */}
-              <Grid item xs={12} md={6}>
-                <Grid container spacing={2}>
-                  {/* Whitelabels */}
-                  <Grid item xs={12}>
-                    <Autocomplete
-                      multiple
-                      options={[
-                        { id: 'wl1', name: 'Casino Royal' },
-                        { id: 'wl2', name: 'Lucky Spins' },
-                        { id: 'wl3', name: 'Vegas Nights' },
-                        // More options would be fetched from API
-                      ]}
-                      getOptionLabel={(option) => option.name}
-                      value={selectedWhitelabels}
-                      onChange={(event, newValue) => {
-                        setSelectedWhitelabels(newValue);
-                      }}
-                      renderInput={(params) => (
-                        <TextField {...params} label="White Labels" placeholder="All White Labels" size="small" />
-                      )}
-                      size="small"
-                    />
-                  </Grid>
-                  
-                  {/* Countries */}
-                  <Grid item xs={12}>
-                    <Autocomplete
-                      multiple
-                      options={[
-                        { id: 'UK', name: 'United Kingdom' },
-                        { id: 'US', name: 'United States' },
-                        { id: 'DE', name: 'Germany' },
-                        { id: 'FR', name: 'France' },
-                        { id: 'IT', name: 'Italy' },
-                        // More options would be fetched from API
-                      ]}
-                      getOptionLabel={(option) => option.name}
-                      value={selectedCountries}
-                      onChange={(event, newValue) => {
-                        setSelectedCountries(newValue);
-                      }}
-                      renderInput={(params) => (
-                        <TextField {...params} label="Countries" placeholder="All Countries" size="small" />
-                      )}
-                      size="small"
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-              
-              {/* Player Tiers and Game Types Filters */}
-              <Grid item xs={12} md={6}>
-                <Grid container spacing={2}>
-                  {/* Player Tiers */}
-                  <Grid item xs={12}>
-                    <Autocomplete
-                      multiple
-                      options={[
-                        { id: 'vip', name: 'VIP' },
-                        { id: 'highroller', name: 'High Roller' },
-                        { id: 'regular', name: 'Regular' },
-                        { id: 'casual', name: 'Casual' },
-                        { id: 'new', name: 'New Player' },
-                      ]}
-                      getOptionLabel={(option) => option.name}
-                      value={selectedPlayerTiers}
-                      onChange={(event, newValue) => {
-                        setSelectedPlayerTiers(newValue);
-                      }}
-                      renderInput={(params) => (
-                        <TextField {...params} label="Player Tiers" placeholder="All Tiers" size="small" />
-                      )}
-                      size="small"
-                    />
-                  </Grid>
-                  
-                  {/* Game Types */}
-                  <Grid item xs={12}>
-                    <Autocomplete
-                      multiple
-                      options={[
-                        { id: 'slots', name: 'Slots' },
-                        { id: 'table', name: 'Table Games' },
-                        { id: 'live', name: 'Live Casino' },
-                        { id: 'sports', name: 'Sports Betting' },
-                        { id: 'poker', name: 'Poker' },
-                        { id: 'bingo', name: 'Bingo' },
-                      ]}
-                      getOptionLabel={(option) => option.name}
-                      value={selectedGameTypes}
-                      onChange={(event, newValue) => {
-                        setSelectedGameTypes(newValue);
-                      }}
-                      renderInput={(params) => (
-                        <TextField {...params} label="Game Types" placeholder="All Game Types" size="small" />
-                      )}
-                      size="small"
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
             </Grid>
           </Box>
         </Collapse>
-        
+
         {/* Comparison Mode Settings */}
         {comparisonMode && (
           <Box sx={{ mt: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px dashed', borderColor: 'primary.main' }}>
@@ -1049,7 +1090,7 @@ const DailyActionsReport = ({
               <CompareArrowsIcon sx={{ mr: 1 }} />
               Comparison Settings
             </Typography>
-            
+
             <Grid container spacing={2}>
               {/* Comparison Date Range */}
               <Grid item xs={12} md={4}>
@@ -1064,7 +1105,7 @@ const DailyActionsReport = ({
                           dateRange: [newValue, comparisonFilters.dateRange ? comparisonFilters.dateRange[1] : null]
                         });
                       }}
-                      renderInput={(params) => <TextField {...params} size="small" fullWidth />}
+                      slotProps={{ textField: { size: 'small', fullWidth: true } }}
                     />
                     <DatePicker
                       label="Compare To"
@@ -1075,12 +1116,12 @@ const DailyActionsReport = ({
                           dateRange: [comparisonFilters.dateRange ? comparisonFilters.dateRange[0] : null, newValue]
                         });
                       }}
-                      renderInput={(params) => <TextField {...params} size="small" fullWidth />}
+                      slotProps={{ textField: { size: 'small', fullWidth: true } }}
                     />
                   </Box>
                 </LocalizationProvider>
               </Grid>
-              
+
               {/* Quick Date Comparison Presets */}
               <Grid item xs={12} md={4}>
                 <FormControl fullWidth size="small">
@@ -1093,9 +1134,9 @@ const DailyActionsReport = ({
                       const primaryStart = selectedDateRange[0] || now;
                       const primaryEnd = selectedDateRange[1] || now;
                       const primaryRange = primaryEnd.getTime() - primaryStart.getTime();
-                      
+
                       let comparisonStart, comparisonEnd;
-                      
+
                       switch(e.target.value) {
                         case 'previous_period':
                           comparisonStart = new Date(primaryStart.getTime() - primaryRange);
@@ -1114,7 +1155,7 @@ const DailyActionsReport = ({
                         default:
                           return;
                       }
-                      
+
                       setComparisonFilters({
                         ...comparisonFilters,
                         dateRange: [comparisonStart, comparisonEnd]
@@ -1131,7 +1172,7 @@ const DailyActionsReport = ({
                   </Select>
                 </FormControl>
               </Grid>
-              
+
               {/* Apply Comparison Button */}
               <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center' }}>
                 <Button
@@ -1147,7 +1188,7 @@ const DailyActionsReport = ({
             </Grid>
           </Box>
         )}
-        
+
         {/* Drill Down Path Breadcrumbs */}
         {drilldownPath.length > 0 && (
           <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
@@ -1156,7 +1197,7 @@ const DailyActionsReport = ({
             </Typography>
             {drilldownPath.map((level, index) => (
               <React.Fragment key={index}>
-                <Chip 
+                <Chip
                   label={`${dimensions.find(d => d.value === level.dimension)?.label || level.dimension}`}
                   size="small"
                   onClick={() => handleDrillUp(index)}
@@ -1169,7 +1210,7 @@ const DailyActionsReport = ({
                 )}
               </React.Fragment>
             ))}
-            <Chip 
+            <Chip
               label={dimensions.find(d => d.value === groupDimension)?.label || groupDimension}
               size="small"
               color="primary"
@@ -1178,11 +1219,11 @@ const DailyActionsReport = ({
           </Box>
         )}
       </Paper>
-      
+
       {/* Tabs for report views */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
@@ -1195,7 +1236,7 @@ const DailyActionsReport = ({
           <Tab label="Games" value="games" icon={<SportsEsportsIcon />} iconPosition="start" />
         </Tabs>
       </Box>
-      
+
       {/* Main Report Content using ReportViewer */}
       <ReportViewer
         title={`Daily Actions - ${dimensions.find(d => d.value === groupDimension)?.label || 'Report'}`}
@@ -1210,7 +1251,7 @@ const DailyActionsReport = ({
         onShare={onShare}
         showExport={true}
       />
-      
+
       {/* Table View for Tabular Data (shown only when in table visualization) */}
       {visualizationType === 'table' && data && (
         <Card

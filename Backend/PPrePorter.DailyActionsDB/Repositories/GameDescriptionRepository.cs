@@ -16,7 +16,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
     public class GameDescriptionRepository : BaseRepository<GameDescription>, IGameDescriptionRepository
     {
         private readonly DailyActionsDbContext _dailyActionsDbContext;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -30,24 +30,24 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             _dailyActionsDbContext = dbContext;
         }
-        
+
         /// <summary>
         /// Get game descriptions by game ID
         /// </summary>
         public async Task<IEnumerable<GameDescription>> GetByGameIdAsync(int gameId)
         {
             string cacheKey = $"{_cacheKeyPrefix}GameId_{gameId}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameDescription> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
@@ -55,14 +55,14 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     .TagWith("WITH (NOLOCK)")
                     .Where(gd => gd.GameID == gameId)
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -71,7 +71,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get game descriptions by language
         /// </summary>
@@ -81,34 +81,34 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("Language cannot be null or empty", nameof(language));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}Language_{language}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<GameDescription> cachedResult))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedResult;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(gd => gd.Language == language)
+                    .Where(gd => gd.LanguageID == Convert.ToInt32(language))
                     .ToListAsync();
-                
+
                 // Cache the result
                 if (_enableCaching)
                 {
                     _cache.Set(cacheKey, result, _cacheExpiration);
                     _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -117,7 +117,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 throw;
             }
         }
-        
+
         /// <summary>
         /// Get game description by game ID and language
         /// </summary>
@@ -127,33 +127,33 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 throw new ArgumentException("Language cannot be null or empty", nameof(language));
             }
-            
+
             string cacheKey = $"{_cacheKeyPrefix}GameId_{gameId}_Language_{language}";
-            
+
             // Try to get from cache first
             if (_enableCaching && _cache.TryGetValue(cacheKey, out GameDescription cachedEntity))
             {
                 _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
                 return cachedEntity;
             }
-            
+
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
-            
+
             try
             {
                 var entity = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .FirstOrDefaultAsync(gd => gd.GameID == gameId && gd.Language == language);
-                
+                    .FirstOrDefaultAsync(gd => gd.GameID == gameId && gd.LanguageID == Convert.ToInt32(language));
+
                 // Cache the result if found
                 if (entity != null && _enableCaching)
                 {
                     _cache.Set(cacheKey, entity, _cacheExpiration);
                     _logger.LogDebug("Cached entity for {CacheKey}", cacheKey);
                 }
-                
+
                 return entity;
             }
             catch (Exception ex)

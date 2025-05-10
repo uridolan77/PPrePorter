@@ -109,6 +109,25 @@ export interface ErrorDisplayProps extends CommonProps {
 }
 
 /**
+ * Filter definition for data filtering
+ */
+export interface FilterDef {
+  id: string;
+  label: string;
+  type: 'select' | 'multiselect' | 'text' | 'number' | 'date' | 'daterange' | 'boolean' | 'radio';
+  options?: Array<{ value: string | number | boolean; label: string }>;
+  defaultValue?: any;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  visible?: boolean;
+  validate?: (value: any) => boolean | string;
+  format?: (value: any) => string;
+  parse?: (value: string) => any;
+  [key: string]: any;
+}
+
+/**
  * Column definition for tables and data grids
  */
 export interface ColumnDef {
@@ -116,11 +135,23 @@ export interface ColumnDef {
   label: string;
   align?: 'left' | 'right' | 'center';
   format?: (value: any, row: any) => ReactNode;
+  type?: 'text' | 'number' | 'currency' | 'percentage' | 'status' | 'sparkline' | 'progress' | 'bars' | 'date';
   sortable?: boolean;
   minWidth?: number;
-  maxWidth?: number;
+  maxWidth?: string | number;
   disablePadding?: boolean;
   wrap?: boolean;
+  valueKey?: string;
+  comparativeKey?: string;
+  target?: number;
+  filterable?: boolean;
+  visible?: boolean;
+  hideable?: boolean;
+  resizable?: boolean;
+  width?: number | string;
+  pinned?: 'left' | 'right';
+  renderHeader?: (column: ColumnDef) => ReactNode;
+  renderCell?: (value: any, row: any, column: ColumnDef) => ReactNode;
 }
 
 /**
@@ -210,4 +241,20 @@ export interface TableProps<T = any> extends CommonProps {
   maxHeight?: number | string;
   showHeader?: boolean;
   emptyMessage?: string;
+}
+
+/**
+ * User interface
+ */
+export interface User {
+  id: string;
+  username?: string;
+  email?: string;
+  fullName?: string;
+  avatar?: string;
+  role?: string;
+  permissions?: string[];
+  active?: boolean;
+  lastLogin?: Date;
+  preferences?: Record<string, any>;
 }

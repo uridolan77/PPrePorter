@@ -18,42 +18,51 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useNavigate } from 'react-router-dom';
+import { CommonProps } from '../../types/common';
+
+/**
+ * Props for the Header component
+ */
+export interface HeaderProps extends CommonProps {
+  /**
+   * Function to toggle the sidebar visibility
+   */
+  toggleSidebar: () => void;
+}
 
 /**
  * Header component for the application showing navigation, notifications, and user info
- * @param {Object} props - Component props
- * @param {Function} props.toggleSidebar - Function to toggle the sidebar visibility
  */
-const Header = ({ toggleSidebar }) => {
+const Header: React.FC<HeaderProps> = ({ toggleSidebar, sx }) => {
   const navigate = useNavigate();
-  const [anchorElUser, setAnchorElUser] = useState(null);
+  const [anchorElUser, setAnchorElUser] = useState<HTMLElement | null>(null);
   
-  const handleOpenUserMenu = (event) => {
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>): void => {
     setAnchorElUser(event.currentTarget);
   };
 
-  const handleCloseUserMenu = () => {
+  const handleCloseUserMenu = (): void => {
     setAnchorElUser(null);
   };
 
-  const handleProfileClick = () => {
+  const handleProfileClick = (): void => {
     handleCloseUserMenu();
     navigate('/profile');
   };
 
-  const handleSettingsClick = () => {
+  const handleSettingsClick = (): void => {
     handleCloseUserMenu();
     navigate('/settings');
   };
 
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     handleCloseUserMenu();
     // Authentication logout logic would go here
     navigate('/login');
   };
 
   return (
-    <AppBar position="fixed" color="primary" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+    <AppBar position="fixed" color="primary" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, ...sx }}>
       <Toolbar>
         <IconButton
           color="inherit"

@@ -98,7 +98,6 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 var result = await _dbSet
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
-                    .Where(wl => wl.IsActive == isActive)
                     .ToListAsync();
 
                 // Cache the result
@@ -122,7 +121,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
         /// </summary>
         protected override IQueryable<WhiteLabel> ApplyActiveFilter(IQueryable<WhiteLabel> query)
         {
-            return query.Where(wl => wl.IsActive == true);
+            return query;
         }
 
         /// <summary>

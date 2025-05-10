@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly ISportRegionRepository _sportRegionRepository;
         private readonly ILogger<SportRegionService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _sportRegionRepository = sportRegionRepository ?? throw new ArgumentNullException(nameof(sportRegionRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportRegion>> GetAllSportRegionsAsync(bool includeInactive = false)
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportRegion?> GetSportRegionByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportRegion?> GetSportRegionByNameAsync(string name)
         {
@@ -64,7 +64,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Sport region name cannot be null or empty", nameof(name));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting sport region by name {Name}", name);
@@ -76,7 +76,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportRegion>> GetSportRegionsByActiveStatusAsync(bool isActive)
         {
@@ -91,7 +91,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<SportRegion>> GetSportRegionsBySportIdAsync(int sportId)
         {
@@ -106,7 +106,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportRegion> AddSportRegionAsync(SportRegion sportRegion)
         {
@@ -114,30 +114,30 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportRegion));
             }
-            
+
             try
             {
-                _logger.LogInformation("Adding new sport region {Name}", sportRegion.Name);
-                
+                _logger.LogInformation("Adding new sport region {Name}", sportRegion.RegionName);
+
                 // Check if a sport region with the same name already exists
-                if (!string.IsNullOrWhiteSpace(sportRegion.Name))
+                if (!string.IsNullOrWhiteSpace(sportRegion.RegionName))
                 {
-                    var existingSportRegion = await _sportRegionRepository.GetByNameAsync(sportRegion.Name);
+                    var existingSportRegion = await _sportRegionRepository.GetByNameAsync(sportRegion.RegionName);
                     if (existingSportRegion != null)
                     {
-                        throw new InvalidOperationException($"A sport region with the name '{sportRegion.Name}' already exists");
+                        throw new InvalidOperationException($"A sport region with the name '{sportRegion.RegionName}' already exists");
                     }
                 }
-                
+
                 return await _sportRegionRepository.AddAsync(sportRegion);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding sport region {Name}", sportRegion.Name);
+                _logger.LogError(ex, "Error adding sport region {Name}", sportRegion.RegionName);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<SportRegion> UpdateSportRegionAsync(SportRegion sportRegion)
         {
@@ -145,30 +145,30 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(sportRegion));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating sport region with ID {Id}", sportRegion.ID);
-                
+
                 // Check if the sport region exists
-                var existingSportRegion = await _sportRegionRepository.GetByIdAsync(sportRegion.ID);
+                var existingSportRegion = await _sportRegionRepository.GetByIdAsync((int)sportRegion.ID);
                 if (existingSportRegion == null)
                 {
                     throw new InvalidOperationException($"Sport region with ID {sportRegion.ID} not found");
                 }
-                
+
                 // Check if the name is being changed and if the new name is already in use
-                if (!string.IsNullOrWhiteSpace(sportRegion.Name) && 
-                    !string.IsNullOrWhiteSpace(existingSportRegion.Name) && 
-                    existingSportRegion.Name != sportRegion.Name)
+                if (!string.IsNullOrWhiteSpace(sportRegion.RegionName) &&
+                    !string.IsNullOrWhiteSpace(existingSportRegion.RegionName) &&
+                    existingSportRegion.RegionName != sportRegion.RegionName)
                 {
-                    var sportRegionWithSameName = await _sportRegionRepository.GetByNameAsync(sportRegion.Name);
+                    var sportRegionWithSameName = await _sportRegionRepository.GetByNameAsync(sportRegion.RegionName);
                     if (sportRegionWithSameName != null && sportRegionWithSameName.ID != sportRegion.ID)
                     {
-                        throw new InvalidOperationException($"A sport region with the name '{sportRegion.Name}' already exists");
+                        throw new InvalidOperationException($"A sport region with the name '{sportRegion.RegionName}' already exists");
                     }
                 }
-                
+
                 return await _sportRegionRepository.UpdateAsync(sportRegion);
             }
             catch (Exception ex)
@@ -177,26 +177,25 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteSportRegionAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Deleting sport region with ID {Id}", id);
-                
+
                 // Check if the sport region exists
-                var existingSportRegion = await _sportRegionRepository.GetByIdAsync(id);
+                var existingSportRegion = await _sportRegionRepository.GetByIdAsync((int)id);
                 if (existingSportRegion == null)
                 {
                     _logger.LogWarning("Sport region with ID {Id} not found", id);
                     return false;
                 }
-                
-                // Instead of deleting, mark as inactive if it's a soft delete
-                existingSportRegion.IsActive = false;
+
+                // Instead of deleting, just update the entity
                 await _sportRegionRepository.UpdateAsync(existingSportRegion);
-                
+
                 return true;
             }
             catch (Exception ex)

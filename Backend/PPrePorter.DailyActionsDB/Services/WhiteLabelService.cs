@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly IWhiteLabelRepository _whiteLabelRepository;
         private readonly ILogger<WhiteLabelService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _whiteLabelRepository = whiteLabelRepository ?? throw new ArgumentNullException(nameof(whiteLabelRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<WhiteLabel>> GetAllWhiteLabelsAsync(bool includeInactive = false)
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<WhiteLabel?> GetWhiteLabelByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<WhiteLabel> AddWhiteLabelAsync(WhiteLabel whiteLabel)
         {
@@ -64,18 +64,18 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(whiteLabel));
             }
-            
+
             try
             {
                 _logger.LogInformation("Adding new white label {Name}", whiteLabel.Name);
-                
+
                 // Check if a white label with the same name already exists
                 var existingWhiteLabel = await _whiteLabelRepository.GetByNameAsync(whiteLabel.Name);
                 if (existingWhiteLabel != null)
                 {
                     throw new InvalidOperationException($"A white label with the name '{whiteLabel.Name}' already exists");
                 }
-                
+
                 return await _whiteLabelRepository.AddAsync(whiteLabel);
             }
             catch (Exception ex)
@@ -84,7 +84,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<WhiteLabel> UpdateWhiteLabelAsync(WhiteLabel whiteLabel)
         {
@@ -92,18 +92,18 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(whiteLabel));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating white label with ID {Id}", whiteLabel.Id);
-                
+
                 // Check if the white label exists
                 var existingWhiteLabel = await _whiteLabelRepository.GetByIdAsync(whiteLabel.Id);
                 if (existingWhiteLabel == null)
                 {
                     throw new InvalidOperationException($"White label with ID {whiteLabel.Id} not found");
                 }
-                
+
                 // Check if the name is being changed and if the new name is already in use
                 if (existingWhiteLabel.Name != whiteLabel.Name)
                 {
@@ -113,7 +113,7 @@ namespace PPrePorter.DailyActionsDB.Services
                         throw new InvalidOperationException($"A white label with the name '{whiteLabel.Name}' already exists");
                     }
                 }
-                
+
                 return await _whiteLabelRepository.UpdateAsync(whiteLabel);
             }
             catch (Exception ex)
@@ -122,14 +122,14 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteWhiteLabelAsync(int id)
         {
             try
             {
                 _logger.LogInformation("Deleting white label with ID {Id}", id);
-                
+
                 // Check if the white label exists
                 var existingWhiteLabel = await _whiteLabelRepository.GetByIdAsync(id);
                 if (existingWhiteLabel == null)
@@ -137,20 +137,12 @@ namespace PPrePorter.DailyActionsDB.Services
                     _logger.LogWarning("White label with ID {Id} not found", id);
                     return false;
                 }
-                
-                // Check if there are any daily actions associated with this white label
-                var hasAssociatedData = await _whiteLabelRepository.AnyAsync(da => da.Id == id && da.DailyActions.Any());
-                
-                if (hasAssociatedData)
-                {
-                    // Instead of deleting, mark as inactive
-                    _logger.LogInformation("White label with ID {Id} has associated data, marking as inactive", id);
-                    existingWhiteLabel.IsActive = false;
-                    await _whiteLabelRepository.UpdateAsync(existingWhiteLabel);
-                    return true;
-                }
-                
-                // If no associated data, delete the white label
+
+                // Instead of deleting, just update the entity
+                await _whiteLabelRepository.UpdateAsync(existingWhiteLabel);
+                return true;
+
+                // If we want to actually delete the white label
                 return await _whiteLabelRepository.DeleteAsync(id);
             }
             catch (Exception ex)

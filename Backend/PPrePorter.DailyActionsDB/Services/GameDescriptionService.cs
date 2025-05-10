@@ -15,7 +15,7 @@ namespace PPrePorter.DailyActionsDB.Services
     {
         private readonly IGameDescriptionRepository _gameDescriptionRepository;
         private readonly ILogger<GameDescriptionService> _logger;
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -26,7 +26,7 @@ namespace PPrePorter.DailyActionsDB.Services
             _gameDescriptionRepository = gameDescriptionRepository ?? throw new ArgumentNullException(nameof(gameDescriptionRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameDescription>> GetAllGameDescriptionsAsync()
         {
@@ -41,7 +41,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameDescription?> GetGameDescriptionByIdAsync(int id)
         {
@@ -56,7 +56,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameDescription>> GetGameDescriptionsByGameIdAsync(int gameId)
         {
@@ -71,7 +71,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<IEnumerable<GameDescription>> GetGameDescriptionsByLanguageAsync(string language)
         {
@@ -79,7 +79,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Language cannot be null or empty", nameof(language));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting game descriptions by language {Language}", language);
@@ -91,7 +91,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameDescription?> GetGameDescriptionByGameIdAndLanguageAsync(int gameId, string language)
         {
@@ -99,7 +99,7 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentException("Language cannot be null or empty", nameof(language));
             }
-            
+
             try
             {
                 _logger.LogInformation("Getting game description by game ID {GameId} and language {Language}", gameId, language);
@@ -111,7 +111,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameDescription> AddGameDescriptionAsync(GameDescription gameDescription)
         {
@@ -119,27 +119,27 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(gameDescription));
             }
-            
+
             try
             {
-                _logger.LogInformation("Adding new game description for game ID {GameId} and language {Language}", gameDescription.GameID, gameDescription.Language);
-                
+                _logger.LogInformation("Adding new game description for game ID {GameId} and language {Language}", gameDescription.GameID, gameDescription.LanguageID);
+
                 // Check if a game description with the same game ID and language already exists
-                var existingGameDescription = await _gameDescriptionRepository.GetByGameIdAndLanguageAsync(gameDescription.GameID, gameDescription.Language);
+                var existingGameDescription = await _gameDescriptionRepository.GetByGameIdAndLanguageAsync(gameDescription.GameID, gameDescription.LanguageID.ToString());
                 if (existingGameDescription != null)
                 {
-                    throw new InvalidOperationException($"A game description for game ID {gameDescription.GameID} and language {gameDescription.Language} already exists");
+                    throw new InvalidOperationException($"A game description for game ID {gameDescription.GameID} and language {gameDescription.LanguageID} already exists");
                 }
-                
+
                 return await _gameDescriptionRepository.AddAsync(gameDescription);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding game description for game ID {GameId} and language {Language}", gameDescription.GameID, gameDescription.Language);
+                _logger.LogError(ex, "Error adding game description for game ID {GameId} and language {Language}", gameDescription.GameID, gameDescription.LanguageID);
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<GameDescription> UpdateGameDescriptionAsync(GameDescription gameDescription)
         {
@@ -147,29 +147,28 @@ namespace PPrePorter.DailyActionsDB.Services
             {
                 throw new ArgumentNullException(nameof(gameDescription));
             }
-            
+
             try
             {
                 _logger.LogInformation("Updating game description with ID {Id}", gameDescription.ID);
-                
+
                 // Check if the game description exists
                 var existingGameDescription = await _gameDescriptionRepository.GetByIdAsync(gameDescription.ID);
                 if (existingGameDescription == null)
                 {
                     throw new InvalidOperationException($"Game description with ID {gameDescription.ID} not found");
                 }
-                
+
                 // Check if the game ID and language are being changed and if the new combination already exists
-                if ((existingGameDescription.GameID != gameDescription.GameID || existingGameDescription.Language != gameDescription.Language) &&
-                    !string.IsNullOrWhiteSpace(gameDescription.Language))
+                if ((existingGameDescription.GameID != gameDescription.GameID || existingGameDescription.LanguageID != gameDescription.LanguageID))
                 {
-                    var gameDescriptionWithSameGameIdAndLanguage = await _gameDescriptionRepository.GetByGameIdAndLanguageAsync(gameDescription.GameID, gameDescription.Language);
+                    var gameDescriptionWithSameGameIdAndLanguage = await _gameDescriptionRepository.GetByGameIdAndLanguageAsync(gameDescription.GameID, gameDescription.LanguageID.ToString());
                     if (gameDescriptionWithSameGameIdAndLanguage != null && gameDescriptionWithSameGameIdAndLanguage.ID != gameDescription.ID)
                     {
-                        throw new InvalidOperationException($"A game description for game ID {gameDescription.GameID} and language {gameDescription.Language} already exists");
+                        throw new InvalidOperationException($"A game description for game ID {gameDescription.GameID} and language {gameDescription.LanguageID} already exists");
                     }
                 }
-                
+
                 return await _gameDescriptionRepository.UpdateAsync(gameDescription);
             }
             catch (Exception ex)
@@ -178,7 +177,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 throw;
             }
         }
-        
+
         /// <inheritdoc/>
         public async Task<bool> DeleteGameDescriptionAsync(int id)
         {

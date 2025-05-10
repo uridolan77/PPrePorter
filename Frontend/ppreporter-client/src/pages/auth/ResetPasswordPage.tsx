@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useNavigate, useLocation, NavigateFunction, Location } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -16,22 +16,23 @@ import LockIcon from '@mui/icons-material/Lock';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../../hooks/useAuth';
+import { PasswordResetConfirmation } from '../../types/auth';
 
 /**
  * Reset password page component
  */
-const ResetPasswordPage = () => {
+const ResetPasswordPage: React.FC = () => {
   const { resetPassword } = useAuth();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [token, setToken] = useState('');
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [token, setToken] = useState<string>('');
+  const navigate: NavigateFunction = useNavigate();
+  const location: Location = useLocation();
 
   // Extract token from URL query parameters
   useEffect(() => {
@@ -48,22 +49,22 @@ const ResetPasswordPage = () => {
   /**
    * Toggle password visibility
    */
-  const toggleShowPassword = () => {
+  const toggleShowPassword = (): void => {
     setShowPassword(!showPassword);
   };
 
   /**
    * Toggle confirm password visibility
    */
-  const toggleShowConfirmPassword = () => {
+  const toggleShowConfirmPassword = (): void => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
   /**
    * Validate form inputs
-   * @returns {boolean} - Validation result
+   * @returns Validation result
    */
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     if (!password) {
       setError('Please enter a new password');
       return false;
@@ -89,9 +90,9 @@ const ResetPasswordPage = () => {
 
   /**
    * Handle form submission
-   * @param {Object} e - Event object
+   * @param e - Form event
    */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -102,11 +103,17 @@ const ResetPasswordPage = () => {
     setError('');
 
     try {
-      await resetPassword({ token, newPassword: password });
+      const resetData: PasswordResetConfirmation = {
+        token,
+        password,
+        confirmPassword
+      };
+      await resetPassword(resetData);
       setSuccess(true);
     } catch (err) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Failed to reset password. The link may have expired.');
+      const error = err as Error;
+      setError(error.message || 'Failed to reset password. The link may have expired.');
     } finally {
       setLoading(false);
     }
@@ -114,18 +121,18 @@ const ResetPasswordPage = () => {
 
   /**
    * Handle password input change
-   * @param {Object} e - Event object
+   * @param e - Change event
    */
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setPassword(e.target.value);
     setError('');
   };
 
   /**
    * Handle confirm password input change
-   * @param {Object} e - Event object
+   * @param e - Change event
    */
-  const handleConfirmPasswordChange = (e) => {
+  const handleConfirmPasswordChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setConfirmPassword(e.target.value);
     setError('');
   };
@@ -133,7 +140,7 @@ const ResetPasswordPage = () => {
   /**
    * Navigate to login page
    */
-  const goToLogin = () => {
+  const goToLogin = (): void => {
     navigate('/login');
   };
 
@@ -198,7 +205,7 @@ const ResetPasswordPage = () => {
                 src="/check-circle.png"
                 alt="Success"
                 style={{ height: 80, width: 'auto', marginBottom: 16 }}
-                onError={(e) => { e.target.style.display = 'none'; }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
                 Password Reset Successful
@@ -223,7 +230,7 @@ const ResetPasswordPage = () => {
                   src="/logo.png"
                   alt="Logo"
                   style={{ height: 60, width: 'auto', marginBottom: 16 }}
-                  onError={(e) => { e.target.style.display = 'none'; }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
                   Reset Your Password
