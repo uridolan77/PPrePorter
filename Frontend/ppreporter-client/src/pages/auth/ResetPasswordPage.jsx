@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Paper, 
+import {
+  Container,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Paper,
   Alert,
   CircularProgress,
   InputAdornment,
@@ -15,12 +15,13 @@ import {
 import LockIcon from '@mui/icons-material/Lock';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import authService from '../../services/authService';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Reset password page component
  */
 const ResetPasswordPage = () => {
+  const { resetPassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,33 +32,33 @@ const ResetPasswordPage = () => {
   const [token, setToken] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Extract token from URL query parameters
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const tokenParam = queryParams.get('token');
-    
+
     if (!tokenParam) {
       setError('Invalid or missing reset token. Please request a new password reset link.');
     } else {
       setToken(tokenParam);
     }
   }, [location]);
-  
+
   /**
    * Toggle password visibility
    */
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
-  
+
   /**
    * Toggle confirm password visibility
    */
   const toggleShowConfirmPassword = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
-  
+
   /**
    * Validate form inputs
    * @returns {boolean} - Validation result
@@ -67,41 +68,41 @@ const ResetPasswordPage = () => {
       setError('Please enter a new password');
       return false;
     }
-    
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
       return false;
     }
-    
+
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
       setError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
       return false;
     }
-    
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return false;
     }
-    
+
     return true;
   };
-  
+
   /**
    * Handle form submission
    * @param {Object} e - Event object
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
-      await authService.resetPassword(token, password);
+      await resetPassword({ token, newPassword: password });
       setSuccess(true);
     } catch (err) {
       console.error('Password reset error:', err);
@@ -110,7 +111,7 @@ const ResetPasswordPage = () => {
       setLoading(false);
     }
   };
-  
+
   /**
    * Handle password input change
    * @param {Object} e - Event object
@@ -119,7 +120,7 @@ const ResetPasswordPage = () => {
     setPassword(e.target.value);
     setError('');
   };
-  
+
   /**
    * Handle confirm password input change
    * @param {Object} e - Event object
@@ -128,18 +129,18 @@ const ResetPasswordPage = () => {
     setConfirmPassword(e.target.value);
     setError('');
   };
-  
+
   /**
    * Navigate to login page
    */
   const goToLogin = () => {
     navigate('/login');
   };
-  
+
   if (!token) {
     return (
-      <Container 
-        component="main" 
+      <Container
+        component="main"
         maxWidth="xs"
         sx={{
           minHeight: '100vh',
@@ -162,10 +163,10 @@ const ResetPasswordPage = () => {
       </Container>
     );
   }
-  
+
   return (
-    <Container 
-      component="main" 
+    <Container
+      component="main"
       maxWidth="xs"
       sx={{
         minHeight: '100vh',
@@ -182,20 +183,20 @@ const ResetPasswordPage = () => {
           alignItems: 'center'
         }}
       >
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            maxWidth: 450, 
-            width: '100%', 
-            p: 4, 
-            borderRadius: 2 
+        <Paper
+          elevation={3}
+          sx={{
+            maxWidth: 450,
+            width: '100%',
+            p: 4,
+            borderRadius: 2
           }}
         >
           {success ? (
             <Box sx={{ textAlign: 'center' }}>
-              <img 
-                src="/check-circle.png" 
-                alt="Success" 
+              <img
+                src="/check-circle.png"
+                alt="Success"
                 style={{ height: 80, width: 'auto', marginBottom: 16 }}
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
@@ -218,9 +219,9 @@ const ResetPasswordPage = () => {
           ) : (
             <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
               <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <img 
-                  src="/logo.png" 
-                  alt="Logo" 
+                <img
+                  src="/logo.png"
+                  alt="Logo"
                   style={{ height: 60, width: 'auto', marginBottom: 16 }}
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
@@ -231,14 +232,14 @@ const ResetPasswordPage = () => {
                   Enter your new password below
                 </Typography>
               </Box>
-              
+
               {/* Error Message */}
               {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
                   {error}
                 </Alert>
               )}
-              
+
               {/* New Password Field */}
               <TextField
                 margin="normal"
@@ -272,7 +273,7 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mb: 2 }}
               />
-              
+
               {/* Confirm Password Field */}
               <TextField
                 margin="normal"
@@ -306,14 +307,14 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mb: 3 }}
               />
-              
+
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
                 size="large"
                 disabled={loading}
-                sx={{ 
+                sx={{
                   py: 1.5,
                   mb: 2
                 }}

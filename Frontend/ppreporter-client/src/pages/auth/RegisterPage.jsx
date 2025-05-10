@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
+import {
+  Container,
   Box,
   Typography,
   Paper,
   Alert
 } from '@mui/material';
 import RegisterForm from '../../components/auth/RegisterForm';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Registration page component
  */
 const RegisterPage = () => {
-  const { register, loginWithGoogle, loginWithMicrosoft } = useAuth();
+  const { register } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  
+
   /**
    * Handle registration form submission
    * @param {Object} formData - Registration form data
@@ -26,7 +26,7 @@ const RegisterPage = () => {
   const handleRegister = async (formData) => {
     setLoading(true);
     setError('');
-    
+
     try {
       await register({
         firstName: formData.firstName,
@@ -34,12 +34,12 @@ const RegisterPage = () => {
         email: formData.email,
         password: formData.password
       });
-      
+
       // Navigate to login page upon successful registration
-      navigate('/login', { 
-        state: { 
-          message: 'Registration successful! Please log in with your new account.' 
-        } 
+      navigate('/login', {
+        state: {
+          message: 'Registration successful! Please log in with your new account.'
+        }
       });
     } catch (err) {
       console.error('Registration error:', err);
@@ -52,28 +52,40 @@ const RegisterPage = () => {
   /**
    * Handle Google OAuth registration
    */
-  const handleGoogleRegister = () => {
+  const handleGoogleRegister = async () => {
+    setLoading(true);
+    setError('');
     try {
-      loginWithGoogle();
+      // In a real implementation, we would dispatch a Redux action for Google registration
+      // For now, we'll just show an error message
+      setError('Google sign up is not implemented in this version.');
     } catch (err) {
       setError('Google sign up failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   /**
    * Handle Microsoft OAuth registration
    */
-  const handleMicrosoftRegister = () => {
+  const handleMicrosoftRegister = async () => {
+    setLoading(true);
+    setError('');
     try {
-      loginWithMicrosoft();
+      // In a real implementation, we would dispatch a Redux action for Microsoft registration
+      // For now, we'll just show an error message
+      setError('Microsoft sign up is not implemented in this version.');
     } catch (err) {
       setError('Microsoft sign up failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Container 
-      component="main" 
+    <Container
+      component="main"
       maxWidth="sm"
       sx={{
         minHeight: '100vh',
@@ -92,18 +104,18 @@ const RegisterPage = () => {
       >
         {/* Error Alert */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              width: '100%', 
-              mb: 3 
+          <Alert
+            severity="error"
+            sx={{
+              width: '100%',
+              mb: 3
             }}
           >
             {error}
           </Alert>
         )}
-        
-        <RegisterForm 
+
+        <RegisterForm
           onSubmit={handleRegister}
           onGoogleRegister={handleGoogleRegister}
           onMicrosoftRegister={handleMicrosoftRegister}
@@ -113,15 +125,15 @@ const RegisterPage = () => {
           showSocialLogin={true}
           loginLink="/login"
         />
-        
+
         {/* Terms & Support Section */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            mt: 4, 
-            p: 2, 
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 4,
+            p: 2,
             textAlign: 'center',
-            backgroundColor: 'transparent' 
+            backgroundColor: 'transparent'
           }}
         >
           <Typography variant="body2" color="text.secondary">

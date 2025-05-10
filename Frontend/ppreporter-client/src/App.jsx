@@ -6,8 +6,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 // Error Boundary
 import GlobalErrorBoundary from './components/common/GlobalErrorBoundary';
 
-// Auth context provider
-import { AuthProvider } from './contexts/AuthContext';
+// Redux Provider
+import { Provider } from 'react-redux';
+import store from './store/store';
 
 // Auth components
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -72,9 +73,9 @@ const theme = createTheme({
 function App() {
   return (
     <GlobalErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <AuthProvider>
+      <Provider store={store}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
           <Router>
             <Routes>
             {/* Auth Routes */}
@@ -113,8 +114,8 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
           </Router>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </Provider>
     </GlobalErrorBoundary>
   );
 }

@@ -8,13 +8,13 @@ import {
   Alert
 } from '@mui/material';
 import LoginForm from '../../components/auth/LoginForm';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Login page component
  */
 const LoginPage = () => {
-  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
+  const { login } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -51,22 +51,34 @@ const LoginPage = () => {
   /**
    * Handle Google OAuth login
    */
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
     try {
-      loginWithGoogle();
+      // In a real implementation, we would dispatch a Redux action for Google login
+      // For now, we'll just show an error message
+      setError('Google login is not implemented in this version.');
     } catch (err) {
       setError('Google login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   /**
    * Handle Microsoft OAuth login
    */
-  const handleMicrosoftLogin = () => {
+  const handleMicrosoftLogin = async () => {
+    setLoading(true);
+    setError('');
     try {
-      loginWithMicrosoft();
+      // In a real implementation, we would dispatch a Redux action for Microsoft login
+      // For now, we'll just show an error message
+      setError('Microsoft login is not implemented in this version.');
     } catch (err) {
       setError('Microsoft login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Box,
   Drawer,
@@ -52,7 +52,7 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   // State for mobile drawer
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -259,9 +259,10 @@ const MainLayout = () => {
               >
                 <Avatar
                   sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}
-                  alt="User"
+                  alt={user?.fullName || user?.username || 'User'}
                 >
-                  PP
+                  {user?.fullName ? `${user.fullName.split(' ')[0][0]}${user.fullName.split(' ')[1]?.[0] || ''}` :
+                   user?.username ? user.username[0].toUpperCase() : 'U'}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -294,10 +295,10 @@ const MainLayout = () => {
           >
             <Box sx={{ px: 2, py: 1 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                John Doe
+                {user?.fullName || user?.username || 'User'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                admin@example.com
+                {user?.email || ''}
               </Typography>
             </Box>
             <Divider />

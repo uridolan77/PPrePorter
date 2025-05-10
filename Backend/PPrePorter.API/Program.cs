@@ -214,19 +214,34 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IDataFilterService, DataFilterService>();
 
-// Register caching service for development
-builder.Services.AddDistributedMemoryCache(); // Use in-memory cache for development
-builder.Services.AddScoped<ICachingService, MockCachingService>();
+// Register caching service
+// Configure Redis for distributed caching
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrEmpty(redisConnectionString))
+{
+    // Use Redis for distributed caching in production
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnectionString;
+        options.InstanceName = "PPrePorter:";
+    });
+    Console.WriteLine("Using Redis for distributed caching");
+}
+else
+{
+    // Fallback to in-memory cache for development
+    builder.Services.AddDistributedMemoryCache();
+    Console.WriteLine("Using in-memory distributed cache (Redis not configured)");
+}
+
+// Register the real caching service implementation
+builder.Services.AddScoped<ICachingService, RedisCachingService>();
 
 // Register Data Storytelling related services
 builder.Services.AddScoped<IInsightGenerationService, InsightGenerationService>();
 
-// Register mock implementations for development
-builder.Services.AddScoped<IDataAnnotationService, MockDataAnnotationService>();
-builder.Services.AddScoped<IAnomalyDetectionService, MockAnomalyDetectionService>();
-builder.Services.AddScoped<IContextualExplanationService, MockContextualExplanationService>();
-builder.Services.AddScoped<ITrendAnalysisService, MockTrendAnalysisService>();
-builder.Services.AddScoped<IDashboardPersonalizationService, MockDashboardPersonalizationService>();
+// TODO: Replace with real implementations
+// These mock services have been removed during code cleanup
 
 // Register the User Context Service
 builder.Services.AddHttpContextAccessor();

@@ -67,6 +67,42 @@ export const forgotPassword = createAsyncThunk(
   }
 );
 
+export const refreshToken = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.refreshToken();
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Token refresh failed');
+    }
+  }
+);
+
+export const loginWithGoogle = createAsyncThunk(
+  'auth/loginWithGoogle',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.loginWithGoogle();
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Google login failed');
+    }
+  }
+);
+
+export const loginWithMicrosoft = createAsyncThunk(
+  'auth/loginWithMicrosoft',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.loginWithMicrosoft();
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Microsoft login failed');
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   user: authService.getCurrentUser(),
@@ -152,6 +188,51 @@ const authSlice = createSlice({
         state.loading = false;
       })
       .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Refresh Token
+      .addCase(refreshToken.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        // If token refresh fails, we should log the user out
+        state.user = null;
+        state.isAuthenticated = false;
+      })
+      // Google Login
+      .addCase(loginWithGoogle.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginWithGoogle.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      })
+      .addCase(loginWithGoogle.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Microsoft Login
+      .addCase(loginWithMicrosoft.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginWithMicrosoft.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      })
+      .addCase(loginWithMicrosoft.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

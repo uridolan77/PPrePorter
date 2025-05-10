@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import dashboardService from '../../services/api/dashboardService';
 
 // Error handler helper for consistent error handling
 const handleApiError = (error) => {
@@ -7,12 +7,12 @@ const handleApiError = (error) => {
   if (!error.response) {
     return 'Network error. Please check your connection and try again.';
   }
-  
+
   // Server errors with custom message
   if (error.response?.data?.message) {
     return error.response.data.message;
   }
-  
+
   // Handle different HTTP status codes with user-friendly messages
   switch (error.response.status) {
     case 401:
@@ -42,7 +42,7 @@ const initialState = {
   isLoading: false,
   componentErrors: {
     summary: null,
-    revenue: null, 
+    revenue: null,
     registrations: null,
     topGames: null,
     transactions: null
@@ -52,10 +52,82 @@ const initialState = {
 
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchDashboardData',
-  async (params, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/dashboard', { params });
-      return response.data;
+      // Prepare date parameters
+      const startDate = filters.startDate || null;
+      const endDate = filters.endDate || null;
+
+      // Get dashboard stats with filters
+      const stats = await dashboardService.getDashboardStats({
+        startDate,
+        endDate,
+        gameCategory: filters.gameCategory,
+        playerStatus: filters.playerStatus,
+        country: filters.country,
+        minRevenue: filters.minRevenue,
+        maxRevenue: filters.maxRevenue
+      });
+
+      // Get player registrations data with date range
+      const playerRegistrations = await dashboardService.getPlayerRegistrations({
+        startDate,
+        endDate,
+        playerStatus: filters.playerStatus,
+        country: filters.country
+      });
+
+      // Get recent transactions with filters
+      const recentTransactions = await dashboardService.getRecentTransactions({
+        limit: 10,
+        startDate,
+        endDate,
+        playerStatus: filters.playerStatus,
+        country: filters.country
+      });
+
+      // Get top games with filters
+      const topGames = await dashboardService.getTopGames({
+        metric: 'revenue',
+        limit: 5,
+        startDate,
+        endDate,
+        category: filters.gameCategory,
+        minRevenue: filters.minRevenue,
+        maxRevenue: filters.maxRevenue
+      });
+
+      // Get casino revenue with date range
+      const casinoRevenue = await dashboardService.getCasinoRevenue({
+        startDate,
+        endDate,
+        category: filters.gameCategory
+      });
+
+      // Get KPI data with filters
+      const kpis = await dashboardService.getKpiData({
+        startDate,
+        endDate,
+        gameCategory: filters.gameCategory,
+        playerStatus: filters.playerStatus,
+        country: filters.country
+      });
+
+      // Combine all data
+      const dashboardData = {
+        stats,
+        playerRegistrations,
+        recentTransactions,
+        topGames,
+        casinoRevenue,
+        kpis,
+        charts: {
+          revenueByDay: casinoRevenue?.dailyRevenue || [],
+          playersByGame: topGames?.map(game => ({ game: game.name, value: game.players })) || []
+        }
+      };
+
+      return dashboardData;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -64,10 +136,10 @@ export const fetchDashboardData = createAsyncThunk(
 
 export const fetchDashboardSummary = createAsyncThunk(
   'dashboard/fetchDashboardSummary',
-  async (params, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/dashboard/summary', { params });
-      return response.data;
+      const stats = await dashboardService.getDashboardStats(filters);
+      return stats;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -76,10 +148,10 @@ export const fetchDashboardSummary = createAsyncThunk(
 
 export const fetchRevenueChart = createAsyncThunk(
   'dashboard/fetchRevenueChart',
-  async (params, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/dashboard/revenue-chart', { params });
-      return response.data;
+      const casinoRevenue = await dashboardService.getCasinoRevenue(filters);
+      return casinoRevenue?.dailyRevenue || [];
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -88,10 +160,10 @@ export const fetchRevenueChart = createAsyncThunk(
 
 export const fetchRegistrationsChart = createAsyncThunk(
   'dashboard/fetchRegistrationsChart',
-  async (params, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/dashboard/registrations-chart', { params });
-      return response.data;
+      const playerRegistrations = await dashboardService.getPlayerRegistrations(filters);
+      return playerRegistrations;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -100,10 +172,14 @@ export const fetchRegistrationsChart = createAsyncThunk(
 
 export const fetchTopGames = createAsyncThunk(
   'dashboard/fetchTopGames',
-  async (params, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/dashboard/top-games', { params });
-      return response.data;
+      const topGames = await dashboardService.getTopGames({
+        metric: 'revenue',
+        limit: 5,
+        ...filters
+      });
+      return topGames;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -112,10 +188,13 @@ export const fetchTopGames = createAsyncThunk(
 
 export const fetchRecentTransactions = createAsyncThunk(
   'dashboard/fetchRecentTransactions',
-  async (params, { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/dashboard/recent-transactions', { params });
-      return response.data;
+      const recentTransactions = await dashboardService.getRecentTransactions({
+        limit: 10,
+        ...filters
+      });
+      return recentTransactions;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -135,7 +214,7 @@ const dashboardSlice = createSlice({
       state.error = null;
       state.componentErrors = {
         summary: null,
-        revenue: null, 
+        revenue: null,
         registrations: null,
         topGames: null,
         transactions: null
@@ -145,7 +224,7 @@ const dashboardSlice = createSlice({
       state.error = null;
       state.componentErrors = {
         summary: null,
-        revenue: null, 
+        revenue: null,
         registrations: null,
         topGames: null,
         transactions: null
@@ -174,7 +253,7 @@ const dashboardSlice = createSlice({
         state.recentTransactions = action.payload.recentTransactions;
         state.componentErrors = {
           summary: null,
-          revenue: null, 
+          revenue: null,
           registrations: null,
           topGames: null,
           transactions: null
@@ -184,7 +263,7 @@ const dashboardSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload || 'Failed to load dashboard data';
       })
-      
+
       // fetchDashboardSummary
       .addCase(fetchDashboardSummary.pending, (state) => {
         state.isLoading = true;
@@ -199,7 +278,7 @@ const dashboardSlice = createSlice({
         state.isLoading = false;
         state.componentErrors.summary = action.payload || 'Failed to load summary data';
       })
-      
+
       // fetchRevenueChart
       .addCase(fetchRevenueChart.pending, (state) => {
         state.componentErrors.revenue = null;
@@ -211,7 +290,7 @@ const dashboardSlice = createSlice({
       .addCase(fetchRevenueChart.rejected, (state, action) => {
         state.componentErrors.revenue = action.payload || 'Failed to load revenue chart';
       })
-      
+
       // fetchRegistrationsChart
       .addCase(fetchRegistrationsChart.pending, (state) => {
         state.componentErrors.registrations = null;
@@ -223,7 +302,7 @@ const dashboardSlice = createSlice({
       .addCase(fetchRegistrationsChart.rejected, (state, action) => {
         state.componentErrors.registrations = action.payload || 'Failed to load registrations chart';
       })
-      
+
       // fetchTopGames
       .addCase(fetchTopGames.pending, (state) => {
         state.componentErrors.topGames = null;
@@ -235,7 +314,7 @@ const dashboardSlice = createSlice({
       .addCase(fetchTopGames.rejected, (state, action) => {
         state.componentErrors.topGames = action.payload || 'Failed to load top games data';
       })
-      
+
       // fetchRecentTransactions
       .addCase(fetchRecentTransactions.pending, (state) => {
         state.componentErrors.transactions = null;

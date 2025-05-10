@@ -10,11 +10,10 @@ import {
   useTheme
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { format, subDays, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
-import { useAuth } from '../contexts/AuthContext';
-import dashboardService from '../services/api/dashboardService';
-import { fetchDashboardData } from '../store/actions/dashboardActions';
+import { useAuth } from '../hooks/useAuth';
+import { fetchDashboardData } from '../store/slices/dashboardSlice';
 import DateRangePicker from '../components/common/DateRangePicker';
 import FilterPanel from '../components/common/FilterPanel';
 
