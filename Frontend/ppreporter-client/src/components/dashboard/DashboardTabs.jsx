@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Tabs, Tab, Typography } from '@mui/material';
+import React, { memo, useCallback, useMemo } from 'react';
+import { Box, Tabs, Tab } from '@mui/material';
 import TabPanel from '../common/TabPanel';
 import ErrorBoundary from '../common/ErrorBoundary';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -15,6 +15,7 @@ import GamesTab from './tabs/GamesTab';
 /**
  * Dashboard Tabs Component
  * Manages tab navigation and content rendering
+ * Optimized with memoization to prevent unnecessary re-renders
  */
 const DashboardTabs = ({
   activeTab,
@@ -24,117 +25,107 @@ const DashboardTabs = ({
   error,
   theme
 }) => {
+  // Memoized tab change handler
+  const handleTabChange = useCallback((event, newValue) => {
+    if (onTabChange) {
+      onTabChange(event, newValue);
+    }
+  }, [onTabChange]);
+
+  // Memoized tab components to prevent unnecessary re-renders
+  const tabComponents = useMemo(() => [
+    {
+      id: 0,
+      label: "Dashboard Overview",
+      component: (
+        <EnhancedOverviewTab
+          dashboardData={dashboardData}
+          isLoading={isLoading}
+          error={error}
+          theme={theme}
+        />
+      )
+    },
+    {
+      id: 1,
+      label: "Performance Metrics",
+      component: (
+        <PerformanceTab
+          dashboardData={dashboardData}
+          isLoading={isLoading}
+          error={error}
+          theme={theme}
+        />
+      )
+    },
+    {
+      id: 2,
+      label: "Player Analytics",
+      component: (
+        <PlayersTab
+          dashboardData={dashboardData}
+          isLoading={isLoading}
+          error={error}
+          theme={theme}
+        />
+      )
+    },
+    {
+      id: 3,
+      label: "Game Analytics",
+      component: (
+        <GamesTab
+          dashboardData={dashboardData}
+          isLoading={isLoading}
+          error={error}
+          theme={theme}
+        />
+      )
+    }
+  ], [dashboardData, isLoading, error, theme]);
+
+  // Memoized error fallback component
+  const errorFallback = useCallback((message) => (
+    <EmptyState
+      message={message}
+      icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
+    />
+  ), []);
+
   return (
     <>
       {/* Dashboard Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs
           value={activeTab}
-          onChange={onTabChange}
+          onChange={handleTabChange}
           aria-label="dashboard tabs"
           role="tablist"
         >
-          <Tab
-            label="Overview"
-            id="tab-0"
-            aria-controls="tabpanel-0"
-            tabIndex={activeTab === 0 ? 0 : -1}
-          />
-          <Tab
-            label="Performance"
-            id="tab-1"
-            aria-controls="tabpanel-1"
-            tabIndex={activeTab === 1 ? 0 : -1}
-          />
-          <Tab
-            label="Players"
-            id="tab-2"
-            aria-controls="tabpanel-2"
-            tabIndex={activeTab === 2 ? 0 : -1}
-          />
-          <Tab
-            label="Games"
-            id="tab-3"
-            aria-controls="tabpanel-3"
-            tabIndex={activeTab === 3 ? 0 : -1}
-          />
+          {tabComponents.map((tab) => (
+            <Tab
+              key={tab.id}
+              label={tab.label.split(' ')[0]} // Just use the first word for the tab label
+              id={`tab-${tab.id}`}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
+            />
+          ))}
         </Tabs>
       </Box>
 
       {/* Tab Content */}
-      <TabPanel value={activeTab} index={0} label="Dashboard Overview">
-        <ErrorBoundary
-          fallback={
-            <EmptyState
-              message="Something went wrong loading the overview tab"
-              icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
-            />
-          }
-        >
-          <EnhancedOverviewTab
-            dashboardData={dashboardData}
-            isLoading={isLoading}
-            error={error}
-            theme={theme}
-          />
-        </ErrorBoundary>
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={1} label="Performance Metrics">
-        <ErrorBoundary
-          fallback={
-            <EmptyState
-              message="Something went wrong loading the performance tab"
-              icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
-            />
-          }
-        >
-          <PerformanceTab
-            dashboardData={dashboardData}
-            isLoading={isLoading}
-            error={error}
-            theme={theme}
-          />
-        </ErrorBoundary>
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={2} label="Player Analytics">
-        <ErrorBoundary
-          fallback={
-            <EmptyState
-              message="Something went wrong loading the players tab"
-              icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
-            />
-          }
-        >
-          <PlayersTab
-            dashboardData={dashboardData}
-            isLoading={isLoading}
-            error={error}
-            theme={theme}
-          />
-        </ErrorBoundary>
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={3} label="Game Analytics">
-        <ErrorBoundary
-          fallback={
-            <EmptyState
-              message="Something went wrong loading the games tab"
-              icon={<ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main' }} />}
-            />
-          }
-        >
-          <GamesTab
-            dashboardData={dashboardData}
-            isLoading={isLoading}
-            error={error}
-            theme={theme}
-          />
-        </ErrorBoundary>
-      </TabPanel>
+      {tabComponents.map((tab) => (
+        <TabPanel key={tab.id} value={activeTab} index={tab.id} label={tab.label}>
+          <ErrorBoundary
+            fallback={errorFallback(`Something went wrong loading the ${tab.label.toLowerCase()}`)}
+          >
+            {tab.component}
+          </ErrorBoundary>
+        </TabPanel>
+      ))}
     </>
   );
 };
 
-export default DashboardTabs;
+export default memo(DashboardTabs);

@@ -7,9 +7,11 @@ import { formatCurrency, formatDate } from '../../utils/formatters';
  * Casino Revenue Chart component that displays revenue data over time
  * with responsive behavior for mobile devices
  */
-const CasinoRevenueChart = ({ data, isLoading }) => {
+const CasinoRevenueChart = memo(({ data, isLoading }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Memoize the chart data to prevent unnecessary recalculations
 
   if (isLoading) {
     return (
@@ -31,10 +33,13 @@ const CasinoRevenueChart = ({ data, isLoading }) => {
 
   // Format data for chart display - memoized to prevent unnecessary recalculations
   const chartData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+
     return data.map(item => ({
       date: formatDate(item.date),
       fullDate: item.date,
-      revenue: parseFloat(item.revenue)
+      revenue: parseFloat(item.revenue || item.value || 0),
+      formattedValue: formatCurrency(item.revenue || item.value || 0)
     }));
   }, [data]);
 
@@ -111,5 +116,5 @@ const CasinoRevenueChart = ({ data, isLoading }) => {
   );
 };
 
-// Memoize the entire component to prevent unnecessary re-renders
-export default memo(CasinoRevenueChart);
+// Component is already memoized
+export default CasinoRevenueChart;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   Box,
   Paper,
@@ -25,8 +25,11 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
+import VirtualizedList from '../common/VirtualizedList';
 
 // Icons
 import SearchIcon from '@mui/icons-material/Search';
@@ -71,7 +74,7 @@ try {
 /**
  * UnifiedDataTable component
  * A comprehensive data table component that combines features from DataGrid and EnhancedDataTable
- * 
+ *
  * @component
  * @param {Object} props - Component props
  * @param {Array} props.data - Array of data objects to display
@@ -119,7 +122,7 @@ const UnifiedDataTable = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   // State
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState(columns[0]?.id || '');
@@ -128,18 +131,19 @@ const UnifiedDataTable = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
-  
+  const [useVirtualization, setUseVirtualization] = useState(features.virtualization);
+
   // Handle sort request
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
-  
+
   // Handle select all click
   const handleSelectAllClick = (event) => {
     if (!onSelectRows) return;
-    
+
     if (event.target.checked) {
       const newSelected = data.map((row) => row[idField]);
       onSelectRows(newSelected);
@@ -147,42 +151,42 @@ const UnifiedDataTable = ({
     }
     onSelectRows([]);
   };
-  
+
   // Handle row selection click
   const handleSelectClick = (event, id) => {
     if (!onSelectRows) return;
     event.stopPropagation();
-    
+
     const selectedIndex = selectedRows.indexOf(id);
     let newSelected = [];
-    
+
     if (selectedIndex === -1) {
       newSelected = [...selectedRows, id];
     } else {
       newSelected = selectedRows.filter((rowId) => rowId !== id);
     }
-    
+
     onSelectRows(newSelected);
   };
-  
+
   // Handle row click
   const handleRowClick = (event, row) => {
     if (onRowClick) {
       onRowClick(row);
     }
   };
-  
+
   // Handle page change
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-  
+
   // Handle rows per page change
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-  
+
   // Handle search input change
   const handleSearchChange = (event) => {
     const value = event.target.value;
@@ -191,49 +195,49 @@ const UnifiedDataTable = ({
       onSearch(value);
     }
   };
-  
+
   // Handle row menu open
   const handleRowMenuOpen = (event, row) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedRow(row);
   };
-  
+
   // Handle row menu close
   const handleRowMenuClose = () => {
     setAnchorEl(null);
     setSelectedRow(null);
   };
-  
+
   // Check if a row is selected
   const isSelected = (id) => selectedRows.indexOf(id) !== -1;
-  
+
   // Format cell content based on type
   const renderCellContent = (column, row) => {
     const value = row[column.id];
-    
+
     if (value === undefined || value === null) {
       return '-';
     }
-    
+
     if (column.format) {
       return column.format(value, row);
     }
-    
+
     if (!features.microVisualizations) {
       return value;
     }
-    
+
     switch (column.type) {
       case 'currency':
         return formatCurrency(value);
-      
+
       case 'number':
         return formatNumber(value);
-      
+
       case 'percentage':
         return formatPercentage(value);
-      
+
       case 'status':
         return (
           <Chip
@@ -243,7 +247,7 @@ const UnifiedDataTable = ({
             variant="outlined"
           />
         );
-      
+
       case 'sparkline':
         return row.trendData ? (
           <MicroSparkline
@@ -254,7 +258,7 @@ const UnifiedDataTable = ({
             accessibilityLabel={column.label}
           />
         ) : '-';
-      
+
       case 'progress':
         return (
           <MicroBulletChart
@@ -266,7 +270,7 @@ const UnifiedDataTable = ({
             accessibilityLabel={column.label}
           />
         );
-      
+
       case 'bars':
         return row.barData ? (
           <MicroBarChart
@@ -277,16 +281,16 @@ const UnifiedDataTable = ({
             accessibilityLabel={column.label}
           />
         ) : '-';
-      
+
       default:
         return value;
     }
   };
-  
+
   // Get color for status chips
   const getStatusColor = (status) => {
     if (!status) return 'default';
-    
+
     const statusMap = {
       active: 'success',
       inactive: 'default',
@@ -295,10 +299,10 @@ const UnifiedDataTable = ({
       completed: 'success',
       processing: 'info'
     };
-    
+
     return statusMap[status.toString().toLowerCase()] || 'default';
   };
-  
+
   // Filter and sort data
   const sortedAndFilteredData = useMemo(() => {
     // Filter data based on search term
@@ -314,42 +318,105 @@ const UnifiedDataTable = ({
         });
       });
     }
-    
+
     // Sort data if sorting is enabled
     if (features.sorting) {
       return filteredData.sort((a, b) => {
         const valueA = a[orderBy];
         const valueB = b[orderBy];
-        
+
         // Handle null/undefined values
         if (valueA === null || valueA === undefined) return 1;
         if (valueB === null || valueB === undefined) return -1;
-        
+
         // Compare based on type
         if (typeof valueA === 'number' && typeof valueB === 'number') {
           return order === 'asc' ? valueA - valueB : valueB - valueA;
         }
-        
+
         // Default string comparison
         return order === 'asc'
           ? String(valueA).localeCompare(String(valueB))
           : String(valueB).localeCompare(String(valueA));
       });
     }
-    
+
     return filteredData;
   }, [data, searchTerm, orderBy, order, features.filtering, features.sorting]);
-  
+
   // Calculate empty rows to maintain consistent page height
   const emptyRows = features.pagination && page > 0
     ? Math.max(0, (1 + page) * rowsPerPage - sortedAndFilteredData.length)
     : 0;
-  
+
   // Get paginated data
-  const paginatedData = features.pagination
+  const paginatedData = features.pagination && !useVirtualization
     ? sortedAndFilteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
     : sortedAndFilteredData;
-  
+
+  // Toggle virtualization
+  const handleVirtualizationToggle = useCallback(() => {
+    setUseVirtualization(prev => !prev);
+  }, []);
+
+  // Memoized row renderer for virtualized list
+  const renderRow = useCallback(({ style, data: row, index }) => {
+    const isItemSelected = selectable && isSelected(row[idField]);
+    const labelId = `enhanced-table-checkbox-${index}`;
+
+    return (
+      <div style={style}>
+        <TableRow
+          hover
+          onClick={(event) => handleRowClick(event, row)}
+          role="checkbox"
+          aria-checked={isItemSelected}
+          tabIndex={-1}
+          key={row[idField] || index}
+          selected={isItemSelected}
+          sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+        >
+          {selectable && onSelectRows && (
+            <TableCell padding="checkbox">
+              <Checkbox
+                color="primary"
+                checked={isItemSelected}
+                onClick={(event) => handleSelectClick(event, row[idField])}
+                inputProps={{
+                  'aria-labelledby': labelId,
+                }}
+              />
+            </TableCell>
+          )}
+
+          {columns.map((column) => (
+            <TableCell
+              key={column.id}
+              align={column.align || 'left'}
+              sx={{
+                whiteSpace: column.wrap ? 'normal' : 'nowrap',
+                maxWidth: column.maxWidth || 'auto',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              {renderCellContent(column, row)}
+            </TableCell>
+          ))}
+
+          <TableCell padding="checkbox">
+            <IconButton
+              size="small"
+              onClick={(event) => handleRowMenuOpen(event, row)}
+            >
+              <MoreHorizIcon fontSize="small" />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      </div>
+    );
+  }, [columns, handleRowClick, handleSelectClick, idField, isSelected, onRowClick, onSelectRows, selectable, handleRowMenuOpen, renderCellContent]);
+
   // Render loading state
   if (loading) {
     return (
@@ -358,7 +425,7 @@ const UnifiedDataTable = ({
       </Box>
     );
   }
-  
+
   return (
     <Paper elevation={0} variant="outlined" sx={{ width: '100%', mb: 2 }}>
       {/* Table header with search and actions */}
@@ -385,7 +452,7 @@ const UnifiedDataTable = ({
             {title}
           </Typography>
         )}
-        
+
         {selectedRows.length > 0 ? (
           <Tooltip title="Delete">
             <IconButton>
@@ -410,7 +477,7 @@ const UnifiedDataTable = ({
                 sx={{ width: isMobile ? 120 : 200 }}
               />
             )}
-            
+
             {onRefresh && (
               <Tooltip title="Refresh">
                 <IconButton size="small" onClick={onRefresh}>
@@ -418,7 +485,7 @@ const UnifiedDataTable = ({
                 </IconButton>
               </Tooltip>
             )}
-            
+
             {features.filtering && (
               <Tooltip title="Filter list">
                 <IconButton size="small">
@@ -426,7 +493,7 @@ const UnifiedDataTable = ({
                 </IconButton>
               </Tooltip>
             )}
-            
+
             {features.exportable && onExport && (
               <Tooltip title="Export data">
                 <IconButton size="small" onClick={onExport}>
@@ -434,10 +501,26 @@ const UnifiedDataTable = ({
                 </IconButton>
               </Tooltip>
             )}
+
+            {features.virtualization && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={useVirtualization}
+                    onChange={handleVirtualizationToggle}
+                    name="virtualization"
+                    color="primary"
+                    size="small"
+                  />
+                }
+                label="Virtualize"
+                sx={{ ml: 1 }}
+              />
+            )}
           </Box>
         )}
       </Toolbar>
-      
+
       {/* Table content */}
       <TableContainer sx={{ maxHeight }}>
         <Table stickyHeader size="medium" aria-labelledby={title}>
@@ -456,14 +539,14 @@ const UnifiedDataTable = ({
                   />
                 </TableCell>
               )}
-              
+
               {columns.map((column) => (
                 <TableCell
                   key={column.id}
                   align={column.align || 'left'}
                   padding={column.disablePadding ? 'none' : 'normal'}
                   sortDirection={orderBy === column.id ? order : false}
-                  sx={{ 
+                  sx={{
                     fontWeight: 'bold',
                     whiteSpace: 'nowrap',
                     minWidth: column.minWidth || 'auto',
@@ -483,17 +566,46 @@ const UnifiedDataTable = ({
                   )}
                 </TableCell>
               ))}
-              
+
               <TableCell padding="checkbox" />
             </TableRow>
           </TableHead>
-          
+
           <TableBody>
-            {paginatedData.length > 0 ? (
+            {sortedAndFilteredData.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + (selectable ? 1 : 0) + 1}
+                  align="center"
+                  sx={{ py: 3 }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {emptyMessage}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : useVirtualization ? (
+              // Virtualized view for large datasets
+              <TableRow>
+                <TableCell colSpan={columns.length + (selectable ? 1 : 0) + 1} padding="none">
+                  <Box sx={{ height: typeof maxHeight === 'number' ? maxHeight - 100 : 500 }}>
+                    <VirtualizedList
+                      data={sortedAndFilteredData}
+                      renderRow={renderRow}
+                      height={typeof maxHeight === 'number' ? maxHeight - 100 : 500}
+                      itemSize={53} // Height of each row
+                      loading={loading}
+                      emptyMessage={emptyMessage}
+                    />
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              // Standard view for smaller datasets
               paginatedData.map((row, index) => {
                 const isItemSelected = selectable && isSelected(row[idField]);
                 const labelId = `enhanced-table-checkbox-${index}`;
-                
+
                 return (
                   <TableRow
                     hover
@@ -517,10 +629,10 @@ const UnifiedDataTable = ({
                         />
                       </TableCell>
                     )}
-                    
+
                     {columns.map((column) => (
-                      <TableCell 
-                        key={column.id} 
+                      <TableCell
+                        key={column.id}
                         align={column.align || 'left'}
                         sx={{
                           whiteSpace: column.wrap ? 'normal' : 'nowrap',
@@ -532,9 +644,9 @@ const UnifiedDataTable = ({
                         {renderCellContent(column, row)}
                       </TableCell>
                     ))}
-                    
+
                     <TableCell padding="checkbox">
-                      <IconButton 
+                      <IconButton
                         size="small"
                         onClick={(event) => handleRowMenuOpen(event, row)}
                       >
@@ -544,21 +656,9 @@ const UnifiedDataTable = ({
                   </TableRow>
                 );
               })
-            ) : (
-              <TableRow>
-                <TableCell 
-                  colSpan={columns.length + (selectable ? 1 : 0) + 1} 
-                  align="center" 
-                  sx={{ py: 3 }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {emptyMessage}
-                  </Typography>
-                </TableCell>
-              </TableRow>
             )}
-            
-            {emptyRows > 0 && (
+
+            {!useVirtualization && emptyRows > 0 && (
               <TableRow style={{ height: 53 * emptyRows }}>
                 <TableCell colSpan={columns.length + (selectable ? 1 : 0) + 1} />
               </TableRow>
@@ -566,9 +666,9 @@ const UnifiedDataTable = ({
           </TableBody>
         </Table>
       </TableContainer>
-      
+
       {/* Pagination */}
-      {features.pagination && (
+      {features.pagination && !useVirtualization && (
         <TablePagination
           rowsPerPageOptions={rowsPerPageOptions}
           component="div"
@@ -579,7 +679,7 @@ const UnifiedDataTable = ({
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       )}
-      
+
       {/* Row actions menu */}
       <Menu
         anchorEl={anchorEl}
@@ -617,4 +717,4 @@ const UnifiedDataTable = ({
   );
 };
 
-export default UnifiedDataTable;
+export default memo(UnifiedDataTable);

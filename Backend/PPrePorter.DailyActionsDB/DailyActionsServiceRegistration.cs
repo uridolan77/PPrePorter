@@ -125,12 +125,54 @@ namespace PPrePorter.DailyActionsDB
             services.AddScoped<IWhiteLabelRepository, WhiteLabelRepository>();
             services.AddScoped<ICountryRepository, CountryRepository>();
             services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+            services.AddScoped<IGameRepository, GameRepository>();
+            services.AddScoped<IPlayerRepository, PlayerRepository>();
+            services.AddScoped<IDailyActionGameRepository, DailyActionGameRepository>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<IBonusRepository, BonusRepository>();
+            services.AddScoped<IBonusBalanceRepository, BonusBalanceRepository>();
+            services.AddScoped<ICurrencyHistoryRepository, CurrencyHistoryRepository>();
+            services.AddScoped<IGameCasinoSessionRepository, GameCasinoSessionRepository>();
+            services.AddScoped<IGameDescriptionRepository, GameDescriptionRepository>();
+            services.AddScoped<IGameExcludedByCountryRepository, GameExcludedByCountryRepository>();
+            services.AddScoped<IGameExcludedByJurisdictionRepository, GameExcludedByJurisdictionRepository>();
+            services.AddScoped<IGameExcludedByLabelRepository, GameExcludedByLabelRepository>();
+            services.AddScoped<ISportBetTypeRepository, SportBetTypeRepository>();
+            services.AddScoped<ISportSportRepository, SportSportRepository>();
+            services.AddScoped<ISportRegionRepository, SportRegionRepository>();
+            services.AddScoped<ISportCompetitionRepository, SportCompetitionRepository>();
+            services.AddScoped<ISportMatchRepository, SportMatchRepository>();
+            services.AddScoped<ISportMarketRepository, SportMarketRepository>();
+            services.AddScoped<ISportOddsTypeRepository, SportOddsTypeRepository>();
+            services.AddScoped<ISportBetStateRepository, SportBetStateRepository>();
+            services.AddScoped<ISportBetEnhancedRepository, SportBetEnhancedRepository>();
 
             // Register services
             services.AddScoped<IDailyActionsService, DailyActionsService>();
             services.AddScoped<IWhiteLabelService, WhiteLabelService>();
             services.AddScoped<ICountryService, CountryService>();
             services.AddScoped<ICurrencyService, CurrencyService>();
+            services.AddScoped<IGameService, GameService>();
+            services.AddScoped<IPlayerService, PlayerService>();
+            services.AddScoped<IDailyActionGameService, DailyActionGameService>();
+            services.AddScoped<ITransactionService, TransactionService>();
+            services.AddScoped<IBonusService, BonusService>();
+            services.AddScoped<IBonusBalanceService, BonusBalanceService>();
+            services.AddScoped<ICurrencyHistoryService, CurrencyHistoryService>();
+            services.AddScoped<IGameCasinoSessionService, GameCasinoSessionService>();
+            services.AddScoped<IGameDescriptionService, GameDescriptionService>();
+            services.AddScoped<IGameExcludedByCountryService, GameExcludedByCountryService>();
+            services.AddScoped<IGameExcludedByJurisdictionService, GameExcludedByJurisdictionService>();
+            services.AddScoped<IGameExcludedByLabelService, GameExcludedByLabelService>();
+            services.AddScoped<ISportBetTypeService, SportBetTypeService>();
+            services.AddScoped<ISportSportService, SportSportService>();
+            services.AddScoped<ISportRegionService, SportRegionService>();
+            services.AddScoped<ISportCompetitionService, SportCompetitionService>();
+            services.AddScoped<ISportMatchService, SportMatchService>();
+            services.AddScoped<ISportMarketService, SportMarketService>();
+            services.AddScoped<ISportOddsTypeService, SportOddsTypeService>();
+            services.AddScoped<ISportBetStateService, SportBetStateService>();
+            services.AddScoped<ISportBetEnhancedService, SportBetEnhancedService>();
 
             // Register simplified services
             services.AddScoped<IDailyActionsSimpleService, DailyActionsSimpleService>();

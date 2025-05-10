@@ -1,0 +1,166 @@
+import { createSelector } from '@reduxjs/toolkit';
+import { RootState } from './store';
+
+// Auth selectors
+export const selectAuthState = (state: RootState) => state.auth;
+
+export const selectIsAuthenticated = createSelector(
+  [selectAuthState],
+  (auth) => auth.isAuthenticated
+);
+
+export const selectCurrentUser = createSelector(
+  [selectAuthState],
+  (auth) => auth.user
+);
+
+export const selectAuthLoading = createSelector(
+  [selectAuthState],
+  (auth) => auth.loading
+);
+
+export const selectAuthError = createSelector(
+  [selectAuthState],
+  (auth) => auth.error
+);
+
+// Dashboard selectors
+export const selectDashboardState = (state: RootState) => state.dashboard;
+
+export const selectDashboardData = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.data
+);
+
+export const selectDashboardLoading = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.loading
+);
+
+export const selectDashboardError = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.error
+);
+
+export const selectSummaryStats = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.summaryStats
+);
+
+export const selectCasinoRevenue = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.casinoRevenue
+);
+
+export const selectPlayerRegistrations = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.playerRegistrations
+);
+
+export const selectTopGames = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.topGames
+);
+
+export const selectRecentTransactions = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.recentTransactions
+);
+
+export const selectComponentErrors = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.componentErrors
+);
+
+// Computed selectors that combine data
+export const selectDashboardSummary = createSelector(
+  [selectSummaryStats, selectDashboardLoading, selectComponentErrors],
+  (summaryStats, loading, errors) => ({
+    data: summaryStats,
+    loading,
+    error: errors?.summary || null
+  })
+);
+
+export const selectRevenueChartData = createSelector(
+  [selectCasinoRevenue, selectDashboardLoading, selectComponentErrors],
+  (casinoRevenue, loading, errors) => ({
+    data: casinoRevenue,
+    loading,
+    error: errors?.revenue || null
+  })
+);
+
+export const selectRegistrationsChartData = createSelector(
+  [selectPlayerRegistrations, selectDashboardLoading, selectComponentErrors],
+  (playerRegistrations, loading, errors) => ({
+    data: playerRegistrations,
+    loading,
+    error: errors?.registrations || null
+  })
+);
+
+export const selectTopGamesChartData = createSelector(
+  [selectTopGames, selectDashboardLoading, selectComponentErrors],
+  (topGames, loading, errors) => ({
+    data: topGames,
+    loading,
+    error: errors?.topGames || null
+  })
+);
+
+export const selectTransactionsTableData = createSelector(
+  [selectRecentTransactions, selectDashboardLoading, selectComponentErrors],
+  (recentTransactions, loading, errors) => ({
+    data: recentTransactions,
+    loading,
+    error: errors?.transactions || null
+  })
+);
+
+// Reports selectors
+export const selectReportsState = (state: RootState) => state.reports;
+
+export const selectReportsData = createSelector(
+  [selectReportsState],
+  (reports) => reports.data
+);
+
+export const selectReportsLoading = createSelector(
+  [selectReportsState],
+  (reports) => reports.loading
+);
+
+export const selectReportsError = createSelector(
+  [selectReportsState],
+  (reports) => reports.error
+);
+
+// UI selectors
+export const selectUIState = (state: RootState) => state.ui;
+
+export const selectSidebarOpen = createSelector(
+  [selectUIState],
+  (ui) => ui.sidebarOpen
+);
+
+export const selectDarkMode = createSelector(
+  [selectUIState],
+  (ui) => ui.darkMode
+);
+
+export const selectActiveTab = createSelector(
+  [selectUIState],
+  (ui) => ui.activeTab
+);
+
+// Combined selectors for components
+export const selectDashboardTabsProps = createSelector(
+  [selectDashboardData, selectDashboardLoading, selectDashboardError, selectActiveTab],
+  (data, loading, error, activeTab) => ({
+    dashboardData: data,
+    isLoading: loading,
+    error,
+    activeTab
+  })
+);

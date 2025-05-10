@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   Box,
   Paper,
@@ -18,16 +18,21 @@ import {
   Typography,
   Toolbar,
   Tooltip,
-  alpha
+  alpha,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VirtualizedList from './VirtualizedList';
 
 /**
  * A reusable data grid component for displaying tabular data with sorting, pagination, and filtering
+ * Enhanced with virtualization for improved performance with large datasets
+ *
  * @param {Object} props - Component props
  * @param {Array} props.columns - Array of column definitions (id, label, align, format, minWidth, etc.)
  * @param {Array} props.data - Array of data objects to display
@@ -42,6 +47,9 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
  * @param {React.ReactNode} props.actions - Actions to display in the toolbar
  * @param {string} props.emptyMessage - Message to display when there is no data
  * @param {number} props.rowsPerPageOptions - Options for rows per page
+ * @param {boolean} props.virtualized - Whether to use virtualization for large datasets
+ * @param {number} props.virtualizedHeight - Height of the virtualized list
+ * @param {number} props.rowHeight - Height of each row in the virtualized list
  */
 const DataGrid = ({
   columns = [],
@@ -59,12 +67,16 @@ const DataGrid = ({
   rowsPerPageOptions = [5, 10, 25, 50],
   defaultRowsPerPage = 10,
   idField = 'id',
+  virtualized = false,
+  virtualizedHeight = 400,
+  rowHeight = 53,
 }) => {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState(columns[0]?.id || '');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
   const [searchTerm, setSearchTerm] = useState('');
+  const [useVirtualization, setUseVirtualization] = useState(virtualized);
 
   // Handle sort request
   const handleRequestSort = (property) => {
@@ -86,7 +98,7 @@ const DataGrid = ({
   // Handle row selection click
   const handleSelectClick = (event, id) => {
     event.stopPropagation();
-    
+
     const selectedIndex = selectedRows.indexOf(id);
     let newSelected = [];
 
@@ -131,6 +143,84 @@ const DataGrid = ({
 
   // Calculate empty rows to maintain consistent page height
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
+
+  // Toggle virtualization
+  const handleVirtualizationToggle = useCallback(() => {
+    setUseVirtualization(prev => !prev);
+  }, []);
+
+  // Get sorted and paginated data
+  const displayData = useMemo(() => {
+    // Sort the data
+    const sortedData = [...data].sort((a, b) => {
+      const aValue = a[orderBy];
+      const bValue = b[orderBy];
+
+      if (aValue === bValue) return 0;
+
+      if (order === 'asc') {
+        return aValue < bValue ? -1 : 1;
+      } else {
+        return aValue > bValue ? -1 : 1;
+      }
+    });
+
+    // Apply pagination if not using virtualization
+    if (!useVirtualization) {
+      return sortedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    }
+
+    return sortedData;
+  }, [data, orderBy, order, page, rowsPerPage, useVirtualization]);
+
+  // Memoized row renderer for virtualized list
+  const renderRow = useCallback(({ style, data: row, index }) => {
+    const isItemSelected = selectable && isSelected(row[idField]);
+    const labelId = `enhanced-table-checkbox-${index}`;
+
+    return (
+      <div style={style}>
+        <TableRow
+          hover
+          onClick={(event) => handleRowClick(event, row)}
+          role="checkbox"
+          aria-checked={isItemSelected}
+          tabIndex={-1}
+          key={row[idField] || index}
+          selected={isItemSelected}
+          sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+        >
+          {selectable && onSelectRows && (
+            <TableCell padding="checkbox">
+              <Checkbox
+                color="primary"
+                checked={isItemSelected}
+                onClick={(event) => handleSelectClick(event, row[idField])}
+                inputProps={{
+                  'aria-labelledby': labelId,
+                }}
+              />
+            </TableCell>
+          )}
+          {columns.map((column) => {
+            const value = row[column.id];
+            return (
+              <TableCell key={column.id} align={column.align || 'left'}>
+                {column.format ? column.format(value, row) : value}
+              </TableCell>
+            );
+          })}
+          {onRowClick && (
+            <TableCell align="right">
+              <IconButton size="small">
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            </TableCell>
+          )}
+        </TableRow>
+      </div>
+    );
+  }, [columns, handleRowClick, handleSelectClick, idField, isSelected, onRowClick, onSelectRows, selectable]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -192,6 +282,19 @@ const DataGrid = ({
                   <FilterListIcon />
                 </IconButton>
               </Tooltip>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={useVirtualization}
+                    onChange={handleVirtualizationToggle}
+                    name="virtualization"
+                    color="primary"
+                    size="small"
+                  />
+                }
+                label="Virtualize"
+                sx={{ ml: 1 }}
+              />
               {actions && (
                 <Box sx={{ display: 'flex' }}>
                   {actions}
@@ -263,57 +366,71 @@ const DataGrid = ({
                     </Typography>
                   </TableCell>
                 </TableRow>
+              ) : useVirtualization ? (
+                // Virtualized view for large datasets
+                <TableRow>
+                  <TableCell colSpan={columns.length + (selectable ? 1 : 0) + (onRowClick ? 1 : 0)} padding="none">
+                    <Box sx={{ height: virtualizedHeight }}>
+                      <VirtualizedList
+                        data={displayData}
+                        renderRow={renderRow}
+                        height={virtualizedHeight}
+                        itemSize={rowHeight}
+                        loading={loading}
+                        emptyMessage={emptyMessage}
+                      />
+                    </Box>
+                  </TableCell>
+                </TableRow>
               ) : (
-                // Display actual data
-                data
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row, index) => {
-                    const isItemSelected = selectable && isSelected(row[idField]);
-                    const labelId = `enhanced-table-checkbox-${index}`;
+                // Standard view for smaller datasets
+                displayData.map((row, index) => {
+                  const isItemSelected = selectable && isSelected(row[idField]);
+                  const labelId = `enhanced-table-checkbox-${index}`;
 
-                    return (
-                      <TableRow
-                        hover
-                        onClick={(event) => handleRowClick(event, row)}
-                        role="checkbox"
-                        aria-checked={isItemSelected}
-                        tabIndex={-1}
-                        key={row[idField] || index}
-                        selected={isItemSelected}
-                        sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
-                      >
-                        {selectable && onSelectRows && (
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              color="primary"
-                              checked={isItemSelected}
-                              onClick={(event) => handleSelectClick(event, row[idField])}
-                              inputProps={{
-                                'aria-labelledby': labelId,
-                              }}
-                            />
+                  return (
+                    <TableRow
+                      hover
+                      onClick={(event) => handleRowClick(event, row)}
+                      role="checkbox"
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      key={row[idField] || index}
+                      selected={isItemSelected}
+                      sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                    >
+                      {selectable && onSelectRows && (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            color="primary"
+                            checked={isItemSelected}
+                            onClick={(event) => handleSelectClick(event, row[idField])}
+                            inputProps={{
+                              'aria-labelledby': labelId,
+                            }}
+                          />
+                        </TableCell>
+                      )}
+                      {columns.map((column) => {
+                        const value = row[column.id];
+                        return (
+                          <TableCell key={column.id} align={column.align || 'left'}>
+                            {column.format ? column.format(value, row) : value}
                           </TableCell>
-                        )}
-                        {columns.map((column) => {
-                          const value = row[column.id];
-                          return (
-                            <TableCell key={column.id} align={column.align || 'left'}>
-                              {column.format ? column.format(value, row) : value}
-                            </TableCell>
-                          );
-                        })}
-                        {onRowClick && (
-                          <TableCell align="right">
-                            <IconButton size="small">
-                              <MoreVertIcon fontSize="small" />
-                            </IconButton>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })
+                        );
+                      })}
+                      {onRowClick && (
+                        <TableCell align="right">
+                          <IconButton size="small">
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })
               )}
-              {emptyRows > 0 && (
+              {!useVirtualization && emptyRows > 0 && (
                 <TableRow style={{ height: 53 * emptyRows }}>
                   <TableCell colSpan={columns.length + (selectable ? 1 : 0) + (onRowClick ? 1 : 0)} />
                 </TableRow>
@@ -321,18 +438,20 @@ const DataGrid = ({
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={rowsPerPageOptions}
-          component="div"
-          count={data.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
+        {!useVirtualization && (
+          <TablePagination
+            rowsPerPageOptions={rowsPerPageOptions}
+            component="div"
+            count={data.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        )}
       </Paper>
     </Box>
   );
 };
 
-export default DataGrid;
+export default memo(DataGrid);

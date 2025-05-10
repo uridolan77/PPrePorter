@@ -1,5 +1,15 @@
-import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import {
+  selectSummaryStats,
+  selectCasinoRevenue,
+  selectPlayerRegistrations,
+  selectTopGames,
+  selectRecentTransactions,
+  selectDashboardLoading,
+  selectDashboardError,
+  selectComponentErrors
+} from '../store/selectors';
 import {
   Box,
   Card,
@@ -39,22 +49,26 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Import the statcard component directly as it's small and used immediately
-import StatCard from '../components/dashboard/StatCard';
+// Import smaller components directly as they're used immediately
 import ErrorDisplay from '../components/common/ErrorDisplay';
-import ContextualDataExplorer from '../components/dashboard/ContextualDataExplorer';
+import DashboardHeader from '../components/dashboard/DashboardHeader';
+import DashboardMetrics from '../components/dashboard/DashboardMetrics';
+import DashboardCharts from '../components/dashboard/DashboardCharts';
 
-// Lazy load larger components that aren't needed immediately
+// Lazy load all larger components for better performance
+const ContextualDataExplorer = lazy(() => import('../components/dashboard/ContextualDataExplorer'));
 const CasinoRevenueChart = lazy(() => import('../components/dashboard/CasinoRevenueChart'));
 const PlayerRegistrationsChart = lazy(() => import('../components/dashboard/PlayerRegistrationsChart'));
 const TopGamesChart = lazy(() => import('../components/dashboard/TopGamesChart'));
 const RecentTransactionsTable = lazy(() => import('../components/dashboard/RecentTransactionsTable'));
+const DashboardTabs = lazy(() => import('../components/dashboard/DashboardTabs'));
+const AdvancedDashboard = lazy(() => import('../components/dashboard/AdaptiveDashboard'));
 
-import { 
-  fetchDashboardData, 
-  fetchRevenueChart, 
-  fetchRegistrationsChart, 
-  fetchTopGames, 
+import {
+  fetchDashboardData,
+  fetchRevenueChart,
+  fetchRegistrationsChart,
+  fetchTopGames,
   fetchRecentTransactions,
   clearErrors,
   clearComponentError
@@ -84,17 +98,16 @@ const cardVariants = {
 const Dashboard = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { 
-    summaryStats, 
-    casinoRevenue,
-    playerRegistrations,
-    topGames,
-    recentTransactions,
-    isLoading,
-    error,
-    componentErrors
-  } = useSelector((state) => state.dashboard);
-  
+  // Use memoized selectors for better performance
+  const summaryStats = useSelector(selectSummaryStats);
+  const casinoRevenue = useSelector(selectCasinoRevenue);
+  const playerRegistrations = useSelector(selectPlayerRegistrations);
+  const topGames = useSelector(selectTopGames);
+  const recentTransactions = useSelector(selectRecentTransactions);
+  const isLoading = useSelector(selectDashboardLoading);
+  const error = useSelector(selectDashboardError);
+  const componentErrors = useSelector(selectComponentErrors);
+
   const [tabValue, setTabValue] = useState(0);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [visibleComponents, setVisibleComponents] = useState({
@@ -103,7 +116,7 @@ const Dashboard = () => {
     topGames: false,
     transactions: false
   });
-  
+
   // New state for enhanced dashboard features
   const [advancedViewMode, setAdvancedViewMode] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
@@ -112,18 +125,18 @@ const Dashboard = () => {
   const [annotations, setAnnotations] = useState([]);
   const dashboardRef = useRef(null);
   const [focusTransition, setFocusTransition] = useState(false);
-  
+
   // On initial mount, load only summary stats for immediate display
   useEffect(() => {
     loadDashboardSummary();
-    
+
     // Set up intersection observer for lazy loading
     const observerOptions = {
       root: null,
       rootMargin: '0px',
       threshold: 0.1
     };
-    
+
     const observerCallback = (entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -135,15 +148,15 @@ const Dashboard = () => {
         }
       });
     };
-    
+
     const observer = new IntersectionObserver(observerCallback, observerOptions);
-    
+
     // Observe chart containers
     ['revenue', 'registrations', 'topGames', 'transactions'].forEach(id => {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
     });
-    
+
     return () => {
       ['revenue', 'registrations', 'topGames', 'transactions'].forEach(id => {
         const element = document.getElementById(id);
@@ -151,81 +164,86 @@ const Dashboard = () => {
       });
     };
   }, []);
-  
+
   // Load individual components based on visibility
   useEffect(() => {
     const params = { playMode: getPlayModeFromTab(tabValue) };
-    
+
     if (visibleComponents.revenue) {
       dispatch(fetchRevenueChart(params));
     }
-    
+
     if (visibleComponents.registrations) {
       dispatch(fetchRegistrationsChart(params));
     }
-    
+
     if (visibleComponents.topGames) {
       dispatch(fetchTopGames(params));
     }
-    
+
     if (visibleComponents.transactions) {
       dispatch(fetchRecentTransactions(params));
     }
   }, [visibleComponents, tabValue, dispatch]);
-  
-  const loadDashboardSummary = () => {
+
+  // Memoized function to load dashboard summary
+  const loadDashboardSummary = useCallback(() => {
     dispatch(fetchDashboardData({
       playMode: getPlayModeFromTab(tabValue)
     }));
     setLastRefreshed(new Date());
-  };
-  
-  const handleTabChange = (event, newValue) => {
+  }, [dispatch, tabValue]);
+
+  // Memoized tab change handler
+  const handleTabChange = useCallback((event, newValue) => {
     setTabValue(newValue);
-    
+
     // Clear any existing errors when changing tabs
     dispatch(clearErrors());
-    
+
     // Reload visible components with new filter
     loadDashboardSummary();
-  };
-  
-  const handleAdvancedViewTabChange = (event, newValue) => {
+  }, [dispatch, loadDashboardSummary]);
+
+  // Memoized advanced view tab change handler
+  const handleAdvancedViewTabChange = useCallback((event, newValue) => {
     // Create a transition effect when changing tabs
     setFocusTransition(true);
     setTimeout(() => {
       setActiveTab(newValue);
       setFocusTransition(false);
     }, 300);
-  };
-  
-  const handleRefresh = () => {
+  }, []);
+
+  // Memoized refresh handler
+  const handleRefresh = useCallback(() => {
     loadDashboardSummary();
-    
+
     // Also refresh any visible components
     const params = { playMode: getPlayModeFromTab(tabValue) };
-    
+
     if (visibleComponents.revenue) {
       dispatch(fetchRevenueChart(params));
     }
-    
+
     if (visibleComponents.registrations) {
       dispatch(fetchRegistrationsChart(params));
     }
-    
+
     if (visibleComponents.topGames) {
       dispatch(fetchTopGames(params));
     }
-    
+
     if (visibleComponents.transactions) {
       dispatch(fetchRecentTransactions(params));
     }
-  };
-  
-  const handleRetryComponent = (component) => {
+  }, [dispatch, loadDashboardSummary, tabValue, visibleComponents]);
+
+  // Memoized retry component handler
+  const handleRetryComponent = useCallback((component) => {
     const params = { playMode: getPlayModeFromTab(tabValue) };
     dispatch(clearComponentError(component));
-    
+
     switch (component) {
       case 'revenue':
         dispatch(fetchRevenueChart(params));
@@ -242,9 +260,10 @@ const Dashboard = () => {
       default:
         break;
     }
-  };
-  
-  const getPlayModeFromTab = (tab) => {
+  }, [dispatch, tabValue]);
+
+  // Memoized function to get play mode from tab
+  const getPlayModeFromTab = useCallback((tab) => {
     switch (tab) {
       case 0: return null; // All
       case 1: return 'Casino';
@@ -253,13 +272,15 @@ const Dashboard = () => {
       case 4: return 'Bingo';
       default: return null;
     }
-  };
-  
-  const toggleAdvancedView = () => {
-    setAdvancedViewMode(!advancedViewMode);
-  };
-  
-  const toggleExpandSection = (section) => {
+  }, []);
+
+  // Memoized toggle advanced view handler
+  const toggleAdvancedView = useCallback(() => {
+    setAdvancedViewMode(prev => !prev);
+  }, []);
+
+  // Memoized toggle expand section handler
+  const toggleExpandSection = useCallback((section) => {
     if (expandedSection === section) {
       setExpandedSection(null);
       setExpandedView(false);
@@ -267,12 +288,13 @@ const Dashboard = () => {
       setExpandedSection(section);
       setExpandedView(true);
     }
-  };
-  
-  const handleAnnotationCreate = (annotation) => {
-    setAnnotations([...annotations, annotation]);
-  };
-  
+  }, [expandedSection]);
+
+  // Memoized annotation create handler
+  const handleAnnotationCreate = useCallback((annotation) => {
+    setAnnotations(prev => [...prev, annotation]);
+  }, []);
+
   if (isLoading && !summaryStats) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -280,57 +302,31 @@ const Dashboard = () => {
       </Box>
     );
   }
-  
+
   if (error) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', px: 2 }}>
-        <ErrorDisplay 
-          error={error} 
-          title="Failed to load dashboard" 
+        <ErrorDisplay
+          error={error}
+          title="Failed to load dashboard"
           onRetry={handleRefresh}
         />
       </Box>
     );
   }
-  
+
   return (
     <Box ref={dashboardRef}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant="h4" component="h1">
-          Today's Analytics
-        </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
-            Last updated: {lastRefreshed.toLocaleTimeString()}
-          </Typography>
-          
-          <Tooltip title="Toggle advanced view">
-            <Button
-              variant={advancedViewMode ? "contained" : "outlined"}
-              color="primary"
-              size="small"
-              startIcon={<InsightsIcon />}
-              onClick={toggleAdvancedView}
-            >
-              {advancedViewMode ? "Standard View" : "Advanced View"}
-            </Button>
-          </Tooltip>
-          
-          <Tooltip title="Refresh dashboard data">
-            <IconButton 
-              onClick={handleRefresh}
-              color="primary"
-              aria-label="refresh dashboard"
-            >
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
-      
+      <DashboardHeader
+        title="Today's Analytics"
+        lastUpdated={lastRefreshed}
+        onRefresh={handleRefresh}
+        onViewChange={toggleAdvancedView}
+        advancedViewMode={advancedViewMode}
+      />
+
       {!advancedViewMode ? (
-        <>
+        <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><CircularProgress /></Box>}>
           <Tabs
             value={tabValue}
             onChange={handleTabChange}
@@ -346,99 +342,37 @@ const Dashboard = () => {
             <Tab label="Live" icon={<VideogameAssetIcon />} iconPosition="start" />
             <Tab label="Bingo" icon={<VideogameAssetIcon />} iconPosition="start" />
           </Tabs>
-          
+
           {componentErrors.summary ? (
             <Box sx={{ mb: 3 }}>
-              <ErrorDisplay 
-                error={componentErrors.summary} 
-                title="Failed to load summary data" 
+              <ErrorDisplay
+                error={componentErrors.summary}
+                title="Failed to load summary data"
                 onRetry={() => loadDashboardSummary()}
               />
             </Box>
           ) : (
-            <AnimatePresence>
-              <Grid container spacing={3}>
-                {['registrations', 'ftd', 'deposits', 'revenue'].map((stat, index) => (
-                  <Grid item xs={12} sm={6} md={3} key={stat}>
-                    <motion.div
-                      custom={index}
-                      variants={cardVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                    >
-                      <StatCard
-                        title={stat === 'ftd' ? 'FTD' : stat.charAt(0).toUpperCase() + stat.slice(1)}
-                        value={summaryStats?.[stat] || 0}
-                        prefix={stat === 'deposits' || stat === 'revenue' ? '£' : ''}
-                        icon={stat === 'registrations' || stat === 'ftd' ? <PersonAddIcon /> : <AttachMoneyIcon />}
-                        change={summaryStats?.[`${stat}Change`] || 0}
-                        changeIcon={
-                          (summaryStats?.[`${stat}Change`] || 0) >= 0 ? 
-                            <TrendingUpIcon color="success" /> : 
-                            <TrendingDownIcon color="error" />
-                        }
-                        changeText={`${formatPercentage(summaryStats?.[`${stat}Change`] || 0)} vs yesterday`}
-                        isLoading={isLoading}
-                      />
-                    </motion.div>
-                  </Grid>
-                ))}
-              </Grid>
-            </AnimatePresence>
+            <DashboardMetrics
+              stats={summaryStats}
+              loading={isLoading}
+              error={componentErrors.summary}
+              title="Key Metrics"
+            />
           )}
-          
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            {{
-              revenue: { title: 'Revenue (Last 7 days)', data: casinoRevenue },
-              registrations: { title: 'Player Registrations (Last 7 days)', data: playerRegistrations },
-              topGames: { title: 'Top Games', data: topGames },
-              transactions: { title: 'Recent Transactions', data: recentTransactions }
-            }[Object.keys(visibleComponents).find(key => visibleComponents[key])]?.map((section, index) => (
-              <Grid item xs={12} md={6} key={section.id}>
-                <motion.div
-                  custom={index + 4}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <Card id={section.id}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6">
-                          {section.title}
-                        </Typography>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => toggleExpandSection(section.id)}
-                          color={expandedSection === section.id ? "primary" : "default"}
-                        >
-                          <FullscreenIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      
-                      {componentErrors[section.id] ? (
-                        <ErrorDisplay 
-                          error={componentErrors[section.id]} 
-                          title={`Failed to load ${section.title.toLowerCase()}`}
-                          onRetry={() => handleRetryComponent(section.id)}
-                        />
-                      ) : (
-                        <Suspense fallback={<ChartSkeleton />}>
-                          {section.id === 'revenue' && <CasinoRevenueChart data={casinoRevenue} isLoading={!visibleComponents.revenue} />}
-                          {section.id === 'registrations' && <PlayerRegistrationsChart data={playerRegistrations} isLoading={!visibleComponents.registrations} />}
-                          {section.id === 'topGames' && <TopGamesChart data={topGames} isLoading={!visibleComponents.topGames} />}
-                          {section.id === 'transactions' && <RecentTransactionsTable data={recentTransactions} isLoading={!visibleComponents.transactions} />}
-                        </Suspense>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Grid>
-            ))}
-          </Grid>
-          
+
+          <DashboardCharts
+            data={{
+              revenueByDay: casinoRevenue,
+              playersByGame: topGames
+            }}
+            loading={isLoading}
+            error={error}
+            title="Performance Metrics"
+            timePeriod="week"
+            onTimePeriodChange={(period) => console.log(`Time period changed to ${period}`)}
+          />
+        </Suspense>
+
           {/* Expanded view modal */}
           <Fade in={expandedView}>
             <Box
@@ -501,78 +435,88 @@ const Dashboard = () => {
         </>
       ) : (
         // Advanced view with ContextualDataExplorer
-        <Box sx={{ width: '100%', typography: 'body1' }}>
-          <TabContext value={activeTab}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <TabList onChange={handleAdvancedViewTabChange} variant="scrollable" scrollButtons="auto">
-                <Tab icon={<BubbleChartIcon />} iconPosition="start" label="Data Explorer" value="1" />
-                <Tab icon={<InsightsIcon />} iconPosition="start" label="Trend Analysis" value="2" />
-                <Tab icon={<CompareArrowsIcon />} iconPosition="start" label="What-If Scenarios" value="3" />
-                <Tab icon={<DashboardCustomizeIcon />} iconPosition="start" label="Custom Views" value="4" />
-              </TabList>
-            </Box>
-            
-            <Fade in={!focusTransition}>
-              <Box>
-                <TabPanel value="1" sx={{ p: 0, pt: 2 }}>
-                  <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden' }}>
-                    <ContextualDataExplorer
-                      onAnnotationCreate={handleAnnotationCreate}
-                    />
-                  </Paper>
-                </TabPanel>
-                
-                <TabPanel value="2" sx={{ p: 0, pt: 2 }}>
-                  <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden', p: 2 }}>
-                    <Typography variant="h5" gutterBottom>Trend Analysis</Typography>
-                    <Typography paragraph color="text.secondary">
-                      Analyze trends across different time periods and game types. Identify patterns and seasonality in player behavior.
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12}>
-                        <ContextualDataExplorer
-                          onAnnotationCreate={handleAnnotationCreate}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                </TabPanel>
-                
-                <TabPanel value="3" sx={{ p: 0, pt: 2 }}>
-                  <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden', p: 2 }}>
-                    <Typography variant="h5" gutterBottom>What-If Scenarios</Typography>
-                    <Typography paragraph color="text.secondary">
-                      Model different business scenarios and see their potential impact on your metrics. Adjust parameters to simulate various outcomes.
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12}>
-                        <ContextualDataExplorer
-                          onAnnotationCreate={handleAnnotationCreate}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                </TabPanel>
-                
-                <TabPanel value="4" sx={{ p: 0, pt: 2 }}>
-                  <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden', p: 2 }}>
-                    <Typography variant="h5" gutterBottom>Custom Views</Typography>
-                    <Typography paragraph color="text.secondary">
-                      Create and manage custom dashboard views. Save your preferred metrics and visualizations for quick access.
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12}>
-                        <ContextualDataExplorer
-                          onAnnotationCreate={handleAnnotationCreate}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                </TabPanel>
+        <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><CircularProgress /></Box>}>
+          <Box sx={{ width: '100%', typography: 'body1' }}>
+            <TabContext value={activeTab}>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TabList onChange={handleAdvancedViewTabChange} variant="scrollable" scrollButtons="auto">
+                  <Tab icon={<BubbleChartIcon />} iconPosition="start" label="Data Explorer" value="1" />
+                  <Tab icon={<InsightsIcon />} iconPosition="start" label="Trend Analysis" value="2" />
+                  <Tab icon={<CompareArrowsIcon />} iconPosition="start" label="What-If Scenarios" value="3" />
+                  <Tab icon={<DashboardCustomizeIcon />} iconPosition="start" label="Custom Views" value="4" />
+                </TabList>
               </Box>
-            </Fade>
-          </TabContext>
-        </Box>
+
+              <Fade in={!focusTransition}>
+                <Box>
+                  <TabPanel value="1" sx={{ p: 0, pt: 2 }}>
+                    <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden' }}>
+                      <Suspense fallback={<ChartSkeleton />}>
+                        <ContextualDataExplorer
+                          onAnnotationCreate={handleAnnotationCreate}
+                        />
+                      </Suspense>
+                    </Paper>
+                  </TabPanel>
+
+                  <TabPanel value="2" sx={{ p: 0, pt: 2 }}>
+                    <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden', p: 2 }}>
+                      <Typography variant="h5" gutterBottom>Trend Analysis</Typography>
+                      <Typography paragraph color="text.secondary">
+                        Analyze trends across different time periods and game types. Identify patterns and seasonality in player behavior.
+                      </Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                          <Suspense fallback={<ChartSkeleton />}>
+                            <ContextualDataExplorer
+                              onAnnotationCreate={handleAnnotationCreate}
+                            />
+                          </Suspense>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  </TabPanel>
+
+                  <TabPanel value="3" sx={{ p: 0, pt: 2 }}>
+                    <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden', p: 2 }}>
+                      <Typography variant="h5" gutterBottom>What-If Scenarios</Typography>
+                      <Typography paragraph color="text.secondary">
+                        Model different business scenarios and see their potential impact on your metrics. Adjust parameters to simulate various outcomes.
+                      </Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                          <Suspense fallback={<ChartSkeleton />}>
+                            <ContextualDataExplorer
+                              onAnnotationCreate={handleAnnotationCreate}
+                            />
+                          </Suspense>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  </TabPanel>
+
+                  <TabPanel value="4" sx={{ p: 0, pt: 2 }}>
+                    <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden', p: 2 }}>
+                      <Typography variant="h5" gutterBottom>Custom Views</Typography>
+                      <Typography paragraph color="text.secondary">
+                        Create and manage custom dashboard views. Save your preferred metrics and visualizations for quick access.
+                      </Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                          <Suspense fallback={<ChartSkeleton />}>
+                            <ContextualDataExplorer
+                              onAnnotationCreate={handleAnnotationCreate}
+                            />
+                          </Suspense>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  </TabPanel>
+                </Box>
+              </Fade>
+            </TabContext>
+          </Box>
+        </Suspense>
       )}
     </Box>
   );
