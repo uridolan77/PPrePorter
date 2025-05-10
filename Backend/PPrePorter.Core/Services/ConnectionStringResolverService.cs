@@ -1,33 +1,21 @@
 using System;
-using System.Collections.Concurrent;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using PPrePorter.Core.Interfaces;
 
 namespace PPrePorter.Core.Services
 {
     public class ConnectionStringResolverService : IConnectionStringResolverService
     {
-        private readonly IAzureKeyVaultService _keyVaultService;
+        private readonly IConnectionStringCacheService _connectionStringCacheService;
         private readonly ILogger<ConnectionStringResolverService> _logger;
 
-        // Cache to store resolved secrets from Azure Key Vault
-        private readonly ConcurrentDictionary<string, string> _secretCache;
-
-        // Regex to find placeholders like {azurevault:vaultName:secretName}
-        private static readonly Regex AzureVaultPlaceholderRegex = new Regex(@"\{azurevault:([^:]+):([^}]+)\}", RegexOptions.IgnoreCase);
-
-        // Resolved connection string cache - stores fully resolved connection strings
-        private readonly ConcurrentDictionary<string, string> _connectionStringCache;
-
-        public ConnectionStringResolverService(IAzureKeyVaultService keyVaultService, ILogger<ConnectionStringResolverService> logger)
+        public ConnectionStringResolverService(
+            IConnectionStringCacheService connectionStringCacheService,
+            ILogger<ConnectionStringResolverService> logger)
         {
-            _keyVaultService = keyVaultService ?? throw new ArgumentNullException(nameof(keyVaultService));
+            _connectionStringCacheService = connectionStringCacheService ?? throw new ArgumentNullException(nameof(connectionStringCacheService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _secretCache = new ConcurrentDictionary<string, string>();
-            _connectionStringCache = new ConcurrentDictionary<string, string>();
         }
 
         public async Task<string> ResolveConnectionStringAsync(string connectionStringTemplate)
@@ -35,135 +23,59 @@ namespace PPrePorter.Core.Services
             if (string.IsNullOrWhiteSpace(connectionStringTemplate))
             {
                 return connectionStringTemplate;
-            }            // Check if this connection string template has already been resolved and cached
-            if (_connectionStringCache.TryGetValue(connectionStringTemplate, out string? cachedConnectionString) && cachedConnectionString != null)
-            {
-                _logger.LogDebug("Using cached resolved connection string");
-                return cachedConnectionString;
             }
 
-            _logger.LogInformation("Attempting to resolve connection string template.");
-
-            string resolvedConnectionString = connectionStringTemplate;
-            MatchCollection matches = AzureVaultPlaceholderRegex.Matches(connectionStringTemplate);
-
-            if (matches.Count == 0)
+            try
             {
-                _logger.LogInformation("No Azure Key Vault placeholders found in the connection string template.");
-                return connectionStringTemplate;
+                _logger.LogInformation("Delegating connection string resolution to ConnectionStringCacheService");
+                string resolvedConnectionString = await _connectionStringCacheService.ResolveConnectionStringAsync(connectionStringTemplate);
+
+                // Log the resolved connection string (without sensitive info)
+                string sanitizedConnectionString = SanitizeConnectionString(resolvedConnectionString);
+                _logger.LogInformation("Connection string resolved: {ConnectionString}", sanitizedConnectionString);
+
+                return resolvedConnectionString;
             }
-
-            _logger.LogInformation("Found {MatchCount} Azure Key Vault placeholder(s) to resolve.", matches.Count);
-
-            foreach (Match match in matches)
+            catch (Exception ex)
             {
-                string placeholder = match.Value; // e.g., {azurevault:vaultName:secretName}
-                string vaultName = match.Groups[1].Value;
-                string secretName = match.Groups[2].Value;
-                string cacheKey = $"{vaultName}:{secretName}";
-
-                _logger.LogInformation("Resolving placeholder: {Placeholder} (Vault: {VaultName}, Secret: {SecretName})", placeholder, vaultName, secretName);
-                string secretValue;
-
-                // Try to get the secret value from the cache first
-                if (_secretCache.TryGetValue(cacheKey, out string? cachedSecretValue) && cachedSecretValue != null)
-                {
-                    _logger.LogDebug("Using cached secret for '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
-                    secretValue = cachedSecretValue;
-                }
-                else
-                {
-                    try
-                    {
-                        // If not in cache, retrieve from Azure Key Vault
-                        _logger.LogInformation("Retrieving secret '{SecretName}' from vault '{VaultName}' using key '{Key}'", secretName, vaultName, cacheKey);
-
-                        // Add more detailed logging before calling Azure Key Vault
-                        _logger.LogInformation("Attempting to call Azure Key Vault service for vault '{VaultName}' and secret '{SecretName}'", vaultName, secretName);
-
-                        secretValue = await _keyVaultService.GetSecretAsync(vaultName, secretName);
-
-                        _logger.LogInformation("Call to Azure Key Vault service completed for vault '{VaultName}' and secret '{SecretName}'", vaultName, secretName);
-
-                        if (secretValue == null)
-                        {
-                            _logger.LogWarning("Secret '{SecretName}' from vault '{VaultName}' returned null", secretName, vaultName);
-                            // No fallback values here - let the caller handle null values
-                        }
-                        else
-                        {
-                            // Only log the first few characters of the secret if it's a password
-                            string logValue = secretName.Contains("Password") ?
-                                secretValue.Substring(0, Math.Min(3, secretValue.Length)) + "***" :
-                                secretValue;
-                            _logger.LogInformation("Successfully retrieved secret '{SecretName}' from vault '{VaultName}': {Value}",
-                                secretName, vaultName, logValue);
-                        }
-
-                        // Cache the result (even if null, to avoid repeated failed lookups)
-                        _secretCache.TryAdd(cacheKey, secretValue);
-
-                        _logger.LogInformation("Cached secret for '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to resolve secret for placeholder '{Placeholder}' (Vault: {VaultName}, Secret: {SecretName}). The placeholder will not be replaced.", placeholder, vaultName, secretName);
-
-                        // Log additional details about the exception
-                        _logger.LogError("Exception type: {ExceptionType}, Message: {Message}", ex.GetType().Name, ex.Message);
-                        if (ex.InnerException != null)
-                        {
-                            _logger.LogError("Inner exception: {InnerExceptionType}, Message: {Message}",
-                                ex.InnerException.GetType().Name, ex.InnerException.Message);
-                        }
-
-                        // Log the exception but don't provide fallback values
-                        _logger.LogWarning("Secret '{SecretName}' could not be retrieved due to an exception", secretName);
-                        continue; // Skip to the next placeholder
-                    }
-                }
-
-                if (secretValue == null)
-                {
-                    _logger.LogWarning("Secret '{SecretName}' from vault '{VaultName}' resolved to null. Placeholder '{Placeholder}' will not be replaced.", secretName, vaultName, placeholder);
-
-                    // Log a more detailed warning about the placeholder not being replaced
-                    _logger.LogWarning("The placeholder '{Placeholder}' will remain in the connection string. This will likely cause connection failures.", placeholder);
-                }
-                else
-                {
-                    resolvedConnectionString = resolvedConnectionString.Replace(placeholder, secretValue);
-                    _logger.LogDebug("Successfully replaced placeholder '{Placeholder}' with secret from vault '{VaultName}'.", placeholder, vaultName);
-
-                    // Log a more detailed message about the replacement
-                    string logValue = secretName.Contains("Password") ? "***" : secretValue;
-                    _logger.LogInformation("Placeholder '{Placeholder}' was replaced with value: {Value}", placeholder, logValue);
-                }
+                _logger.LogError(ex, "Error resolving connection string template");
+                throw;
             }
-
-            // Cache the fully resolved connection string
-            _connectionStringCache.TryAdd(connectionStringTemplate, resolvedConnectionString);
-
-            // Log the resolved connection string (without sensitive info)
-            string sanitizedConnectionString = resolvedConnectionString;
-            if (sanitizedConnectionString.Contains("password="))
-            {
-                sanitizedConnectionString = System.Text.RegularExpressions.Regex.Replace(
-                    sanitizedConnectionString,
-                    "password=[^;]*",
-                    "password=***");
-            }
-            _logger.LogInformation("Finished resolving connection string template. Result: {ConnectionString}", sanitizedConnectionString);
-
-            return resolvedConnectionString;
         }
 
         // Method to clear caches (useful for refreshing secrets if needed)
         public void ClearCaches()
         {
-            _secretCache.Clear();
-            _connectionStringCache.Clear();
             _logger.LogInformation("Connection string resolver caches cleared");
+            // No need to clear caches here as they are managed by the ConnectionStringCacheService
+        }
+
+        /// <summary>
+        /// Helper method to sanitize connection strings by hiding sensitive information
+        /// </summary>
+        private static string SanitizeConnectionString(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+                return connectionString;
+
+            if (connectionString.Contains("password="))
+            {
+                // Simple string replacement
+                int startIndex = connectionString.IndexOf("password=");
+                if (startIndex >= 0)
+                {
+                    int endIndex = connectionString.IndexOf(';', startIndex);
+                    if (endIndex < 0)
+                        endIndex = connectionString.Length;
+
+                    // Build the sanitized string
+                    var prefix = connectionString[..startIndex];
+                    var suffix = endIndex < connectionString.Length ? connectionString[endIndex..] : "";
+                    return prefix + "password=***" + suffix;
+                }
+            }
+
+            return connectionString;
         }
     }
 }

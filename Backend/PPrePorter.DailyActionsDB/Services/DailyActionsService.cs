@@ -93,6 +93,16 @@ namespace PPrePorter.DailyActionsDB.Services
                         startDate, endDate, whiteLabelId, cacheKey);
                 }
 
+                // Calculate date range span in days
+                var daySpan = (end.Date - start.Date).Days + 1;
+
+                // Set a reasonable limit based on date range
+                // For large date ranges, we'll limit the number of records
+                int maxRecords = Math.Min(10000, daySpan * 500); // Limit to 500 records per day, max 10,000
+
+                _logger.LogInformation("Setting max records limit to {MaxRecords} for date range spanning {DaySpan} days",
+                    maxRecords, daySpan);
+
                 // Build query with NOLOCK hint
                 var query = _dbContext.DailyActions
                     .AsNoTracking()
@@ -106,6 +116,9 @@ namespace PPrePorter.DailyActionsDB.Services
                     // Check both WhiteLabelID and WhiteLabelId fields
                     query = query.Where(da => da.WhiteLabelID.HasValue && da.WhiteLabelID.Value == whiteLabelId.Value);
                 }
+
+                // Add ordering and limit
+                query = query.OrderBy(da => da.Date).ThenBy(da => da.WhiteLabelID).Take(maxRecords);
 
                 // Execute query - don't use WithNoLock() here since we're using the NoLockInterceptor
                 var result = await query.ToListAsync();
@@ -437,6 +450,15 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 _logger.LogWarning("CACHE MISS: Getting filtered daily actions from database with hash {FilterHash}, cache key: {CacheKey}", filterHash, cacheKey);
 
+                // Calculate date range span in days
+                var daySpan = (end.Date - start.Date).Days + 1;
+
+                // Set a reasonable limit for the total query
+                int maxTotalRecords = Math.Min(50000, daySpan * 1000); // Limit to 1000 records per day, max 50,000
+
+                _logger.LogInformation("Setting max total records limit to {MaxTotalRecords} for date range spanning {DaySpan} days",
+                    maxTotalRecords, daySpan);
+
                 // Build base query with NOLOCK hint
                 var query = _dbContext.DailyActions
                     .AsNoTracking()
@@ -489,20 +511,29 @@ namespace PPrePorter.DailyActionsDB.Services
                     }
                 }
 
-                // Get total count before pagination
-                var totalCount = await query.CountAsync();
+                // Get total count before pagination, but limit it to avoid performance issues
+                var countQuery = query;
+                if (maxTotalRecords > 0)
+                {
+                    // Apply the limit to the count query as well
+                    countQuery = countQuery.Take(maxTotalRecords);
+                }
+                var totalCount = await countQuery.CountAsync();
 
                 // Apply pagination
                 var pageSize = Math.Max(1, filter.PageSize);
                 var pageNumber = Math.Max(1, filter.PageNumber);
                 var skip = (pageNumber - 1) * pageSize;
 
+                // Apply the overall limit first to avoid processing too many records
+                query = query.Take(maxTotalRecords);
+
                 // Get data with pagination
                 var dailyActions = await query
                     .OrderBy(da => da.Date)
                     .ThenBy(da => da.WhiteLabelID)
                     .Skip(skip)
-                    .Take(pageSize)
+                    .Take(Math.Min(pageSize, 1000)) // Ensure page size is reasonable
                     .ToListAsync();
 
                 // Get white labels for mapping names
@@ -662,53 +693,72 @@ namespace PPrePorter.DailyActionsDB.Services
                     Symbol = c.CurrencySymbol
                 }).ToList();
 
-                // Get distinct values from players table
-                var players = await _dbContext.Players
+                // Get distinct values from players table using more efficient queries
+                // For languages - use a direct query with DISTINCT
+                var languages = await _dbContext.Players
                     .AsNoTracking()
-                    // Don't use WithNoLock() here since we're using the NoLockInterceptor
-                    .ToListAsync();
-
-                var languages = players
+                    .TagWith("WITH (NOLOCK)")
                     .Where(p => !string.IsNullOrEmpty(p.Language))
                     .Select(p => p.Language)
                     .Distinct()
                     .OrderBy(l => l)
-                    .ToList();
+                    .Take(100) // Limit to top 100 languages
+                    .ToListAsync();
 
-                var platforms = players
+                // For platforms
+                var platforms = await _dbContext.Players
+                    .AsNoTracking()
+                    .TagWith("WITH (NOLOCK)")
                     .Where(p => !string.IsNullOrEmpty(p.RegisteredPlatform))
                     .Select(p => p.RegisteredPlatform)
                     .Distinct()
                     .OrderBy(p => p)
-                    .ToList();
+                    .Take(20) // Limit to top 20 platforms
+                    .ToListAsync();
 
-                var genders = players
+                // For genders
+                var genders = await _dbContext.Players
+                    .AsNoTracking()
+                    .TagWith("WITH (NOLOCK)")
                     .Where(p => !string.IsNullOrEmpty(p.Gender))
                     .Select(p => p.Gender)
                     .Distinct()
                     .OrderBy(g => g)
-                    .ToList();
+                    .Take(10) // Limit to top 10 genders (should be just a few)
+                    .ToListAsync();
 
-                var statuses = players
+                // For statuses
+                var statuses = await _dbContext.Players
+                    .AsNoTracking()
+                    .TagWith("WITH (NOLOCK)")
                     .Where(p => !string.IsNullOrEmpty(p.Status))
                     .Select(p => p.Status)
                     .Distinct()
                     .OrderBy(s => s)
-                    .ToList();
+                    .Take(20) // Limit to top 20 statuses
+                    .ToListAsync();
 
-                var registrationPlayModes = players
+                // For registration play modes
+                var registrationPlayModes = await _dbContext.Players
+                    .AsNoTracking()
+                    .TagWith("WITH (NOLOCK)")
                     .Where(p => !string.IsNullOrEmpty(p.RegistrationPlayMode))
                     .Select(p => p.RegistrationPlayMode)
                     .Distinct()
                     .OrderBy(r => r)
-                    .ToList();
+                    .Take(20) // Limit to top 20 registration play modes
+                    .ToListAsync();
 
-                var trackers = players
+                // For trackers (affiliate IDs)
+                var trackers = await _dbContext.Players
+                    .AsNoTracking()
+                    .TagWith("WITH (NOLOCK)")
                     .Where(p => !string.IsNullOrEmpty(p.AffiliateID))
                     .Select(p => p.AffiliateID)
                     .Distinct()
                     .OrderBy(t => t)
-                    .ToList();
+                    .Take(100) // Limit to top 100 trackers
+                    .ToListAsync();
 
                 // Create group by options
                 var groupByOptions = new List<GroupByOptionDto>
@@ -811,9 +861,8 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Get today and yesterday dates
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
-                var lastWeek = today.AddDays(-7);
 
-                // Prewarm metadata
+                // Prewarm metadata (this is essential and relatively small)
                 var startTime = DateTime.UtcNow;
                 var metadata = await GetDailyActionsMetadataAsync();
                 var metadataTime = DateTime.UtcNow - startTime;
@@ -823,41 +872,31 @@ namespace PPrePorter.DailyActionsDB.Services
                     metadata.Currencies.Count,
                     metadataTime.TotalMilliseconds);
 
-                // Prewarm yesterday's data (most common query)
+                // Prewarm yesterday's summary metrics (small and frequently accessed)
                 startTime = DateTime.UtcNow;
-                var yesterdayData = await GetDailyActionsAsync(yesterday, today);
-                var yesterdayTime = DateTime.UtcNow - startTime;
-                _logger.LogInformation("Prewarmed yesterday's data cache with {Count} records in {ElapsedMs}ms",
-                    yesterdayData.Count(),
-                    yesterdayTime.TotalMilliseconds);
 
-                // Prewarm last week's data
-                startTime = DateTime.UtcNow;
-                var lastWeekData = await GetDailyActionsAsync(lastWeek, today);
-                var lastWeekTime = DateTime.UtcNow - startTime;
-                _logger.LogInformation("Prewarmed last week's data cache with {Count} records in {ElapsedMs}ms",
-                    lastWeekData.Count(),
-                    lastWeekTime.TotalMilliseconds);
+                // Use a smaller date range for prewarming to avoid loading too much data
+                var yesterdayStart = yesterday;
+                var yesterdayEnd = today;
 
-                // Prewarm summary metrics for yesterday
-                startTime = DateTime.UtcNow;
-                var yesterdaySummary = await GetSummaryMetricsAsync(yesterday, today);
+                _logger.LogInformation("Prewarming summary metrics for date range {StartDate} to {EndDate}",
+                    yesterdayStart.ToString("yyyy-MM-dd"), yesterdayEnd.ToString("yyyy-MM-dd"));
+
+                var yesterdaySummary = await GetSummaryMetricsAsync(yesterdayStart, yesterdayEnd);
                 var yesterdaySummaryTime = DateTime.UtcNow - startTime;
                 _logger.LogInformation("Prewarmed yesterday's summary metrics cache in {ElapsedMs}ms",
                     yesterdaySummaryTime.TotalMilliseconds);
-
-                // Prewarm summary metrics for last week
-                startTime = DateTime.UtcNow;
-                var lastWeekSummary = await GetSummaryMetricsAsync(lastWeek, today);
-                var lastWeekSummaryTime = DateTime.UtcNow - startTime;
-                _logger.LogInformation("Prewarmed last week's summary metrics cache in {ElapsedMs}ms",
-                    lastWeekSummaryTime.TotalMilliseconds);
 
                 // Log cache statistics
                 var cacheService = _cache as IGlobalCacheService;
                 int cacheCount = cacheService?.GetCount() ?? -1;
                 _logger.LogInformation("Cache prewarming completed successfully. Total items in cache: {CacheCount}",
                     cacheCount);
+
+                // Note: We're no longer prewarming the following to reduce startup time and memory usage:
+                // - Yesterday's full data (will be loaded on demand)
+                // - Last week's full data (will be loaded on demand)
+                // - Last week's summary metrics (will be loaded on demand)
             }
             catch (Exception ex)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PPrePorter.Core.Interfaces;
@@ -11,14 +12,16 @@ namespace PPrePorter.Tests.Core.Services
     public class ConnectionStringResolverServiceTests
     {
         private readonly Mock<IAzureKeyVaultService> _mockKeyVaultService;
+        private readonly Mock<IConnectionStringCacheService> _mockCacheService;
         private readonly Mock<ILogger<ConnectionStringResolverService>> _mockLogger;
         private readonly ConnectionStringResolverService _service;
 
         public ConnectionStringResolverServiceTests()
         {
             _mockKeyVaultService = new Mock<IAzureKeyVaultService>();
+            _mockCacheService = new Mock<IConnectionStringCacheService>();
             _mockLogger = new Mock<ILogger<ConnectionStringResolverService>>();
-            _service = new ConnectionStringResolverService(_mockKeyVaultService.Object, _mockLogger.Object);
+            _service = new ConnectionStringResolverService(_mockCacheService.Object, _mockLogger.Object);
         }
 
         [Fact]
@@ -27,12 +30,16 @@ namespace PPrePorter.Tests.Core.Services
             // Arrange
             var connectionString = "Server=localhost;Database=TestDB;User Id=sa;Password=Password123;";
 
+            _mockCacheService
+                .Setup(x => x.ResolveConnectionStringAsync(connectionString))
+                .ReturnsAsync(connectionString);
+
             // Act
             var result = await _service.ResolveConnectionStringAsync(connectionString);
 
             // Assert
             Assert.Equal(connectionString, result);
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _mockCacheService.Verify(x => x.ResolveConnectionStringAsync(connectionString), Times.Once);
         }
 
         [Fact]
@@ -40,22 +47,18 @@ namespace PPrePorter.Tests.Core.Services
         {
             // Arrange
             var connectionString = "Server=localhost;Database=TestDB;User Id={azurevault:vault:username};Password={azurevault:vault:password};";
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "username"))
-                .ReturnsAsync("testuser");
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "password"))
-                .ReturnsAsync("testpassword");
+            var resolvedConnectionString = "Server=localhost;Database=TestDB;User Id=testuser;Password=testpassword;";
+
+            _mockCacheService
+                .Setup(x => x.ResolveConnectionStringAsync(connectionString))
+                .ReturnsAsync(resolvedConnectionString);
 
             // Act
             var result = await _service.ResolveConnectionStringAsync(connectionString);
 
             // Assert
-            Assert.Equal("Server=localhost;Database=TestDB;User Id=testuser;Password=testpassword;", result);
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync("vault", "username"), Times.Once);
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync("vault", "password"), Times.Once);
+            Assert.Equal(resolvedConnectionString, result);
+            _mockCacheService.Verify(x => x.ResolveConnectionStringAsync(connectionString), Times.Once);
         }
 
         [Fact]
@@ -63,64 +66,53 @@ namespace PPrePorter.Tests.Core.Services
         {
             // Arrange
             var connectionString = "Server=localhost;Database=TestDB;User Id={azurevault:vault:username};Password={azurevault:vault:password};";
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "username"))
-                .ReturnsAsync("testuser");
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "password"))
-                .ReturnsAsync("testpassword");
+            var resolvedConnectionString = "Server=localhost;Database=TestDB;User Id=testuser;Password=testpassword;";
+
+            _mockCacheService
+                .Setup(x => x.ResolveConnectionStringAsync(connectionString))
+                .ReturnsAsync(resolvedConnectionString);
 
             // Act - Call twice to test caching
             var result1 = await _service.ResolveConnectionStringAsync(connectionString);
             var result2 = await _service.ResolveConnectionStringAsync(connectionString);
 
             // Assert
-            Assert.Equal("Server=localhost;Database=TestDB;User Id=testuser;Password=testpassword;", result1);
-            Assert.Equal("Server=localhost;Database=TestDB;User Id=testuser;Password=testpassword;", result2);
-            
-            // Verify that GetSecretAsync was called only once for each secret
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync("vault", "username"), Times.Once);
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync("vault", "password"), Times.Once);
+            Assert.Equal(resolvedConnectionString, result1);
+            Assert.Equal(resolvedConnectionString, result2);
+
+            // Verify that ResolveConnectionStringAsync was called twice
+            _mockCacheService.Verify(x => x.ResolveConnectionStringAsync(connectionString), Times.Exactly(2));
         }
 
         [Fact]
-        public async Task ResolveConnectionStringAsync_WithKeyVaultError_ThrowsException()
+        public async Task ResolveConnectionStringAsync_WithCacheError_ThrowsException()
         {
             // Arrange
             var connectionString = "Server=localhost;Database=TestDB;User Id={azurevault:vault:username};Password=Password123;";
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "username"))
-                .ThrowsAsync(new Exception("Key Vault error"));
+
+            _mockCacheService
+                .Setup(x => x.ResolveConnectionStringAsync(connectionString))
+                .ThrowsAsync(new Exception("Cache error"));
 
             // Act & Assert
             await Assert.ThrowsAsync<Exception>(() => _service.ResolveConnectionStringAsync(connectionString));
         }
 
         [Fact]
-        public void ClearCaches_ClearsAllCaches()
+        public void ClearCaches_LogsMessage()
         {
-            // Arrange
-            var connectionString = "Server=localhost;Database=TestDB;User Id={azurevault:vault:username};Password={azurevault:vault:password};";
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "username"))
-                .ReturnsAsync("testuser");
-            
-            _mockKeyVaultService
-                .Setup(x => x.GetSecretAsync("vault", "password"))
-                .ReturnsAsync("testpassword");
-
-            // Act - Call once to populate cache, then clear it
-            var _ = _service.ResolveConnectionStringAsync(connectionString).Result;
+            // Act
             _service.ClearCaches();
-            var result = _service.ResolveConnectionStringAsync(connectionString).Result;
 
-            // Assert - Verify that GetSecretAsync was called twice for each secret
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync("vault", "username"), Times.Exactly(2));
-            _mockKeyVaultService.Verify(x => x.GetSecretAsync("vault", "password"), Times.Exactly(2));
+            // Assert - Verify that the logger was called
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Connection string resolver caches cleared")),
+                    null,
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
         }
     }
 }

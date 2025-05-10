@@ -23,6 +23,9 @@ namespace PPrePorter.Core
             // Register the memory cache adapter that uses the global cache service
             services.AddSingleton<IMemoryCache, MemoryCacheAdapter>();
 
+            // Register the connection string cache service as a singleton to ensure it persists across requests
+            services.AddSingleton<IConnectionStringCacheService, ConnectionStringCacheService>();
+
             // Register other core services
             services.AddScoped<IConnectionStringResolverService, ConnectionStringResolverService>();
 

@@ -19,7 +19,9 @@ using PPrePorter.NLP.Extensions;
 using PPrePorter.SemanticLayer.Extensions;
 using PPrePorter.DailyActionsDB;
 using PPrePorter.AzureServices;
+using System;
 using System.Text;
+using System.Threading.Tasks;
 using PPrePorter.API.Extensions;
 using HealthChecks.UI.Client;
 using PPrePorter.Infrastructure.Repositories;
@@ -296,7 +298,7 @@ if (sanitizedConnectionString != null && sanitizedConnectionString.Contains("pas
 }
 Console.WriteLine($"Using connection string from configuration: {sanitizedConnectionString}");
 
-builder.Services.AddDailyActionsServices(builder.Configuration, useLocalDatabase);
+builder.Services.AddDailyActionsServices(builder.Configuration);
 
 // Log which database we're using
 Console.WriteLine($"Using {(useLocalDatabase ? "local" : "real")} DailyActionsDB");
@@ -329,6 +331,38 @@ builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerVersi
 
 var app = builder.Build();
 
+// Initialize the connection string cache
+Console.WriteLine("\n=== INITIALIZING CONNECTION STRING CACHE ===");
+Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Get the connection string cache service
+        var connectionStringCacheService = scope.ServiceProvider.GetRequiredService<IConnectionStringCacheService>();
+        logger.LogInformation("Initializing connection string cache");
+
+        // Initialize the cache
+        await connectionStringCacheService.InitializeAsync();
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("CONNECTION STRING CACHE INITIALIZED SUCCESSFULLY");
+        Console.ResetColor();
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("CONNECTION STRING CACHE INITIALIZATION FAILED");
+        Console.ResetColor();
+
+        logger.LogError(ex, "Failed to initialize connection string cache");
+    }
+
+    Console.WriteLine("=== CONNECTION STRING CACHE INITIALIZATION COMPLETE ===\n");
+}
+
 // Verify database connection with a clear success/failure message
 Console.WriteLine("\n=== CHECKING DATABASE CONNECTION ===");
 Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
@@ -338,31 +372,30 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        // Get the connection string resolver service
-        var connectionStringResolver = scope.ServiceProvider.GetRequiredService<IConnectionStringResolverService>();
+        // Get the connection string cache service
+        var connectionStringCacheService = scope.ServiceProvider.GetRequiredService<IConnectionStringCacheService>();
 
         // Check which Azure Key Vault service implementation is being used
         var keyVaultService = scope.ServiceProvider.GetRequiredService<IAzureKeyVaultService>();
         logger.LogInformation("Using Azure Key Vault service implementation: {Implementation}", keyVaultService.GetType().Name);
 
-        // Get the connection string from configuration
-        string connectionStringTemplate = builder.Configuration.GetConnectionString("DailyActionsDB");
+        // Get the connection string name
+        string dbConnectionStringName = "DailyActionsDB";
 
-        // Log the template connection string (without sensitive info)
-        string sanitizedTemplate = connectionStringTemplate;
-        if (sanitizedTemplate != null && sanitizedTemplate.Contains("password="))
+        // Get the connection string from the cache
+        Console.WriteLine("Getting connection string from cache...");
+        string resolvedConnectionString = connectionStringCacheService.GetConnectionString(dbConnectionStringName);
+
+        // Log the resolved connection string (without sensitive info)
+        string dbSanitizedConnectionString = resolvedConnectionString;
+        if (dbSanitizedConnectionString != null && dbSanitizedConnectionString.Contains("password="))
         {
-            sanitizedTemplate = Regex.Replace(
-                sanitizedTemplate,
+            dbSanitizedConnectionString = Regex.Replace(
+                dbSanitizedConnectionString,
                 "password=[^;]*",
                 "password=***");
         }
-        logger.LogInformation("Connection string template: {ConnectionString}", sanitizedTemplate);
-
-        // Explicitly resolve the connection string
-        Console.WriteLine("Resolving connection string placeholders using " + keyVaultService.GetType().Name + "...");
-        string resolvedConnectionString = connectionStringResolver.ResolveConnectionStringAsync(connectionStringTemplate)
-            .GetAwaiter().GetResult();
+        logger.LogInformation("Connection string from cache: {ConnectionString}", dbSanitizedConnectionString);
 
         // Check if the connection string still contains placeholders
         if (resolvedConnectionString.Contains("{azurevault:"))

@@ -6,6 +6,11 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Initialize mock data flag for UI testing
+// This ensures the flag is set when the application starts
+localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
+console.log('Mock data mode is enabled for UI testing');
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

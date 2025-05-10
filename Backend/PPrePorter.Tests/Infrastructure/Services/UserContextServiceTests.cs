@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,8 +78,8 @@ namespace PPrePorter.Tests.Infrastructure.Services
             _mockUserDbSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
 
             _mockUserDbSet.Setup(m => m.Include(It.IsAny<string>())).Returns(_mockUserDbSet.Object);
-            _mockUserDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<Func<User, bool>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Func<User, bool> predicate, CancellationToken token) => users.FirstOrDefault(predicate));
+            _mockUserDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Expression<Func<User, bool>> predicate, CancellationToken token) => users.AsQueryable().FirstOrDefault(predicate.Compile()));
 
             // Act
             var result = await _service.GetCurrentUserAsync();
@@ -140,8 +142,8 @@ namespace PPrePorter.Tests.Infrastructure.Services
             _mockUserDbSet.As<IQueryable<User>>().Setup(m => m.GetEnumerator()).Returns(() => queryable.GetEnumerator());
 
             _mockUserDbSet.Setup(m => m.Include(It.IsAny<string>())).Returns(_mockUserDbSet.Object);
-            _mockUserDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<Func<User, bool>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Func<User, bool> predicate, CancellationToken token) => users.FirstOrDefault(predicate));
+            _mockUserDbSet.Setup(m => m.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Expression<Func<User, bool>> predicate, CancellationToken token) => users.AsQueryable().FirstOrDefault(predicate.Compile()));
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetCurrentUserAsync());

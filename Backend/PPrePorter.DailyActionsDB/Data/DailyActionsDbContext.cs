@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Models;
 using System;
@@ -21,14 +22,21 @@ namespace PPrePorter.DailyActionsDB.Data
         {
             // The SQL Server configuration is now handled in the AddDbContext call
             // in DailyActionsServiceRegistration.cs
-        }
 
-        public DailyActionsDbContext(
-            DbContextOptions<DailyActionsDbContext> options,
-            ILogger<DailyActionsDbContext> logger)
-            : base(options)
-        {
-            _logger = logger;
+            // Try to get logger from service provider if available
+            try
+            {
+                var serviceProvider = options.FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider;
+                if (serviceProvider != null)
+                {
+                    _logger = serviceProvider.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger<DailyActionsDbContext>();
+                }
+            }
+            catch
+            {
+                // Ignore errors when trying to get the logger
+            }
         }
 
         // Override SaveChanges to add logging

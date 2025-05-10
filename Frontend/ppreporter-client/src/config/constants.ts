@@ -121,7 +121,8 @@ export const FEATURES = {
   NATURAL_LANGUAGE_QUERY: true,
   AI_INSIGHTS: true,
   EXPORT_SCHEDULING: true,
-  DATA_ALERTS: true
+  DATA_ALERTS: true,
+  USE_MOCK_DATA_FOR_UI_TESTING: true // Set to true to use mock data instead of API calls
 };
 
 export default {

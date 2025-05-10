@@ -16,13 +16,13 @@ namespace PPrePorter.AzureServices
         {
             if (useRealAzureKeyVault)
             {
-                // Register the real Azure Key Vault service
-                services.AddScoped<IAzureKeyVaultService, AzureKeyVaultService>();
+                // Register the real Azure Key Vault service as a singleton
+                services.AddSingleton<IAzureKeyVaultService, AzureKeyVaultService>();
             }
             else
             {
-                // Register the development mock implementation
-                services.AddScoped<IAzureKeyVaultService, DevelopmentAzureKeyVaultService>();
+                // Register the development mock implementation as a singleton
+                services.AddSingleton<IAzureKeyVaultService, DevelopmentAzureKeyVaultService>();
             }
 
             return services;

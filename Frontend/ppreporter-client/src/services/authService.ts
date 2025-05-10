@@ -20,7 +20,42 @@ const USER_KEY = 'user_info';
  */
 const login = async (credentials: LoginCredentials): Promise<User> => {
   try {
-    const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+    // Add debugger statement to help with debugging
+    debugger;
+    console.log('Attempting login with credentials:', credentials);
+
+    // Check if we should use mock data
+    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+    console.log('Using mock data for login?', useMockData);
+
+    let response;
+
+    if (useMockData) {
+      // Import mock data dynamically to avoid circular dependencies
+      const mockDataModule = await import('../mockData');
+      const mockDataService = mockDataModule.default;
+
+      // Simulate API delay
+      await mockDataService.simulateApiDelay();
+
+      // Get mock login data
+      const mockData = mockDataService.getMockData('/auth/login', credentials);
+
+      if (mockData) {
+        console.log('Using mock login data:', mockData);
+        response = { data: mockData };
+      } else {
+        throw new Error('No mock data available for login');
+      }
+    } else {
+      // Make the actual API call
+      response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+    }
+
+    // Add debugger statement after the API call
+    debugger;
+    console.log('Login response received:', response.data);
+
     const { token, refreshToken, user } = response.data;
 
     // Store tokens and user data
@@ -33,6 +68,9 @@ const login = async (credentials: LoginCredentials): Promise<User> => {
 
     return user;
   } catch (error) {
+    // Add debugger statement for errors
+    debugger;
+    console.error('Login error:', error);
     throw error;
   }
 };

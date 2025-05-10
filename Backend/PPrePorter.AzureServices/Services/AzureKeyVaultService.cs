@@ -53,7 +53,7 @@ namespace PPrePorter.AzureServices.Services
         /// <param name="vaultName">The name of the Azure Key Vault (e.g., "progressplaymcp-kv")</param>
         /// <param name="secretName">The name of the secret to retrieve (e.g., "DailyActionsDB--Username")</param>
         /// <returns>The secret value, or null if not found</returns>
-        public async Task<string> GetSecretAsync(string vaultName, string secretName)
+        public async Task<string?> GetSecretAsync(string vaultName, string secretName)
         {
             if (string.IsNullOrWhiteSpace(vaultName))
             {

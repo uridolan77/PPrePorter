@@ -1,5 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Models;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PPrePorter.DailyActionsDB.Data
 {
@@ -8,9 +14,25 @@ namespace PPrePorter.DailyActionsDB.Data
     /// </summary>
     public class DailyActionsSimpleDbContext : DbContext
     {
+        private readonly ILogger<DailyActionsSimpleDbContext>? _logger;
+
         public DailyActionsSimpleDbContext(DbContextOptions<DailyActionsSimpleDbContext> options)
             : base(options)
         {
+            // Try to get logger from service provider if available
+            try
+            {
+                var serviceProvider = options.FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider;
+                if (serviceProvider != null)
+                {
+                    _logger = serviceProvider.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger<DailyActionsSimpleDbContext>();
+                }
+            }
+            catch
+            {
+                // Ignore errors when trying to get the logger
+            }
         }
 
         // Main entities
@@ -19,6 +41,34 @@ namespace PPrePorter.DailyActionsDB.Data
         public DbSet<WhiteLabel> WhiteLabels { get; set; }
         public DbSet<Game> Games { get; set; }
         public DbSet<Player> Players { get; set; }
+
+        // Override SaveChanges to add logging
+        public override int SaveChanges()
+        {
+            try
+            {
+                return base.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in SaveChanges");
+                throw;
+            }
+        }
+
+        // Override SaveChangesAsync to add logging
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await base.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in SaveChangesAsync");
+                throw;
+            }
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

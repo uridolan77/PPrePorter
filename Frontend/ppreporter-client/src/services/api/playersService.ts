@@ -12,17 +12,39 @@ import {
 import { ApiResponse } from '../../types/api';
 import { AxiosRequestConfig } from 'axios';
 
-// Define the missing PLAYERS endpoints structure
-const PLAYERS_ENDPOINTS = {
-  GET_DATA: '/reports/players/data',
-  GET_METADATA: '/reports/players/metadata',
-  GET_DETAILS: '/reports/players/details',
-  GET_ACTIVITY: '/reports/players/activity',
-  GET_TRANSACTIONS: '/reports/players/transactions',
-  EXPORT: '/reports/players/export',
-  SAVE_CONFIG: '/reports/configurations/save',
-  GET_CONFIGS: '/reports/configurations'
-};
+// Define the PLAYERS endpoints structure with fallback handling
+let PLAYERS_ENDPOINTS: any;
+
+// Check which structure we have
+// Use type assertion to avoid TypeScript errors
+if ((API_ENDPOINTS as any).PLAYERS) {
+  // Using the JavaScript structure
+  PLAYERS_ENDPOINTS = (API_ENDPOINTS as any).PLAYERS;
+} else if (API_ENDPOINTS.REPORTS && API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY) {
+  // Using the TypeScript structure
+  PLAYERS_ENDPOINTS = {
+    GET_DATA: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/data`,
+    GET_METADATA: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/metadata`,
+    GET_DETAILS: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/details`,
+    GET_ACTIVITY: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/activity`,
+    GET_TRANSACTIONS: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/transactions`,
+    EXPORT: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/export`,
+    SAVE_CONFIG: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/config/save`,
+    GET_CONFIGS: `${API_ENDPOINTS.REPORTS.PLAYER_ACTIVITY}/config/list`
+  };
+} else {
+  // Fallback to hardcoded endpoints if neither structure is available
+  PLAYERS_ENDPOINTS = {
+    GET_DATA: '/reports/players/data',
+    GET_METADATA: '/reports/players/metadata',
+    GET_DETAILS: '/reports/players/details',
+    GET_ACTIVITY: '/reports/players/activity',
+    GET_TRANSACTIONS: '/reports/players/transactions',
+    EXPORT: '/reports/players/export',
+    SAVE_CONFIG: '/reports/configurations/save',
+    GET_CONFIGS: '/reports/configurations'
+  };
+}
 
 /**
  * Service for Players Report API integration
