@@ -22,7 +22,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip
+  Chip,
+  Collapse
 } from '@mui/material';
 import EnhancedUnifiedDataTable, { ExportFormat } from '../../../components/tables/EnhancedUnifiedDataTable';
 import { ColumnDef } from '../../../components/tables/UnifiedDataTable';
@@ -43,6 +44,8 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 // Types
 interface WhiteLabel {
@@ -98,6 +101,31 @@ interface Filters {
   whiteLabelIds?: number[]; // Changed to match backend's expectation of a list
   countryIds?: string[]; // Added country IDs for filtering
   groupBy?: number; // Changed to number to match backend's GroupByOption enum
+
+  // Advanced filters - Date filters
+  registrationDate?: string;
+  firstDepositDate?: string;
+  lastDepositDate?: string;
+  lastLoginDate?: string;
+
+  // Advanced filters - String filters
+  trackers?: string;
+  promotionCode?: string;
+  playerIds?: string[];
+
+  // Advanced filters - Array filters
+  playModes?: string[];
+  platforms?: string[];
+  statuses?: string[];
+  genders?: string[];
+  currencies?: string[];
+
+  // Advanced filters - Boolean filters
+  smsEnabled?: boolean;
+  mailEnabled?: boolean;
+  phoneEnabled?: boolean;
+  postEnabled?: boolean;
+  bonusEnabled?: boolean;
 }
 
 interface Country {
@@ -163,24 +191,7 @@ const DailyActionsPage: React.FC = () => {
     totalGGR: 0
   });
 
-  // Sample countries data
-  const sampleCountries: Country[] = [
-    { id: 'us', name: 'United States' },
-    { id: 'uk', name: 'United Kingdom' },
-    { id: 'ca', name: 'Canada' },
-    { id: 'de', name: 'Germany' },
-    { id: 'fr', name: 'France' },
-    { id: 'es', name: 'Spain' },
-    { id: 'it', name: 'Italy' },
-    { id: 'au', name: 'Australia' },
-    { id: 'jp', name: 'Japan' },
-    { id: 'cn', name: 'China' },
-    { id: 'br', name: 'Brazil' },
-    { id: 'mx', name: 'Mexico' },
-    { id: 'in', name: 'India' },
-    { id: 'ru', name: 'Russia' },
-    { id: 'za', name: 'South Africa' }
-  ];
+  // We'll fetch countries from the API instead of using mock data
 
   // Fetch metadata (white labels and countries) on component mount
   useEffect(() => {
@@ -201,16 +212,36 @@ const DailyActionsPage: React.FC = () => {
           // Get mock metadata
           const mockMetadata = mockDataService.getMockData('/reports/daily-actions/metadata');
 
-          if (mockMetadata && mockMetadata.whiteLabels) {
-            console.log('[DAILY ACTIONS PAGE] Got mock white labels:', mockMetadata.whiteLabels);
-            setWhiteLabels(mockMetadata.whiteLabels);
+          if (mockMetadata) {
+            if (mockMetadata.whiteLabels) {
+              console.log('[DAILY ACTIONS PAGE] Got mock white labels:', mockMetadata.whiteLabels);
+              setWhiteLabels(mockMetadata.whiteLabels);
 
-            // Convert white labels to MultiSelect options
-            const options = mockMetadata.whiteLabels.map((wl: WhiteLabel) => ({
-              value: wl.id,
-              label: wl.name
-            }));
-            setWhiteLabelsOptions(options);
+              // Convert white labels to MultiSelect options
+              const options = mockMetadata.whiteLabels.map((wl: WhiteLabel) => ({
+                value: wl.id,
+                label: wl.name
+              }));
+              setWhiteLabelsOptions(options);
+            }
+
+            // Also check for countries in the mock data
+            if (mockMetadata.countries) {
+              console.log('[DAILY ACTIONS PAGE] Got mock countries:', mockMetadata.countries);
+              setCountries(mockMetadata.countries);
+
+              // Convert countries to MultiSelect options
+              const countryOptions = mockMetadata.countries.map((country: Country) => ({
+                value: country.id,
+                label: country.name
+              }));
+              setCountriesOptions(countryOptions);
+            } else {
+              console.log('[DAILY ACTIONS PAGE] No countries found in mock data');
+              // Set default empty countries
+              setCountries([]);
+              setCountriesOptions([]);
+            }
 
             return;
           }
@@ -218,31 +249,51 @@ const DailyActionsPage: React.FC = () => {
 
         // Fall back to service if mock data is not available
         const data = await dailyActionsService.getMetadata();
-        console.log('[DAILY ACTIONS PAGE] Got white labels from service:', (data as any).whiteLabels);
-        const fetchedWhiteLabels = (data as any).whiteLabels || [];
-        setWhiteLabels(fetchedWhiteLabels);
+        console.log('[DAILY ACTIONS PAGE] Got metadata from service:', data);
 
-        // Convert white labels to MultiSelect options
-        const options = fetchedWhiteLabels.map((wl: WhiteLabel) => ({
-          value: wl.id,
-          label: wl.name
-        }));
-        setWhiteLabelsOptions(options);
+        // Handle white labels
+        if (data && data.whiteLabels) {
+          console.log('[DAILY ACTIONS PAGE] Got white labels from service:', data.whiteLabels);
+          const fetchedWhiteLabels = data.whiteLabels || [];
+          setWhiteLabels(fetchedWhiteLabels);
+
+          // Convert white labels to MultiSelect options
+          const options = fetchedWhiteLabels.map((wl: WhiteLabel) => ({
+            value: wl.id,
+            label: wl.name
+          }));
+          setWhiteLabelsOptions(options);
+        } else {
+          console.log('[DAILY ACTIONS PAGE] No white labels found in API response');
+          setWhiteLabels([]);
+          setWhiteLabelsOptions([]);
+        }
+
+        // Handle countries
+        if (data && data.countries) {
+          console.log('[DAILY ACTIONS PAGE] Got countries from service:', data.countries);
+          const fetchedCountries = data.countries || [];
+          setCountries(fetchedCountries);
+
+          // Convert countries to MultiSelect options
+          const countryOptions = fetchedCountries.map((country: Country) => ({
+            value: country.id,
+            label: country.name
+          }));
+          setCountriesOptions(countryOptions);
+        } else {
+          console.log('[DAILY ACTIONS PAGE] No countries found in API response');
+          setCountries([]);
+          setCountriesOptions([]);
+        }
       } catch (err) {
         console.error('[DAILY ACTIONS PAGE] Error fetching metadata:', err);
         setError('Failed to load metadata. Please try again later.');
       }
     };
 
-    // Set countries data
-    setCountries(sampleCountries);
-
-    // Convert countries to MultiSelect options
-    const countryOptions = sampleCountries.map(country => ({
-      value: country.id,
-      label: country.name
-    }));
-    setCountriesOptions(countryOptions);
+    // We'll fetch countries from the API in the same call that gets white labels
+    // The metadata endpoint should return both white labels and countries
 
     fetchMetadata();
   }, []);
@@ -299,6 +350,70 @@ const DailyActionsPage: React.FC = () => {
         filters.countryIds = selectedCountries;
       } else {
         console.log('[DAILY ACTIONS PAGE] No country filter applied');
+      }
+
+      // Add advanced filters if they exist
+      if (Object.keys(advancedFilters).length > 0) {
+        console.log('[DAILY ACTIONS PAGE] Adding advanced filters:', advancedFilters);
+
+        // Process date filters
+        if (advancedFilters.registration) {
+          filters.registrationDate = format(advancedFilters.registration, 'yyyy-MM-dd');
+        }
+        if (advancedFilters.firstTimeDeposit) {
+          filters.firstDepositDate = format(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
+        }
+        if (advancedFilters.lastDepositDate) {
+          filters.lastDepositDate = format(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
+        }
+        if (advancedFilters.lastLogin) {
+          filters.lastLoginDate = format(advancedFilters.lastLogin, 'yyyy-MM-dd');
+        }
+
+        // Process string filters
+        if (advancedFilters.trackers) {
+          filters.trackers = advancedFilters.trackers;
+        }
+        if (advancedFilters.promotionCode) {
+          filters.promotionCode = advancedFilters.promotionCode;
+        }
+        if (advancedFilters.players) {
+          filters.playerIds = advancedFilters.players.split(',').map((id: string) => id.trim());
+        }
+
+        // Process array filters
+        if (advancedFilters.regPlayMode && advancedFilters.regPlayMode.length > 0) {
+          filters.playModes = advancedFilters.regPlayMode;
+        }
+        if (advancedFilters.platform && advancedFilters.platform.length > 0) {
+          filters.platforms = advancedFilters.platform;
+        }
+        if (advancedFilters.status && advancedFilters.status.length > 0) {
+          filters.statuses = advancedFilters.status;
+        }
+        if (advancedFilters.gender && advancedFilters.gender.length > 0) {
+          filters.genders = advancedFilters.gender;
+        }
+        if (advancedFilters.currency && advancedFilters.currency.length > 0) {
+          filters.currencies = advancedFilters.currency;
+        }
+
+        // Process boolean filters
+        if (advancedFilters.smsEnabled) {
+          filters.smsEnabled = advancedFilters.smsEnabled === 'Yes';
+        }
+        if (advancedFilters.mailEnabled) {
+          filters.mailEnabled = advancedFilters.mailEnabled === 'Yes';
+        }
+        if (advancedFilters.phoneEnabled) {
+          filters.phoneEnabled = advancedFilters.phoneEnabled === 'Yes';
+        }
+        if (advancedFilters.postEnabled) {
+          filters.postEnabled = advancedFilters.postEnabled === 'Yes';
+        }
+        if (advancedFilters.bonusEnabled) {
+          filters.bonusEnabled = advancedFilters.bonusEnabled === 'Yes';
+        }
       }
 
       console.log(`[DAILY ACTIONS PAGE] Grouping by: ${groupBy} (backend value: ${filters.groupBy})`);
@@ -463,11 +578,62 @@ const DailyActionsPage: React.FC = () => {
         }
       } catch (innerErr) {
         console.error('[DAILY ACTIONS PAGE] Error in inner try block:', innerErr);
+
+        // Check if it's a network error
+        const errorString = String(innerErr);
+        const isNetworkError = errorString.includes('Network error');
+
+        if (isNetworkError) {
+          console.log('[DAILY ACTIONS PAGE] Network error detected, falling back to mock data');
+
+          try {
+            // Import mock data dynamically
+            const mockDataModule = await import('../../../mockData');
+            const mockDataService = mockDataModule.default;
+
+            // Get mock data based on groupBy
+            const mockData = mockDataService.getMockData('/reports/daily-actions/filtered-grouped');
+
+            if (mockData && mockData.data) {
+              console.log('[DAILY ACTIONS PAGE] Using mock data:', mockData);
+              setDailyActions(mockData.data);
+
+              if (mockData.summary) {
+                setSummary(mockData.summary);
+              } else {
+                // Calculate summary metrics
+                const summaryData: Summary = {
+                  totalRegistrations: mockData.data.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
+                  totalFTD: mockData.data.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
+                  totalDeposits: mockData.data.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
+                  totalCashouts: mockData.data.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
+                  totalGGR: mockData.data.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
+                };
+
+                setSummary(summaryData);
+              }
+
+              // Show a warning instead of an error
+              setError('Using mock data: API server is not available');
+              return; // Exit early since we've handled the error
+            }
+          } catch (mockErr) {
+            console.error('[DAILY ACTIONS PAGE] Error loading mock data:', mockErr);
+          }
+        }
+
         throw innerErr; // Re-throw to be caught by the outer catch block
       }
     } catch (err) {
       console.error('[DAILY ACTIONS PAGE] Error fetching daily actions:', err);
-      setError('Failed to load daily actions data. Please try again later.');
+
+      // Provide a more user-friendly error message
+      const errorString = String(err);
+      const errorMessage = errorString.includes('Network error')
+        ? 'Network error: Unable to connect to the API server. Please check your connection or try again later.'
+        : 'Failed to load daily actions data. Please try again later.';
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -476,12 +642,17 @@ const DailyActionsPage: React.FC = () => {
   // Handle filter changes
   const handleApplyFilters = (): void => {
     console.log('[DAILY ACTIONS PAGE] Apply filters button clicked');
-    console.log('[DAILY ACTIONS PAGE] Current filters:', {
+
+    // Combine basic filters with advanced filters if they exist
+    const combinedFilters = {
       startDate: format(startDate, 'yyyy-MM-dd'),
       endDate: format(endDate, 'yyyy-MM-dd'),
       selectedWhiteLabels,
-      selectedCountries
-    });
+      selectedCountries,
+      ...advancedFilters
+    };
+
+    console.log('[DAILY ACTIONS PAGE] Current filters:', combinedFilters);
     fetchDailyActions();
   };
 
@@ -533,6 +704,70 @@ const DailyActionsPage: React.FC = () => {
         countryIds: selectedCountries.length > 0 ? selectedCountries : undefined,
         groupBy: convertGroupByToBackendValue(groupBy)
       };
+
+      // Add advanced filters if they exist
+      if (Object.keys(advancedFilters).length > 0) {
+        console.log('[DAILY ACTIONS PAGE] Adding advanced filters to export:', advancedFilters);
+
+        // Process date filters
+        if (advancedFilters.registration) {
+          filters.registrationDate = format(advancedFilters.registration, 'yyyy-MM-dd');
+        }
+        if (advancedFilters.firstTimeDeposit) {
+          filters.firstDepositDate = format(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
+        }
+        if (advancedFilters.lastDepositDate) {
+          filters.lastDepositDate = format(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
+        }
+        if (advancedFilters.lastLogin) {
+          filters.lastLoginDate = format(advancedFilters.lastLogin, 'yyyy-MM-dd');
+        }
+
+        // Process string filters
+        if (advancedFilters.trackers) {
+          filters.trackers = advancedFilters.trackers;
+        }
+        if (advancedFilters.promotionCode) {
+          filters.promotionCode = advancedFilters.promotionCode;
+        }
+        if (advancedFilters.players) {
+          filters.playerIds = advancedFilters.players.split(',').map((id: string) => id.trim());
+        }
+
+        // Process array filters
+        if (advancedFilters.regPlayMode && advancedFilters.regPlayMode.length > 0) {
+          filters.playModes = advancedFilters.regPlayMode;
+        }
+        if (advancedFilters.platform && advancedFilters.platform.length > 0) {
+          filters.platforms = advancedFilters.platform;
+        }
+        if (advancedFilters.status && advancedFilters.status.length > 0) {
+          filters.statuses = advancedFilters.status;
+        }
+        if (advancedFilters.gender && advancedFilters.gender.length > 0) {
+          filters.genders = advancedFilters.gender;
+        }
+        if (advancedFilters.currency && advancedFilters.currency.length > 0) {
+          filters.currencies = advancedFilters.currency;
+        }
+
+        // Process boolean filters
+        if (advancedFilters.smsEnabled) {
+          filters.smsEnabled = advancedFilters.smsEnabled === 'Yes';
+        }
+        if (advancedFilters.mailEnabled) {
+          filters.mailEnabled = advancedFilters.mailEnabled === 'Yes';
+        }
+        if (advancedFilters.phoneEnabled) {
+          filters.phoneEnabled = advancedFilters.phoneEnabled === 'Yes';
+        }
+        if (advancedFilters.postEnabled) {
+          filters.postEnabled = advancedFilters.postEnabled === 'Yes';
+        }
+        if (advancedFilters.bonusEnabled) {
+          filters.bonusEnabled = advancedFilters.bonusEnabled === 'Yes';
+        }
+      }
 
       // Export the data
       const blob = await dailyActionsService.exportFilteredReport(filters, 'csv');
@@ -691,11 +926,21 @@ const DailyActionsPage: React.FC = () => {
 
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <FilterListIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Filters</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <FilterListIcon sx={{ mr: 1 }} />
+            <Typography variant="h6">Filters</Typography>
+          </Box>
+          <Button
+            color="primary"
+            onClick={handleToggleAdvancedFilters}
+            endIcon={showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          >
+            {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+          </Button>
         </Box>
 
+        {/* Basic Filters */}
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -728,25 +973,18 @@ const DailyActionsPage: React.FC = () => {
               placeholder="Select White Labels"
               searchable
               showSelectAllOption
-              renderValue={(selected) => {
-                if (selected.length === 0) {
-                  return <Typography color="text.secondary">Select White Labels</Typography>;
+              width="100%"
+              sx={{
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  width: '100%',
+                  height: '56px'  // Match the height of other inputs
+                },
+                '& .MuiSelect-select': {
+                  height: '56px',
+                  display: 'flex',
+                  alignItems: 'center'
                 }
-
-                return (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => {
-                      const option = whiteLabelsOptions.find(opt => opt.value === value);
-                      return (
-                        <Chip
-                          key={value}
-                          label={option ? option.label : value}
-                          size="small"
-                        />
-                      );
-                    })}
-                  </Box>
-                );
               }}
             />
           </Grid>
@@ -760,25 +998,18 @@ const DailyActionsPage: React.FC = () => {
               placeholder="Select Countries"
               searchable
               showSelectAllOption
-              renderValue={(selected) => {
-                if (selected.length === 0) {
-                  return <Typography color="text.secondary">Select Countries</Typography>;
+              width="100%"
+              sx={{
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  width: '100%',
+                  height: '56px'  // Match the height of other inputs
+                },
+                '& .MuiSelect-select': {
+                  height: '56px',
+                  display: 'flex',
+                  alignItems: 'center'
                 }
-
-                return (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => {
-                      const option = countriesOptions.find(opt => opt.value === value);
-                      return (
-                        <Chip
-                          key={value}
-                          label={option ? option.label : value}
-                          size="small"
-                        />
-                      );
-                    })}
-                  </Box>
-                );
               }}
             />
           </Grid>
@@ -815,30 +1046,385 @@ const DailyActionsPage: React.FC = () => {
               Data is grouped by {groupByOptions.find(option => option.id === groupBy)?.name.toLowerCase() || groupBy.toLowerCase()}, with numerical values summed.
             </Typography>
           </Grid>
+        </Grid>
 
-          <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<RefreshIcon />}
-              onClick={handleApplyFilters}
-              sx={{ mr: 2 }}
-            >
-              Apply Filters
-            </Button>
+        {/* Advanced Filters */}
+        <Collapse in={showAdvancedFilters} timeout="auto" unmountOnExit>
+          <Box sx={{ mt: 3 }}>
+            <Divider sx={{ mb: 3 }} />
+            <Typography variant="subtitle1" gutterBottom>
+              Advanced Filters
+            </Typography>
 
-            <span>
+            <Grid container spacing={3}>
+              {/* Player Information */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Player Information
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <TextField
+                  label="Trackers"
+                  fullWidth
+                  value={advancedFilters.trackers || ''}
+                  onChange={(e) => handleAdvancedFilterChange('trackers', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <TextField
+                  label="Promotion Code"
+                  fullWidth
+                  value={advancedFilters.promotionCode || ''}
+                  onChange={(e) => handleAdvancedFilterChange('promotionCode', e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Reg Play Mode</InputLabel>
+                  <Select
+                    multiple
+                    value={advancedFilters.regPlayMode || []}
+                    onChange={(e) => handleAdvancedFilterChange('regPlayMode', e.target.value)}
+                    label="Reg Play Mode"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['Casino', 'Sport', 'Live', 'Bingo'].map((mode) => (
+                      <MenuItem key={mode} value={mode}>
+                        {mode}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Platform</InputLabel>
+                  <Select
+                    multiple
+                    value={advancedFilters.platform || []}
+                    onChange={(e) => handleAdvancedFilterChange('platform', e.target.value)}
+                    label="Platform"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['Mobile', 'Web'].map((platform) => (
+                      <MenuItem key={platform} value={platform}>
+                        {platform}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Player Status */}
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Player Status
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    multiple
+                    value={advancedFilters.status || []}
+                    onChange={(e) => handleAdvancedFilterChange('status', e.target.value)}
+                    label="Status"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['Active', 'Blocked', 'Inactive'].map((status) => (
+                      <MenuItem key={status} value={status}>
+                        {status}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Gender</InputLabel>
+                  <Select
+                    multiple
+                    value={advancedFilters.gender || []}
+                    onChange={(e) => handleAdvancedFilterChange('gender', e.target.value)}
+                    label="Gender"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['Male', 'Female'].map((gender) => (
+                      <MenuItem key={gender} value={gender}>
+                        {gender}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Currency</InputLabel>
+                  <Select
+                    multiple
+                    value={advancedFilters.currency || []}
+                    onChange={(e) => handleAdvancedFilterChange('currency', e.target.value)}
+                    label="Currency"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['AUD', 'CAD', 'EUR', 'GBP', 'NZD'].map((currency) => (
+                      <MenuItem key={currency} value={currency}>
+                        {currency}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Players Type</InputLabel>
+                  <Select
+                    multiple
+                    value={advancedFilters.playersType || []}
+                    onChange={(e) => handleAdvancedFilterChange('playersType', e.target.value)}
+                    label="Players Type"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {['Real', 'Fun'].map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Date Filters */}
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Date Filters
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Registration Date"
+                    value={advancedFilters.registration || null}
+                    onChange={(newValue) => handleAdvancedFilterChange('registration', newValue)}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="First Time Deposit"
+                    value={advancedFilters.firstTimeDeposit || null}
+                    onChange={(newValue) => handleAdvancedFilterChange('firstTimeDeposit', newValue)}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Last Deposit Date"
+                    value={advancedFilters.lastDepositDate || null}
+                    onChange={(newValue) => handleAdvancedFilterChange('lastDepositDate', newValue)}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Last Login"
+                    value={advancedFilters.lastLogin || null}
+                    onChange={(newValue) => handleAdvancedFilterChange('lastLogin', newValue)}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              {/* Communication Preferences */}
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Communication Preferences
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} md={2}>
+                <FormControl fullWidth>
+                  <InputLabel>SMS Enabled</InputLabel>
+                  <Select
+                    value={advancedFilters.smsEnabled || ''}
+                    onChange={(e) => handleAdvancedFilterChange('smsEnabled', e.target.value)}
+                    label="SMS Enabled"
+                  >
+                    <MenuItem value=""><em>Any</em></MenuItem>
+                    <MenuItem value="Yes">Yes</MenuItem>
+                    <MenuItem value="No">No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={2}>
+                <FormControl fullWidth>
+                  <InputLabel>Mail Enabled</InputLabel>
+                  <Select
+                    value={advancedFilters.mailEnabled || ''}
+                    onChange={(e) => handleAdvancedFilterChange('mailEnabled', e.target.value)}
+                    label="Mail Enabled"
+                  >
+                    <MenuItem value=""><em>Any</em></MenuItem>
+                    <MenuItem value="Yes">Yes</MenuItem>
+                    <MenuItem value="No">No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={2}>
+                <FormControl fullWidth>
+                  <InputLabel>Phone Enabled</InputLabel>
+                  <Select
+                    value={advancedFilters.phoneEnabled || ''}
+                    onChange={(e) => handleAdvancedFilterChange('phoneEnabled', e.target.value)}
+                    label="Phone Enabled"
+                  >
+                    <MenuItem value=""><em>Any</em></MenuItem>
+                    <MenuItem value="Yes">Yes</MenuItem>
+                    <MenuItem value="No">No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={2}>
+                <FormControl fullWidth>
+                  <InputLabel>Post Enabled</InputLabel>
+                  <Select
+                    value={advancedFilters.postEnabled || ''}
+                    onChange={(e) => handleAdvancedFilterChange('postEnabled', e.target.value)}
+                    label="Post Enabled"
+                  >
+                    <MenuItem value=""><em>Any</em></MenuItem>
+                    <MenuItem value="Yes">Yes</MenuItem>
+                    <MenuItem value="No">No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={2}>
+                <FormControl fullWidth>
+                  <InputLabel>Bonus Enabled</InputLabel>
+                  <Select
+                    value={advancedFilters.bonusEnabled || ''}
+                    onChange={(e) => handleAdvancedFilterChange('bonusEnabled', e.target.value)}
+                    label="Bonus Enabled"
+                  >
+                    <MenuItem value=""><em>Any</em></MenuItem>
+                    <MenuItem value="Yes">Yes</MenuItem>
+                    <MenuItem value="No">No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Players Input */}
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" color="primary" gutterBottom>
+                  Specific Players
+                </Typography>
+                <TextField
+                  label="Players"
+                  placeholder="Enter player IDs or usernames (comma separated)"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={advancedFilters.players || ''}
+                  onChange={(e) => handleAdvancedFilterChange('players', e.target.value)}
+                  helperText="Enter multiple player IDs or usernames separated by commas"
+                />
+              </Grid>
+            </Grid>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
               <Button
                 variant="outlined"
-                startIcon={<DownloadIcon />}
-                disabled={loading || dailyActions.length === 0}
-                onClick={handleExport}
+                onClick={handleResetAdvancedFilters}
+                sx={{ mr: 2 }}
               >
-                Export
+                Reset Advanced Filters
               </Button>
-            </span>
-          </Grid>
-        </Grid>
+            </Box>
+          </Box>
+        </Collapse>
+
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 3 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<RefreshIcon />}
+            onClick={handleApplyFilters}
+            sx={{ mr: 2 }}
+          >
+            Apply Filters
+          </Button>
+
+          <span>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              disabled={loading || dailyActions.length === 0}
+              onClick={handleExport}
+            >
+              Export
+            </Button>
+          </span>
+        </Box>
       </Paper>
 
       {/* Summary Cards */}

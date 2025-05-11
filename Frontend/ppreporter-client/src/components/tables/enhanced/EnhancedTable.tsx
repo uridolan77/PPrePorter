@@ -92,6 +92,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
   onExport,
   onStateChange,
   onDrillDown,
+  onLoadGroupChildren,
 
   // Feature configurations
   features = {},

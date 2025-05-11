@@ -70,6 +70,12 @@ namespace PPrePorter.DailyActionsDB
                 {
                     options.EnableSensitiveDataLogging();
                 }
+
+                // Add the NOLOCK command interceptors with logger
+                options.AddInterceptors(new NoLockCommandInterceptor(
+                    serviceProvider.GetService<ILogger<NoLockCommandInterceptor>>()));
+                options.AddInterceptors(new ComplexQueryNoLockInterceptor(
+                    serviceProvider.GetService<ILogger<ComplexQueryNoLockInterceptor>>()));
             }, 32); // Set pool size to 32
 
             // Register simplified DbContext with pooling using the same connection string
@@ -92,6 +98,12 @@ namespace PPrePorter.DailyActionsDB
                 {
                     options.EnableSensitiveDataLogging();
                 }
+
+                // Add the NOLOCK command interceptors with logger
+                options.AddInterceptors(new NoLockCommandInterceptor(
+                    serviceProvider.GetService<ILogger<NoLockCommandInterceptor>>()));
+                options.AddInterceptors(new ComplexQueryNoLockInterceptor(
+                    serviceProvider.GetService<ILogger<ComplexQueryNoLockInterceptor>>()));
             }, 32); // Set pool size to 32
 
             // We're now using the MemoryCacheAdapter from PPrePorter.Core

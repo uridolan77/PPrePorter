@@ -40,6 +40,8 @@ const TestContextualExplanation = lazy(() => import('./components/dashboard/Test
 // Report pages
 const DailyActionsPage = lazy(() => import('./pages/showcase/reports/DailyActionsPage'));
 const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/DailyActionsAdvancedPage'));
+const PlayersPage = lazy(() => import('./pages/showcase/reports/PlayersPage'));
+const GamesPage = lazy(() => import('./pages/showcase/reports/GamesPage'));
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
@@ -158,6 +160,26 @@ const App: React.FC = () => {
                   <Route path="/reports/daily-actions/advanced" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <DailyActionsAdvancedPage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/players" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <PlayersPage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/players/advanced" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <SimpleDashboard />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/games" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <GamesPage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/games/advanced" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <SimpleDashboard />
                     </Suspense>
                   } />
                   <Route path="/reports/*" element={

@@ -39,6 +39,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import PublicIcon from '@mui/icons-material/Public';
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
+import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
 
 // Type definitions
 interface SubNavItem {
@@ -112,7 +113,8 @@ const MainLayout: React.FC = () => {
       subItems: [
         { text: 'Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions' },
         { text: 'Advanced Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions/advanced' },
-        { text: 'Player Reports', icon: <PersonIcon />, path: '/reports/players' },
+        { text: 'Players Report', icon: <PersonIcon />, path: '/reports/players' },
+        { text: 'Games Report', icon: <VideogameAssetIcon />, path: '/reports/games' },
         { text: 'Financial', icon: <BarChartIcon />, path: '/reports/financial' },
         { text: 'Performance', icon: <TimelineIcon />, path: '/reports/performance' },
         { text: 'Geographic', icon: <PublicIcon />, path: '/reports/geographic' }
@@ -251,6 +253,7 @@ const MainLayout: React.FC = () => {
             <Typography variant="h6" color="text.primary">
               {location.pathname.includes('daily-actions') ? 'Daily Actions Report' :
                location.pathname.includes('players') ? 'Players Report' :
+               location.pathname.includes('games') ? 'Games Report' :
                'Dashboard'}
             </Typography>
           </Box>

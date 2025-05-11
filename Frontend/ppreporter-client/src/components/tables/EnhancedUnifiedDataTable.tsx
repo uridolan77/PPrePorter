@@ -520,13 +520,15 @@ const EnhancedUnifiedDataTable: React.FC<EnhancedUnifiedDataTableProps> = ({
       {/* Responsive Design */}
       {enableResponsiveDesign && (
         <Tooltip title={`Current mode: ${responsiveMode}`}>
-          <IconButton
-            size="small"
-            color="default"
-            disabled
-          >
-            <DevicesIcon fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              color="default"
+              disabled
+            >
+              <DevicesIcon fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
       )}
 

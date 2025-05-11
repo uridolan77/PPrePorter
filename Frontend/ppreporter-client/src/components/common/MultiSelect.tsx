@@ -188,30 +188,55 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     onChange([]);
   };
 
+  // Handle removing a single item
+  const handleRemoveItem = (valueToRemove: string | number) => (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation(); // Prevent the dropdown from opening
+    const newValue = value.filter(val => val.toString() !== valueToRemove.toString());
+    onChange(newValue);
+  };
+
   // Default render function for selected values
   const defaultRenderValue = (selected: (string | number)[]) => {
     if (!selected || selected.length === 0) {
       return <Typography color="text.secondary">{placeholder}</Typography>;
     }
 
-    if (selected.length <= 3) {
-      return (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {selected.map((selectedValue) => {
-            const option = options.find(opt => opt.value.toString() === selectedValue.toString());
-            return (
-              <Chip
-                key={selectedValue}
-                label={option ? option.label : selectedValue}
-                size="small"
-              />
-            );
-          })}
-        </Box>
-      );
-    }
-
-    return `${selected.length} items selected`;
+    // Always show chips for all selected items
+    return (
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        {selected.map((selectedValue) => {
+          const option = options.find(opt => opt.value.toString() === selectedValue.toString());
+          return (
+            <Chip
+              key={selectedValue}
+              label={option ? option.label : selectedValue}
+              size="small"
+              onDelete={handleRemoveItem(selectedValue)}
+              onClick={(e) => e.stopPropagation()} // Prevent opening dropdown when clicking the chip
+              deleteIcon={
+                <ClearIcon
+                  fontSize="small"
+                  onMouseDown={(e) => e.stopPropagation()} // Extra prevention
+                />
+              }
+              sx={{
+                '& .MuiChip-deleteIcon': {
+                  display: 'none',
+                  opacity: 0.7,
+                  '&:hover': {
+                    opacity: 1,
+                  }
+                },
+                '&:hover .MuiChip-deleteIcon': {
+                  display: 'block',
+                },
+              }}
+            />
+          );
+        })}
+      </Box>
+    );
   };
 
   // If no options are provided, show a message
@@ -266,7 +291,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       disabled={disabled}
       required={required}
       sx={{
-        width: width,
+        width: width || '100%',
+        minWidth: '100%',
         ...sx
       }}
       className={className}
@@ -284,6 +310,20 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         input={<OutlinedInput label={label} />}
         renderValue={renderValue || defaultRenderValue}
         onClose={handleClose}
+        // Add a custom click handler to prevent opening when clicking on chips
+        onClick={(e) => {
+          // Check if the click was on a chip or delete icon
+          if (
+            e.target instanceof HTMLElement &&
+            (e.target.classList.contains('MuiChip-root') ||
+             e.target.classList.contains('MuiChip-label') ||
+             e.target.classList.contains('MuiChip-deleteIcon') ||
+             e.target.closest('.MuiChip-deleteIcon'))
+          ) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
         MenuProps={{
           PaperProps: {
             style: {
@@ -327,15 +367,13 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         )}
 
         {/* Select all/none options */}
-        {showSelectAllOption && filteredOptions.length > 0 && (
-          <>
-            <Box sx={{ px: 1, py: 0.5, display: 'flex', justifyContent: 'space-between' }}>
+        {showSelectAllOption && filteredOptions.length > 0 && [
+            <Box key="select-all-box" sx={{ px: 1, py: 0.5, display: 'flex', justifyContent: 'space-between' }}>
               <Button size="small" onClick={handleSelectAll}>Select All</Button>
               <Button size="small" onClick={handleSelectNone}>Clear All</Button>
-            </Box>
-            <Divider />
-          </>
-        )}
+            </Box>,
+            <Divider key="select-all-divider" />
+        ]}
 
         {/* No options message */}
         {filteredOptions.length === 0 && (

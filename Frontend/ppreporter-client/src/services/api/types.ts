@@ -12,7 +12,48 @@ export interface ReportFilters {
   countryIds?: string[];
   groupBy?: number | string;
   format?: 'csv' | 'xlsx' | 'pdf';
-  // Add other filter properties as needed
+
+  // Pagination parameters
+  page?: number;
+  pageSize?: number;
+
+  // Sorting parameters
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+
+  // Advanced filters - Date filters
+  registrationDate?: string;
+  firstDepositDate?: string;
+  lastDepositDate?: string;
+  lastLoginDate?: string;
+
+  // Advanced filters - String filters
+  trackers?: string;
+  promotionCode?: string;
+  playerIds?: string[];
+  search?: string;
+
+  // Advanced filters - Array filters
+  playModes?: string[];
+  platforms?: string[];
+  statuses?: string[];
+  genders?: string[];
+  currencies?: string[];
+  providerIds?: string[];
+  categoryIds?: string[];
+  features?: string[];
+  tags?: string[];
+
+  // Advanced filters - Boolean filters
+  smsEnabled?: boolean;
+  mailEnabled?: boolean;
+  phoneEnabled?: boolean;
+  postEnabled?: boolean;
+  bonusEnabled?: boolean;
+
+  // Advanced filters - Numeric filters
+  minRtp?: number;
+  maxRtp?: number;
 }
 
 /**

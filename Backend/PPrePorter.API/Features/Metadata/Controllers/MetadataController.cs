@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Interfaces;
-using PPrePorter.DailyActionsDB.Models;
+using PPrePorter.DailyActionsDB.Models.DTOs;
+using PPrePorter.DailyActionsDB.Models.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
