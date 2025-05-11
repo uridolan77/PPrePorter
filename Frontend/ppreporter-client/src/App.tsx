@@ -43,7 +43,13 @@ const DailyActionsAdvancedPage = lazy(() => import('./pages/reports/DailyActions
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
+
+// Showcase pages
 const ComponentShowcase = lazy(() => import('./pages/ComponentShowcase'));
+const CommonComponentsShowcase = lazy(() => import('./pages/showcase/CommonComponentsShowcase'));
+const TableComponentsShowcase = lazy(() => import('./pages/showcase/TableComponentsShowcase'));
+const ReportComponentsShowcase = lazy(() => import('./pages/showcase/ReportComponentsShowcase'));
+const DashboardComponentsShowcase = lazy(() => import('./pages/showcase/DashboardComponentsShowcase'));
 
 // Theme configuration
 const theme: Theme = createTheme({
@@ -193,6 +199,26 @@ const App: React.FC = () => {
               <Route path="/showcase" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <ComponentShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/common" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CommonComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/tables" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <TableComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/reports" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <ReportComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/dashboard" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <DashboardComponentsShowcase />
                 </Suspense>
               } />
 

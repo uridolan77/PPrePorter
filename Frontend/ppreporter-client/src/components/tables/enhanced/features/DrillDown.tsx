@@ -8,10 +8,10 @@ import {
   Typography
 } from '@mui/material';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import { DrillDownConfig as DrillDownConfigType } from '../types';
+import { DrillDownConfigItem } from '../types';
 
 interface DrillDownProps {
-  configs: DrillDownConfigType[];
+  configs: DrillDownConfigItem[];
   sourceGrouping: string | null;
   selectedRow: any | null;
   onDrillDown: (row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => void;
@@ -38,13 +38,13 @@ const DrillDown: React.FC<DrillDownProps> = ({
     setAnchorEl(null);
   };
 
-  const handleDrillDown = (config: DrillDownConfigType) => {
+  const handleDrillDown = (config: DrillDownConfigItem) => {
     if (!selectedRow || !sourceGrouping) return;
-    
-    const filters = config.transformFilter 
-      ? config.transformFilter(selectedRow) 
+
+    const filters = config.transformFilter
+      ? config.transformFilter(selectedRow)
       : { [sourceGrouping]: selectedRow[sourceGrouping] };
-    
+
     onDrillDown(selectedRow, config.sourceGrouping, config.targetGrouping, filters);
     handleClose();
   };

@@ -24,6 +24,8 @@ A comprehensive, feature-rich table component for React applications built with 
 
 ### Advanced Features
 
+#### Data Manipulation
+
 - **Tree/Hierarchical Data**: Display hierarchical data with parent-child relationships
 - **Cell Merging/Spanning**: Allow cells to span multiple rows or columns
 - **Infinite Scrolling**: Load more data as the user scrolls instead of pagination
@@ -33,6 +35,26 @@ A comprehensive, feature-rich table component for React applications built with 
 - **Bulk Import/Export**: Import data from CSV/Excel and export to various formats
 - **Column Calculations**: Add calculated columns based on other column values
 - **Cell Tooltips**: Show tooltips with additional information when hovering over cells
+- **Pivot Tables**: Transform data into a summarized pivot table view
+- **Custom Aggregation Functions**: Define custom aggregation functions beyond standard ones
+
+#### Visualization
+
+- **Micro-Charts in Cells**: Embed small charts (sparklines, mini bar charts, etc.) directly in cells
+- **Heatmap Visualization**: Apply color gradients to cells based on their values
+- **Gantt Chart View**: Transform the table into a Gantt chart for project management
+
+#### Integration & Performance
+
+- **Real-time Updates with WebSockets**: Receive and apply real-time updates to table data
+- **Worker Thread Processing**: Offload heavy data processing to a web worker
+- **Progressive Loading**: Load and render complex cell content progressively
+
+#### Customization
+
+- **Theming and Styling System**: Comprehensive theming system with custom themes
+- **Custom Cell Renderers**: Register custom cell renderers for specific column types
+- **Layout Templates**: Predefined layout templates for common table use cases
 
 ## Installation
 
@@ -113,6 +135,7 @@ The `features` prop allows you to enable/disable and configure each feature:
 <EnhancedTable
   // ...
   features={{
+    // Core features
     sorting: {
       enabled: true,
       defaultColumn: 'name',
@@ -123,7 +146,206 @@ The `features` prop allows you to enable/disable and configure each feature:
       quickFilter: true,
       advancedFilter: true
     },
-    // ...
+    pagination: {
+      enabled: true,
+      pageSizeOptions: [10, 25, 50, 100]
+    },
+    grouping: {
+      enabled: true,
+      defaultGroupBy: null
+    },
+    aggregation: {
+      enabled: true,
+      showInFooter: true
+    },
+    columnManagement: {
+      enabled: true,
+      allowReordering: true,
+      allowHiding: true,
+      allowPinning: true
+    },
+    expandableRows: {
+      enabled: true,
+      expandByDefault: false
+    },
+    keyboardNavigation: {
+      enabled: true
+    },
+    stickyColumns: {
+      enabled: true
+    },
+    responsive: {
+      enabled: true
+    },
+    drillDown: {
+      enabled: true,
+      configs: [/* drill-down configurations */]
+    },
+    export: {
+      enabled: true,
+      formats: [ExportFormat.CSV, ExportFormat.EXCEL, ExportFormat.PDF, ExportFormat.JSON]
+    },
+    stateManagement: {
+      enabled: true,
+      persistInUrl: true
+    },
+
+    // Advanced features - Data Manipulation
+    treeData: {
+      enabled: true,
+      childField: 'children',
+      expandByDefault: false,
+      levelIndent: 20
+    },
+    cellSpanning: {
+      enabled: true
+    },
+    infiniteScroll: {
+      enabled: true,
+      loadMoreThreshold: 200,
+      pageSize: 50
+    },
+    columnResizing: {
+      enabled: true,
+      minWidth: 100,
+      maxWidth: 500,
+      persistWidths: true
+    },
+    searchHighlighting: {
+      enabled: true,
+      highlightStyle: {
+        backgroundColor: 'yellow',
+        fontWeight: 'bold'
+      }
+    },
+    history: {
+      enabled: true,
+      maxHistoryLength: 50
+    },
+    bulkImport: {
+      enabled: true,
+      formats: ['csv', 'json', 'excel'],
+      validateRow: (row) => {
+        // Validation logic
+        return { valid: true, errors: [] };
+      }
+    },
+    columnCalculations: {
+      enabled: true,
+      recalculateOnDataChange: true
+    },
+    pivotTable: {
+      enabled: true,
+      rowFields: ['category', 'subcategory'],
+      columnFields: ['year', 'quarter'],
+      valueField: 'sales',
+      aggregationFunction: 'sum',
+      valueFormat: 'currency',
+      showTotals: true
+    },
+    customAggregations: {
+      enabled: true,
+      functions: {
+        weightedAverage: (values, weights) => {
+          // Custom weighted average implementation
+          if (!weights || values.length !== weights.length) return 0;
+          let sum = 0, weightSum = 0;
+          for (let i = 0; i < values.length; i++) {
+            sum += values[i] * weights[i];
+            weightSum += weights[i];
+          }
+          return sum / (weightSum || 1);
+        }
+      }
+    },
+
+    // Advanced features - Visualization
+    heatmap: {
+      enabled: true,
+      minValue: 0,
+      maxValue: 100,
+      minColor: '#FFFFFF',
+      maxColor: '#FF0000',
+      adaptiveText: true
+    },
+    ganttChart: {
+      enabled: true,
+      startField: 'startDate',
+      endField: 'endDate',
+      taskField: 'taskName',
+      progressField: 'completion',
+      showProgress: true,
+      showToday: true
+    },
+
+    // Advanced features - Integration & Performance
+    realtime: {
+      enabled: true,
+      websocketUrl: 'wss://example.com/ws',
+      messageTypes: {
+        rowAdded: 'ROW_ADDED',
+        rowUpdated: 'ROW_UPDATED',
+        rowDeleted: 'ROW_DELETED'
+      },
+      reconnectStrategy: {
+        maxRetries: 5,
+        backoffFactor: 1.5
+      }
+    },
+    workerProcessing: {
+      enabled: true,
+      workerUrl: '/workers/table-worker.js',
+      operations: ['sort', 'filter', 'aggregate']
+    },
+    progressiveLoading: {
+      enabled: true,
+      priorityColumns: ['name', 'status'],
+      deferredColumns: ['description', 'comments'],
+      loadDelay: 100
+    },
+
+    // Advanced features - Customization
+    theming: {
+      enabled: true,
+      theme: 'light', // or 'dark', 'highContrast'
+      customTheme: {
+        header: {
+          backgroundColor: '#f5f5f5',
+          textColor: '#333333'
+        },
+        row: {
+          evenBackgroundColor: '#ffffff',
+          oddBackgroundColor: '#fafafa',
+          hoverBackgroundColor: '#f0f0f0'
+        }
+      }
+    },
+    customRenderers: {
+      enabled: true,
+      renderers: {
+        'status': (value, row) => (
+          <Chip label={value} color={getStatusColor(value)} size="small" />
+        )
+      },
+      conditionalRenderers: [
+        {
+          condition: (value, row, column) => column.id === 'price' && value > 1000,
+          renderer: (value) => <Typography color="error">${value}</Typography>
+        }
+      ]
+    },
+    layoutTemplates: {
+      enabled: true,
+      template: 'standard', // or 'compact', 'comfortable', 'dashboard', etc.
+      customLayouts: {
+        'myCustomLayout': {
+          headerHeight: 60,
+          rowHeight: 50,
+          density: 'comfortable',
+          showBorders: true
+        }
+      }
+    }
   }}
 />
 ```
@@ -144,6 +366,8 @@ interface ColumnDef {
   target?: number;           // For progress bars
   sortable?: boolean;        // Whether column is sortable
   cellProps?: Record<string, any>; // Additional props for cell
+
+  // Link configuration
   linkConfig?: {             // For link type columns
     urlField?: string;       // Field containing URL
     urlPrefix?: string;      // Prefix to add to URL
@@ -152,12 +376,32 @@ interface ColumnDef {
     openInNewTab?: boolean;  // Whether to open in new tab
     displayField?: string;   // Field to display
   };
+
+  // Core feature properties
   hidden?: boolean;          // Whether column is hidden
   pinned?: boolean;          // Whether column is pinned
   groupable?: boolean;       // Whether column can be grouped
   filterable?: boolean;      // Whether column can be filtered
   aggregatable?: boolean;    // Whether column can be aggregated
   drillDownTarget?: string;  // Target for drill-down
+
+  // Advanced feature properties
+  spanConfig?: {             // Cell spanning configuration
+    rowSpan?: number | ((row: any, rowIndex: number, data: any[]) => number);
+    colSpan?: number | ((row: any, rowIndex: number, data: any[]) => number);
+  };
+
+  tooltip?: {                // Tooltip configuration
+    enabled: boolean;
+    content?: React.ReactNode | ((value: any, row: any) => React.ReactNode);
+    placement?: 'top' | 'right' | 'bottom' | 'left';
+    props?: Partial<TooltipProps>;
+  };
+
+  calculated?: boolean;      // Whether column is calculated
+  formula?: (row: any) => any; // Formula for calculated column
+
+  treeColumn?: boolean;      // Whether column displays tree structure
 }
 ```
 

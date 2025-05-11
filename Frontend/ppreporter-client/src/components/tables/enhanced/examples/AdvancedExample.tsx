@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Container, Paper, Typography, Button } from '@mui/material';
-import { 
-  EnhancedTable, 
-  ExportFormat, 
-  TableState, 
+import {
+  EnhancedTable,
+  ExportFormat,
+  TableState,
   CalculationFunctions,
   createCalculatedColumn
 } from '../';
@@ -91,22 +91,22 @@ const columns = [
   {
     id: 'name',
     label: 'Category',
-    type: 'text',
+    type: 'text' as 'text',
     treeColumn: true,
     tooltip: {
       enabled: true,
-      content: (value, row) => `${value} - Click to see details`
+      content: (value: any, row: any) => `${value} - Click to see details`
     }
   },
   {
     id: 'sales',
     label: 'Sales',
-    type: 'currency',
-    align: 'right',
+    type: 'currency' as 'currency',
+    align: 'right' as 'right',
     aggregatable: true,
     tooltip: {
       enabled: true,
-      content: (value, row) => `Annual sales: ${new Intl.NumberFormat('en-US', {
+      content: (value: any, row: any) => `Annual sales: ${new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD'
       }).format(value)}`
@@ -115,30 +115,30 @@ const columns = [
   {
     id: 'profit',
     label: 'Profit',
-    type: 'currency',
-    align: 'right',
+    type: 'currency' as 'currency',
+    align: 'right' as 'right',
     aggregatable: true
   },
   {
     id: 'growth',
     label: 'Growth',
-    type: 'percentage',
-    align: 'right'
+    type: 'percentage' as 'percentage',
+    align: 'right' as 'right'
   },
   {
     id: 'profitMargin',
     label: 'Profit Margin',
-    type: 'percentage',
-    align: 'right',
+    type: 'percentage' as 'percentage',
+    align: 'right' as 'right',
     calculated: true,
-    formula: (row) => (row.profit / row.sales) * 100
+    formula: (row: any) => (row.profit / row.sales) * 100
   },
   {
     id: 'website',
     label: 'Website',
-    type: 'link',
+    type: 'link' as 'link',
     linkConfig: {
-      urlBuilder: (row) => `https://example.com/products/${row.id}`,
+      urlBuilder: (row: any) => `https://example.com/products/${row.id}`,
       openInNewTab: true,
       displayField: 'name'
     }
@@ -151,9 +151,9 @@ const spanningColumns = [
   {
     id: 'performance',
     label: 'Performance',
-    type: 'text',
+    type: 'text' as 'text',
     spanConfig: {
-      colSpan: (row) => row.id === '1' ? 2 : 1
+      colSpan: (row: any) => row.id === '1' ? 2 : 1
     }
   }
 ];
@@ -166,12 +166,12 @@ const AdvancedExample: React.FC = () => {
   const [tableState, setTableState] = useState<TableState | null>(null);
   const [data, setData] = useState(sampleTreeData);
   const [page, setPage] = useState(0);
-  
+
   // Handle row click
   const handleRowClick = (row: any) => {
     console.log('Row clicked:', row);
   };
-  
+
   // Handle refresh
   const handleRefresh = () => {
     setLoading(true);
@@ -180,35 +180,35 @@ const AdvancedExample: React.FC = () => {
       setLoading(false);
     }, 1000);
   };
-  
+
   // Handle export
   const handleExport = (format: ExportFormat, data: any[]) => {
     console.log(`Exporting data in ${format} format:`, data);
     // In a real app, you would implement the export functionality here
   };
-  
+
   // Handle state change
   const handleStateChange = (state: TableState) => {
     setTableState(state);
     console.log('Table state changed:', state);
   };
-  
+
   // Handle drill down
   const handleDrillDown = (row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => {
     console.log(`Drill down from ${sourceGrouping} to ${targetGrouping}:`, filters);
     // In a real app, you would update the data based on the filters
   };
-  
+
   // Handle column resize
   const handleColumnResize = (columnId: string, width: number) => {
     console.log(`Column ${columnId} resized to ${width}px`);
   };
-  
+
   // Handle load more for infinite scrolling
   const handleLoadMore = (page: number) => {
     console.log(`Loading page ${page}`);
     setPage(page);
-    
+
     // Simulate loading more data
     setLoading(true);
     setTimeout(() => {
@@ -216,23 +216,23 @@ const AdvancedExample: React.FC = () => {
       setLoading(false);
     }, 1000);
   };
-  
+
   // Handle undo
   const handleUndo = () => {
     console.log('Undo action');
   };
-  
+
   // Handle redo
   const handleRedo = () => {
     console.log('Redo action');
   };
-  
+
   // Handle import
   const handleImport = (importedData: any[]) => {
     console.log('Imported data:', importedData);
     // In a real app, you would process and add the imported data
   };
-  
+
   // Add a calculated column
   const profitPerGrowthColumn = createCalculatedColumn(
     'profitPerGrowth',
@@ -243,12 +243,12 @@ const AdvancedExample: React.FC = () => {
     ),
     {
       type: 'currency',
-      align: 'right'
+      align: 'right' as 'right'
     }
   );
-  
+
   const allColumns = [...columns, profitPerGrowthColumn];
-  
+
   return (
     <Container maxWidth="lg">
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -258,7 +258,7 @@ const AdvancedExample: React.FC = () => {
         <Typography variant="body2" paragraph>
           This example demonstrates all the advanced features of the EnhancedTable component.
         </Typography>
-        
+
         {tableState && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2">Current Table State:</Typography>
@@ -267,7 +267,7 @@ const AdvancedExample: React.FC = () => {
             </pre>
           </Box>
         )}
-        
+
         <EnhancedTable
           data={data}
           columns={allColumns}
@@ -352,7 +352,8 @@ const AdvancedExample: React.FC = () => {
                 {
                   sourceGrouping: 'category',
                   targetGrouping: 'subcategory',
-                  label: 'View Subcategories'
+                  label: 'View Subcategories',
+                  enabled: true
                 }
               ]
             },
@@ -364,7 +365,7 @@ const AdvancedExample: React.FC = () => {
               enabled: true,
               persistInUrl: true
             },
-            
+
             // New features
             treeData: {
               enabled: true,

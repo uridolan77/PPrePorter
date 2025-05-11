@@ -46,13 +46,27 @@ const DEFAULT_TABLE_STATE: TableState = {
   columns: {
     visible: [],
     order: [],
-    sticky: []
+    sticky: [],
+    widths: {}
   },
   aggregation: {
     enabled: []
   },
   expandedRows: [],
-  selectedRows: []
+  selectedRows: [],
+  treeData: {
+    expandedNodes: []
+  },
+  infiniteScroll: {
+    loadedPages: 0
+  },
+  history: {
+    undoStack: [],
+    redoStack: []
+  },
+  calculatedColumns: {
+    values: {}
+  }
 };
 
 /**
@@ -181,7 +195,8 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
       columns: {
         visible: columns.map(col => col.id),
         order: columns.map(col => col.id),
-        sticky: columns.filter(col => col.pinned).map(col => col.id)
+        sticky: columns.filter(col => col.pinned).map(col => col.id),
+        widths: columns.reduce((acc, col) => ({ ...acc, [col.id]: col.width || 150 }), {})
       }
     };
 
@@ -434,6 +449,17 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
     }));
   }, []);
 
+  // Get visible and ordered columns
+  const visibleOrderedColumns = useMemo(() => {
+    return columns
+      .filter(col => tableState.columns.visible.includes(col.id))
+      .sort((a, b) => {
+        const indexA = tableState.columns.order.indexOf(a.id);
+        const indexB = tableState.columns.order.indexOf(b.id);
+        return indexA - indexB;
+      });
+  }, [columns, tableState.columns.visible, tableState.columns.order]);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((event: React.KeyboardEvent, rowIndex: number, colIndex: number) => {
     if (!keyboardNavigationConfig.enabled) return;
@@ -531,17 +557,6 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
 
   // Set selected row
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
-
-  // Get visible and ordered columns
-  const visibleOrderedColumns = useMemo(() => {
-    return columns
-      .filter(col => tableState.columns.visible.includes(col.id))
-      .sort((a, b) => {
-        const indexA = tableState.columns.order.indexOf(a.id);
-        const indexB = tableState.columns.order.indexOf(b.id);
-        return indexA - indexB;
-      });
-  }, [columns, tableState.columns.visible, tableState.columns.order]);
 
   // Process data for grouping
   const groupedData = useMemo(() => {
@@ -667,7 +682,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
           {/* Drill Down */}
           {drillDownConfig.enabled && onDrillDown && (
             <DrillDown
-              configs={drillDownConfig.configs || []}
+              configs={(drillDownConfig as any).configs || []}
               sourceGrouping={tableState.grouping.groupByColumn}
               selectedRow={selectedRow}
               onDrillDown={handleDrillDown}

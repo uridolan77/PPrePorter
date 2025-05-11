@@ -66,48 +66,48 @@ const columns = [
   {
     id: 'name',
     label: 'Name',
-    type: 'text',
+    type: 'text' as 'text',
     groupable: true
   },
   {
     id: 'email',
     label: 'Email',
-    type: 'text'
+    type: 'text' as 'text'
   },
   {
     id: 'age',
     label: 'Age',
-    type: 'number',
-    align: 'right',
+    type: 'number' as 'number',
+    align: 'right' as 'right',
     aggregatable: true
   },
   {
     id: 'salary',
     label: 'Salary',
-    type: 'currency',
-    align: 'right',
+    type: 'currency' as 'currency',
+    align: 'right' as 'right',
     aggregatable: true
   },
   {
     id: 'department',
     label: 'Department',
-    type: 'text',
+    type: 'text' as 'text',
     groupable: true
   },
   {
     id: 'status',
     label: 'Status',
-    type: 'text'
+    type: 'text' as 'text'
   },
   {
     id: 'hireDate',
     label: 'Hire Date',
-    type: 'text'
+    type: 'text' as 'text'
   },
   {
     id: 'website',
     label: 'Website',
-    type: 'link',
+    type: 'link' as 'link',
     linkConfig: {
       urlField: 'website',
       openInNewTab: true
@@ -121,6 +121,7 @@ const drillDownConfigs = [
     sourceGrouping: 'department',
     targetGrouping: 'employee',
     label: 'View Employees',
+    enabled: true,
     transformFilter: (row: any) => ({
       department: row.department
     })
@@ -133,12 +134,12 @@ const drillDownConfigs = [
 const BasicExample: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [tableState, setTableState] = useState<TableState | null>(null);
-  
+
   // Handle row click
   const handleRowClick = (row: any) => {
     console.log('Row clicked:', row);
   };
-  
+
   // Handle refresh
   const handleRefresh = () => {
     setLoading(true);
@@ -147,25 +148,25 @@ const BasicExample: React.FC = () => {
       setLoading(false);
     }, 1000);
   };
-  
+
   // Handle export
   const handleExport = (format: ExportFormat, data: any[]) => {
     console.log(`Exporting data in ${format} format:`, data);
     // In a real app, you would implement the export functionality here
   };
-  
+
   // Handle state change
   const handleStateChange = (state: TableState) => {
     setTableState(state);
     console.log('Table state changed:', state);
   };
-  
+
   // Handle drill down
-  const handleDrillDown = (row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => {
+  const handleDrillDown = (_row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => {
     console.log(`Drill down from ${sourceGrouping} to ${targetGrouping}:`, filters);
     // In a real app, you would update the data based on the filters
   };
-  
+
   return (
     <Container maxWidth="lg">
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -175,7 +176,7 @@ const BasicExample: React.FC = () => {
         <Typography variant="body2" paragraph>
           This example demonstrates the features of the EnhancedTable component.
         </Typography>
-        
+
         {tableState && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2">Current Table State:</Typography>
@@ -184,7 +185,7 @@ const BasicExample: React.FC = () => {
             </pre>
           </Box>
         )}
-        
+
         <EnhancedTable
           data={sampleData}
           columns={columns}

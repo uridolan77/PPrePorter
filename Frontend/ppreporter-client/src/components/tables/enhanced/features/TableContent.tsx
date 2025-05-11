@@ -218,7 +218,10 @@ const TableContent: React.FC<TableContentProps> = ({
                     <TableCell padding="checkbox">
                       <ExpandButton
                         expanded={isExpanded}
-                        onClick={(e) => handleRowExpand(e, rowId)}
+                        onClick={(e) => {
+                          if (e) handleRowExpand(e, rowId);
+                          else handleRowExpand({} as React.MouseEvent, rowId);
+                        }}
                       />
                     </TableCell>
                   )}

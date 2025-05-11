@@ -24,6 +24,19 @@ export { default as BulkImport } from './features/BulkImport';
 export { default as ColumnCalculations, processCalculatedColumns, createCalculatedColumn, CalculationFunctions } from './features/ColumnCalculations';
 export { default as CellTooltip } from './features/CellTooltips';
 
+// Export advanced feature components
+export { default as PivotTable } from './features/PivotTable';
+export { default as CustomAggregations, StandardAggregations, AdvancedAggregations, applyAggregation } from './features/CustomAggregations';
+export { default as MicroChart, Sparkline, MiniBarChart, MiniPieChart } from './features/MicroCharts';
+export { default as HeatmapCell, processHeatmapData } from './features/Heatmap';
+export { default as GanttChart } from './features/GanttChart';
+export { default as RealtimeUpdates } from './features/RealtimeUpdates';
+export { default as WorkerProcessing, createWorkerScript } from './features/WorkerProcessing';
+export { default as ProgressiveLoading, ProgressiveImage, processDataForProgressiveLoading } from './features/ProgressiveLoading';
+export { default as ThemingProvider, tableThemes, createTableTheme, getComponentStyles, createScrollbarStyles } from './features/Theming';
+export { default as CustomRenderer, DefaultRenderers } from './features/CustomRenderers';
+export { default as LayoutTemplate, layoutTemplates, getTemplateStyles } from './features/LayoutTemplates';
+
 // Export types
 export * from './types';
 
