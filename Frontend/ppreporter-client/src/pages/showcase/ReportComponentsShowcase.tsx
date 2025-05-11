@@ -188,19 +188,28 @@ const ReportComponentsShowcase: React.FC = () => {
           component: (
             <Paper sx={{ p: 3 }}>
               <ReportPreview
-                report={{
-                  title: 'Daily Actions Report',
+                config={{
+                  name: 'Daily Actions Report',
                   description: 'Summary of daily player actions',
+                  dataSource: { id: 'dailyActions', name: 'Daily Actions' },
                   filters: [
-                    { name: 'Date Range', value: 'Last 7 days' },
-                    { name: 'Labels', value: 'All' },
-                    { name: 'Group By', value: 'Day' }
+                    { column: 'dateRange', operator: 'equals', value: 'Last 7 days' },
+                    { column: 'labels', operator: 'equals', value: 'All' },
+                    { column: 'groupBy', operator: 'equals', value: 'Day' }
                   ],
-                  columns: ['Date', 'Label', 'Registrations', 'Deposits', 'Withdrawals'],
-                  previewData: mockDailyActionsData.slice(0, 5)
+                  columns: [
+                    { id: 'date', name: 'Date', type: 'date', width: '150px', visible: true, aggregation: null },
+                    { id: 'label', name: 'Label', type: 'string', width: '150px', visible: true, aggregation: null },
+                    { id: 'registrations', name: 'Registrations', type: 'number', width: '150px', visible: true, aggregation: null },
+                    { id: 'deposits', name: 'Deposits', type: 'number', width: '150px', visible: true, aggregation: null },
+                    { id: 'withdrawals', name: 'Withdrawals', type: 'number', width: '150px', visible: true, aggregation: null }
+                  ],
+                  sortBy: null,
+                  groupBy: null
                 }}
-                onGenerate={() => console.log('Generate report')}
-                onEdit={() => console.log('Edit report')}
+                data={mockDailyActionsData.dailyActions}
+                onRefresh={() => console.log('Refresh report')}
+                onConfigChange={() => console.log('Edit report configuration')}
               />
             </Paper>
           )
@@ -217,14 +226,17 @@ const ReportComponentsShowcase: React.FC = () => {
                   name: 'Daily Activity Summary',
                   description: 'Daily summary of player activities',
                   dataSource: 'dailyActions',
-                  filters: {
-                    dateRange: 'last7Days',
-                    labels: [],
-                    groupBy: 'day'
-                  },
-                  columns: ['date', 'label', 'registrations', 'deposits', 'withdrawals']
+                  filters: [
+                    { id: 'dateRange', field: 'dateRange', operator: 'equals', value: 'last7Days' },
+                    { id: 'groupBy', field: 'groupBy', operator: 'equals', value: 'day' }
+                  ],
+                  sections: [],
+                  isPublic: false,
+                  createdBy: 'admin',
+                  createdAt: null,
+                  updatedAt: null
                 }}
-                onChange={(template) => console.log('Template changed:', template)}
+                onSave={(template) => console.log('Template saved:', template)}
               />
             </Paper>
           )
@@ -261,14 +273,35 @@ const ReportComponentsShowcase: React.FC = () => {
             <Paper sx={{ p: 3 }}>
               <ReportList
                 reports={[
-                  { id: '1', name: 'Daily Activity Report', lastRun: new Date(), schedule: 'Daily' },
-                  { id: '2', name: 'Monthly Revenue Report', lastRun: new Date(), schedule: 'Monthly' },
-                  { id: '3', name: 'Player Retention Analysis', lastRun: new Date(), schedule: 'Weekly' }
+                  {
+                    id: '1',
+                    name: 'Daily Activity Report',
+                    type: 'daily',
+                    createdAt: '2023-01-01',
+                    updatedAt: '2023-05-01',
+                    createdBy: 'admin'
+                  },
+                  {
+                    id: '2',
+                    name: 'Monthly Revenue Report',
+                    type: 'revenue',
+                    createdAt: '2023-02-01',
+                    updatedAt: '2023-05-01',
+                    createdBy: 'admin'
+                  },
+                  {
+                    id: '3',
+                    name: 'Player Retention Analysis',
+                    type: 'player',
+                    createdAt: '2023-03-01',
+                    updatedAt: '2023-05-01',
+                    createdBy: 'admin'
+                  }
                 ]}
-                onViewReport={(id) => console.log('View report:', id)}
-                onEditReport={(id) => console.log('Edit report:', id)}
-                onDeleteReport={(id) => console.log('Delete report:', id)}
-                onRunReport={(id) => console.log('Run report:', id)}
+                onViewReport={(report) => console.log('View report:', report.id)}
+                onEditReport={(report) => console.log('Edit report:', report.id)}
+                onDeleteReport={(report) => console.log('Delete report:', report.id)}
+                onDuplicateReport={(report) => console.log('Duplicate report:', report.id)}
               />
             </Paper>
           )
@@ -293,13 +326,30 @@ const ReportComponentsShowcase: React.FC = () => {
                 <ReportScheduleDialog
                   open={false}
                   onClose={() => console.log('Dialog closed')}
-                  onSave={(schedule) => console.log('Schedule saved:', schedule)}
-                  schedule={{
-                    frequency: 'daily',
-                    time: '08:00',
-                    days: ['monday', 'wednesday', 'friday'],
-                    recipients: ['john@example.com', 'jane@example.com']
+                  onAddSchedule={(schedule) => console.log('Schedule added:', schedule)}
+                  report={{
+                    id: '1',
+                    title: 'Daily Activity Report',
+                    description: 'Daily summary of player activities',
+                    type: 'daily',
+                    createdAt: '2023-01-01',
+                    updatedAt: '2023-05-01',
+                    createdBy: 'admin'
                   }}
+                  schedules={[
+                    {
+                      id: 'sched1',
+                      frequency: 'daily',
+                      weekday: 1,
+                      monthDay: 1,
+                      time: new Date('2023-01-01T08:00:00'),
+                      exportFormat: 'pdf',
+                      recipientIds: ['user1', 'user2'],
+                      includeEmail: true,
+                      includeNotification: true,
+                      active: true
+                    }
+                  ]}
                 />
               </Box>
             </Paper>
@@ -324,11 +374,19 @@ const ReportComponentsShowcase: React.FC = () => {
                 <ReportShareDialog
                   open={false}
                   onClose={() => console.log('Dialog closed')}
-                  onShare={(recipients) => console.log('Report shared with:', recipients)}
+                  onAddUser={(users, permission) => console.log('Users added:', users, 'with permission:', permission)}
                   report={{
                     id: '1',
-                    name: 'Daily Activity Report'
+                    name: 'Daily Activity Report',
+                    type: 'daily',
+                    createdAt: '2023-01-01',
+                    updatedAt: '2023-05-01',
+                    createdBy: 'admin'
                   }}
+                  availableUsers={[
+                    { id: 'user1', name: 'John Doe', email: 'john@example.com' },
+                    { id: 'user2', name: 'Jane Smith', email: 'jane@example.com' }
+                  ]}
                 />
               </Box>
             </Paper>

@@ -13,18 +13,20 @@ import {
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { EnhancedTableProps, TableState, ColumnDef, ExportFormat } from './types';
-import { decodeStateFromUrl, encodeStateToUrl, filterData, sortData, groupData } from './utils';
+import { EnhancedTableProps, TableState, ColumnDef, ExportFormat, HierarchicalGroup } from './types';
+import { decodeStateFromUrl, encodeStateToUrl, filterData, sortData, groupData, createHierarchicalData } from './utils';
 import Sorting from './features/Sorting';
 import Filtering, { AdvancedFilter, QuickFilter } from './features/Filtering';
 import ColumnManagement from './features/ColumnManagement';
 import Pagination from './features/Pagination';
 import Grouping from './features/Grouping';
+import HierarchicalGrouping from './features/HierarchicalGrouping';
 import Aggregation, { AggregationRow } from './features/Aggregation';
 import DrillDown from './features/DrillDown';
 import { ExpandAllButton } from './features/ExpandableRows';
 import Export from './features/Export';
 import TableContent from './features/TableContent';
+import HierarchicalTableContent from './features/HierarchicalTableContent';
 
 // Default table state
 const DEFAULT_TABLE_STATE: TableState = {
@@ -41,7 +43,9 @@ const DEFAULT_TABLE_STATE: TableState = {
     pageSize: 10
   },
   grouping: {
-    groupByColumn: null
+    groupByColumn: null,
+    groupByLevels: [],
+    expandedGroups: []
   },
   columns: {
     visible: [],
@@ -222,6 +226,10 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
     }
   }, [tableState, stateFromUrl, navigate, onStateChange]);
 
+  // State for hierarchical data
+  const [hierarchicalData, setHierarchicalData] = useState<HierarchicalGroup[]>([]);
+  const [isLoadingHierarchicalData, setIsLoadingHierarchicalData] = useState(false);
+
   // Process data based on current state
   const processedData = useMemo(() => {
     let result = [...data];
@@ -246,6 +254,27 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
 
     return result;
   }, [data, filteringConfig.enabled, sortingConfig.enabled, tableState.filtering, tableState.sorting]);
+
+  // Generate hierarchical data when groupByLevels change
+  useEffect(() => {
+    if (groupingConfig.hierarchical && tableState.grouping.groupByLevels.length > 0) {
+      setIsLoadingHierarchicalData(true);
+
+      // Create hierarchical data structure from flat data
+      const firstLevelGroupBy = tableState.grouping.groupByLevels[0];
+      if (firstLevelGroupBy) {
+        const hierarchical = createHierarchicalData(
+          processedData,
+          firstLevelGroupBy,
+          0,
+          columns
+        );
+        setHierarchicalData(hierarchical);
+      }
+
+      setIsLoadingHierarchicalData(false);
+    }
+  }, [processedData, tableState.grouping.groupByLevels, groupingConfig.hierarchical, columns]);
 
   // Handle sorting
   const handleSort = useCallback((columnId: string) => {
@@ -376,6 +405,78 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
       }
     }));
   }, []);
+
+  // Handle hierarchical grouping levels change
+  const handleGroupingLevelsChange = useCallback((columnIds: string[]) => {
+    setTableState(prevState => ({
+      ...prevState,
+      grouping: {
+        ...prevState.grouping,
+        groupByLevels: columnIds,
+        expandedGroups: [] // Reset expanded groups when levels change
+      }
+    }));
+  }, []);
+
+  // Handle toggle group expansion in hierarchical view
+  const handleToggleGroup = useCallback((path: string) => {
+    setTableState(prevState => {
+      const expandedGroups = [...prevState.grouping.expandedGroups];
+      const index = expandedGroups.indexOf(path);
+
+      if (index === -1) {
+        // Expand group
+        expandedGroups.push(path);
+      } else {
+        // Collapse group
+        expandedGroups.splice(index, 1);
+      }
+
+      return {
+        ...prevState,
+        grouping: {
+          ...prevState.grouping,
+          expandedGroups
+        }
+      };
+    });
+  }, []);
+
+  // Handle loading children for a hierarchical group
+  const handleLoadGroupChildren = useCallback(async (parentPath: string, childLevel: number, groupBy: string) => {
+    if (!onLoadGroupChildren) return;
+
+    try {
+      // Call the provided callback to load children
+      const children = await onLoadGroupChildren(parentPath, childLevel, groupBy);
+
+      // Update hierarchical data with the loaded children
+      setHierarchicalData(prevData => {
+        // Find the parent group by path and update its children
+        const updateChildren = (groups: HierarchicalGroup[]): HierarchicalGroup[] => {
+          return groups.map(group => {
+            if (group.path === parentPath) {
+              return {
+                ...group,
+                children,
+                childrenLoaded: true
+              };
+            } else if (group.children && group.children.length > 0) {
+              return {
+                ...group,
+                children: updateChildren(group.children)
+              };
+            }
+            return group;
+          });
+        };
+
+        return updateChildren(prevData);
+      });
+    } catch (error) {
+      console.error('Error loading group children:', error);
+    }
+  }, [onLoadGroupChildren]);
 
   // Handle aggregation toggle
   const handleAggregationToggle = useCallback((aggregationId: string) => {
@@ -647,12 +748,22 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
           )}
 
           {/* Grouping */}
-          {groupingConfig.enabled && (
+          {groupingConfig.enabled && !groupingConfig.hierarchical && (
             <Grouping
               columns={columns}
               config={groupingConfig}
               groupByColumn={tableState.grouping.groupByColumn}
               onGroupingChange={handleGroupingChange}
+            />
+          )}
+
+          {/* Hierarchical Grouping */}
+          {groupingConfig.enabled && groupingConfig.hierarchical && (
+            <HierarchicalGrouping
+              columns={columns}
+              config={groupingConfig}
+              groupByLevels={tableState.grouping.groupByLevels}
+              onGroupingLevelsChange={handleGroupingLevelsChange}
             />
           )}
 
@@ -715,12 +826,23 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
           overflowX: responsiveConfig.enabled ? 'auto' : undefined
         }}
       >
-        {displayData.length === 0 ? (
+        {displayData.length === 0 && !groupingConfig.hierarchical ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">
               {emptyMessage}
             </Typography>
           </Box>
+        ) : groupingConfig.hierarchical && tableState.grouping.groupByLevels.length > 0 ? (
+          <HierarchicalTableContent
+            columns={columns}
+            groupByLevels={tableState.grouping.groupByLevels.map(id => id)}
+            hierarchicalData={hierarchicalData}
+            expandedGroups={tableState.grouping.expandedGroups}
+            loading={isLoadingHierarchicalData}
+            emptyMessage={emptyMessage}
+            onToggleGroup={handleToggleGroup}
+            onLoadChildren={handleLoadGroupChildren}
+          />
         ) : (
           <TableContent
             data={displayData}

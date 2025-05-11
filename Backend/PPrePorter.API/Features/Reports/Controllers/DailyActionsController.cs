@@ -4,6 +4,7 @@
 // - DailyActionsController.Data.cs - Basic data retrieval endpoints
 // - DailyActionsController.Metadata.cs - Metadata endpoints
 // - DailyActionsController.FilteredData.cs - Filtered data endpoints
+// - DailyActionsController.HierarchicalData.cs - Hierarchical grouped data endpoints
 // - DailyActionsController.Tests.cs - Test endpoints
 
 namespace PPrePorter.API.Features.Reports.Controllers

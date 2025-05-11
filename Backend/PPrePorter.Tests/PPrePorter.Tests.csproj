@@ -24,7 +24,6 @@
     <ProjectReference Include="..\PPrePorter.API\PPrePorter.API.csproj" />
     <ProjectReference Include="..\PPrePorter.Core\PPrePorter.Core.csproj" />
     <ProjectReference Include="..\PPrePorter.Infrastructure\PPrePorter.Infrastructure.csproj" />
-    <ProjectReference Include="..\PPrePorter.Domain\PPrePorter.Domain.csproj" />
   </ItemGroup>
 
 </Project>

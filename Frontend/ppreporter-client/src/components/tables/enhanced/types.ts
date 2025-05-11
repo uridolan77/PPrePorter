@@ -142,8 +142,10 @@ export interface PaginationConfig {
 export interface GroupingConfig {
   enabled: boolean;
   defaultGroupBy?: string | null;
+  defaultGroupByLevels?: string[];
   allowMultipleGroups?: boolean;
   expandByDefault?: boolean;
+  hierarchical?: boolean;
 }
 
 export interface AggregationConfig {
@@ -442,6 +444,8 @@ export interface TableState {
   };
   grouping: {
     groupByColumn: string | null;
+    groupByLevels: string[];
+    expandedGroups: string[]; // Paths of expanded groups in hierarchical mode
   };
   columns: {
     visible: string[];
@@ -470,6 +474,21 @@ export interface TableState {
 }
 
 // Enhanced table props interface
+// Hierarchical data interfaces
+export interface HierarchicalGroup {
+  id: string;
+  key: string;
+  value: string;
+  path: string;
+  level: number;
+  children: HierarchicalGroup[];
+  data: any[];
+  metrics: Record<string, number>;
+  hasChildren: boolean;
+  childrenLoaded: boolean;
+  groupData?: any; // Additional data related to the group
+}
+
 export interface EnhancedTableProps {
   // Base props
   data: any[];
@@ -486,6 +505,7 @@ export interface EnhancedTableProps {
   onExport?: (format: ExportFormat, data: any[]) => void;
   onStateChange?: (state: TableState) => void;
   onDrillDown?: (row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => void;
+  onLoadGroupChildren?: (parentPath: string, childLevel: number, groupBy: string) => Promise<HierarchicalGroup[]>;
 
   // Feature configurations
   features?: {

@@ -21,21 +21,22 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Chip
 } from '@mui/material';
-import EnhancedUnifiedDataTable, { ExportFormat } from '../../components/tables/EnhancedUnifiedDataTable';
-import { ColumnDef } from '../../components/tables/UnifiedDataTable';
-import FilterPanel, { FilterDefinition, FilterType } from '../../components/common/FilterPanel';
-import MultiSelect from '../../components/common/MultiSelect';
-import ReportExport from '../../components/reports/ReportExport';
+import EnhancedUnifiedDataTable, { ExportFormat } from '../../../components/tables/EnhancedUnifiedDataTable';
+import { ColumnDef } from '../../../components/tables/UnifiedDataTable';
+import FilterPanel, { FilterDefinition, FilterType } from '../../../components/common/FilterPanel';
+import MultiSelect, { MultiSelectOption } from '../../../components/common/MultiSelect';
+import ReportExport from '../../../components/reports/ReportExport';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { format, subDays } from 'date-fns';
-import { FEATURES } from '../../config/constants';
-import dailyActionsService from '../../services/api/dailyActionsService';
+import { FEATURES } from '../../../config/constants';
+import dailyActionsService from '../../../services/api/dailyActionsService';
 // Import the ReportFilters type from the service file
-import { ReportFilters } from '../../services/api/types';
+import { ReportFilters } from '../../../services/api/types';
 
 // Import icons
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -95,15 +96,30 @@ interface Filters {
   startDate: string;
   endDate: string;
   whiteLabelIds?: number[]; // Changed to match backend's expectation of a list
+  countryIds?: string[]; // Added country IDs for filtering
   groupBy?: number; // Changed to number to match backend's GroupByOption enum
+}
+
+interface Country {
+  id: string;
+  name: string;
 }
 
 const DailyActionsPage: React.FC = () => {
   // State for filters - use yesterday and today as default date range
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 1));
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [whiteLabelId, setWhiteLabelId] = useState<string>('');
+
+  // White Label filter state
+  const [selectedWhiteLabels, setSelectedWhiteLabels] = useState<string[]>([]);
   const [whiteLabels, setWhiteLabels] = useState<WhiteLabel[]>([]);
+  const [whiteLabelsOptions, setWhiteLabelsOptions] = useState<MultiSelectOption[]>([]);
+
+  // Country filter state
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesOptions, setCountriesOptions] = useState<MultiSelectOption[]>([]);
+
   const [groupBy, setGroupBy] = useState<string>('Day');
   // Group By options - when any option is selected,
   // the table will show only the grouped field and sum all numerical values
@@ -147,7 +163,26 @@ const DailyActionsPage: React.FC = () => {
     totalGGR: 0
   });
 
-  // Fetch metadata (white labels) on component mount
+  // Sample countries data
+  const sampleCountries: Country[] = [
+    { id: 'us', name: 'United States' },
+    { id: 'uk', name: 'United Kingdom' },
+    { id: 'ca', name: 'Canada' },
+    { id: 'de', name: 'Germany' },
+    { id: 'fr', name: 'France' },
+    { id: 'es', name: 'Spain' },
+    { id: 'it', name: 'Italy' },
+    { id: 'au', name: 'Australia' },
+    { id: 'jp', name: 'Japan' },
+    { id: 'cn', name: 'China' },
+    { id: 'br', name: 'Brazil' },
+    { id: 'mx', name: 'Mexico' },
+    { id: 'in', name: 'India' },
+    { id: 'ru', name: 'Russia' },
+    { id: 'za', name: 'South Africa' }
+  ];
+
+  // Fetch metadata (white labels and countries) on component mount
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
@@ -160,7 +195,7 @@ const DailyActionsPage: React.FC = () => {
           console.log('[DAILY ACTIONS PAGE] Using mock data for metadata');
 
           // Import mock data dynamically
-          const mockDataModule = await import('../../mockData');
+          const mockDataModule = await import('../../../mockData');
           const mockDataService = mockDataModule.default;
 
           // Get mock metadata
@@ -169,6 +204,14 @@ const DailyActionsPage: React.FC = () => {
           if (mockMetadata && mockMetadata.whiteLabels) {
             console.log('[DAILY ACTIONS PAGE] Got mock white labels:', mockMetadata.whiteLabels);
             setWhiteLabels(mockMetadata.whiteLabels);
+
+            // Convert white labels to MultiSelect options
+            const options = mockMetadata.whiteLabels.map((wl: WhiteLabel) => ({
+              value: wl.id,
+              label: wl.name
+            }));
+            setWhiteLabelsOptions(options);
+
             return;
           }
         }
@@ -176,12 +219,30 @@ const DailyActionsPage: React.FC = () => {
         // Fall back to service if mock data is not available
         const data = await dailyActionsService.getMetadata();
         console.log('[DAILY ACTIONS PAGE] Got white labels from service:', (data as any).whiteLabels);
-        setWhiteLabels((data as any).whiteLabels || []);
+        const fetchedWhiteLabels = (data as any).whiteLabels || [];
+        setWhiteLabels(fetchedWhiteLabels);
+
+        // Convert white labels to MultiSelect options
+        const options = fetchedWhiteLabels.map((wl: WhiteLabel) => ({
+          value: wl.id,
+          label: wl.name
+        }));
+        setWhiteLabelsOptions(options);
       } catch (err) {
         console.error('[DAILY ACTIONS PAGE] Error fetching metadata:', err);
         setError('Failed to load metadata. Please try again later.');
       }
     };
+
+    // Set countries data
+    setCountries(sampleCountries);
+
+    // Convert countries to MultiSelect options
+    const countryOptions = sampleCountries.map(country => ({
+      value: country.id,
+      label: country.name
+    }));
+    setCountriesOptions(countryOptions);
 
     fetchMetadata();
   }, []);
@@ -222,12 +283,22 @@ const DailyActionsPage: React.FC = () => {
         groupBy: convertGroupByToBackendValue(groupBy)
       };
 
-      if (whiteLabelId && whiteLabelId !== '') {
-        console.log(`[DAILY ACTIONS PAGE] Filtering by white label ID: ${whiteLabelId}`);
+      // Add white label filters if any are selected
+      if (selectedWhiteLabels && selectedWhiteLabels.length > 0) {
+        console.log(`[DAILY ACTIONS PAGE] Filtering by white label IDs:`, selectedWhiteLabels);
         // The backend expects a list of white label IDs
-        filters.whiteLabelIds = [parseInt(whiteLabelId)];
+        filters.whiteLabelIds = selectedWhiteLabels.map(id => parseInt(id));
       } else {
         console.log('[DAILY ACTIONS PAGE] No white label filter applied');
+      }
+
+      // Add country filters if any are selected
+      if (selectedCountries && selectedCountries.length > 0) {
+        console.log(`[DAILY ACTIONS PAGE] Filtering by country IDs:`, selectedCountries);
+        // The backend expects a list of country IDs
+        filters.countryIds = selectedCountries;
+      } else {
+        console.log('[DAILY ACTIONS PAGE] No country filter applied');
       }
 
       console.log(`[DAILY ACTIONS PAGE] Grouping by: ${groupBy} (backend value: ${filters.groupBy})`);
@@ -247,7 +318,7 @@ const DailyActionsPage: React.FC = () => {
           console.log('[DAILY ACTIONS PAGE] Mock data is enabled, trying to get mock data directly');
 
           // Import mock data dynamically
-          const mockDataModule = await import('../../mockData');
+          const mockDataModule = await import('../../../mockData');
           const mockDataService = mockDataModule.default;
 
           // Try to get summary data
@@ -408,15 +479,32 @@ const DailyActionsPage: React.FC = () => {
     console.log('[DAILY ACTIONS PAGE] Current filters:', {
       startDate: format(startDate, 'yyyy-MM-dd'),
       endDate: format(endDate, 'yyyy-MM-dd'),
-      whiteLabelId
+      selectedWhiteLabels,
+      selectedCountries
     });
     fetchDailyActions();
   };
 
-  // Handle white label change
-  const handleWhiteLabelChange = (event: SelectChangeEvent): void => {
-    console.log(`[DAILY ACTIONS PAGE] White label changed to: ${event.target.value}`);
-    setWhiteLabelId(event.target.value);
+  // Handle white labels change
+  const handleWhiteLabelsChange = (values: (string | number)[]): void => {
+    console.log(`[DAILY ACTIONS PAGE] White labels changed to:`, values);
+    // Convert all values to strings to ensure consistent handling
+    const stringValues = values.map(v => v.toString());
+    setSelectedWhiteLabels(stringValues);
+
+    // Log the updated state for debugging
+    console.log(`[DAILY ACTIONS PAGE] Updated selectedWhiteLabels:`, stringValues);
+  };
+
+  // Handle countries change
+  const handleCountriesChange = (values: (string | number)[]): void => {
+    console.log(`[DAILY ACTIONS PAGE] Countries changed to:`, values);
+    // Convert all values to strings to ensure consistent handling
+    const stringValues = values.map(v => v.toString());
+    setSelectedCountries(stringValues);
+
+    // Log the updated state for debugging
+    console.log(`[DAILY ACTIONS PAGE] Updated selectedCountries:`, stringValues);
   };
 
   // Handle group by change
@@ -432,7 +520,8 @@ const DailyActionsPage: React.FC = () => {
       console.log('[DAILY ACTIONS PAGE] Exporting data with filters:', {
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
-        whiteLabelId,
+        selectedWhiteLabels,
+        selectedCountries,
         groupBy
       });
 
@@ -440,7 +529,8 @@ const DailyActionsPage: React.FC = () => {
       const filters: ReportFilters = {
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
-        whiteLabelIds: whiteLabelId ? [parseInt(whiteLabelId)] : undefined,
+        whiteLabelIds: selectedWhiteLabels.length > 0 ? selectedWhiteLabels.map(id => parseInt(id)) : undefined,
+        countryIds: selectedCountries.length > 0 ? selectedCountries : undefined,
         groupBy: convertGroupByToBackendValue(groupBy)
       };
 
@@ -499,7 +589,8 @@ const DailyActionsPage: React.FC = () => {
       startDate,
       endDate,
       groupBy,
-      whiteLabelId,
+      selectedWhiteLabels,
+      selectedCountries,
       ...advancedFilters
     };
 
@@ -629,26 +720,67 @@ const DailyActionsPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>White Label</InputLabel>
-              <Select
-                value={whiteLabelId}
-                onChange={handleWhiteLabelChange}
-                label="White Label"
-              >
-                <MenuItem value="">All White Labels</MenuItem>
-                {whiteLabels && whiteLabels.length > 0 ?
-                  whiteLabels.map((wl) => (
-                    <MenuItem key={wl.id} value={wl.id}>{wl.name}</MenuItem>
-                  ))
-                : [
-                  // Default white labels if none are loaded - use array instead of Fragment
-                  <MenuItem key="casino-royale" value="casino-royale">Casino Royale</MenuItem>,
-                  <MenuItem key="lucky-spin" value="lucky-spin">Lucky Spin</MenuItem>,
-                  <MenuItem key="golden-bet" value="golden-bet">Golden Bet</MenuItem>
-                ]}
-              </Select>
-            </FormControl>
+            <MultiSelect
+              label="White Labels"
+              options={whiteLabelsOptions}
+              value={selectedWhiteLabels}
+              onChange={handleWhiteLabelsChange}
+              placeholder="Select White Labels"
+              searchable
+              showSelectAllOption
+              renderValue={(selected) => {
+                if (selected.length === 0) {
+                  return <Typography color="text.secondary">Select White Labels</Typography>;
+                }
+
+                return (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => {
+                      const option = whiteLabelsOptions.find(opt => opt.value === value);
+                      return (
+                        <Chip
+                          key={value}
+                          label={option ? option.label : value}
+                          size="small"
+                        />
+                      );
+                    })}
+                  </Box>
+                );
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <MultiSelect
+              label="Countries"
+              options={countriesOptions}
+              value={selectedCountries}
+              onChange={handleCountriesChange}
+              placeholder="Select Countries"
+              searchable
+              showSelectAllOption
+              renderValue={(selected) => {
+                if (selected.length === 0) {
+                  return <Typography color="text.secondary">Select Countries</Typography>;
+                }
+
+                return (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => {
+                      const option = countriesOptions.find(opt => opt.value === value);
+                      return (
+                        <Chip
+                          key={value}
+                          label={option ? option.label : value}
+                          size="small"
+                        />
+                      );
+                    })}
+                  </Box>
+                );
+              }}
+            />
           </Grid>
 
           <Grid item xs={12} md={3}>
@@ -684,7 +816,7 @@ const DailyActionsPage: React.FC = () => {
             </Typography>
           </Grid>
 
-          <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center' }}>
+          <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 2 }}>
             <Button
               variant="contained"
               color="primary"
@@ -805,7 +937,7 @@ const DailyActionsPage: React.FC = () => {
               {
                 id: 'groupValue',
                 label: groupByOptions.find(option => option.id === groupBy)?.name || groupBy,
-                format: (value, row) => {
+                format: (value: any, row: DailyAction) => {
                   return row.groupValue ? row.groupValue :
                     groupBy === 'Day' && row.date ? format(new Date(row.date), 'MMM dd, yyyy') :
                     groupBy === 'Month' && row.date ? format(new Date(row.date), 'MMMM yyyy') :
@@ -837,42 +969,42 @@ const DailyActionsPage: React.FC = () => {
                 label: 'Deposits',
                 align: 'right',
                 type: 'currency',
-                format: (value) => formatCurrency(value)
+                format: (value: number) => formatCurrency(value)
               },
               {
                 id: 'paidCashouts',
                 label: 'Cashouts',
                 align: 'right',
                 type: 'currency',
-                format: (value) => formatCurrency(value)
+                format: (value: number) => formatCurrency(value)
               },
               {
                 id: 'ggrCasino',
                 label: 'Casino GGR',
                 align: 'right',
                 type: 'currency',
-                format: (value) => formatCurrency(value)
+                format: (value: number) => formatCurrency(value)
               },
               {
                 id: 'ggrSport',
                 label: 'Sports GGR',
                 align: 'right',
                 type: 'currency',
-                format: (value) => formatCurrency(value)
+                format: (value: number) => formatCurrency(value)
               },
               {
                 id: 'ggrLive',
                 label: 'Live GGR',
                 align: 'right',
                 type: 'currency',
-                format: (value) => formatCurrency(value)
+                format: (value: number) => formatCurrency(value)
               },
               {
                 id: 'totalGGR',
                 label: 'Total GGR',
                 align: 'right',
                 type: 'currency',
-                format: (value) => formatCurrency(value)
+                format: (value: number) => formatCurrency(value)
               }
             ]}
             title="Daily Actions Data"
@@ -945,7 +1077,7 @@ const DailyActionsPage: React.FC = () => {
                 sourceGrouping: 'Month',
                 targetGrouping: 'Day',
                 label: 'View by Day',
-                transformFilter: (row) => ({
+                transformFilter: (row: any) => ({
                   startDate: row.date ? format(new Date(row.date), 'yyyy-MM-01') : '',
                   endDate: row.date ? format(new Date(row.date), 'yyyy-MM-dd') : '',
                   groupBy: 'Day'
@@ -955,7 +1087,7 @@ const DailyActionsPage: React.FC = () => {
                 sourceGrouping: 'Label',
                 targetGrouping: 'Player',
                 label: 'View Players',
-                transformFilter: (row) => ({
+                transformFilter: (row: any) => ({
                   whiteLabelId: row.whiteLabelId || '',
                   groupBy: 'Player'
                 })
@@ -971,7 +1103,7 @@ const DailyActionsPage: React.FC = () => {
               { columnId: 'totalGGR', function: 'sum', label: 'Total GGR' },
               { columnId: 'totalGGR', function: 'avg', label: 'Avg GGR' }
             ]}
-            renderRowDetail={(row) => (
+            renderRowDetail={(row: DailyAction) => (
               <Box sx={{ p: 2 }}>
                 <Typography variant="subtitle1" gutterBottom>
                   Details for {groupBy === 'Day' || groupBy === 'Month' || groupBy === 'Year' ?
@@ -1010,25 +1142,25 @@ const DailyActionsPage: React.FC = () => {
                 </Grid>
               </Box>
             )}
-            onExportFormat={(format) => {
+            onExportFormat={(format: string) => {
               console.log(`[DAILY ACTIONS PAGE] Exporting in format: ${format}`);
               handleExport();
             }}
-            onApplyAdvancedFilters={(filters) => {
+            onApplyAdvancedFilters={(filters: Record<string, any>) => {
               console.log('[DAILY ACTIONS PAGE] Applying advanced filters:', filters);
               setAdvancedFilters(filters);
               handleApplyAdvancedFilters();
             }}
-            onColumnOrderChange={(columns) => {
+            onColumnOrderChange={(columns: Array<{id: string}>) => {
               console.log('[DAILY ACTIONS PAGE] Column order changed:', columns.map(col => col.id));
             }}
-            onGroupingChange={(groupBy) => {
+            onGroupingChange={(groupBy: string | null) => {
               console.log('[DAILY ACTIONS PAGE] Grouping changed to:', groupBy);
             }}
-            onRowExpand={(rowId, expanded) => {
+            onRowExpand={(rowId: string, expanded: boolean) => {
               console.log(`[DAILY ACTIONS PAGE] Row ${rowId} ${expanded ? 'expanded' : 'collapsed'}`);
             }}
-            onDrillDown={(row, sourceGrouping, targetGrouping, filters) => {
+            onDrillDown={(row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => {
               console.log(`[DAILY ACTIONS PAGE] Drill down from ${sourceGrouping} to ${targetGrouping}`, filters);
 
               // Update filters based on drill-down
@@ -1045,7 +1177,11 @@ const DailyActionsPage: React.FC = () => {
               }
 
               if (filters.whiteLabelId) {
-                setWhiteLabelId(filters.whiteLabelId);
+                // Convert to array if it's a single value
+                const whiteLabelIds = Array.isArray(filters.whiteLabelId)
+                  ? filters.whiteLabelId.map(id => id.toString())
+                  : [filters.whiteLabelId.toString()];
+                setSelectedWhiteLabels(whiteLabelIds);
               }
 
               // Apply the new filters

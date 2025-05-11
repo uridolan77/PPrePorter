@@ -38,8 +38,8 @@ const ApiDashboard = lazy(() => import('./pages/ApiDashboard'));
 const TestContextualExplanation = lazy(() => import('./components/dashboard/TestContextualExplanation'));
 
 // Report pages
-const DailyActionsPage = lazy(() => import('./pages/reports/DailyActionsPage'));
-const DailyActionsAdvancedPage = lazy(() => import('./pages/reports/DailyActionsAdvancedPage'));
+const DailyActionsPage = lazy(() => import('./pages/showcase/reports/DailyActionsPage'));
+const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/DailyActionsAdvancedPage'));
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
@@ -50,6 +50,10 @@ const CommonComponentsShowcase = lazy(() => import('./pages/showcase/CommonCompo
 const TableComponentsShowcase = lazy(() => import('./pages/showcase/TableComponentsShowcase'));
 const ReportComponentsShowcase = lazy(() => import('./pages/showcase/ReportComponentsShowcase'));
 const DashboardComponentsShowcase = lazy(() => import('./pages/showcase/DashboardComponentsShowcase'));
+const VisualizationComponentsShowcase = lazy(() => import('./pages/showcase/VisualizationComponentsShowcase'));
+const AuthComponentsShowcase = lazy(() => import('./pages/showcase/AuthComponentsShowcase'));
+const NotificationComponentsShowcase = lazy(() => import('./pages/showcase/NotificationComponentsShowcase'));
+const SettingsComponentsShowcase = lazy(() => import('./pages/showcase/SettingsComponentsShowcase'));
 
 // Theme configuration
 const theme: Theme = createTheme({
@@ -219,6 +223,26 @@ const App: React.FC = () => {
               <Route path="/showcase/dashboard" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <DashboardComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/visualization" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <VisualizationComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/auth" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <AuthComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/notification" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <NotificationComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/settings" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <SettingsComponentsShowcase />
                 </Suspense>
               } />
 

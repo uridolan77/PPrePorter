@@ -198,7 +198,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       return (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {selected.map((selectedValue) => {
-            const option = options.find(opt => opt.value === selectedValue);
+            const option = options.find(opt => opt.value.toString() === selectedValue.toString());
             return (
               <Chip
                 key={selectedValue}
@@ -359,7 +359,11 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Checkbox checked={value.indexOf(option.value) > -1} />
+              <Checkbox
+                checked={value.some(val =>
+                  val.toString() === option.value.toString()
+                )}
+              />
               <ListItemText
                 primary={option.label}
                 secondary={option.group}

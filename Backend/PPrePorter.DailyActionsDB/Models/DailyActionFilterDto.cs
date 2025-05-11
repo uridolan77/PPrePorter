@@ -18,6 +18,9 @@ namespace PPrePorter.DailyActionsDB.Models
         // Organization options
         public GroupByOption GroupBy { get; set; } = GroupByOption.Day;
 
+        // Multi-level grouping options
+        public List<GroupByOption> GroupByLevels { get; set; } = new List<GroupByOption> { GroupByOption.Day };
+
         // Tracking filters
         public List<string>? Trackers { get; set; }
         public string? PromotionCode { get; set; }

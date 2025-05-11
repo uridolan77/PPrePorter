@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PPrePorter.Core\PPrePorter.Core.csproj" />
-    <ProjectReference Include="..\PPrePorter.Domain\PPrePorter.Domain.csproj" />
   </ItemGroup>
 
 </Project>

@@ -9,6 +9,7 @@ export interface ReportFilters {
   startDate: string;
   endDate: string;
   whiteLabelIds?: number[];
+  countryIds?: string[];
   groupBy?: number | string;
   format?: 'csv' | 'xlsx' | 'pdf';
   // Add other filter properties as needed

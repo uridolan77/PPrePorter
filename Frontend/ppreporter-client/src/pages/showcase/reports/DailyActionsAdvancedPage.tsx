@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Box, Breadcrumbs, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import DailyActionsAdvancedReportContainer from '../../containers/DailyActionsAdvancedReportContainer';
+import DailyActionsAdvancedReportContainer from '../../../containers/DailyActionsAdvancedReportContainer';
 
 /**
  * DailyActionsAdvancedPage - Page component for the advanced daily actions report
@@ -13,7 +13,7 @@ const DailyActionsAdvancedPage: React.FC = () => {
       <Helmet>
         <title>Advanced Daily Actions Report | PPrePorter</title>
       </Helmet>
-      
+
       <Box sx={{ p: 3 }}>
         {/* Breadcrumbs */}
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
@@ -25,7 +25,7 @@ const DailyActionsAdvancedPage: React.FC = () => {
           </Link>
           <Typography color="text.primary">Advanced Daily Actions</Typography>
         </Breadcrumbs>
-        
+
         {/* Page Title */}
         <Typography variant="h4" component="h1" gutterBottom>
           Advanced Daily Actions Report
@@ -33,7 +33,7 @@ const DailyActionsAdvancedPage: React.FC = () => {
         <Typography variant="subtitle1" color="text.secondary" paragraph>
           Comprehensive analysis of daily player actions with advanced filtering options.
         </Typography>
-        
+
         {/* Report Container */}
         <DailyActionsAdvancedReportContainer />
       </Box>

@@ -1,4 +1,4 @@
-import { AggregationFunction, TableState } from './types';
+import { AggregationFunction, TableState, ColumnDef, HierarchicalGroup } from './types';
 
 /**
  * Format a number as currency
@@ -137,7 +137,7 @@ export const filterData = (
     filteredData = filteredData.filter(row => {
       return Object.entries(advancedFilters).every(([key, value]) => {
         if (value === null || value === undefined) return true;
-        
+
         // Handle different filter types
         if (typeof value === 'object') {
           if ('min' in value && row[key] < value.min) return false;
@@ -145,7 +145,7 @@ export const filterData = (
           if ('values' in value && !value.values.includes(row[key])) return false;
           return true;
         }
-        
+
         return row[key] === value;
       });
     });
@@ -159,38 +159,38 @@ export const filterData = (
  */
 export const encodeStateToUrl = (state: TableState): string => {
   const params = new URLSearchParams();
-  
+
   // Encode sorting
   params.set('sort', `${state.sorting.column},${state.sorting.direction}`);
-  
+
   // Encode filtering
   if (state.filtering.quickFilter) {
     params.set('q', state.filtering.quickFilter);
   }
-  
+
   if (Object.keys(state.filtering.advancedFilters).length > 0) {
     params.set('filters', JSON.stringify(state.filtering.advancedFilters));
   }
-  
+
   // Encode pagination
   params.set('page', state.pagination.page.toString());
   params.set('pageSize', state.pagination.pageSize.toString());
-  
+
   // Encode grouping
   if (state.grouping.groupByColumn) {
     params.set('groupBy', state.grouping.groupByColumn);
   }
-  
+
   // Encode columns
   params.set('columns', state.columns.visible.join(','));
   params.set('columnOrder', state.columns.order.join(','));
   params.set('stickyColumns', state.columns.sticky.join(','));
-  
+
   // Encode aggregation
   if (state.aggregation.enabled.length > 0) {
     params.set('aggregations', state.aggregation.enabled.join(','));
   }
-  
+
   return params.toString();
 };
 
@@ -200,7 +200,7 @@ export const encodeStateToUrl = (state: TableState): string => {
 export const decodeStateFromUrl = (url: string, defaultState: TableState): TableState => {
   const params = new URLSearchParams(url);
   const state = { ...defaultState };
-  
+
   // Decode sorting
   const sort = params.get('sort');
   if (sort) {
@@ -208,13 +208,13 @@ export const decodeStateFromUrl = (url: string, defaultState: TableState): Table
     state.sorting.column = column;
     state.sorting.direction = direction as 'asc' | 'desc';
   }
-  
+
   // Decode filtering
   const quickFilter = params.get('q');
   if (quickFilter) {
     state.filtering.quickFilter = quickFilter;
   }
-  
+
   const filters = params.get('filters');
   if (filters) {
     try {
@@ -223,45 +223,118 @@ export const decodeStateFromUrl = (url: string, defaultState: TableState): Table
       console.error('Error parsing filters from URL', e);
     }
   }
-  
+
   // Decode pagination
   const page = params.get('page');
   if (page) {
     state.pagination.page = parseInt(page, 10);
   }
-  
+
   const pageSize = params.get('pageSize');
   if (pageSize) {
     state.pagination.pageSize = parseInt(pageSize, 10);
   }
-  
+
   // Decode grouping
   const groupBy = params.get('groupBy');
   if (groupBy) {
     state.grouping.groupByColumn = groupBy;
   }
-  
+
+  // Decode hierarchical grouping
+  const groupByLevels = params.get('groupByLevels');
+  if (groupByLevels) {
+    state.grouping.groupByLevels = groupByLevels.split(',');
+  }
+
   // Decode columns
   const columns = params.get('columns');
   if (columns) {
     state.columns.visible = columns.split(',');
   }
-  
+
   const columnOrder = params.get('columnOrder');
   if (columnOrder) {
     state.columns.order = columnOrder.split(',');
   }
-  
+
   const stickyColumns = params.get('stickyColumns');
   if (stickyColumns) {
     state.columns.sticky = stickyColumns.split(',');
   }
-  
+
   // Decode aggregation
   const aggregations = params.get('aggregations');
   if (aggregations) {
     state.aggregation.enabled = aggregations.split(',');
   }
-  
+
   return state;
+};
+
+/**
+ * Creates hierarchical data structure from flat data
+ * @param data Flat data array
+ * @param groupByField Field to group by
+ * @param level Current hierarchy level (0-based)
+ * @param columns Column definitions
+ * @param parentPath Path to the parent node
+ * @returns Hierarchical data structure
+ */
+export const createHierarchicalData = (
+  data: any[],
+  groupByField: string,
+  level: number = 0,
+  columns: ColumnDef[],
+  parentPath: string = ''
+): HierarchicalGroup[] => {
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Group data by the specified field
+  const groups: Record<string, any[]> = {};
+
+  data.forEach(item => {
+    const key = item[groupByField]?.toString() || 'Unknown';
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(item);
+  });
+
+  // Convert groups to hierarchical structure
+  return Object.entries(groups).map(([value, items]) => {
+    // Generate a unique path for this group
+    const path = parentPath
+      ? `${parentPath}/${groupByField}:${value}`
+      : `${groupByField}:${value}`;
+
+    // Calculate metrics for this group
+    const metrics: Record<string, number> = {};
+
+    // Sum numeric values for all columns
+    columns.forEach(column => {
+      if (column.type === 'number' || column.type === 'currency' || column.type === 'percentage') {
+        metrics[column.id] = items.reduce((sum, item) => {
+          const val = parseFloat(item[column.id]) || 0;
+          return sum + val;
+        }, 0);
+      }
+    });
+
+    // Create the hierarchical group
+    return {
+      id: `group_${level}_${value}`,
+      key: columns.find(col => col.id === groupByField)?.label || groupByField,
+      value,
+      path,
+      level,
+      children: [],
+      data: items,
+      metrics,
+      hasChildren: true,
+      childrenLoaded: false
+    };
+  });
 };
