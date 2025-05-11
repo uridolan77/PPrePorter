@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import { 
-  Box, 
+import {
+  Box,
   TextField,
   Button,
   Typography,
@@ -77,19 +77,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     confirmPassword: '',
     agreeToTerms: false
   });
-  
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [formErrors, setFormErrors] = useState<RegisterFormErrors>({});
-  
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value, checked, type } = e.target;
-    
+
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
-    
+
     // Clear validation error when field is edited
     if (formErrors[name as keyof RegisterFormErrors]) {
       setFormErrors({
@@ -98,57 +98,57 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       });
     }
   };
-  
+
   const toggleShowPassword = (): void => {
     setShowPassword(!showPassword);
   };
-  
+
   const toggleShowConfirmPassword = (): void => {
     setShowConfirmPassword(!showConfirmPassword);
   };
-  
+
   const validate = (): RegisterFormErrors => {
     const errors: RegisterFormErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
+
     if (!formData.firstName.trim()) {
       errors.firstName = 'First name is required';
     }
-    
+
     if (!formData.lastName.trim()) {
       errors.lastName = 'Last name is required';
     }
-    
+
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!emailRegex.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters long';
     }
-    
+
     if (!formData.confirmPassword) {
       errors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
-    
+
     if (!formData.agreeToTerms) {
       errors.agreeToTerms = 'You must agree to the terms and conditions';
     }
-    
+
     return errors;
   };
-  
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    
+
     const errors = validate();
-    
+
     if (Object.keys(errors).length === 0) {
       if (onSubmit) {
         onSubmit(formData);
@@ -157,62 +157,64 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       setFormErrors(errors);
     }
   };
-  
+
   const handleGoogleRegister = (): void => {
     if (onGoogleRegister) {
       onGoogleRegister();
     }
   };
-  
+
   const handleMicrosoftRegister = (): void => {
     if (onMicrosoftRegister) {
       onMicrosoftRegister();
     }
   };
-  
+
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        maxWidth: 600, 
-        width: '100%', 
-        p: 4, 
+    <Paper
+      elevation={3}
+      sx={{
+        maxWidth: 600,
+        width: '100%',
+        p: 3, // Reduced padding from 4 to 3
         borderRadius: 2,
         ...sx
       }}
     >
-      <Box 
-        component="form" 
-        onSubmit={handleSubmit} 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: 3 
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2 // Reduced gap from 3 to 2
         }}
       >
         {/* Logo and Title */}
-        <Box sx={{ textAlign: 'center', mb: 2 }}>
-          <img 
-            src={logoUrl} 
-            alt="Logo" 
-            style={{ height: 60, width: 'auto', marginBottom: 16 }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-          <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Box sx={{ textAlign: 'center', mb: 1 }}> /* Reduced margin from 2 to 1 */
+          {logoUrl && logoUrl.trim() !== '' && (
+            <img
+              src={logoUrl}
+              alt="Logo"
+              style={{ height: 60, width: 'auto', marginBottom: 8 }} /* Reduced margin from 16 to 8 */
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold', mb: 0.5 }}> /* Added mb: 0.5 instead of gutterBottom */
             Create an Account
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Fill in the form below to create your account
           </Typography>
         </Box>
-        
+
         {/* Error Message */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
-        
+
         {/* Name Fields */}
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
@@ -256,7 +258,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             />
           </Grid>
         </Grid>
-        
+
         {/* Email Field */}
         <TextField
           label="Email"
@@ -277,7 +279,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           disabled={loading}
           required
         />
-        
+
         {/* Password Field */}
         <TextField
           label="Password"
@@ -309,7 +311,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           disabled={loading}
           required
         />
-        
+
         {/* Confirm Password Field */}
         <TextField
           label="Confirm Password"
@@ -341,7 +343,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           disabled={loading}
           required
         />
-        
+
         {/* Terms and Conditions */}
         <Box>
           <FormControlLabel
@@ -371,7 +373,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             <FormHelperText error>{formErrors.agreeToTerms}</FormHelperText>
           )}
         </Box>
-        
+
         {/* Submit Button */}
         <Button
           type="submit"
@@ -384,13 +386,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         >
           {loading ? <CircularProgress size={24} /> : 'Create Account'}
         </Button>
-        
+
         {/* Login Link */}
         <Box sx={{ textAlign: 'center', mt: 2 }}>
           <Typography variant="body2" color="text.secondary">
             Already have an account?{' '}
-            <Link 
-              component={RouterLink} 
+            <Link
+              component={RouterLink}
               to={loginLink}
               color="primary"
               underline="hover"
@@ -399,7 +401,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             </Link>
           </Typography>
         </Box>
-        
+
         {/* Social Registration Options */}
         {showSocialLogin && (
           <>
@@ -410,7 +412,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               </Typography>
               <Divider sx={{ flex: 1 }} />
             </Box>
-            
+
             <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"

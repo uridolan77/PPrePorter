@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  FormControlLabel, 
-  Switch, 
-  Tooltip, 
-  Typography, 
+import {
+  Box,
+  FormControlLabel,
+  Switch,
+  Tooltip,
+  Typography,
   Paper,
   IconButton,
   Collapse
@@ -16,14 +16,16 @@ import { isMockDataEnabled, toggleMockData } from '../../utils/mockDataToggle';
 
 interface MockDataToggleProps {
   showDetails?: boolean;
+  collapsed?: boolean;
 }
 
 /**
  * Component to toggle between mock data and real API calls
  */
-const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false }) => {
+const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false, collapsed = false }) => {
   const [mockEnabled, setMockEnabled] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<boolean>(showDetails);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(collapsed);
 
   // Initialize state from localStorage
   useEffect(() => {
@@ -41,13 +43,38 @@ const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false }) 
     setExpanded(!expanded);
   };
 
+  // Toggle collapsed state
+  const toggleCollapsed = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  // If collapsed, show only an icon button
+  if (isCollapsed) {
+    return (
+      <Tooltip title="API Selection">
+        <IconButton
+          onClick={toggleCollapsed}
+          sx={{
+            bgcolor: mockEnabled ? 'warning.light' : 'primary.light',
+            color: 'white',
+            '&:hover': {
+              bgcolor: mockEnabled ? 'warning.main' : 'primary.main',
+            }
+          }}
+        >
+          <InfoIcon />
+        </IconButton>
+      </Tooltip>
+    );
+  }
+
   return (
-    <Paper 
-      elevation={1} 
-      sx={{ 
-        p: 2, 
-        mb: 2, 
-        border: '1px solid', 
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        mb: 2,
+        border: '1px solid',
         borderColor: mockEnabled ? 'warning.light' : 'divider',
         bgcolor: mockEnabled ? 'warning.50' : 'background.paper'
       }}
@@ -74,9 +101,14 @@ const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false }) 
             </IconButton>
           </Tooltip>
         </Box>
-        <IconButton size="small" onClick={toggleDetails}>
-          {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-        </IconButton>
+        <Box>
+          <IconButton size="small" onClick={toggleDetails} sx={{ mr: 1 }}>
+            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </IconButton>
+          <IconButton size="small" onClick={toggleCollapsed} color="primary">
+            <InfoIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </Box>
 
       <Collapse in={expanded}>
@@ -85,7 +117,7 @@ const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false }) 
             <strong>Current Mode:</strong> {mockEnabled ? 'Mock Data' : 'Real API'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {mockEnabled 
+            {mockEnabled
               ? 'Using simulated data for UI testing. No API calls are being made.'
               : 'Connected to the real API. All data is fetched from the server.'}
           </Typography>

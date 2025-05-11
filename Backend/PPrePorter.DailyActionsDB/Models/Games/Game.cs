@@ -39,13 +39,13 @@ namespace PPrePorter.DailyActionsDB.Models.Games
 
         public bool? DemoEnabled { get; set; }
 
-        public float? WagerPercent { get; set; }
+        public double? WagerPercent { get; set; }
 
-        public float? JackpotContribution { get; set; }
+        public double? JackpotContribution { get; set; }
 
-        public float? PayoutLow { get; set; }
+        public double? PayoutLow { get; set; }
 
-        public float? PayoutHigh { get; set; }
+        public double? PayoutHigh { get; set; }
 
         [StringLength(50)]
         public string? Volatility { get; set; }

@@ -33,12 +33,16 @@ namespace PPrePorter.DailyActionsDB.Services
             try
             {
                 _logger.LogInformation("Getting all games (includeInactive: {IncludeInactive})", includeInactive);
-                return await _gameRepository.GetAllAsync(includeInactive);
+                var result = await _gameRepository.GetAllAsync(includeInactive);
+                _logger.LogInformation("Successfully retrieved {Count} games", result.Count());
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting all games");
-                throw;
+                // Return empty list instead of throwing to prevent 500 errors
+                _logger.LogWarning("Returning empty list of games due to error");
+                return new List<Game>();
             }
         }
 

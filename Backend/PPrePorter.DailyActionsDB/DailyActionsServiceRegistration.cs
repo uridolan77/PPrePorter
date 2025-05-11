@@ -7,7 +7,7 @@ using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Services;
-using System;
+using PPrePorter.DailyActionsDB.Interfaces;
 
 namespace PPrePorter.DailyActionsDB
 {
@@ -141,6 +141,9 @@ namespace PPrePorter.DailyActionsDB
             services.AddScoped<ISportBetStateRepository, SportBetStateRepository>();
             services.AddScoped<ISportBetEnhancedRepository, SportBetEnhancedRepository>();
 
+            // We're now using the Infrastructure's MetadataService via the adapter
+            // This is registered in Program.cs
+
             // Register services
             // Use scoped for DailyActionsService since we're using the GlobalCacheService for cache persistence
             services.AddScoped<IDailyActionsService>(provider =>
@@ -150,11 +153,25 @@ namespace PPrePorter.DailyActionsDB
                 var dbContext = provider.GetRequiredService<DailyActionsDbContext>();
                 var whiteLabelService = provider.GetRequiredService<IWhiteLabelService>();
 
+                // Get the MetadataService from the DI container
+                // This will be the MetadataServiceAdapter registered in Program.cs
+                var metadataService = provider.GetService<IMetadataService>();
+
+                if (metadataService == null)
+                {
+                    logger.LogWarning("MetadataService not found in DI container. Metadata will be retrieved directly from DailyActionsDB.");
+                }
+                else
+                {
+                    logger.LogInformation("Using MetadataService from DI container: {MetadataServiceType}", metadataService.GetType().Name);
+                }
+
                 return new DailyActionsService(
                     logger,
                     cache,
                     dbContext,
-                    whiteLabelService);
+                    whiteLabelService,
+                    metadataService);
             });
             services.AddScoped<IWhiteLabelService, WhiteLabelService>();
             services.AddScoped<ICountryService, CountryService>();
@@ -186,7 +203,7 @@ namespace PPrePorter.DailyActionsDB
             // Register simplified services
             services.AddScoped<IDailyActionsSimpleService, DailyActionsSimpleService>();
 
-            // Register additional metadata repositories and services as needed
+            // Metadata service is registered above
 
             // Detect schema and ensure tables exist in the database
             try

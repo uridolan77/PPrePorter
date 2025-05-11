@@ -107,11 +107,11 @@ const RegisterPage: React.FC = () => {
       component="main"
       maxWidth="sm"
       sx={{
-        minHeight: '100vh',
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        py: 4
+        py: 2 // Reduced padding from 4 to 2
       }}
     >
       <Box
@@ -121,6 +121,32 @@ const RegisterPage: React.FC = () => {
           alignItems: 'center'
         }}
       >
+        {/* Logo */}
+        <Box
+          sx={{
+            width: '100%',
+            mb: 2, // Reduced from 6 to 2 to bring form closer to logo
+            display: 'flex',
+            justifyContent: 'center',
+            userSelect: 'none', // Make unselectable
+          }}
+        >
+          <img
+            src="/assets/preplogo.png"
+            alt="PPrePorter Logo"
+            style={{
+              height: 500, // Increased from 400 to 500
+              width: 'auto',
+              pointerEvents: 'none', // Prevent cursor changes on click
+            }}
+            onError={(e) => {
+              console.error('Failed to load logo from /assets/preplogo.png');
+              (e.target as HTMLImageElement).src = '/logo.png'; // Fallback to default logo
+            }}
+            draggable="false" // Prevent dragging
+          />
+        </Box>
+
         {/* Error Alert */}
         {error && (
           <Alert
@@ -138,7 +164,7 @@ const RegisterPage: React.FC = () => {
           onSubmit={handleRegister}
           onGoogleRegister={handleGoogleRegister}
           onMicrosoftRegister={handleMicrosoftRegister}
-          logoUrl="/logo.png"
+          logoUrl="" // We're showing the logo above the form
           error={error}
           loading={loading}
           showSocialLogin={true}
@@ -146,24 +172,20 @@ const RegisterPage: React.FC = () => {
         />
 
         {/* Terms & Support Section */}
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            mt: 4,
-            p: 2,
+            mt: 2, // Reduced from 4 to 2
+            p: 1, // Reduced from 2 to 1
             textAlign: 'center',
-            backgroundColor: 'transparent'
           }}
         >
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary">
             By creating an account, you agree to our{' '}
             <a href="/terms">Terms of Service</a> and{' '}
             <a href="/privacy">Privacy Policy</a>.
+            {' '}Need help? <a href="/support">Contact Support</a>
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Need help? <a href="/support">Contact Support</a>
-          </Typography>
-        </Paper>
+        </Box>
       </Box>
     </Container>
   );

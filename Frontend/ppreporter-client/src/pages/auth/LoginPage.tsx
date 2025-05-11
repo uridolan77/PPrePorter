@@ -111,11 +111,11 @@ const LoginPage: React.FC = () => {
       component="main"
       maxWidth="xs"
       sx={{
-        minHeight: '100vh',
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        py: 4
+        py: 2 // Reduced padding from 4 to 2
       }}
     >
       <Box
@@ -125,9 +125,35 @@ const LoginPage: React.FC = () => {
           alignItems: 'center'
         }}
       >
-        {/* Mock Data Toggle */}
-        <Box sx={{ width: '100%', mb: 2 }}>
-          <MockDataToggle showDetails={false} />
+        {/* Logo */}
+        <Box
+          sx={{
+            width: '100%',
+            mb: 2, // Reduced from 6 to 2 to bring form closer to logo
+            display: 'flex',
+            justifyContent: 'center',
+            userSelect: 'none', // Make unselectable
+          }}
+        >
+          <img
+            src="/assets/preplogo.png"
+            alt="PPrePorter Logo"
+            style={{
+              height: 500, // Increased from 400 to 500
+              width: 'auto',
+              pointerEvents: 'none', // Prevent cursor changes on click
+            }}
+            onError={(e) => {
+              console.error('Failed to load logo from /assets/preplogo.png');
+              (e.target as HTMLImageElement).src = '/logo.png'; // Fallback to default logo
+            }}
+            draggable="false" // Prevent dragging
+          />
+        </Box>
+
+        {/* Mock Data Toggle - Hidden behind icon */}
+        <Box sx={{ position: 'absolute', top: 20, right: 20 }}>
+          <MockDataToggle showDetails={false} collapsed={true} />
         </Box>
 
         {/* Error Alert */}
@@ -152,7 +178,7 @@ const LoginPage: React.FC = () => {
           onSubmit={handleLogin}
           onGoogleLogin={handleGoogleLogin}
           onMicrosoftLogin={handleMicrosoftLogin}
-          logoUrl="/logo.png"
+          logoUrl="" // We're showing the logo above the form
           error={error}
           loading={loading}
           showSocialLogin={true}
@@ -163,24 +189,20 @@ const LoginPage: React.FC = () => {
         />
 
         {/* Terms & Support Section */}
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            mt: 4,
-            p: 2,
+            mt: 2, // Reduced from 4 to 2
+            p: 1, // Reduced from 2 to 1
             textAlign: 'center',
-            backgroundColor: 'transparent'
           }}
         >
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary">
             By using our services, you agree to our{' '}
             <a href="/terms">Terms of Service</a> and{' '}
             <a href="/privacy">Privacy Policy</a>.
+            {' '}Need help? <a href="/support">Contact Support</a>
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Need help? <a href="/support">Contact Support</a>
-          </Typography>
-        </Paper>
+        </Box>
       </Box>
     </Container>
   );

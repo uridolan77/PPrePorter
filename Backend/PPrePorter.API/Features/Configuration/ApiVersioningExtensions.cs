@@ -41,14 +41,13 @@ namespace PPrePorter.API.Features.Configuration
             // Add API version explorer
             services.AddVersionedApiExplorer(options =>
             {
-                // Format the version as "'v'major[.minor][-status]"
+                // Format the version as "v'major[.minor][-status]"
                 options.GroupNameFormat = "'v'VVV";
 
                 // Substitute the version in the controller route
                 options.SubstituteApiVersionInUrl = true;
 
-                // Don't include API version in Swagger document names
-                // This prevents conflicts with our custom groups
+                // Assume the default API version when unspecified
                 options.AssumeDefaultVersionWhenUnspecified = true;
             });
 

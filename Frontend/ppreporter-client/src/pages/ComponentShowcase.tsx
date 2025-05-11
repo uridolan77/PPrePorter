@@ -31,6 +31,22 @@ const ComponentShowcase: React.FC = () => {
   // Define component categories
   const categories = [
     {
+      id: 'flat-modern-ui',
+      name: 'Flat Modern UI',
+      description: 'Flat modern UI style with accent stripes and deep shadows',
+      icon: <DashboardIcon fontSize="large" color="primary" />,
+      count: 1,
+      path: '/showcase/flat-modern-ui'
+    },
+    {
+      id: 'teal-dashboard',
+      name: 'Teal Dashboard',
+      description: 'Modern teal/turquoise dashboard style',
+      icon: <DashboardIcon fontSize="large" color="primary" />,
+      count: 1,
+      path: '/showcase/teal-dashboard'
+    },
+    {
       id: 'common',
       name: 'Common Components',
       description: 'Basic UI building blocks and utility components',

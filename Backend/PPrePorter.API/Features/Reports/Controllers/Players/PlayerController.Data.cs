@@ -50,27 +50,57 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
                 // Get data based on filters
                 IEnumerable<Player> players;
 
+                // GUARDRAIL: Check if at least one filter is provided
+                bool hasFilter = !string.IsNullOrEmpty(casinoName) ||
+                                !string.IsNullOrEmpty(country) ||
+                                !string.IsNullOrEmpty(currency) ||
+                                registrationStartDate.HasValue;
+
+                if (!hasFilter)
+                {
+                    _logger.LogWarning("No filters provided for player query. This could result in a large dataset. Requiring at least one filter.");
+                    return BadRequest(new {
+                        message = "At least one filter must be provided. Please specify casinoName, country, currency, or registrationStartDate.",
+                        totalCount = 0,
+                        data = new List<object>()
+                    });
+                }
+
+                // Apply filters in priority order
                 if (!string.IsNullOrEmpty(casinoName))
                 {
+                    _logger.LogInformation("Filtering players by casino name: {CasinoName}", casinoName);
                     players = await _playerService.GetPlayersByCasinoNameAsync(casinoName);
                 }
                 else if (!string.IsNullOrEmpty(country))
                 {
+                    _logger.LogInformation("Filtering players by country: {Country}", country);
                     players = await _playerService.GetPlayersByCountryAsync(country);
                 }
                 else if (!string.IsNullOrEmpty(currency))
                 {
+                    _logger.LogInformation("Filtering players by currency: {Currency}", currency);
                     players = await _playerService.GetPlayersByCurrencyAsync(currency);
                 }
-                else if (registrationStartDate.HasValue && registrationEndDate.HasValue)
+                else if (registrationStartDate.HasValue)
                 {
+                    // If only start date is provided, use current date as end date
+                    var endDate = registrationEndDate ?? DateTime.UtcNow;
+                    _logger.LogInformation("Filtering players by registration date range: {StartDate} to {EndDate}",
+                        registrationStartDate.Value, endDate);
+
                     players = await _playerService.GetPlayersByRegistrationDateRangeAsync(
-                        registrationStartDate.Value, registrationEndDate.Value);
+                        registrationStartDate.Value, endDate);
                 }
                 else
                 {
-                    // Get all players if no filters are specified
-                    players = await _playerService.GetAllPlayersAsync();
+                    // This should never happen due to the guardrail above, but keeping as a fallback
+                    _logger.LogWarning("No valid filters found despite guardrail check. Using default filter (last 7 days)");
+                    var defaultStartDate = DateTime.UtcNow.AddDays(-7);
+                    var defaultEndDate = DateTime.UtcNow;
+
+                    players = await _playerService.GetPlayersByRegistrationDateRangeAsync(
+                        defaultStartDate, defaultEndDate);
                 }
 
                 var getDataEndTime = DateTime.UtcNow;
@@ -244,8 +274,26 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving players data");
-                return StatusCode(500, new { message = "An error occurred while retrieving players data" });
+                _logger.LogError(ex, "Error retrieving players data: {ErrorMessage}", ex.Message);
+
+                // Return a more informative error response
+                var errorResponse = new
+                {
+                    message = "An error occurred while retrieving players data",
+                    error = ex.Message,
+                    filters = new
+                    {
+                        casinoName,
+                        country,
+                        currency,
+                        registrationStartDate = registrationStartDate?.ToString("yyyy-MM-dd"),
+                        registrationEndDate = registrationEndDate?.ToString("yyyy-MM-dd")
+                    },
+                    totalCount = 0,
+                    data = new List<object>()
+                };
+
+                return StatusCode(500, errorResponse);
             }
         }
 

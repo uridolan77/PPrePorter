@@ -122,7 +122,7 @@ export const FEATURES = {
   AI_INSIGHTS: true,
   EXPORT_SCHEDULING: true,
   DATA_ALERTS: true,
-  USE_MOCK_DATA_FOR_UI_TESTING: true // Set to true to use mock data instead of API calls
+  USE_MOCK_DATA_FOR_UI_TESTING: false // Set to false to use real API calls instead of mock data
 };
 
 export default {

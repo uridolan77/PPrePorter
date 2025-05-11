@@ -11,7 +11,8 @@ export interface BaseColumnDef {
   type?: 'text' | 'number' | 'currency' | 'percentage' | 'status' | 'sparkline' | 'progress' | 'bars' | 'link' |
          'user' | 'rating' | 'badge' | 'boolean' | 'date' | 'tags' | 'microChart';
   wrap?: boolean;
-  maxWidth?: string;
+  maxWidth?: string | number;
+  minWidth?: number;
   valueKey?: string;
   comparativeKey?: string;
   target?: number;
@@ -34,6 +35,7 @@ export interface BaseColumnDef {
   hidden?: boolean;
   pinned?: boolean;
   width?: number;
+  resizable?: boolean;
 
   // New properties for additional features
   spanConfig?: CellSpanConfig;

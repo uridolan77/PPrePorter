@@ -154,7 +154,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
       sx={{
         maxWidth: 450,
         width: '100%',
-        p: 4,
+        p: 3, // Reduced padding from 4 to 3
         borderRadius: 2,
         ...sx
       }}
@@ -170,18 +170,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 3
+          gap: 2 /* Reduced gap from 3 to 2 */
         }}
       >
         {/* Logo and Title */}
-        <Box sx={{ textAlign: 'center', mb: 2 }}>
-          <img
-            src={logoUrl}
-            alt="Logo"
-            style={{ height: 60, width: 'auto', marginBottom: 16 }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-          <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Box sx={{ textAlign: 'center', mb: 1 }}>
+          {/* Reduced margin from 2 to 1 */}
+          {logoUrl && logoUrl.trim() !== '' && (
+            <img
+              src={logoUrl}
+              alt="Logo"
+              style={{ height: 60, width: 'auto', marginBottom: 8 }}
+              /* Reduced margin from 16 to 8 */
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+            {/* Added mb: 0.5 instead of gutterBottom */}
             Sign In
           </Typography>
           <Typography variant="body2" color="text.secondary">

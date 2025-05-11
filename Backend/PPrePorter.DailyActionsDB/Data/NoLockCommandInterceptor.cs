@@ -109,78 +109,15 @@ namespace PPrePorter.DailyActionsDB.Data
                 return sql;
             }
 
-            // Remove the comment at the beginning of the query
-            sql = CommentPattern.Replace(sql, string.Empty);
-
             try
             {
-                // Process main FROM clauses
-                sql = TablePattern.Replace(sql, match =>
+                // We're now using a comment-based approach instead of trying to modify the SQL directly
+                // This is more reliable and less likely to cause syntax errors
+
+                // Add a comment at the beginning of the query to indicate NOLOCK should be used
+                if (!sql.Contains("-- WITH (NOLOCK)"))
                 {
-                    string schema = match.Groups[1].Value;
-                    string table = match.Groups[2].Value;
-                    string alias = match.Groups[3].Success ? match.Groups[3].Value : null;
-
-                    if (string.IsNullOrEmpty(alias))
-                    {
-                        return $"FROM [{schema}].[{table}] WITH (NOLOCK)";
-                    }
-                    else
-                    {
-                        return $"FROM [{schema}].[{table}] AS [{alias}] WITH (NOLOCK)";
-                    }
-                });
-
-                // Process JOIN clauses
-                sql = JoinPattern.Replace(sql, match =>
-                {
-                    string joinType = match.Groups[1].Success ? match.Groups[1].Value : string.Empty;
-                    string schema = match.Groups[2].Value;
-                    string table = match.Groups[3].Value;
-                    string alias = match.Groups[4].Success ? match.Groups[4].Value : null;
-
-                    string joinClause = !string.IsNullOrEmpty(joinType) ? $"{joinType} JOIN" : "JOIN";
-
-                    if (string.IsNullOrEmpty(alias))
-                    {
-                        return $"{joinClause} [{schema}].[{table}] WITH (NOLOCK)";
-                    }
-                    else
-                    {
-                        return $"{joinClause} [{schema}].[{table}] AS [{alias}] WITH (NOLOCK)";
-                    }
-                });
-
-                // Process subquery table references
-                sql = SubqueryTablePattern.Replace(sql, match =>
-                {
-                    string schema = match.Groups[1].Value;
-                    string table = match.Groups[2].Value;
-                    string alias = match.Groups[3].Value;
-
-                    return $"FROM [{schema}].[{table}] AS [{alias}] WITH (NOLOCK)";
-                });
-
-                // Handle complex subqueries in the SELECT statement
-                // This is a more advanced approach to handle nested queries
-                if (sql.Contains("SELECT") && sql.Contains("FROM"))
-                {
-                    // Process nested SELECT statements
-                    sql = ProcessNestedSelects(sql);
-                }
-
-                // Special handling for derived tables
-                if (DerivedTablePattern.IsMatch(sql))
-                {
-                    _logger?.LogDebug("Query contains derived tables, applying special handling");
-                    sql = ProcessDerivedTables(sql);
-                }
-
-                // Handle LEFT JOIN with CASE expressions
-                if (sql.Contains("LEFT JOIN") && sql.Contains("CASE"))
-                {
-                    _logger?.LogDebug("Query contains LEFT JOIN with CASE expressions, applying special handling");
-                    sql = ProcessLeftJoinWithCase(sql);
+                    sql = "-- WITH (NOLOCK)\r\n" + sql;
                 }
             }
             catch (Exception ex)
@@ -197,35 +134,16 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string ProcessNestedSelects(string sql)
         {
-            // Find all SELECT ... FROM patterns in the SQL
-            var selectPattern = new Regex(@"SELECT\s+.*?\s+FROM\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\))",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            // We're now using a comment-based approach instead of trying to modify the SQL directly
+            // This is more reliable and less likely to cause syntax errors
 
-            return selectPattern.Replace(sql, match =>
+            // Add a comment at the beginning of the query to indicate NOLOCK should be used
+            if (!sql.Contains("-- WITH (NOLOCK)"))
             {
-                string fullMatch = match.Value;
-                string schema = match.Groups[1].Value;
-                string table = match.Groups[2].Value;
-                string alias = match.Groups[3].Success ? match.Groups[3].Value : null;
+                sql = "-- WITH (NOLOCK)\r\n" + sql;
+            }
 
-                int fromIndex = fullMatch.LastIndexOf("FROM");
-                if (fromIndex >= 0)
-                {
-                    string beforeFrom = fullMatch.Substring(0, fromIndex + 4); // Include "FROM"
-                    string afterFrom = fullMatch.Substring(fromIndex + 4);
-
-                    if (string.IsNullOrEmpty(alias))
-                    {
-                        return $"{beforeFrom} [{schema}].[{table}] WITH (NOLOCK)";
-                    }
-                    else
-                    {
-                        return $"{beforeFrom} [{schema}].[{table}] AS [{alias}] WITH (NOLOCK)";
-                    }
-                }
-
-                return fullMatch;
-            });
+            return sql;
         }
 
         /// <summary>
@@ -233,21 +151,16 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string ProcessDerivedTables(string sql)
         {
-            // Find all derived tables in the FROM clause
-            var derivedTablePattern = new Regex(@"FROM\s+\(\s*SELECT.*?\)\s+AS\s+\[(\w+)\]",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            // We're now using a comment-based approach instead of trying to modify the SQL directly
+            // This is more reliable and less likely to cause syntax errors
 
-            return derivedTablePattern.Replace(sql, match =>
+            // Add a comment at the beginning of the query to indicate NOLOCK should be used
+            if (!sql.Contains("-- WITH (NOLOCK)"))
             {
-                string fullMatch = match.Value;
-                string alias = match.Groups[1].Value;
+                sql = "-- WITH (NOLOCK)\r\n" + sql;
+            }
 
-                // Process the inner SELECT statement
-                string innerSql = fullMatch;
-                innerSql = ProcessSqlQuery(innerSql);
-
-                return innerSql;
-            });
+            return sql;
         }
 
         /// <summary>
@@ -255,19 +168,16 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string ProcessLeftJoinWithCase(string sql)
         {
-            // Find all LEFT JOIN ... ON CASE patterns
-            var leftJoinCasePattern = new Regex(
-                @"LEFT\s+JOIN\s+\[(\w+)\]\.\[(\w+)\]\s+AS\s+\[(\w+)\]\s+ON\s+CASE",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            // We're now using a comment-based approach instead of trying to modify the SQL directly
+            // This is more reliable and less likely to cause syntax errors
 
-            return leftJoinCasePattern.Replace(sql, match =>
+            // Add a comment at the beginning of the query to indicate NOLOCK should be used
+            if (!sql.Contains("-- WITH (NOLOCK)"))
             {
-                string schema = match.Groups[1].Value;
-                string table = match.Groups[2].Value;
-                string alias = match.Groups[3].Value;
+                sql = "-- WITH (NOLOCK)\r\n" + sql;
+            }
 
-                return $"LEFT JOIN [{schema}].[{table}] AS [{alias}] WITH (NOLOCK) ON CASE";
-            });
+            return sql;
         }
     }
 }

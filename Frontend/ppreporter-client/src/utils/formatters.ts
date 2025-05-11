@@ -10,7 +10,7 @@
  */
 export const formatCurrency = (value: number | null | undefined, currencyCode: string = 'GBP'): string => {
   if (value === null || value === undefined) return '—';
-  
+
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: currencyCode,
@@ -22,12 +22,12 @@ export const formatCurrency = (value: number | null | undefined, currencyCode: s
 /**
  * Format a number with thousands separators
  * @param {number} value - The value to format
- * @param {number} decimals - Number of decimal places (default: 0)
+ * @param {number} decimals - Number of decimal places (default: 2)
  * @returns {string} Formatted number string
  */
-export const formatNumber = (value: number | null | undefined, decimals: number = 0): string => {
+export const formatNumber = (value: number | null | undefined, decimals: number = 2): string => {
   if (value === null || value === undefined) return '—';
-  
+
   return new Intl.NumberFormat('en-GB', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
@@ -41,9 +41,9 @@ export const formatNumber = (value: number | null | undefined, decimals: number 
  */
 export const formatDate = (date: string | Date | null | undefined): string => {
   if (!date) return '—';
-  
+
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -58,9 +58,9 @@ export const formatDate = (date: string | Date | null | undefined): string => {
  */
 export const formatDateTime = (date: string | Date | null | undefined): string => {
   if (!date) return '—';
-  
+
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -78,6 +78,8 @@ export const formatDateTime = (date: string | Date | null | undefined): string =
  */
 export const formatPercentage = (value: number | null | undefined): string => {
   if (value === null || value === undefined) return '—';
-  
-  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+
+  // Ensure value is rounded to 2 decimal places
+  const roundedValue = parseFloat(value.toFixed(2));
+  return `${roundedValue >= 0 ? '+' : ''}${roundedValue.toFixed(2)}%`;
 };

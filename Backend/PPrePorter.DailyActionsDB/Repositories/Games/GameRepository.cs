@@ -311,5 +311,58 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             return query.Where(g => g.IsActive);
         }
+
+        /// <summary>
+        /// Override GetAllAsync to add better error handling
+        /// </summary>
+        public override async Task<IEnumerable<Game>> GetAllAsync(bool includeInactive = false)
+        {
+            string cacheKey = $"{_cacheKeyPrefix}All_{includeInactive}";
+
+            // Try to get from cache first
+            if (_enableCaching && _cache.TryGetValue(cacheKey, out IEnumerable<Game> cachedResult))
+            {
+                _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+                return cachedResult;
+            }
+
+            // Get from database
+            _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
+
+            try
+            {
+                var query = _dbSet.AsNoTracking().TagWith("WITH (NOLOCK)");
+
+                // Apply inactive filter if needed
+                if (!includeInactive)
+                {
+                    query = ApplyActiveFilter(query);
+                }
+
+                // Log the SQL query being executed
+                _logger.LogInformation("Executing SQL query for Games table with includeInactive={IncludeInactive}", includeInactive);
+
+                var result = await query.ToListAsync();
+
+                _logger.LogInformation("Successfully retrieved {Count} games from database", result.Count());
+
+                // Cache the result
+                if (_enableCaching)
+                {
+                    _cache.Set(cacheKey, result, _cacheExpiration);
+                    _logger.LogDebug("Cached result for {CacheKey}", cacheKey);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all games from database. includeInactive={IncludeInactive}", includeInactive);
+
+                // Return empty list instead of throwing to prevent 500 errors
+                _logger.LogWarning("Returning empty list of games due to database error");
+                return new List<Game>();
+            }
+        }
     }
 }

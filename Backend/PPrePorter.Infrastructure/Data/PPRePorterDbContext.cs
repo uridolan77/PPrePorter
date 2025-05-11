@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Models.Reports;
 using PPrePorter.Domain.Entities.PPReporter;
+using PPrePorter.Infrastructure.Models.Metadata;
 
 namespace PPrePorter.Infrastructure.Data
 {
@@ -18,7 +19,14 @@ namespace PPrePorter.Infrastructure.Data
         {
             _connectionStringResolver = connectionStringResolver;
             _connectionStringTemplate = connectionStringTemplate;
-        }        public DbSet<User> Users { get; set; }
+        }
+
+        // We need explicit implementation for the Metadata property
+        // This is configured as a keyless entity type in OnModelCreating
+        DbSet<object> IPPRePorterDbContext.Metadata { get => Set<object>("Metadata"); set { } }
+
+        // Actual DbSet properties for use in the context
+        public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<UserPreference> UserPreferences { get; set; }
@@ -32,6 +40,7 @@ namespace PPrePorter.Infrastructure.Data
         public DbSet<ReportTemplate> ReportTemplates { get; set; }
         public DbSet<GeneratedReport> GeneratedReports { get; set; }
         public DbSet<ReportExport> ReportExports { get; set; }
+        public DbSet<MetadataItem> Metadata { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -46,6 +55,9 @@ namespace PPrePorter.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure the object entity type as keyless
+            modelBuilder.Entity<object>().HasNoKey();
 
             // Configure entity mappings and relationships for PPRePorterDB
             modelBuilder.Entity<User>(entity =>
@@ -107,6 +119,21 @@ namespace PPrePorter.Infrastructure.Data
                       .WithMany(u => u.Preferences)
                       .HasForeignKey(up => up.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MetadataItem>(entity =>
+            {
+                entity.ToTable("tbl_Metadata");
+                entity.HasKey(e => e.Id);
+
+                // Create a unique index on MetadataType and Code
+                entity.HasIndex(e => new { e.MetadataType, e.Code }).IsUnique();
+
+                // Create an index on MetadataType for faster lookups
+                entity.HasIndex(e => e.MetadataType);
+
+                // Create an index on ParentId for hierarchical lookups
+                entity.HasIndex(e => e.ParentId);
             });
         }
     }

@@ -25,6 +25,7 @@ namespace PPrePorter.DailyActionsDB.Services
         private readonly IGlobalCacheService _cache;
         private readonly DailyActionsDbContext _dbContext;
         private readonly IWhiteLabelService _whiteLabelService;
+        private readonly IMetadataService? _metadataService;
 
         // Cache keys
         private const string METADATA_CACHE_KEY = "DailyActions_Metadata";
@@ -38,12 +39,14 @@ namespace PPrePorter.DailyActionsDB.Services
             ILogger<DailyActionsService> logger,
             IGlobalCacheService cache,
             DailyActionsDbContext dbContext,
-            IWhiteLabelService whiteLabelService)
+            IWhiteLabelService whiteLabelService,
+            IMetadataService? metadataService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
+            _metadataService = metadataService; // Can be null
 
             _logger.LogInformation("DailyActionsService initialized with global cache service instance: {CacheHashCode}, DbContext instance: {DbContextHashCode}",
                 _cache.GetHashCode(), _dbContext.GetHashCode());
@@ -1054,114 +1057,231 @@ namespace PPrePorter.DailyActionsDB.Services
                     return cachedMetadata;
                 }
 
-                _logger.LogWarning("CACHE MISS: Getting daily actions metadata from database, cache key: {CacheKey}", METADATA_CACHE_KEY);
+                _logger.LogWarning("CACHE MISS: Getting daily actions metadata from PPrePorterDB database, cache key: {CacheKey}", METADATA_CACHE_KEY);
 
-                // Get white labels
-                var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
-                var whiteLabelDtos = whiteLabels.Select(wl => new WhiteLabelDto
+                // Get white labels from the metadata service if available, otherwise from the database
+                List<WhiteLabelDto> whiteLabelDtos;
+                List<CountryDto> countryDtos;
+                List<CurrencyDto> currencyDtos;
+
+                if (_metadataService != null)
                 {
-                    Id = wl.Id,
-                    Name = wl.Name,
-                    Code = wl.Code,
-                    IsActive = wl.IsActive ?? false
-                }).ToList();
+                    // Get white labels from metadata service
+                    var whiteLabelsMetadata = await _metadataService.GetMetadataByTypeAsync("WhiteLabel", true);
+                    whiteLabelDtos = whiteLabelsMetadata.Select(wl => new WhiteLabelDto
+                    {
+                        Id = wl.Id,
+                        Name = wl.Name,
+                        Code = wl.Code,
+                        IsActive = wl.IsActive
+                    }).ToList();
 
-                // Get countries
-                var countries = await _dbContext.Countries
-                    .AsNoTracking()
-                    // Don't use WithNoLock() here since we're using the NoLockInterceptor
-                    .Where(c => c.IsActive == true)
-                    .OrderBy(c => c.CountryName)
-                    .ToListAsync();
-
-                var countryDtos = countries.Select(c => new CountryDto
+                    _logger.LogInformation("Retrieved {Count} white labels from metadata service", whiteLabelDtos.Count);
+                }
+                else
                 {
-                    Id = c.CountryID,
-                    Name = c.CountryName,
-                    IsoCode = c.IsoCode
-                }).ToList();
+                    // Fallback to database
+                    var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
+                    whiteLabelDtos = whiteLabels.Select(wl => new WhiteLabelDto
+                    {
+                        Id = wl.Id,
+                        Name = wl.Name,
+                        Code = wl.Code,
+                        IsActive = wl.IsActive ?? false
+                    }).ToList();
 
-                // Get currencies
-                var currencies = await _dbContext.Currencies
-                    .AsNoTracking()
-                    // Don't use WithNoLock() here since we're using the NoLockInterceptor
-                    .OrderBy(c => c.CurrencyName)
-                    .ToListAsync();
+                    _logger.LogInformation("Retrieved {Count} white labels from database", whiteLabelDtos.Count);
+                }
 
-                var currencyDtos = currencies.Select(c => new CurrencyDto
+                // Get countries from the metadata service if available, otherwise from the database
+                if (_metadataService != null)
                 {
-                    Id = c.CurrencyID,
-                    Name = c.CurrencyName,
-                    Code = c.CurrencyCode,
-                    Symbol = c.CurrencySymbol
-                }).ToList();
+                    // Get countries from metadata service
+                    var countriesMetadata = await _metadataService.GetMetadataByTypeAsync("Country", true);
+                    countryDtos = countriesMetadata.Select(c => new CountryDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        IsoCode = c.Code
+                    }).ToList();
 
-                // Get distinct values from players table using more efficient queries
-                // For languages - use a direct query with DISTINCT
-                var languages = await _dbContext.Players
-                    .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => !string.IsNullOrEmpty(p.Language))
-                    .Select(p => p.Language)
-                    .Distinct()
-                    .OrderBy(l => l)
-                    .Take(100) // Limit to top 100 languages
-                    .ToListAsync();
+                    _logger.LogInformation("Retrieved {Count} countries from metadata service", countryDtos.Count);
+                }
+                else
+                {
+                    // Fallback to database
+                    var countries = await _dbContext.Countries
+                        .AsNoTracking()
+                        .Where(c => c.IsActive == true)
+                        .OrderBy(c => c.CountryName)
+                        .ToListAsync();
 
-                // For platforms
-                var platforms = await _dbContext.Players
-                    .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => !string.IsNullOrEmpty(p.RegisteredPlatform))
-                    .Select(p => p.RegisteredPlatform)
-                    .Distinct()
-                    .OrderBy(p => p)
-                    .Take(20) // Limit to top 20 platforms
-                    .ToListAsync();
+                    countryDtos = countries.Select(c => new CountryDto
+                    {
+                        Id = c.CountryID,
+                        Name = c.CountryName,
+                        IsoCode = c.IsoCode
+                    }).ToList();
 
-                // For genders
-                var genders = await _dbContext.Players
-                    .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => !string.IsNullOrEmpty(p.Gender))
-                    .Select(p => p.Gender)
-                    .Distinct()
-                    .OrderBy(g => g)
-                    .Take(10) // Limit to top 10 genders (should be just a few)
-                    .ToListAsync();
+                    _logger.LogInformation("Retrieved {Count} countries from database", countryDtos.Count);
+                }
 
-                // For statuses
-                var statuses = await _dbContext.Players
-                    .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => !string.IsNullOrEmpty(p.Status))
-                    .Select(p => p.Status)
-                    .Distinct()
-                    .OrderBy(s => s)
-                    .Take(20) // Limit to top 20 statuses
-                    .ToListAsync();
+                // Get currencies from the metadata service if available, otherwise from the database
+                if (_metadataService != null)
+                {
+                    // Get currencies from metadata service
+                    var currenciesMetadata = await _metadataService.GetMetadataByTypeAsync("Currency", true);
+                    currencyDtos = currenciesMetadata.Select(c => new CurrencyDto
+                    {
+                        Id = (byte)c.Id, // Explicit cast from int to byte
+                        Name = c.Name,
+                        Code = c.Code,
+                        Symbol = c.AdditionalData
+                    }).ToList();
 
-                // For registration play modes
-                var registrationPlayModes = await _dbContext.Players
-                    .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => !string.IsNullOrEmpty(p.RegistrationPlayMode))
-                    .Select(p => p.RegistrationPlayMode)
-                    .Distinct()
-                    .OrderBy(r => r)
-                    .Take(20) // Limit to top 20 registration play modes
-                    .ToListAsync();
+                    _logger.LogInformation("Retrieved {Count} currencies from metadata service", currencyDtos.Count);
+                }
+                else
+                {
+                    // Fallback to database
+                    var currencies = await _dbContext.Currencies
+                        .AsNoTracking()
+                        .OrderBy(c => c.CurrencyName)
+                        .ToListAsync();
 
-                // For trackers (affiliate IDs)
-                var trackers = await _dbContext.Players
-                    .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => !string.IsNullOrEmpty(p.AffiliateID))
-                    .Select(p => p.AffiliateID)
-                    .Distinct()
-                    .OrderBy(t => t)
-                    .Take(100) // Limit to top 100 trackers
-                    .ToListAsync();
+                    currencyDtos = currencies.Select(c => new CurrencyDto
+                    {
+                        Id = c.CurrencyID,
+                        Name = c.CurrencyName,
+                        Code = c.CurrencyCode,
+                        Symbol = c.CurrencySymbol
+                    }).ToList();
+
+                    _logger.LogInformation("Retrieved {Count} currencies from database", currencyDtos.Count);
+                }
+
+                // Check if we have a metadata service
+                List<LanguageDto> languageDtos = new List<LanguageDto>();
+                List<string> platforms = new List<string>();
+                List<string> genders = new List<string>();
+                List<string> statuses = new List<string>();
+                List<string> registrationPlayModes = new List<string>();
+                List<string> trackers = new List<string>();
+
+                if (_metadataService != null)
+                {
+                    // Get metadata from the Infrastructure's MetadataService
+                    // This will use the DailyActionsMetadata table in PPrePorterDB
+                    _logger.LogInformation("Getting metadata from PPrePorterDB.DailyActionsMetadata table");
+
+                    // Get languages from metadata
+                    var languageMetadata = await _metadataService.GetMetadataByTypeAsync("Language");
+                    languageDtos = languageMetadata.Select((l, i) => new LanguageDto
+                    {
+                        Id = l.Id,
+                        Name = l.Name,
+                        Code = l.Code
+                    }).ToList();
+
+                    // Get platforms from metadata
+                    var platformMetadata = await _metadataService.GetMetadataByTypeAsync("Platform");
+                    platforms = platformMetadata.Select(p => p.Code).ToList();
+
+                    // Get genders from metadata
+                    var genderMetadata = await _metadataService.GetMetadataByTypeAsync("Gender");
+                    genders = genderMetadata.Select(g => g.Code).ToList();
+
+                    // Get statuses from metadata
+                    var statusMetadata = await _metadataService.GetMetadataByTypeAsync("Status");
+                    statuses = statusMetadata.Select(s => s.Code).ToList();
+
+                    // Get registration play modes from metadata
+                    var registrationPlayModeMetadata = await _metadataService.GetMetadataByTypeAsync("RegistrationPlayMode");
+                    registrationPlayModes = registrationPlayModeMetadata.Select(r => r.Code).ToList();
+
+                    // Get trackers from metadata
+                    var trackerMetadata = await _metadataService.GetMetadataByTypeAsync("Tracker");
+                    trackers = trackerMetadata.Select(t => t.Code).ToList();
+                }
+                else
+                {
+                    // Fallback to querying the database directly
+                    _logger.LogWarning("No metadata service available, falling back to querying the database directly");
+
+                    // For languages - use a direct query with DISTINCT
+                    var languages = await _dbContext.Players
+                        .AsNoTracking()
+                        .TagWith("WITH (NOLOCK)")
+                        .Where(p => !string.IsNullOrEmpty(p.Language))
+                        .Select(p => p.Language)
+                        .Distinct()
+                        .OrderBy(l => l)
+                        .Take(100) // Limit to top 100 languages
+                        .ToListAsync();
+
+                    // Create language DTOs
+                    languageDtos = languages.Select((l, i) => new LanguageDto
+                    {
+                        Id = i + 1,
+                        Name = l ?? string.Empty,
+                        Code = l ?? string.Empty
+                    }).ToList();
+
+                    // For platforms
+                    platforms = await _dbContext.Players
+                        .AsNoTracking()
+                        .TagWith("WITH (NOLOCK)")
+                        .Where(p => !string.IsNullOrEmpty(p.RegisteredPlatform))
+                        .Select(p => p.RegisteredPlatform)
+                        .Distinct()
+                        .OrderBy(p => p)
+                        .Take(20) // Limit to top 20 platforms
+                        .ToListAsync();
+
+                    // For genders
+                    genders = await _dbContext.Players
+                        .AsNoTracking()
+                        .TagWith("WITH (NOLOCK)")
+                        .Where(p => !string.IsNullOrEmpty(p.Gender))
+                        .Select(p => p.Gender)
+                        .Distinct()
+                        .OrderBy(g => g)
+                        .Take(10) // Limit to top 10 genders (should be just a few)
+                        .ToListAsync();
+
+                    // For statuses
+                    statuses = await _dbContext.Players
+                        .AsNoTracking()
+                        .TagWith("WITH (NOLOCK)")
+                        .Where(p => !string.IsNullOrEmpty(p.Status))
+                        .Select(p => p.Status)
+                        .Distinct()
+                        .OrderBy(s => s)
+                        .Take(20) // Limit to top 20 statuses
+                        .ToListAsync();
+
+                    // For registration play modes
+                    registrationPlayModes = await _dbContext.Players
+                        .AsNoTracking()
+                        .TagWith("WITH (NOLOCK)")
+                        .Where(p => !string.IsNullOrEmpty(p.RegistrationPlayMode))
+                        .Select(p => p.RegistrationPlayMode)
+                        .Distinct()
+                        .OrderBy(r => r)
+                        .Take(20) // Limit to top 20 registration play modes
+                        .ToListAsync();
+
+                    // For trackers (affiliate IDs)
+                    trackers = await _dbContext.Players
+                        .AsNoTracking()
+                        .TagWith("WITH (NOLOCK)")
+                        .Where(p => !string.IsNullOrEmpty(p.AffiliateID))
+                        .Select(p => p.AffiliateID)
+                        .Distinct()
+                        .OrderBy(t => t)
+                        .Take(100) // Limit to top 100 trackers
+                        .ToListAsync();
+                }
 
                 // Create group by options
                 var groupByOptions = new List<GroupByOptionDto>
@@ -1178,14 +1298,6 @@ namespace PPrePorter.DailyActionsDB.Services
                     new() { Id = (int)GroupByOption.Platform, Name = "Platform", Value = "Platform" },
                     new() { Id = (int)GroupByOption.Ranking, Name = "Ranking", Value = "Ranking" }
                 };
-
-                // Create language DTOs
-                var languageDtos = languages.Select((l, i) => new LanguageDto
-                {
-                    Id = i + 1,
-                    Name = l ?? string.Empty,
-                    Code = l ?? string.Empty
-                }).ToList();
 
                 // Create metadata response
                 var metadata = new DailyActionMetadataDto
@@ -2040,7 +2152,20 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 // Prewarm metadata (this is essential and relatively small)
                 var startTime = DateTime.UtcNow;
+
+                // Prewarm metadata using the metadata service if available
+                if (_metadataService != null)
+                {
+                    await _metadataService.PreloadMetadataAsync();
+                }
+                else
+                {
+                    _logger.LogWarning("No metadata service available, skipping metadata prewarming");
+                }
+
+                // Also prewarm the daily actions metadata
                 var metadata = await GetDailyActionsMetadataAsync();
+
                 var metadataTime = DateTime.UtcNow - startTime;
                 _logger.LogInformation("Prewarmed metadata cache with {WhiteLabelCount} white labels, {CountryCount} countries, {CurrencyCount} currencies in {ElapsedMs}ms",
                     metadata.WhiteLabels.Count,

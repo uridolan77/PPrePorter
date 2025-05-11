@@ -39,6 +39,7 @@ export interface CardProps extends CommonProps {
  * KPI Card component props
  */
 export interface KPICardProps extends CommonProps {
+  id?: string;
   title: string;
   value: string | number;
   subtitle?: string;
@@ -47,9 +48,13 @@ export interface KPICardProps extends CommonProps {
   trendLabel?: string;
   icon?: ReactNode;
   loading?: boolean;
-  onMoreClick?: () => void;
+  isLoading?: boolean; // Alias for loading
+  error?: string | null;
+  onMoreClick?: (event: React.MouseEvent<HTMLElement>) => void;
   color?: string;
   isInverse?: boolean;
+  prefix?: string;
+  valueFormatOptions?: Intl.NumberFormatOptions;
 }
 
 /**

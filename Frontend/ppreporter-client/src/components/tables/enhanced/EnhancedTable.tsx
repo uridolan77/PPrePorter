@@ -185,14 +185,22 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         enabled: enableColumnSelection || enableColumnReordering || false,
         allowReordering: enableColumnReordering || false,
         allowHiding: enableColumnSelection || false,
-        allowPinning: false
+        allowPinning: false,
+        allowResizing: false
       };
     }
     if (typeof features.columnManagement === 'boolean') {
-      return features.columnManagement ? { enabled: true, allowReordering: true, allowHiding: true, allowPinning: true } : { enabled: false };
+      return features.columnManagement ? { enabled: true, allowReordering: true, allowHiding: true, allowPinning: true, allowResizing: true } : { enabled: false };
     }
     return features.columnManagement || { enabled: false };
   }, [features.columnManagement, enableColumnSelection, enableColumnReordering]);
+
+  const columnResizingConfig = useMemo(() => {
+    if (typeof features.columnResizing === 'boolean') {
+      return features.columnResizing ? { enabled: true, minWidth: 50, maxWidth: 500, persistWidths: true } : { enabled: false };
+    }
+    return features.columnResizing || { enabled: false };
+  }, [features.columnResizing]);
 
   const expandableRowsConfig = useMemo(() => {
     // Use enableExpandableRows if provided
@@ -452,6 +460,20 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         }
       };
     });
+  }, []);
+
+  // Handle column resize
+  const handleColumnResize = useCallback((columnId: string, width: number) => {
+    setTableState(prevState => ({
+      ...prevState,
+      columns: {
+        ...prevState.columns,
+        widths: {
+          ...prevState.columns.widths,
+          [columnId]: width
+        }
+      }
+    }));
   }, []);
 
   // Handle page change

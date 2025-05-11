@@ -332,48 +332,58 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
           },
         }}
       >
-        {/* Search input */}
-        {searchable && (
-          <Box sx={{ p: 1, position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }}>
-            <TextField
-              size="small"
-              placeholder="Search..."
-              fullWidth
-              value={searchTerm}
-              onChange={handleSearchChange}
-              onClick={(e) => e.stopPropagation()}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchTerm ? (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleClearSearch();
-                      }}
-                    >
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-          </Box>
-        )}
+        {/* Search input and Select All/Clear All in a sticky container */}
+        <Box
+          sx={{
+            position: 'sticky',
+            top: 0,
+            bgcolor: 'background.paper',
+            zIndex: 2,
+            borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
+          }}
+        >
+          {/* Search input */}
+          {searchable && (
+            <Box sx={{ p: 1 }}>
+              <TextField
+                size="small"
+                placeholder="Search..."
+                fullWidth
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onClick={(e) => e.stopPropagation()}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchTerm ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearSearch();
+                        }}
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+              />
+            </Box>
+          )}
 
-        {/* Select all/none options */}
-        {showSelectAllOption && filteredOptions.length > 0 && [
-            <Box key="select-all-box" sx={{ px: 1, py: 0.5, display: 'flex', justifyContent: 'space-between' }}>
+          {/* Select all/none options */}
+          {showSelectAllOption && filteredOptions.length > 0 && (
+            <Box sx={{ px: 1, py: 0.5, display: 'flex', justifyContent: 'space-between' }}>
               <Button size="small" onClick={handleSelectAll}>Select All</Button>
               <Button size="small" onClick={handleSelectNone}>Clear All</Button>
-            </Box>,
-            <Divider key="select-all-divider" />
-        ]}
+            </Box>
+          )}
+        </Box>
 
         {/* No options message */}
         {filteredOptions.length === 0 && (

@@ -11,6 +11,7 @@ using PPrePorter.API.Middleware;
 using PPrePorter.Core;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Services;
+using PPrePorter.Infrastructure;
 using PPrePorter.Infrastructure.Data;
 using PPrePorter.Infrastructure.Services;
 using PPrePorter.API.Features.Dashboard.Insights;
@@ -41,8 +42,6 @@ ExcelPackage.License.SetNonCommercialPersonal("PPrePorter");
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    // Security definitions are now configured in SwaggerVersioningConfiguration
-
     // Define the security scheme for JWT
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -56,67 +55,25 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT"
     });
 
-    // Add the security requirement for JWT
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-
-    // Add operation filter to add authorization header to all endpoints
-    c.OperationFilter<SwaggerAuthorizationOperationFilter>();
-
     // Add operation filter to set default values for parameters
     c.OperationFilter<SwaggerDefaultValueOperationFilter>();
 
-    // Configure document groups for logical organization
-    // These will be used in addition to API version documents
+    // Ignore obsolete actions and resolve conflicts
+    c.IgnoreObsoleteActions();
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
 
-    // Auth group
-    c.SwaggerDoc(SwaggerGroups.Auth, new OpenApiInfo { Title = "Authentication & Users", Version = "v1" });
-
-    // Reports groups
-    c.SwaggerDoc(SwaggerGroups.DailyActions, new OpenApiInfo { Title = "Daily Actions", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.DailyActionGames, new OpenApiInfo { Title = "Daily Action Games", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.DailyActionsSimple, new OpenApiInfo { Title = "Daily Actions Simple", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.Players, new OpenApiInfo { Title = "Players", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.Games, new OpenApiInfo { Title = "Games", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.Transactions, new OpenApiInfo { Title = "Transactions", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.SportMetadata, new OpenApiInfo { Title = "Sport Metadata", Version = "v1" });
-
-    // Dashboard groups
-    c.SwaggerDoc(SwaggerGroups.Dashboard, new OpenApiInfo { Title = "Dashboard", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.DashboardInsights, new OpenApiInfo { Title = "Dashboard Insights", Version = "v1" });
-
-    // Configuration groups
-    c.SwaggerDoc(SwaggerGroups.ReportConfig, new OpenApiInfo { Title = "Report Configuration", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.ScheduledReports, new OpenApiInfo { Title = "Scheduled Reports", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.Reports, new OpenApiInfo { Title = "Reports", Version = "v1" });
-
-    // Analytics groups
-    c.SwaggerDoc(SwaggerGroups.Metrics, new OpenApiInfo { Title = "Metrics", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.NaturalLanguage, new OpenApiInfo { Title = "Natural Language", Version = "v1" });
-
-    // Diagnostics groups
-    c.SwaggerDoc(SwaggerGroups.CacheDiagnostics, new OpenApiInfo { Title = "Cache Diagnostics", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.CacheMonitor, new OpenApiInfo { Title = "Cache Monitor", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.CacheTest, new OpenApiInfo { Title = "Cache Test", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.AzureKeyVaultTest, new OpenApiInfo { Title = "Azure Key Vault Test", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.ConnectionStringResolverUtility, new OpenApiInfo { Title = "Connection String Resolver", Version = "v1" });
-    c.SwaggerDoc(SwaggerGroups.ConnectionStringTest, new OpenApiInfo { Title = "Connection String Test", Version = "v1" });
+    // Include all endpoints in the v1 document
+    c.DocInclusionPredicate((docName, apiDesc) => true);
 });
+
+// Configure Swagger versioning
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerVersioningConfiguration>();
 
 // Register core services including the ConnectionStringResolverService
 builder.Services.AddCoreServices();
+
+// Register infrastructure services
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Determine whether to use the real Azure Key Vault service or the development mock
 bool useRealAzureKeyVault = builder.Environment.IsProduction() ||
@@ -384,6 +341,19 @@ using (var tempServiceProvider = builder.Services.BuildServiceProvider())
 // Always use the real database
 bool useLocalDatabase = false; // Set to false to use the real database
 
+// Register the Infrastructure's IMetadataService first
+builder.Services.AddScoped<PPrePorter.Infrastructure.Interfaces.IMetadataService, PPrePorter.Infrastructure.Services.MetadataService>();
+
+// Create an adapter that implements DailyActionsDB's IMetadataService but uses Infrastructure's IMetadataService
+builder.Services.AddScoped<PPrePorter.DailyActionsDB.Interfaces.IMetadataService, PPrePorter.API.Services.MetadataServiceAdapter>();
+
+// Register the SimpleCachePrewarmingService as a hosted service
+// This doesn't depend on the Infrastructure project
+builder.Services.AddHostedService<PPrePorter.API.Services.SimpleCachePrewarmingService>();
+
+// Also register it as a singleton so it can be injected into controllers
+builder.Services.AddSingleton<PPrePorter.API.Services.SimpleCachePrewarmingService>();
+
 builder.Services.AddDailyActionsServices(builder.Configuration);
 
 // Log which database we're using
@@ -413,9 +383,6 @@ builder.Services.AddTransient<PPrePorter.CQRS.Common.IValidator<PPrePorter.CQRS.
 
 // Add API versioning
 builder.Services.AddApiVersioningConfiguration();
-
-// Configure Swagger versioning
-builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerVersioningConfiguration>();
 
 var app = builder.Build();
 
@@ -616,7 +583,7 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine("=== DATABASE CONNECTION CHECK COMPLETE ===\n");
 }
 
-// Initialize the cache
+// Initialize the cache service (but don't prewarm it yet)
 Console.WriteLine("\n=== INITIALIZING CACHE ===");
 using (var scope = app.Services.CreateScope())
 {
@@ -636,23 +603,11 @@ using (var scope = app.Services.CreateScope())
         var dailyActionsService = scope.ServiceProvider.GetRequiredService<PPrePorter.DailyActionsDB.Interfaces.IDailyActionsService>();
         logger.LogInformation("Using DailyActionsService implementation: {Implementation}", dailyActionsService.GetType().Name);
 
-        // Prewarm the cache
-        Console.WriteLine("Prewarming cache with commonly accessed data...");
-        dailyActionsService.PrewarmCacheAsync().GetAwaiter().GetResult();
+        // Note: Cache prewarming is now handled by the CachePrewarmingService background service
+        // This allows the application to start faster and prewarm the cache in the background
 
-        // Get the cache statistics after prewarming
-        cacheStats = cacheService.GetStatistics();
-        logger.LogInformation("Cache statistics after prewarming: {CacheStats}", cacheStats);
-
-        // Get all cache keys
-        var allKeys = cacheService.GetAllKeys();
-        var dailyActionsKeys = allKeys.Where(k => k.Contains("DailyActions")).ToList();
-
-        logger.LogInformation("Total cache keys: {TotalCount}, DailyActions cache keys: {DailyActionsCount}",
-            allKeys.Count, dailyActionsKeys.Count);
-
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"CACHE INITIALIZED SUCCESSFULLY WITH {allKeys.Count} KEYS");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("CACHE SERVICE INITIALIZED - PREWARMING WILL HAPPEN IN BACKGROUND");
         Console.ResetColor();
     }
     catch (Exception ex)
@@ -678,7 +633,7 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
         c.DocumentTitle = "PPrePorter API Documentation";
 
-        // Set Daily Actions as the default document to display
+        // Configure Swagger UI options
         c.DefaultModelExpandDepth(2);
         c.DefaultModelRendering(Swashbuckle.AspNetCore.SwaggerUI.ModelRendering.Model);
         c.DefaultModelsExpandDepth(-1);
@@ -690,50 +645,12 @@ if (app.Environment.IsDevelopment())
         c.ShowExtensions();
         c.EnableValidator();
 
-        // Main Reports groups (most important first)
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DailyActions}/swagger.json", "1. Daily Actions");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Players}/swagger.json", "2. Players");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DailyActionGames}/swagger.json", "3. Daily Action Games");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Games}/swagger.json", "4. Games");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Transactions}/swagger.json", "5. Transactions");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.SportMetadata}/swagger.json", "6. Sport Metadata");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DailyActionsSimple}/swagger.json", "7. Daily Actions Simple");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Reports}/swagger.json", "8. Reports");
-
-        // Auth group
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Auth}/swagger.json", "9. Authentication & Users");
-
-        // Dashboard groups
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Dashboard}/swagger.json", "10. Dashboard");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DashboardInsights}/swagger.json", "11. Dashboard Insights");
-
-        // Configuration groups
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ReportConfig}/swagger.json", "12. Report Configuration");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ScheduledReports}/swagger.json", "13. Scheduled Reports");
-
-        // Analytics groups
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Metrics}/swagger.json", "14. Metrics");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.NaturalLanguage}/swagger.json", "15. Natural Language");
-
-        // Diagnostics groups (moved to the bottom)
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.CacheDiagnostics}/swagger.json", "D1. Cache Diagnostics");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.CacheMonitor}/swagger.json", "D2. Cache Monitor");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.CacheTest}/swagger.json", "D3. Cache Test");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.AzureKeyVaultTest}/swagger.json", "D4. Azure Key Vault Test");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ConnectionStringResolverUtility}/swagger.json", "D5. Connection String Resolver");
-        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ConnectionStringTest}/swagger.json", "D6. Connection String Test");
-
-        // We don't need to add API version endpoints separately
-        // We'll use our custom groups instead
-
-        // Set the default document to Daily Actions
-        c.ConfigObject.AdditionalItems["urls.primaryName"] = "1. Daily Actions";
+        // Add a single endpoint for all APIs
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PPrePorter API v1");
 
         // Add request/response interceptors for debugging
         c.UseRequestInterceptor("(req) => { return req; }");
         c.UseResponseInterceptor("(res) => { return res; }");
-
-        // Note: We've already set these options above
 
         // Add custom CSS to improve the UI
         c.InjectStylesheet("/swagger-ui/custom.css");
@@ -741,15 +658,13 @@ if (app.Environment.IsDevelopment())
         // Add custom JavaScript for token handling
         c.InjectJavascript("/swagger-ui/custom.js");
 
-        // Add authentication status information
-        var authStatus = builder.Configuration.GetSection("AppSettings").GetValue<bool>("EnableAuthentication", true)
-            ? "Authentication is <b>enabled</b>. You need to authenticate to access protected endpoints."
-            : "Authentication is <b>disabled</b> for development. All endpoints are accessible without authentication.";
+        // Add custom JavaScript for cache status
+        c.InjectJavascript("/swagger-ui/cache-status.js");
 
+        // Add authentication status information
         c.HeadContent = $@"
             <div style='padding: 10px; background-color: #f0f0f0; border-radius: 5px; margin-bottom: 10px;'>
-                <p><strong>Authentication Status:</strong> {authStatus}</p>
-                <p>To authenticate, use the <code>/api/Auth/login</code> endpoint to get a token, then click the 'Authorize' button and enter it.</p>
+                <p><strong>Authentication Status:</strong> Authentication is <b>enabled</b>. Protected endpoints require a valid JWT token.</p>
                 <p>API versioning is supported via:</p>
                 <ul>
                     <li>URL path: <code>/api/v1/...</code> or <code>/api/v2/...</code></li>
@@ -799,6 +714,9 @@ app.UseCors("AllowReactApp");
 // These must be after UseRouting() but before UseEndpoints()
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Log that authentication is enabled
+Console.WriteLine("Authentication middleware is ENABLED - Token required for protected API endpoints");
 
 // Add rate limiting middleware after auth but before response caching
 // This prevents caching rate-limited responses

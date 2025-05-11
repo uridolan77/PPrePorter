@@ -1,8 +1,9 @@
 import React, { lazy, Suspense } from 'react';
-import { ThemeProvider, createTheme, Theme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
+import flatModernTheme from './theme/flatModernTheme';
 
 // Error Boundary
 import GlobalErrorBoundary from './components/common/GlobalErrorBoundary';
@@ -39,6 +40,7 @@ const TestContextualExplanation = lazy(() => import('./components/dashboard/Test
 
 // Report pages
 const DailyActionsPage = lazy(() => import('./pages/showcase/reports/DailyActionsPage'));
+const DailyActionsPageRefactored = lazy(() => import('./pages/showcase/reports/DailyActionsPageRefactored'));
 const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/DailyActionsAdvancedPage'));
 const PlayersPage = lazy(() => import('./pages/showcase/reports/PlayersPage'));
 const GamesPage = lazy(() => import('./pages/showcase/reports/GamesPage'));
@@ -56,47 +58,17 @@ const VisualizationComponentsShowcase = lazy(() => import('./pages/showcase/Visu
 const AuthComponentsShowcase = lazy(() => import('./pages/showcase/AuthComponentsShowcase'));
 const NotificationComponentsShowcase = lazy(() => import('./pages/showcase/NotificationComponentsShowcase'));
 const SettingsComponentsShowcase = lazy(() => import('./pages/showcase/SettingsComponentsShowcase'));
+const TealDashboardShowcase = lazy(() => import('./pages/showcase/TealDashboardShowcase'));
+const FlatModernUIShowcase = lazy(() => import('./pages/showcase/FlatModernUIShowcase'));
+const FlatModernStyleExample = lazy(() => import('./pages/showcase/FlatModernStyleExample'));
 
-// Theme configuration
-const theme: Theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
-    fontSize: 14,
-    h5: {
-      fontWeight: 500,
-    },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.04)',
-          borderRadius: 8,
-        },
-      },
-    },
-  },
-});
+// Using flatModernTheme imported above
 
 const App: React.FC = () => {
   return (
     <GlobalErrorBoundary>
       <Provider store={store}>
-        <ThemeProvider theme={theme}>
+        <ThemeProvider theme={flatModernTheme}>
           <CssBaseline />
           <Router>
             <Routes>
@@ -154,7 +126,7 @@ const App: React.FC = () => {
                   } />
                   <Route path="/reports/daily-actions" element={
                     <Suspense fallback={<LoadingFallback />}>
-                      <DailyActionsPage />
+                      <DailyActionsPageRefactored />
                     </Suspense>
                   } />
                   <Route path="/reports/daily-actions/advanced" element={
@@ -265,6 +237,31 @@ const App: React.FC = () => {
               <Route path="/showcase/settings" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <SettingsComponentsShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/teal-dashboard" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <TealDashboardShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/flat-modern-ui" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <FlatModernUIShowcase />
+                </Suspense>
+              } />
+              <Route path="/showcase/flat-modern-style-example" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <FlatModernStyleExample />
+                </Suspense>
+              } />
+              <Route path="/showcase/daily-actions-original" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <DailyActionsPage />
+                </Suspense>
+              } />
+              <Route path="/showcase/daily-actions-refactored" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <DailyActionsPageRefactored />
                 </Suspense>
               } />
 

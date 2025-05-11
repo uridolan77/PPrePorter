@@ -42,3 +42,6 @@ export * from './types';
 
 // Export utilities
 export * from './utils';
+
+// Export examples
+export { default as ResizableColumnsExample } from './examples/ResizableColumnsExample';

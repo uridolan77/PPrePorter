@@ -4,9 +4,9 @@ import { AggregationFunction, TableState, ColumnDef, HierarchicalGroup } from '.
  * Format a number as currency
  */
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-GB', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'GBP',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
@@ -16,14 +16,19 @@ export const formatCurrency = (value: number): string => {
  * Format a number with thousands separators
  */
 export const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('en-US').format(value);
+  return new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 };
 
 /**
  * Format a number as a percentage
  */
 export const formatPercentage = (value: number): string => {
-  return `${value}%`;
+  // Ensure value is rounded to 2 decimal places
+  const roundedValue = parseFloat(value.toFixed(2));
+  return `${roundedValue.toFixed(2)}%`;
 };
 
 /**

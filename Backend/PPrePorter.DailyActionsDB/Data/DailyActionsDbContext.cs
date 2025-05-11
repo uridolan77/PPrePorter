@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Models.DailyActions;
 using PPrePorter.DailyActionsDB.Models.Games;
+using PPrePorter.DailyActionsDB.Models.Lookups;
 using PPrePorter.DailyActionsDB.Models.Metadata;
 using PPrePorter.DailyActionsDB.Models.Players;
 using PPrePorter.DailyActionsDB.Models.Sports;
@@ -119,6 +120,9 @@ namespace PPrePorter.DailyActionsDB.Data
         public DbSet<Leaderboard> Leaderboards { get; set; }
         public DbSet<WhiteLabel> WhiteLabels { get; set; }
         public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+
+        // Metadata table
+        public DbSet<MetadataItem> Metadata { get; set; }
 
         // No need for schema detection - we'll explicitly set the schema for each entity
 
@@ -284,6 +288,22 @@ namespace PPrePorter.DailyActionsDB.Data
             {
                 entity.ToTable("tbl_Withdrawal_requests", schema: "common");
                 entity.HasKey(e => e.RequestID);
+            });
+
+            // Configure metadata table
+            modelBuilder.Entity<MetadataItem>(entity =>
+            {
+                entity.ToTable("tbl_Metadata", schema: "common");
+                entity.HasKey(e => e.Id);
+
+                // Create a unique index on MetadataType and Code
+                entity.HasIndex(e => new { e.MetadataType, e.Code }).IsUnique();
+
+                // Create an index on MetadataType for faster lookups
+                entity.HasIndex(e => e.MetadataType);
+
+                // Create an index on ParentId for hierarchical lookups
+                entity.HasIndex(e => e.ParentId);
             });
 
             // Configure SportSport entity

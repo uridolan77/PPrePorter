@@ -75,7 +75,7 @@ const SimpleDashboard: React.FC = () => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -87,7 +87,7 @@ const SimpleDashboard: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     loadData();
   }, []);
 
@@ -95,11 +95,11 @@ const SimpleDashboard: React.FC = () => {
   const handleRefresh = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Generate slightly different data for refresh
       const refreshedData = {
         ...mockData,
@@ -117,7 +117,7 @@ const SimpleDashboard: React.FC = () => {
           }
         }
       };
-      
+
       setData(refreshedData);
     } catch (err) {
       setError('Failed to refresh dashboard data');
@@ -129,22 +129,26 @@ const SimpleDashboard: React.FC = () => {
 
   // Format currency
   const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-GB', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+      currency: 'GBP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(value);
   };
 
   // Format number with commas
   const formatNumber = (value: number): string => {
-    return new Intl.NumberFormat('en-US').format(value);
+    return new Intl.NumberFormat('en-GB', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
   };
 
   // Format date
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat('en-GB', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',

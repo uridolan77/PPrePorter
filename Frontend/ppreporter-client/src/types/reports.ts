@@ -320,3 +320,127 @@ export interface ReportSharing {
 }
 
 export default Report;
+
+// Group By Options
+export type GroupByOption = 'Day' | 'Month' | 'Year' | 'Country' | 'Platform' | 'Game' | 'Currency';
+
+// Advanced Filters
+export interface AdvancedFilters {
+  registration?: Date;
+  firstTimeDeposit?: Date;
+  lastDepositDate?: Date;
+  lastLogin?: Date;
+  trackers?: string;
+  country?: string;
+  platform?: string;
+  game?: string;
+  currency?: string;
+  minDeposit?: number;
+  maxDeposit?: number;
+  minBet?: number;
+  maxBet?: number;
+  // New multi-select filters
+  countries?: (string | number)[];
+  labels?: (string | number)[];
+  [key: string]: any;
+}
+
+// Report Filters
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  groupBy?: GroupByOption;
+  registrationDate?: string;
+  firstDepositDate?: string;
+  lastDepositDate?: string;
+  lastLoginDate?: string;
+  trackers?: string;
+  country?: string;
+  platform?: string;
+  game?: string;
+  currency?: string;
+  minDeposit?: number;
+  maxDeposit?: number;
+  minBet?: number;
+  maxBet?: number;
+  [key: string]: any;
+}
+
+// Daily Action Data
+export interface DailyAction {
+  id: string;
+  date: string;
+  groupValue: string;
+  uniquePlayers: number;
+  newRegistrations: number;
+  deposits: number;
+  withdrawals: number;
+  bets: number;
+  wins: number;
+  ggr: number;
+  betCount: number;
+  avgSessionDuration?: string;
+  conversionRate?: number;
+  retentionRate?: number;
+  [key: string]: any;
+}
+
+// Comparison Period Type
+export type ComparisonPeriodType = 'previous' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'custom';
+
+// Metric Type for Summary Cards
+export type SummaryMetricType =
+  'totalPlayers' |
+  'newRegistrations' |
+  'totalDeposits' |
+  'totalBets' |
+  'totalWithdrawals' |
+  'totalGGR' |
+  'avgBetAmount' |
+  'conversionRate' |
+  'retentionRate' |
+  'activeUsers' |
+  'avgSessionDuration' |
+  'betCount';
+
+// Metric Definition
+export interface MetricDefinition {
+  id: SummaryMetricType;
+  label: string;
+  description: string;
+  format: 'number' | 'currency' | 'percentage' | 'time';
+  icon: React.ReactNode | null;
+  defaultComparisonPeriod: ComparisonPeriodType;
+}
+
+// Daily Actions Summary
+export interface DailyActionsSummary {
+  // Core metrics
+  totalPlayers: number;
+  newRegistrations: number;
+  totalDeposits: number;
+  totalBets: number;
+
+  // Additional metrics
+  totalWithdrawals?: number;
+  totalGGR?: number;
+  avgBetAmount?: number;
+  conversionRate?: number;
+  retentionRate?: number;
+  activeUsers?: number;
+  avgSessionDuration?: number;
+  betCount?: number;
+
+  // Trends with comparison periods
+  trends?: {
+    [key in SummaryMetricType]?: {
+      [period in ComparisonPeriodType]?: number;
+    };
+  };
+
+  // Legacy trend fields for backward compatibility
+  playersTrend?: number | null;
+  registrationsTrend?: number | null;
+  depositsTrend?: number | null;
+  betsTrend?: number | null;
+}

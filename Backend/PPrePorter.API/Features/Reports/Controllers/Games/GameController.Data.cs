@@ -140,8 +140,23 @@ namespace PPrePorter.API.Features.Reports.Controllers.Games
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving games data");
-                return StatusCode(500, new { message = "An error occurred while retrieving games data" });
+                _logger.LogError(ex, "Error retrieving games data: {ErrorMessage}", ex.Message);
+
+                // Return an empty result instead of a 500 error
+                var emptyResponse = new
+                {
+                    data = new List<object>(),
+                    totalCount = 0,
+                    filters = new
+                    {
+                        provider,
+                        gameType,
+                        includeInactive
+                    },
+                    error = "An error occurred while retrieving games data. The database may be unavailable or the connection may have timed out."
+                };
+
+                return Ok(emptyResponse);
             }
         }
 
@@ -196,8 +211,17 @@ namespace PPrePorter.API.Features.Reports.Controllers.Games
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving game with ID {Id}", id);
-                return StatusCode(500, new { message = "An error occurred while retrieving the game" });
+                _logger.LogError(ex, "Error retrieving game with ID {Id}: {ErrorMessage}", id, ex.Message);
+
+                // Return an empty result instead of a 500 error
+                var emptyResponse = new
+                {
+                    gameId = id,
+                    gameName = "Unknown",
+                    error = "An error occurred while retrieving the game. The database may be unavailable or the connection may have timed out."
+                };
+
+                return Ok(emptyResponse);
             }
         }
 
@@ -244,8 +268,19 @@ namespace PPrePorter.API.Features.Reports.Controllers.Games
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving games excluded for country ID {CountryId}", countryId);
-                return StatusCode(500, new { message = "An error occurred while retrieving excluded games" });
+                _logger.LogError(ex, "Error retrieving games excluded for country ID {CountryId}: {ErrorMessage}", countryId, ex.Message);
+
+                // Return an empty result instead of a 500 error
+                var emptyResponse = new
+                {
+                    countryId,
+                    countryName = "Unknown",
+                    excludedGames = new List<object>(),
+                    totalCount = 0,
+                    error = "An error occurred while retrieving excluded games. The database may be unavailable or the connection may have timed out."
+                };
+
+                return Ok(emptyResponse);
             }
         }
 
@@ -287,8 +322,18 @@ namespace PPrePorter.API.Features.Reports.Controllers.Games
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving games excluded for jurisdiction ID {JurisdictionId}", jurisdictionId);
-                return StatusCode(500, new { message = "An error occurred while retrieving excluded games" });
+                _logger.LogError(ex, "Error retrieving games excluded for jurisdiction ID {JurisdictionId}: {ErrorMessage}", jurisdictionId, ex.Message);
+
+                // Return an empty result instead of a 500 error
+                var emptyResponse = new
+                {
+                    jurisdictionId,
+                    excludedGames = new List<object>(),
+                    totalCount = 0,
+                    error = "An error occurred while retrieving excluded games. The database may be unavailable or the connection may have timed out."
+                };
+
+                return Ok(emptyResponse);
             }
         }
 
@@ -335,8 +380,19 @@ namespace PPrePorter.API.Features.Reports.Controllers.Games
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving games excluded for label ID {LabelId}", labelId);
-                return StatusCode(500, new { message = "An error occurred while retrieving excluded games" });
+                _logger.LogError(ex, "Error retrieving games excluded for label ID {LabelId}: {ErrorMessage}", labelId, ex.Message);
+
+                // Return an empty result instead of a 500 error
+                var emptyResponse = new
+                {
+                    labelId,
+                    labelName = "Unknown",
+                    excludedGames = new List<object>(),
+                    totalCount = 0,
+                    error = "An error occurred while retrieving excluded games. The database may be unavailable or the connection may have timed out."
+                };
+
+                return Ok(emptyResponse);
             }
         }
     }

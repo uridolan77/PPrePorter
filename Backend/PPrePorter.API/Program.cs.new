@@ -1,0 +1,206 @@
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using OfficeOpenXml;
+using PPrePorter.API.Features.Configuration;
+using PPrePorter.API.Features.Configuration.Extensions;
+using PPrePorter.Core.Interfaces;
+using PPrePorter.Core.Models;
+using System;
+using System.Threading.Tasks;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure EPPlus license
+// For EPPlus version 8 and later
+ExcelPackage.License.SetNonCommercialPersonal("PPrePorter");
+
+// Add Swagger services
+builder.Services.AddSwaggerServices();
+
+// Add core services
+builder.Services.AddApplicationCoreServices(builder.Configuration);
+
+// Add authentication services
+builder.Services.AddAuthenticationServices(builder.Configuration);
+
+// Add CORS services
+builder.Services.AddCorsServices();
+
+// Add caching services
+builder.Services.AddCachingServices(builder.Configuration);
+
+// Add database services
+builder.Services.AddDatabaseServices(builder.Configuration);
+
+// Register DailyActionsDB services
+// Always use the real database
+bool useLocalDatabase = false; // Set to false to use the real database
+builder.Services.AddDailyActionsServices(builder.Configuration);
+
+// Log which database we're using
+Console.WriteLine($"Using {(useLocalDatabase ? "local" : "real")} DailyActionsDB");
+
+// Now that the connection string cache is pre-initialized, register health checks
+Console.WriteLine("\n=== REGISTERING HEALTH CHECKS ===");
+builder.Services.AddApplicationHealthChecks(builder.Configuration);
+builder.Services.AddHealthCheckUI();
+Console.WriteLine("=== HEALTH CHECKS REGISTERED ===\n");
+
+// Initialize the connection string cache before registering DailyActionsDB services
+Console.WriteLine("\n=== PRE-INITIALIZING CONNECTION STRING CACHE ===");
+bool useRealAzureKeyVault = builder.Environment.IsProduction() ||
+                           builder.Configuration.GetValue<bool>("UseRealAzureKeyVault", true); // Default to true
+Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
+
+// Create a temporary service provider to initialize the connection string cache
+using (var tempServiceProvider = builder.Services.BuildServiceProvider())
+{
+    var logger = tempServiceProvider.GetRequiredService<ILogger<Program>>();
+    await tempServiceProvider.InitializeConnectionStringCacheAsync(logger);
+    Console.WriteLine("=== CONNECTION STRING CACHE PRE-INITIALIZATION COMPLETE ===\n");
+}
+
+var app = builder.Build();
+
+// Verify the connection string cache is initialized
+Console.WriteLine("\n=== VERIFYING CONNECTION STRING CACHE ===");
+Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
+    try
+    {
+        // Get the connection string cache service
+        var connectionStringCacheService = scope.ServiceProvider.GetRequiredService<IConnectionStringCacheService>();
+
+        // Verify that the DailyActionsDB connection string is cached
+        string dailyActionsDbConnectionString = connectionStringCacheService.GetConnectionString("DailyActionsDB");
+        if (!string.IsNullOrEmpty(dailyActionsDbConnectionString))
+        {
+            logger.LogInformation("DailyActionsDB connection string is verified in cache");
+
+            // Dump the cache contents for debugging
+            connectionStringCacheService.DumpCacheContents();
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("CONNECTION STRING CACHE VERIFICATION SUCCESSFUL");
+            Console.ResetColor();
+        }
+        else
+        {
+            logger.LogWarning("DailyActionsDB connection string is not in cache, initializing now");
+
+            // Initialize the cache if needed
+            await connectionStringCacheService.InitializeAsync();
+
+            // Verify again
+            dailyActionsDbConnectionString = connectionStringCacheService.GetConnectionString("DailyActionsDB");
+            if (!string.IsNullOrEmpty(dailyActionsDbConnectionString))
+            {
+                logger.LogInformation("DailyActionsDB connection string is now cached successfully");
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("CONNECTION STRING CACHE INITIALIZED SUCCESSFULLY");
+                Console.ResetColor();
+            }
+            else
+            {
+                logger.LogError("DailyActionsDB connection string could not be cached");
+
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("CONNECTION STRING CACHE INITIALIZATION FAILED");
+                Console.ResetColor();
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("CONNECTION STRING CACHE VERIFICATION FAILED");
+        Console.ResetColor();
+
+        logger.LogError(ex, "Failed to verify connection string cache");
+    }
+
+    Console.WriteLine("=== CONNECTION STRING CACHE VERIFICATION COMPLETE ===\n");
+}
+
+// Verify database connection with a clear success/failure message
+Console.WriteLine("\n=== CHECKING DATABASE CONNECTION ===");
+Console.WriteLine($"Using {(useRealAzureKeyVault ? "REAL" : "DEVELOPMENT")} Azure Key Vault implementation");
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await scope.ServiceProvider.VerifyDatabaseConnectionAsync(logger);
+    Console.WriteLine("=== DATABASE CONNECTION CHECK COMPLETE ===\n");
+}
+
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    // Get application settings
+    var appSettingsOptions = app.Services.GetRequiredService<IOptions<AppSettings>>();
+    bool authEnabled = appSettingsOptions.Value.EnableAuthentication;
+
+    // Use Swagger with UI in development
+    app.UseSwaggerWithUI(authEnabled);
+}
+
+app.UseHttpsRedirection();
+
+// Enable static files for Swagger UI customization
+app.UseStaticFiles();
+
+// Get application settings
+var appSettingsOptions = app.Services.GetRequiredService<IOptions<AppSettings>>();
+bool authEnabled = appSettingsOptions.Value.EnableAuthentication;
+
+// Log authentication status
+if (authEnabled)
+{
+    Console.WriteLine("Authentication is ENABLED - API endpoints require valid token");
+}
+else
+{
+    Console.WriteLine("Authentication is DISABLED - No token required for API access");
+}
+
+// Configure middleware
+app.UseApplicationMiddleware();
+
+// Configure caching middleware
+app.UseCachingMiddleware();
+
+// Map controllers after all middleware is configured
+app.MapControllers();
+
+// Configure health checks
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    AllowCachingResponses = false // Prevent caching of health check responses
+}).RequireCors("AllowReactApp"); // Apply CORS policy to health endpoint
+
+// Map specific health check endpoint for DailyActionsDB
+app.MapHealthChecks("/health/dailyactions", new HealthCheckOptions
+{
+    Predicate = hc => hc.Name == "DailyActionsDB",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    AllowCachingResponses = false // Prevent caching of health check responses
+}).RequireCors("AllowReactApp"); // Apply CORS policy to health endpoint
+
+// Map health check UI endpoint
+app.MapHealthChecksUI(options =>
+{
+    options.UIPath = "/health-ui";
+    options.ApiPath = "/health-ui-api";
+}).RequireCors("AllowReactApp"); // Apply CORS policy to health UI endpoint
+
+app.Run();
