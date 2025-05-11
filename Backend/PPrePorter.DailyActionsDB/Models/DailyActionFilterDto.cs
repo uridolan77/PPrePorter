@@ -120,6 +120,9 @@ namespace PPrePorter.DailyActionsDB.Models
         Platform,
 
         /// <summary>Group by ranking</summary>
-        Ranking
+        Ranking,
+
+        /// <summary>Group by player</summary>
+        Player
     }
 }

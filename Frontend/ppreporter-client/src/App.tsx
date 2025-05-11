@@ -43,6 +43,7 @@ const DailyActionsAdvancedPage = lazy(() => import('./pages/reports/DailyActions
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
+const ComponentShowcase = lazy(() => import('./pages/ComponentShowcase'));
 
 // Theme configuration
 const theme: Theme = createTheme({
@@ -185,6 +186,13 @@ const App: React.FC = () => {
               <Route path="/api-test" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <ApiTestPage />
+                </Suspense>
+              } />
+
+              {/* Component Showcase */}
+              <Route path="/showcase" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <ComponentShowcase />
                 </Suspense>
               } />
 

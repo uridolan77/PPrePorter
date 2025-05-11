@@ -27,7 +27,8 @@ import {
   ListItemIcon,
   ListItemText,
   FormControlLabel,
-  Switch
+  Switch,
+  Link
 } from '@mui/material';
 import VirtualizedList from '../common/VirtualizedList';
 import { CommonProps } from '../../types/common';
@@ -67,13 +68,22 @@ export interface ColumnDef {
   label: string;
   align?: 'left' | 'right' | 'center';
   format?: (value: any, row: any) => React.ReactNode;
-  type?: 'text' | 'number' | 'currency' | 'percentage' | 'status' | 'sparkline' | 'progress' | 'bars';
+  type?: 'text' | 'number' | 'currency' | 'percentage' | 'status' | 'sparkline' | 'progress' | 'bars' | 'link';
   wrap?: boolean;
   maxWidth?: string;
   valueKey?: string;
   comparativeKey?: string;
   target?: number;
   sortable?: boolean;
+  cellProps?: Record<string, any>;
+  linkConfig?: {
+    urlField?: string;
+    urlPrefix?: string;
+    urlSuffix?: string;
+    urlBuilder?: (row: any) => string;
+    openInNewTab?: boolean;
+    displayField?: string;
+  };
 }
 
 export interface TableFeatures {
@@ -103,6 +113,8 @@ export interface UnifiedDataTableProps extends CommonProps {
   rowsPerPageOptions?: number[];
   defaultRowsPerPage?: number;
   idField?: string;
+  toolbarExtraContent?: React.ReactNode;
+  renderRowExtra?: (row: any) => React.ReactNode;
 }
 
 interface VirtualRowProps {
@@ -140,7 +152,9 @@ const UnifiedDataTable: React.FC<UnifiedDataTableProps> = ({
   rowsPerPageOptions = [10, 25, 50, 100],
   defaultRowsPerPage = 10,
   idField = 'id',
-  sx
+  sx,
+  toolbarExtraContent,
+  renderRowExtra
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -304,6 +318,40 @@ const UnifiedDataTable: React.FC<UnifiedDataTableProps> = ({
           />
         ) : '-';
 
+      case 'link':
+        if (!column.linkConfig) return value;
+
+        let url = '';
+        let displayText = value;
+
+        // Determine URL
+        if (column.linkConfig.urlBuilder) {
+          url = column.linkConfig.urlBuilder(row);
+        } else if (column.linkConfig.urlField) {
+          url = row[column.linkConfig.urlField] || '';
+          if (column.linkConfig.urlPrefix) url = column.linkConfig.urlPrefix + url;
+          if (column.linkConfig.urlSuffix) url = url + column.linkConfig.urlSuffix;
+        } else {
+          url = String(value);
+        }
+
+        // Determine display text
+        if (column.linkConfig.displayField) {
+          displayText = row[column.linkConfig.displayField] || value;
+        }
+
+        return (
+          <Link
+            href={url}
+            target={column.linkConfig.openInNewTab ? '_blank' : '_self'}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            rel="noopener noreferrer"
+            sx={{ textDecoration: 'none', color: 'primary.main' }}
+          >
+            {displayText}
+          </Link>
+        );
+
       default:
         return value;
     }
@@ -421,18 +469,23 @@ const UnifiedDataTable: React.FC<UnifiedDataTableProps> = ({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}
+              {...(column.cellProps || {})}
+              id={`cell-${index}-${columns.indexOf(column)}`}
+              data-row={JSON.stringify(row)}
             >
               {renderCellContent(column, row)}
             </TableCell>
           ))}
 
           <TableCell padding="checkbox">
-            <IconButton
-              size="small"
-              onClick={(event) => handleRowMenuOpen(event, row)}
-            >
-              <MoreHorizIcon fontSize="small" />
-            </IconButton>
+            {renderRowExtra ? renderRowExtra(row) : (
+              <IconButton
+                size="small"
+                onClick={(event) => handleRowMenuOpen(event, row)}
+              >
+                <MoreHorizIcon fontSize="small" />
+              </IconButton>
+            )}
           </TableCell>
         </TableRow>
       </div>
@@ -516,7 +569,7 @@ const UnifiedDataTable: React.FC<UnifiedDataTableProps> = ({
               </Tooltip>
             )}
 
-            {features.exportable && onExport && (
+            {features.exportable && onExport && !toolbarExtraContent && (
               <Tooltip title="Export data">
                 <IconButton size="small" onClick={onExport}>
                   <GetAppIcon fontSize="small" />
@@ -539,6 +592,9 @@ const UnifiedDataTable: React.FC<UnifiedDataTableProps> = ({
                 />
               </Tooltip>
             )}
+
+            {/* Render additional toolbar content if provided */}
+            {toolbarExtraContent}
           </Box>
         )}
       </Toolbar>

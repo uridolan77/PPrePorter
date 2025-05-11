@@ -64,6 +64,9 @@ namespace PPrePorter.DailyActionsDB.Models
         public int WhiteLabelId { get; set; }
         public string WhiteLabelName { get; set; } = string.Empty;
         public long? PlayerId { get; set; }
+        public string? PlayerName { get; set; }
+        public string? CountryName { get; set; }
+        public string? CurrencyCode { get; set; }
         public int Registrations { get; set; }
         public int FTD { get; set; }
         public int? FTDA { get; set; }

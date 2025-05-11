@@ -12,31 +12,35 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   CircularProgress,
   Alert,
   Card,
   CardContent,
   Divider,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
+import EnhancedUnifiedDataTable, { ExportFormat } from '../../components/tables/EnhancedUnifiedDataTable';
+import { ColumnDef } from '../../components/tables/UnifiedDataTable';
+import FilterPanel, { FilterDefinition, FilterType } from '../../components/common/FilterPanel';
+import MultiSelect from '../../components/common/MultiSelect';
+import ReportExport from '../../components/reports/ReportExport';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { format, subDays } from 'date-fns';
 import { FEATURES } from '../../config/constants';
 import dailyActionsService from '../../services/api/dailyActionsService';
+// Import the ReportFilters type from the service file
+import { ReportFilters } from '../../services/api/types';
 
 // Import icons
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import TableChartIcon from '@mui/icons-material/TableChart';
 
 // Types
@@ -48,18 +52,35 @@ interface WhiteLabel {
 interface DailyAction {
   id: string;
   date: string;
+  whiteLabelId: number;
   whiteLabelName: string;
   registrations: number;
   ftd: number;
   deposits: number;
   paidCashouts: number;
+  betsCasino?: number;
+  winsCasino?: number;
+  betsSport?: number;
+  winsSport?: number;
+  betsLive?: number;
+  winsLive?: number;
+  betsBingo?: number;
+  winsBingo?: number;
   ggrCasino: number;
   ggrSport: number;
   ggrLive: number;
+  ggrBingo?: number;
   totalGGR: number;
   // Additional properties for grouped data
   groupKey?: string;
   groupValue?: string;
+  // Additional properties for other grouping dimensions
+  country?: string;
+  tracker?: string;
+  currency?: string;
+  gender?: string;
+  platform?: string;
+  ranking?: string;
 }
 
 interface Summary {
@@ -73,8 +94,8 @@ interface Summary {
 interface Filters {
   startDate: string;
   endDate: string;
-  whiteLabelId?: string;
-  groupBy?: string;
+  whiteLabelIds?: number[]; // Changed to match backend's expectation of a list
+  groupBy?: number; // Changed to number to match backend's GroupByOption enum
 }
 
 const DailyActionsPage: React.FC = () => {
@@ -84,11 +105,19 @@ const DailyActionsPage: React.FC = () => {
   const [whiteLabelId, setWhiteLabelId] = useState<string>('');
   const [whiteLabels, setWhiteLabels] = useState<WhiteLabel[]>([]);
   const [groupBy, setGroupBy] = useState<string>('Day');
+  // Group By options - when any option is selected,
+  // the table will show only the grouped field and sum all numerical values
   const [groupByOptions, setGroupByOptions] = useState<{id: string, name: string}[]>([
     { id: 'Day', name: 'Day' },
     { id: 'Month', name: 'Month' },
     { id: 'Year', name: 'Year' },
     { id: 'Label', name: 'White Label' },
+    { id: 'Player', name: 'Player' },
+    { id: 'Country', name: 'Country' },
+    { id: 'Tracker', name: 'Tracker' },
+    { id: 'Currency', name: 'Currency' },
+    { id: 'Gender', name: 'Gender' },
+    { id: 'Platform', name: 'Platform' },
     { id: 'Ranking', name: 'Ranking' }
   ]);
 
@@ -96,6 +125,18 @@ const DailyActionsPage: React.FC = () => {
   const [dailyActions, setDailyActions] = useState<DailyAction[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Removed sorting and pagination state as they'll be handled by UnifiedDataTable
+
+  // State for advanced features
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
+  const [showColumnSelector, setShowColumnSelector] = useState<boolean>(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    'groupValue', 'registrations', 'ftd', 'deposits', 'paidCashouts',
+    'ggrCasino', 'ggrSport', 'ggrLive', 'totalGGR'
+  ]);
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, any>>({});
 
   // State for summary metrics
   const [summary, setSummary] = useState<Summary>({
@@ -176,17 +217,23 @@ const DailyActionsPage: React.FC = () => {
       const filters: Filters = {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
-        groupBy: groupBy
+        // Convert groupBy string to the numeric value expected by the backend
+        // The backend expects a GroupByOption enum value (Day=0, Month=1, Year=2, Label=3, etc.)
+        groupBy: convertGroupByToBackendValue(groupBy)
       };
 
       if (whiteLabelId && whiteLabelId !== '') {
         console.log(`[DAILY ACTIONS PAGE] Filtering by white label ID: ${whiteLabelId}`);
-        filters.whiteLabelId = whiteLabelId;
+        // The backend expects a list of white label IDs
+        filters.whiteLabelIds = [parseInt(whiteLabelId)];
       } else {
         console.log('[DAILY ACTIONS PAGE] No white label filter applied');
       }
 
-      console.log(`[DAILY ACTIONS PAGE] Grouping by: ${groupBy}`);
+      console.log(`[DAILY ACTIONS PAGE] Grouping by: ${groupBy} (backend value: ${filters.groupBy})`);
+
+      // Log a message about the grouping behavior
+      console.log(`[DAILY ACTIONS PAGE] Using grouped view by ${groupBy} - numerical values will be summed`);
 
       console.log('[DAILY ACTIONS PAGE] Starting data fetch with filters:', filters);
 
@@ -256,11 +303,11 @@ const DailyActionsPage: React.FC = () => {
                 // Calculate summary metrics from the data
                 const data = mockRegularData.dailyActions || mockRegularData.data || [];
                 const summaryData: Summary = {
-                  totalRegistrations: mockRegularData.totalRegistrations || data.reduce((sum: number, item: any) => sum + (item.registrations || 0), 0),
-                  totalFTD: mockRegularData.totalFTD || data.reduce((sum: number, item: any) => sum + (item.ftd || 0), 0),
-                  totalDeposits: mockRegularData.totalDeposits || data.reduce((sum: number, item: any) => sum + (item.deposits || 0), 0),
-                  totalCashouts: mockRegularData.totalCashouts || data.reduce((sum: number, item: any) => sum + (item.paidCashouts || 0), 0),
-                  totalGGR: mockRegularData.totalGGR || data.reduce((sum: number, item: any) => sum + (item.totalGGR || 0), 0)
+                  totalRegistrations: mockRegularData.totalRegistrations || data.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
+                  totalFTD: mockRegularData.totalFTD || data.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
+                  totalDeposits: mockRegularData.totalDeposits || data.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
+                  totalCashouts: mockRegularData.totalCashouts || data.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
+                  totalGGR: mockRegularData.totalGGR || data.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
                 };
 
                 setSummary(summaryData);
@@ -275,14 +322,53 @@ const DailyActionsPage: React.FC = () => {
         console.error('[DAILY ACTIONS PAGE] Error getting mock data directly:', mockError);
       }
 
-      // Fetch data directly (the data endpoint returns both data and summary)
+      // Always use the filtered-grouped endpoint for consistent behavior
       try {
         console.log('[DAILY ACTIONS PAGE] Fetching data with filters:', filters);
-        const response = await dailyActionsService.getData(filters);
-        console.log('[DAILY ACTIONS PAGE] Regular data response:', response);
+
+        // Always use the filtered-grouped endpoint for all groupBy options
+        console.log('[DAILY ACTIONS PAGE] Using getGroupedData for groupBy:', groupBy);
+
+        // Add more detailed logging for debugging
+        console.log('[DAILY ACTIONS PAGE] Endpoint URL:', '/reports/daily-actions/filtered-grouped');
+        console.log('[DAILY ACTIONS PAGE] Request payload:', JSON.stringify(filters, null, 2));
+
+        // Make the API call
+        const response = await dailyActionsService.getGroupedData(filters);
+
+        // Log the full response for debugging
+        console.log('[DAILY ACTIONS PAGE] Raw response:', JSON.stringify(response, null, 2));
 
         // Check if the response has the expected structure
         if (response && response.data) {
+          console.log('[DAILY ACTIONS PAGE] Response data details:', {
+            count: response.data.length,
+            firstItem: response.data[0],
+            groupBy: groupBy,
+            backendGroupBy: filters.groupBy,
+            hasGroupValue: response.data[0]?.groupValue !== undefined,
+            hasGroupKey: response.data[0]?.groupKey !== undefined,
+            groupValues: response.data.map((item: DailyAction) => item.groupValue).filter(Boolean).slice(0, 5),
+            uniqueWhiteLabelNames: Array.from(new Set(response.data.map((item: DailyAction) => item.whiteLabelName))).slice(0, 10)
+          });
+
+          // If we're grouping by Label, check if we have duplicate white label names
+          if (groupBy === 'Label') {
+            const whiteLabelCounts = response.data.reduce((acc: {[key: string]: number}, item: DailyAction) => {
+              const name = item.whiteLabelName || 'Unknown';
+              acc[name] = (acc[name] || 0) + 1;
+              return acc;
+            }, {});
+
+            const duplicates = Object.entries(whiteLabelCounts)
+              .filter(([_, count]) => (count as number) > 1)
+              .map(([name, count]) => `${name} (${count as number})`);
+
+            if (duplicates.length > 0) {
+              console.log('[DAILY ACTIONS PAGE] Found duplicate white label names:', duplicates);
+            }
+          }
+
           setDailyActions(response.data);
 
           // Set summary metrics if available in the response
@@ -291,11 +377,11 @@ const DailyActionsPage: React.FC = () => {
           } else {
             // Calculate summary metrics if not provided by the API
             const summaryData: Summary = {
-              totalRegistrations: response.data.reduce((sum: number, item: any) => sum + (item.registrations || 0), 0),
-              totalFTD: response.data.reduce((sum: number, item: any) => sum + (item.ftd || 0), 0),
-              totalDeposits: response.data.reduce((sum: number, item: any) => sum + (item.deposits || 0), 0),
-              totalCashouts: response.data.reduce((sum: number, item: any) => sum + (item.paidCashouts || 0), 0),
-              totalGGR: response.data.reduce((sum: number, item: any) => sum + (item.totalGGR || 0), 0)
+              totalRegistrations: response.data.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
+              totalFTD: response.data.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
+              totalDeposits: response.data.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
+              totalCashouts: response.data.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
+              totalGGR: response.data.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
             };
 
             setSummary(summaryData);
@@ -339,6 +425,47 @@ const DailyActionsPage: React.FC = () => {
     setGroupBy(event.target.value);
   };
 
+  // Handle export button click
+  const handleExport = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      console.log('[DAILY ACTIONS PAGE] Exporting data with filters:', {
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+        whiteLabelId,
+        groupBy
+      });
+
+      // Create filters object
+      const filters: ReportFilters = {
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+        whiteLabelIds: whiteLabelId ? [parseInt(whiteLabelId)] : undefined,
+        groupBy: convertGroupByToBackendValue(groupBy)
+      };
+
+      // Export the data
+      const blob = await dailyActionsService.exportFilteredReport(filters, 'csv');
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DailyActions_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}_${groupBy}.csv`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('[DAILY ACTIONS PAGE] Error exporting data:', error);
+      setError('Failed to export data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Format currency values
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -346,6 +473,107 @@ const DailyActionsPage: React.FC = () => {
       currency: 'USD',
       minimumFractionDigits: 2
     }).format(value);
+  };
+
+  // Removed sorting and pagination handlers as they'll be handled by UnifiedDataTable
+
+  // Removed getSortedData function as sorting will be handled by UnifiedDataTable
+
+  // Handle advanced filter toggle
+  const handleToggleAdvancedFilters = (): void => {
+    setShowAdvancedFilters(!showAdvancedFilters);
+  };
+
+  // Handle advanced filter change
+  const handleAdvancedFilterChange = (id: string, value: any): void => {
+    setAdvancedFilters({
+      ...advancedFilters,
+      [id]: value
+    });
+  };
+
+  // Handle advanced filter apply
+  const handleApplyAdvancedFilters = (): void => {
+    // Combine basic filters from the form with advanced filters
+    const combinedFilters = {
+      startDate,
+      endDate,
+      groupBy,
+      whiteLabelId,
+      ...advancedFilters
+    };
+
+    console.log('[DAILY ACTIONS PAGE] Applying advanced filters:', combinedFilters);
+    fetchDailyActions();
+  };
+
+  // Handle advanced filter reset
+  const handleResetAdvancedFilters = (): void => {
+    setAdvancedFilters({});
+  };
+
+  // Handle export dialog
+  const handleOpenExportDialog = (): void => {
+    setShowExportDialog(true);
+  };
+
+  // Handle export dialog close
+  const handleCloseExportDialog = (): void => {
+    setShowExportDialog(false);
+  };
+
+  // Handle export
+  const handleExportData = (exportData: any): void => {
+    console.log('[DAILY ACTIONS PAGE] Exporting data with options:', exportData);
+    handleExport();
+    setShowExportDialog(false);
+  };
+
+  // Handle column selector dialog
+  const handleOpenColumnSelector = (): void => {
+    setShowColumnSelector(true);
+  };
+
+  // Handle column selector dialog close
+  const handleCloseColumnSelector = (): void => {
+    setShowColumnSelector(false);
+  };
+
+  // Handle column visibility change
+  const handleColumnVisibilityChange = (columnId: string): void => {
+    const currentVisibleColumns = [...visibleColumns];
+    const columnIndex = currentVisibleColumns.indexOf(columnId);
+
+    if (columnIndex === -1) {
+      // Add column
+      currentVisibleColumns.push(columnId);
+    } else {
+      // Remove column
+      currentVisibleColumns.splice(columnIndex, 1);
+    }
+
+    setVisibleColumns(currentVisibleColumns);
+  };
+
+  // Convert frontend groupBy string to backend GroupByOption enum value
+  const convertGroupByToBackendValue = (groupByString: string): number => {
+    // Import the mapping from the service to ensure consistency
+    // Day=0, Month=1, Year=2, Label=3, Country=4, Tracker=5, Currency=6, Gender=7, Platform=8, Ranking=9, Player=10
+    const groupByMapping: { [key: string]: number } = {
+      'Day': 0,
+      'Month': 1,
+      'Year': 2,
+      'Label': 3,
+      'Country': 4,
+      'Tracker': 5,
+      'Currency': 6,
+      'Gender': 7,
+      'Platform': 8,
+      'Ranking': 9,
+      'Player': 10
+    };
+
+    return groupByMapping[groupByString] || 0; // Default to Day (0) if not found
   };
 
   return (
@@ -430,12 +658,30 @@ const DailyActionsPage: React.FC = () => {
                 value={groupBy}
                 onChange={handleGroupByChange}
                 label="Group By"
+                sx={{
+                  fontWeight: 'bold',
+                  '& .MuiSelect-select': {
+                    color: 'primary.main'
+                  }
+                }}
               >
                 {groupByOptions.map((option) => (
-                  <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>
+                  <MenuItem
+                    key={option.id}
+                    value={option.id}
+                    sx={{
+                      fontWeight: 'bold',
+                      color: 'primary.main'
+                    }}
+                  >
+                    {option.name}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
+            <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 1 }}>
+              Data is grouped by {groupByOptions.find(option => option.id === groupBy)?.name.toLowerCase() || groupBy.toLowerCase()}, with numerical values summed.
+            </Typography>
           </Grid>
 
           <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -454,6 +700,7 @@ const DailyActionsPage: React.FC = () => {
                 variant="outlined"
                 startIcon={<DownloadIcon />}
                 disabled={loading || dailyActions.length === 0}
+                onClick={handleExport}
               >
                 Export
               </Button>
@@ -552,50 +799,259 @@ const DailyActionsPage: React.FC = () => {
             No data available for the selected filters. Try adjusting your filters or click "Apply Filters" to load data.
           </Alert>
         ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  {groupBy !== 'Label' && <TableCell>Date</TableCell>}
-                  {(groupBy === 'Day' || groupBy === 'Label') && <TableCell>White Label</TableCell>}
-                  {groupBy !== 'Day' && groupBy !== 'Label' && <TableCell>{groupBy}</TableCell>}
-                  <TableCell align="right">Registrations</TableCell>
-                  <TableCell align="right">FTD</TableCell>
-                  <TableCell align="right">Deposits</TableCell>
-                  <TableCell align="right">Cashouts</TableCell>
-                  <TableCell align="right">Casino GGR</TableCell>
-                  <TableCell align="right">Sports GGR</TableCell>
-                  <TableCell align="right">Live GGR</TableCell>
-                  <TableCell align="right">Total GGR</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {dailyActions.map((row, index) => (
-                  <TableRow key={row.id || `row-${index}`}>
-                    {groupBy !== 'Label' &&
-                      <TableCell>
-                        {row.date ? format(new Date(row.date), 'MMM dd, yyyy') : 'N/A'}
-                      </TableCell>
-                    }
-                    {(groupBy === 'Day' || groupBy === 'Label') &&
-                      <TableCell>{row.whiteLabelName}</TableCell>
-                    }
-                    {groupBy !== 'Day' && groupBy !== 'Label' &&
-                      <TableCell>{row.groupValue || 'N/A'}</TableCell>
-                    }
-                    <TableCell align="right">{row.registrations}</TableCell>
-                    <TableCell align="right">{row.ftd}</TableCell>
-                    <TableCell align="right">{formatCurrency(row.deposits)}</TableCell>
-                    <TableCell align="right">{formatCurrency(row.paidCashouts)}</TableCell>
-                    <TableCell align="right">{formatCurrency(row.ggrCasino)}</TableCell>
-                    <TableCell align="right">{formatCurrency(row.ggrSport)}</TableCell>
-                    <TableCell align="right">{formatCurrency(row.ggrLive)}</TableCell>
-                    <TableCell align="right">{formatCurrency(row.totalGGR)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <EnhancedUnifiedDataTable
+            data={dailyActions}
+            columns={[
+              {
+                id: 'groupValue',
+                label: groupByOptions.find(option => option.id === groupBy)?.name || groupBy,
+                format: (value, row) => {
+                  return row.groupValue ? row.groupValue :
+                    groupBy === 'Day' && row.date ? format(new Date(row.date), 'MMM dd, yyyy') :
+                    groupBy === 'Month' && row.date ? format(new Date(row.date), 'MMMM yyyy') :
+                    groupBy === 'Year' && row.date ? format(new Date(row.date), 'yyyy') :
+                    groupBy === 'Label' ? row.whiteLabelName :
+                    groupBy === 'Country' && row.country ? row.country :
+                    groupBy === 'Tracker' && row.tracker ? row.tracker :
+                    groupBy === 'Currency' && row.currency ? row.currency :
+                    groupBy === 'Gender' && row.gender ? row.gender :
+                    groupBy === 'Platform' && row.platform ? row.platform :
+                    groupBy === 'Ranking' && row.ranking ? row.ranking :
+                    row[groupBy.toLowerCase() as keyof DailyAction] || 'N/A';
+                }
+              },
+              {
+                id: 'registrations',
+                label: 'Registrations',
+                align: 'right',
+                type: 'number'
+              },
+              {
+                id: 'ftd',
+                label: 'FTD',
+                align: 'right',
+                type: 'number'
+              },
+              {
+                id: 'deposits',
+                label: 'Deposits',
+                align: 'right',
+                type: 'currency',
+                format: (value) => formatCurrency(value)
+              },
+              {
+                id: 'paidCashouts',
+                label: 'Cashouts',
+                align: 'right',
+                type: 'currency',
+                format: (value) => formatCurrency(value)
+              },
+              {
+                id: 'ggrCasino',
+                label: 'Casino GGR',
+                align: 'right',
+                type: 'currency',
+                format: (value) => formatCurrency(value)
+              },
+              {
+                id: 'ggrSport',
+                label: 'Sports GGR',
+                align: 'right',
+                type: 'currency',
+                format: (value) => formatCurrency(value)
+              },
+              {
+                id: 'ggrLive',
+                label: 'Live GGR',
+                align: 'right',
+                type: 'currency',
+                format: (value) => formatCurrency(value)
+              },
+              {
+                id: 'totalGGR',
+                label: 'Total GGR',
+                align: 'right',
+                type: 'currency',
+                format: (value) => formatCurrency(value)
+              }
+            ]}
+            title="Daily Actions Data"
+            loading={loading}
+            onRefresh={handleApplyFilters}
+            onExport={handleExport}
+            features={{
+              sorting: true,
+              filtering: true,
+              pagination: true,
+              virtualization: false,
+              microVisualizations: false,
+              exportable: true
+            }}
+            emptyMessage="No data available for the selected filters. Try adjusting your filters or click 'Apply Filters' to load data."
+            maxHeight="600px"
+            rowsPerPageOptions={[5, 10, 25, 50, 100]}
+            defaultRowsPerPage={10}
+            idField="id"
+            // Enhanced features
+            enableColumnSelection={true}
+            enableAdvancedFiltering={true}
+            enableExportOptions={true}
+            enableColumnReordering={true}
+            enableRowGrouping={true}
+            enableSummaryRow={true}
+            enableExpandableRows={true}
+            enableKeyboardNavigation={true}
+            enableStickyColumns={true}
+            enableResponsiveDesign={true}
+            enableDrillDown={true}
+            filterDefinitions={[
+              {
+                id: 'minRegistrations',
+                label: 'Min Registrations',
+                type: FilterType.NUMBER,
+                min: 0
+              },
+              {
+                id: 'maxRegistrations',
+                label: 'Max Registrations',
+                type: FilterType.NUMBER,
+                min: 0
+              },
+              {
+                id: 'minGGR',
+                label: 'Min GGR',
+                type: FilterType.NUMBER,
+                min: 0
+              },
+              {
+                id: 'maxGGR',
+                label: 'Max GGR',
+                type: FilterType.NUMBER,
+                min: 0
+              }
+            ]}
+            groupableColumns={[
+              'whiteLabelName',
+              'country',
+              'tracker',
+              'currency',
+              'gender',
+              'platform',
+              'ranking'
+            ]}
+            stickyColumnIds={['groupValue']}
+            drillDownConfig={[
+              {
+                sourceGrouping: 'Month',
+                targetGrouping: 'Day',
+                label: 'View by Day',
+                transformFilter: (row) => ({
+                  startDate: row.date ? format(new Date(row.date), 'yyyy-MM-01') : '',
+                  endDate: row.date ? format(new Date(row.date), 'yyyy-MM-dd') : '',
+                  groupBy: 'Day'
+                })
+              },
+              {
+                sourceGrouping: 'Label',
+                targetGrouping: 'Player',
+                label: 'View Players',
+                transformFilter: (row) => ({
+                  whiteLabelId: row.whiteLabelId || '',
+                  groupBy: 'Player'
+                })
+              }
+            ]}
+            aggregations={[
+              { columnId: 'registrations', function: 'sum', label: 'Total Registrations' },
+              { columnId: 'registrations', function: 'avg', label: 'Avg Registrations' },
+              { columnId: 'ftd', function: 'sum', label: 'Total FTD' },
+              { columnId: 'ftd', function: 'avg', label: 'Avg FTD' },
+              { columnId: 'deposits', function: 'sum', label: 'Total Deposits' },
+              { columnId: 'paidCashouts', function: 'sum', label: 'Total Cashouts' },
+              { columnId: 'totalGGR', function: 'sum', label: 'Total GGR' },
+              { columnId: 'totalGGR', function: 'avg', label: 'Avg GGR' }
+            ]}
+            renderRowDetail={(row) => (
+              <Box sx={{ p: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Details for {groupBy === 'Day' || groupBy === 'Month' || groupBy === 'Year' ?
+                    format(new Date(row.date), 'MMM dd, yyyy') :
+                    row.groupValue || 'Selected Item'}
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2">
+                      <strong>Registrations:</strong> {row.registrations}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>FTD:</strong> {row.ftd}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Deposits:</strong> {formatCurrency(row.deposits)}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Cashouts:</strong> {formatCurrency(row.paidCashouts)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2">
+                      <strong>Casino GGR:</strong> {formatCurrency(row.ggrCasino)}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Sports GGR:</strong> {formatCurrency(row.ggrSport)}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Live GGR:</strong> {formatCurrency(row.ggrLive)}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Total GGR:</strong> {formatCurrency(row.totalGGR)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+            onExportFormat={(format) => {
+              console.log(`[DAILY ACTIONS PAGE] Exporting in format: ${format}`);
+              handleExport();
+            }}
+            onApplyAdvancedFilters={(filters) => {
+              console.log('[DAILY ACTIONS PAGE] Applying advanced filters:', filters);
+              setAdvancedFilters(filters);
+              handleApplyAdvancedFilters();
+            }}
+            onColumnOrderChange={(columns) => {
+              console.log('[DAILY ACTIONS PAGE] Column order changed:', columns.map(col => col.id));
+            }}
+            onGroupingChange={(groupBy) => {
+              console.log('[DAILY ACTIONS PAGE] Grouping changed to:', groupBy);
+            }}
+            onRowExpand={(rowId, expanded) => {
+              console.log(`[DAILY ACTIONS PAGE] Row ${rowId} ${expanded ? 'expanded' : 'collapsed'}`);
+            }}
+            onDrillDown={(row, sourceGrouping, targetGrouping, filters) => {
+              console.log(`[DAILY ACTIONS PAGE] Drill down from ${sourceGrouping} to ${targetGrouping}`, filters);
+
+              // Update filters based on drill-down
+              if (filters.groupBy) {
+                setGroupBy(filters.groupBy);
+              }
+
+              if (filters.startDate) {
+                setStartDate(filters.startDate);
+              }
+
+              if (filters.endDate) {
+                setEndDate(filters.endDate);
+              }
+
+              if (filters.whiteLabelId) {
+                setWhiteLabelId(filters.whiteLabelId);
+              }
+
+              // Apply the new filters
+              handleApplyFilters();
+            }}
+          />
         )}
       </Paper>
     </Container>
