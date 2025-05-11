@@ -1,10 +1,10 @@
 import apiClient from './apiClient';
-import { 
-  Game, 
-  GamePerformance, 
-  GameCategory, 
-  GameProvider, 
-  PlayerDemographics, 
+import {
+  Game,
+  GamePerformance,
+  GameCategory,
+  GameProvider,
+  PlayerDemographics,
   GameSession,
   GamesQueryParams,
   TopGamesQueryParams,
@@ -124,6 +124,23 @@ const getGameSessions = async (id: string, params: GamePerformanceQueryParams = 
   }
 };
 
+/**
+ * Export games data
+ * @param params - Query parameters
+ * @returns Promise object with blob data
+ */
+const exportGames = async (params: GamesQueryParams = {}): Promise<Blob> => {
+  try {
+    const response = await apiClient.get('/games/export', {
+      params,
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export default {
   getGames,
   getGameById,
@@ -132,5 +149,6 @@ export default {
   getGameCategories,
   getGameProviders,
   getGamePlayerDemographics,
-  getGameSessions
+  getGameSessions,
+  exportGames
 };

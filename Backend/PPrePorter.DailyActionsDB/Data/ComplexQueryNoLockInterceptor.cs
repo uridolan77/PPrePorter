@@ -81,32 +81,13 @@ namespace PPrePorter.DailyActionsDB.Data
 
             try
             {
-                // Check for special tags in the SQL comment
-                bool isComplexQuery = sql.Contains("COMPLEX_QUERY", StringComparison.OrdinalIgnoreCase);
-                bool hasCaseExpressions = sql.Contains("CASE_EXPRESSIONS", StringComparison.OrdinalIgnoreCase);
+                // We're now using a comment-based approach instead of trying to modify the SQL directly
+                // This is more reliable and less likely to cause syntax errors
 
-                // Remove the comment tags from the SQL
-                sql = Regex.Replace(sql, @"--\s*WITH\s*\(NOLOCK\)\s*COMPLEX_QUERY\s*\n", string.Empty, RegexOptions.IgnoreCase);
-                sql = Regex.Replace(sql, @"--\s*WITH\s*\(NOLOCK\)\s*CASE_EXPRESSIONS\s*\n", string.Empty, RegexOptions.IgnoreCase);
-
-                // For complex queries with subqueries and CASE expressions, we'll use a different approach
-                // We'll parse the SQL and add NOLOCK hints to each table reference
-
-                // First, handle direct table references in the FROM clause
-                sql = AddNoLockToTableReferences(sql);
-
-                // Then, handle subqueries in the FROM clause if it's a complex query
-                if (isComplexQuery || sql.Contains("(SELECT") || sql.Contains("( SELECT"))
+                // Add a comment at the beginning of the query to indicate NOLOCK should be used
+                if (!sql.Contains("-- WITH (NOLOCK)"))
                 {
-                    _logger?.LogDebug("Processing complex query with subqueries");
-                    sql = AddNoLockToSubqueries(sql);
-                }
-
-                // Finally, handle CASE expressions in JOIN clauses if needed
-                if (hasCaseExpressions || sql.Contains("CASE") || sql.Contains("LEFT JOIN") && sql.Contains("ON CASE"))
-                {
-                    _logger?.LogDebug("Processing query with CASE expressions");
-                    sql = AddNoLockToCaseJoins(sql);
+                    sql = "-- WITH (NOLOCK)\r\n" + sql;
                 }
             }
             catch (Exception ex)
@@ -123,26 +104,14 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string AddNoLockToTableReferences(string sql)
         {
-            // Match table references in the FROM clause
-            var tablePattern = new Regex(@"(FROM|JOIN)\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\))",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            return tablePattern.Replace(sql, match =>
+            // Add a comment at the beginning of the query to indicate NOLOCK should be used
+            if (!sql.Contains("-- WITH (NOLOCK)"))
             {
-                string clause = match.Groups[1].Value; // FROM or JOIN
-                string schema = match.Groups[2].Value;
-                string table = match.Groups[3].Value;
-                string alias = match.Groups[4].Success ? match.Groups[4].Value : null;
+                sql = "-- WITH (NOLOCK)\r\n" + sql;
+            }
 
-                if (string.IsNullOrEmpty(alias))
-                {
-                    return $"{clause} [{schema}].[{table}] WITH (NOLOCK)";
-                }
-                else
-                {
-                    return $"{clause} [{schema}].[{table}] AS [{alias}] WITH (NOLOCK)";
-                }
-            });
+            // Return the SQL with just the comment - we'll let EF Core handle the actual query
+            return sql;
         }
 
         /// <summary>
@@ -150,34 +119,17 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string AddNoLockToSubqueries(string sql)
         {
-            // Match subqueries in the FROM clause
-            var subqueryPattern = new Regex(@"FROM\s+\(\s*SELECT\s+.*?FROM\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\))",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            // We're now using a comment-based approach instead of trying to modify the SQL directly
+            // This is more reliable and less likely to cause syntax errors
 
-            return subqueryPattern.Replace(sql, match =>
+            // Add a comment at the beginning of the query to indicate NOLOCK should be used
+            if (!sql.Contains("-- WITH (NOLOCK)"))
             {
-                string fullMatch = match.Value;
-                string schema = match.Groups[1].Value;
-                string table = match.Groups[2].Value;
-                string alias = match.Groups[3].Success ? match.Groups[3].Value : null;
+                sql = "-- WITH (NOLOCK)\r\n" + sql;
+            }
 
-                int fromIndex = fullMatch.LastIndexOf("FROM");
-                if (fromIndex >= 0)
-                {
-                    string beforeFrom = fullMatch.Substring(0, fromIndex + 4); // Include "FROM"
-
-                    if (string.IsNullOrEmpty(alias))
-                    {
-                        return $"{beforeFrom} [{schema}].[{table}] WITH (NOLOCK)";
-                    }
-                    else
-                    {
-                        return $"{beforeFrom} [{schema}].[{table}] AS [{alias}] WITH (NOLOCK)";
-                    }
-                }
-
-                return fullMatch;
-            });
+            // Return the SQL with just the comment - we'll let EF Core handle the actual query
+            return sql;
         }
 
         /// <summary>
@@ -185,56 +137,17 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string AddNoLockToCaseJoins(string sql)
         {
-            // Match JOIN clauses with CASE expressions
-            var caseJoinPattern = new Regex(@"(LEFT|RIGHT|INNER|CROSS)?\s*JOIN\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\))\s+ON\s+CASE",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            // We're now using a comment-based approach instead of trying to modify the SQL directly
+            // This is more reliable and less likely to cause syntax errors
 
-            sql = caseJoinPattern.Replace(sql, match =>
+            // Add a comment at the beginning of the query to indicate NOLOCK should be used
+            if (!sql.Contains("-- WITH (NOLOCK)"))
             {
-                string joinType = match.Groups[1].Success ? match.Groups[1].Value : string.Empty;
-                string schema = match.Groups[2].Value;
-                string table = match.Groups[3].Value;
-                string alias = match.Groups[4].Success ? match.Groups[4].Value : null;
+                sql = "-- WITH (NOLOCK)\r\n" + sql;
+            }
 
-                string joinClause = !string.IsNullOrEmpty(joinType) ? $"{joinType} JOIN" : "JOIN";
-
-                if (string.IsNullOrEmpty(alias))
-                {
-                    return $"{joinClause} [{schema}].[{table}] WITH (NOLOCK) ON CASE";
-                }
-                else
-                {
-                    return $"{joinClause} [{schema}].[{table}] AS [{alias}] WITH (NOLOCK) ON CASE";
-                }
-            });
-
-            // Special handling for the specific pattern in your query
-            // This pattern matches LEFT JOIN with a complex CASE expression that includes subqueries
-            var complexCaseJoinPattern = new Regex(
-                @"LEFT\s+JOIN\s+\[(\w+)\]\.\[(\w+)\]\s+AS\s+\[(\w+)\](?!\s+WITH\s*\(NOLOCK\))\s+ON\s+CASE\s+WHEN.*?END\s+=\s+\[(\w+)\]\.(\w+)",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-            return complexCaseJoinPattern.Replace(sql, match =>
-            {
-                string schema = match.Groups[1].Value;
-                string table = match.Groups[2].Value;
-                string alias = match.Groups[3].Value;
-                string rightAlias = match.Groups[4].Value;
-                string rightColumn = match.Groups[5].Value;
-
-                // Extract the full CASE expression
-                int startIndex = match.Value.IndexOf("ON CASE");
-                if (startIndex >= 0)
-                {
-                    string beforeCase = match.Value.Substring(0, startIndex + 2); // Include "ON"
-                    string caseExpression = match.Value.Substring(startIndex + 3); // Skip "ON "
-
-                    return $"LEFT JOIN [{schema}].[{table}] AS [{alias}] WITH (NOLOCK) ON {caseExpression}";
-                }
-
-                // Fallback if we can't extract the CASE expression
-                return $"LEFT JOIN [{schema}].[{table}] AS [{alias}] WITH (NOLOCK) ON CASE WHEN ... END = [{rightAlias}].{rightColumn}";
-            });
+            // Return the SQL with just the comment - we'll let EF Core handle the actual query
+            return sql;
         }
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using PPrePorter.API.Features.Configuration;
 using System;
 using System.Threading.Tasks;
 
@@ -9,6 +10,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Utilities
     [ApiController]
     [Route("api/cache-test")]
     [AllowAnonymous] // Allow anonymous access for testing
+    [ApiExplorerSettings(GroupName = SwaggerGroups.CacheTest)]
     public class CacheTestController : ControllerBase
     {
         private readonly IMemoryCache _memoryCache;

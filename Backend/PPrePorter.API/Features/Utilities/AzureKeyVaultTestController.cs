@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace PPrePorter.API.Features.Utilities
     /// </summary>
     [ApiController]
     [Route("api/utilities/azure-key-vault")]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.AzureKeyVaultTest)]
     public class AzureKeyVaultTestController : ControllerBase
     {
         private readonly IAzureKeyVaultService _keyVaultService;
@@ -37,28 +39,28 @@ namespace PPrePorter.API.Features.Utilities
             try
             {
                 _logger.LogInformation("Testing retrieving secret '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
-                
+
                 // Get the implementation type of the Azure Key Vault service
                 var implementationType = _keyVaultService.GetType().Name;
                 _logger.LogInformation("Using Azure Key Vault service implementation: {Implementation}", implementationType);
-                
+
                 // Retrieve the secret
                 var secretValue = await _keyVaultService.GetSecretAsync(vaultName, secretName);
-                
+
                 if (string.IsNullOrEmpty(secretValue))
                 {
                     return NotFound(new { message = $"Secret '{secretName}' not found in vault '{vaultName}'" });
                 }
-                
+
                 // Only log the first few characters of the secret if it's a password
                 string logValue = secretName.Contains("Password", StringComparison.OrdinalIgnoreCase) ?
                     secretValue.Substring(0, Math.Min(3, secretValue.Length)) + "***" :
                     secretValue;
-                
+
                 _logger.LogInformation("Successfully retrieved secret '{SecretName}' from vault '{VaultName}': {Value}",
                     secretName, vaultName, logValue);
-                
-                return Ok(new { 
+
+                return Ok(new {
                     message = $"Successfully retrieved secret '{secretName}' from vault '{vaultName}'",
                     implementation = implementationType,
                     secretName = secretName,
@@ -68,8 +70,8 @@ namespace PPrePorter.API.Features.Utilities
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving secret '{SecretName}' from vault '{VaultName}'", secretName, vaultName);
-                return StatusCode(500, new { 
-                    message = $"An error occurred while retrieving secret '{secretName}' from vault '{vaultName}'", 
+                return StatusCode(500, new {
+                    message = $"An error occurred while retrieving secret '{secretName}' from vault '{vaultName}'",
                     error = ex.Message,
                     implementation = _keyVaultService.GetType().Name
                 });

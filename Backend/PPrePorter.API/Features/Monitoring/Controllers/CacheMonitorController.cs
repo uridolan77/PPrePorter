@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
     [ApiController]
     [Route("api/cache-monitor")]
     [AllowAnonymous] // Allow anonymous access for testing
+    [ApiExplorerSettings(GroupName = SwaggerGroups.CacheMonitor)]
     public class CacheMonitorController : ControllerBase
     {
         private readonly IGlobalCacheService _cacheService;
@@ -32,13 +34,13 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
             // Create a test cache entry
             string testKey = "GlobalCache_Test";
             var testValue = DateTime.UtcNow;
-            
+
             // Set the test value in cache
             _cacheService.Set(testKey, testValue, TimeSpan.FromMinutes(5));
-            
+
             // Try to retrieve it immediately
             bool retrievedSuccessfully = _cacheService.TryGetValue(testKey, out DateTime value);
-            
+
             return Ok(new
             {
                 cacheStatus = "Active",
@@ -72,20 +74,20 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
             {
                 // Get the cache service hash code before clearing
                 var cacheServiceHashCode = _cacheService.GetHashCode();
-                
+
                 // Clear the cache
                 _cacheService.Clear();
-                
+
                 // Create a test cache entry to verify the cache is still working
                 string testKey = "GlobalCache_Test_AfterClear";
                 var testValue = DateTime.UtcNow;
-                
+
                 // Set the test value in cache
                 _cacheService.Set(testKey, testValue, TimeSpan.FromMinutes(5));
-                
+
                 // Try to retrieve it immediately
                 bool retrievedSuccessfully = _cacheService.TryGetValue(testKey, out DateTime value);
-                
+
                 return Ok(new
                 {
                     message = "Cache cleared successfully",

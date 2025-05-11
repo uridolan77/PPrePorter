@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace PPrePorter.API.Features.Utilities
     /// </summary>
     [ApiController]
     [Route("api/utilities/connection-string")]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.ConnectionStringTest)]
     public class ConnectionStringTestController : ControllerBase
     {
         private readonly IConnectionStringResolverService _connectionStringResolverService;

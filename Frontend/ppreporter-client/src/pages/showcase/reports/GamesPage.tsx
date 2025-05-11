@@ -28,10 +28,10 @@ import {
   LinearProgress,
   Tooltip
 } from '@mui/material';
-import EnhancedUnifiedDataTable, { ExportFormat } from '../../../components/tables/EnhancedUnifiedDataTable';
-import { ColumnDef } from '../../../components/tables/UnifiedDataTable';
+import { EnhancedTable } from '../../../components/tables/enhanced';
+import { ColumnDef, ExportFormat } from '../../../components/tables/enhanced/types';
 import MultiSelect, { MultiSelectOption } from '../../../components/common/MultiSelect';
-import { format } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -54,6 +54,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 // Import services
 import gamesService from '../../../services/api/gamesService';
 import { ReportFilters } from '../../../services/api/types';
+import { Game } from '../../../types/games';
 
 // Define interfaces
 interface Filters {
@@ -81,34 +82,6 @@ interface Provider {
 interface Category {
   id: string;
   name: string;
-}
-
-interface Game {
-  id: string;
-  name: string;
-  provider: string;
-  category: string;
-  description?: string;
-  thumbnailUrl?: string;
-  releaseDate?: string;
-  popularityScore?: number;
-  rtp?: number;
-  volatility?: 'low' | 'medium' | 'high';
-  status?: 'active' | 'inactive' | 'maintenance';
-  features?: string[];
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-  revenue?: number;
-  uniquePlayers?: number;
-  sessions?: number;
-  avgSessionDuration?: number;
-  avgBet?: number;
-  avgWin?: number;
-  betsCount?: number;
-  winsCount?: number;
-  winRate?: number;
-  holdPercentage?: number;
 }
 
 interface GamePerformance {
@@ -167,56 +140,51 @@ const GamesPage: React.FC = () => {
   const columns: ColumnDef[] = [
     {
       id: 'name',
-      header: 'Game Name',
-      accessorKey: 'name',
-      cell: (info: any) => (
+      label: 'Game Name',
+      format: (value, row: Game) => (
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {info.row.original.thumbnailUrl && (
+          {row.thumbnailUrl && (
             <Box
               component="img"
-              src={info.row.original.thumbnailUrl}
-              alt={info.getValue()}
+              src={row.thumbnailUrl}
+              alt={row.name}
               sx={{ width: 40, height: 40, mr: 2, borderRadius: 1 }}
             />
           )}
           <Typography variant="body2" fontWeight="medium">
-            {info.getValue()}
+            {row.name}
           </Typography>
         </Box>
       ),
-      enableSorting: true,
-      size: 200,
+      sortable: true,
+      width: 200,
     },
     {
       id: 'provider',
-      header: 'Provider',
-      accessorKey: 'provider',
-      cell: (info: any) => info.getValue(),
-      enableSorting: true,
-      size: 150,
+      label: 'Provider',
+      type: 'text',
+      sortable: true,
+      width: 150,
     },
     {
       id: 'category',
-      header: 'Category',
-      accessorKey: 'category',
-      cell: (info: any) => info.getValue(),
-      enableSorting: true,
-      size: 150,
+      label: 'Category',
+      type: 'text',
+      sortable: true,
+      width: 150,
     },
     {
       id: 'rtp',
-      header: 'RTP',
-      accessorKey: 'rtp',
-      cell: (info: any) => info.getValue() ? `${info.getValue()}%` : 'N/A',
-      enableSorting: true,
-      size: 100,
+      label: 'RTP',
+      type: 'percentage',
+      sortable: true,
+      width: 100,
     },
     {
       id: 'volatility',
-      header: 'Volatility',
-      accessorKey: 'volatility',
-      cell: (info: any) => {
-        const volatility = info.getValue();
+      label: 'Volatility',
+      format: (value, row: Game) => {
+        const volatility = row.volatility;
         return (
           <Chip
             label={volatility ? volatility.charAt(0).toUpperCase() + volatility.slice(1) : 'N/A'}
@@ -230,74 +198,54 @@ const GamesPage: React.FC = () => {
           />
         );
       },
-      enableSorting: true,
-      size: 120,
+      sortable: true,
+      width: 120,
     },
     {
       id: 'revenue',
-      header: 'Revenue',
-      accessorKey: 'revenue',
-      cell: (info: any) => formatCurrency(info.getValue() || 0),
-      enableSorting: true,
-      size: 120,
+      label: 'Revenue',
+      type: 'currency',
+      sortable: true,
+      width: 120,
     },
     {
       id: 'uniquePlayers',
-      header: 'Players',
-      accessorKey: 'uniquePlayers',
-      cell: (info: any) => info.getValue()?.toLocaleString() || '0',
-      enableSorting: true,
-      size: 100,
+      label: 'Players',
+      type: 'number',
+      sortable: true,
+      width: 100,
     },
     {
       id: 'sessions',
-      header: 'Sessions',
-      accessorKey: 'sessions',
-      cell: (info: any) => info.getValue()?.toLocaleString() || '0',
-      enableSorting: true,
-      size: 100,
+      label: 'Sessions',
+      type: 'number',
+      sortable: true,
+      width: 100,
     },
     {
       id: 'winRate',
-      header: 'Win Rate',
-      accessorKey: 'winRate',
-      cell: (info: any) => info.getValue() ? `${info.getValue()}%` : 'N/A',
-      enableSorting: true,
-      size: 100,
+      label: 'Win Rate',
+      type: 'percentage',
+      sortable: true,
+      width: 100,
     },
     {
       id: 'status',
-      header: 'Status',
-      accessorKey: 'status',
-      cell: (info: any) => (
+      label: 'Status',
+      format: (value, row: Game) => (
         <Chip
-          label={info.getValue() ? info.getValue().charAt(0).toUpperCase() + info.getValue().slice(1) : 'N/A'}
+          label={row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : 'N/A'}
           size="small"
           color={
-            info.getValue() === 'active' ? 'success' :
-            info.getValue() === 'inactive' ? 'default' :
-            info.getValue() === 'maintenance' ? 'warning' :
+            row.status === 'active' ? 'success' :
+            row.status === 'inactive' ? 'default' :
+            row.status === 'maintenance' ? 'warning' :
             'primary'
           }
         />
       ),
-      enableSorting: true,
-      size: 120,
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (info: any) => (
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleViewGameDetails(info.row.original)}
-        >
-          View
-        </Button>
-      ),
-      enableSorting: false,
-      size: 100,
+      sortable: true,
+      width: 120,
     }
   ];
 
@@ -364,8 +312,8 @@ const GamesPage: React.FC = () => {
 
       // Create query parameters
       const params: any = {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd'),
         provider: selectedProviders.length > 0 ? selectedProviders.join(',') : undefined,
         category: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
         page: page + 1, // API uses 1-based indexing
@@ -399,7 +347,7 @@ const GamesPage: React.FC = () => {
         }
 
         if (advancedFilters.releaseDate) {
-          params.releaseDateStart = format(advancedFilters.releaseDate, 'yyyy-MM-dd');
+          params.releaseDateStart = formatDate(advancedFilters.releaseDate, 'yyyy-MM-dd');
         }
 
         if (advancedFilters.features && advancedFilters.features.length > 0) {
@@ -437,8 +385,8 @@ const GamesPage: React.FC = () => {
 
     // Combine basic filters with advanced filters if they exist
     const combinedFilters = {
-      startDate: format(startDate, 'yyyy-MM-dd'),
-      endDate: format(endDate, 'yyyy-MM-dd'),
+      startDate: formatDate(startDate, 'yyyy-MM-dd'),
+      endDate: formatDate(endDate, 'yyyy-MM-dd'),
       selectedProviders,
       selectedCategories,
       ...advancedFilters
@@ -488,8 +436,8 @@ const GamesPage: React.FC = () => {
     try {
       // Fetch game performance data
       const performanceData = await gamesService.getGamePerformance(game.id, {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd')
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd')
       });
 
       setGamePerformance(performanceData);
@@ -507,17 +455,22 @@ const GamesPage: React.FC = () => {
   };
 
   // Handle export
-  const handleExport = async (format: ExportFormat = 'csv'): Promise<void> => {
+  const handleExport = async (format: ExportFormat, exportData: any[]): Promise<void> => {
     try {
       setLoading(true);
 
+      // Convert format to string for API
+      const formatStr = format === ExportFormat.CSV ? 'csv' :
+                        format === ExportFormat.EXCEL ? 'xlsx' :
+                        format === ExportFormat.PDF ? 'pdf' : 'csv';
+
       // Create query parameters
       const params: any = {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd'),
         provider: selectedProviders.length > 0 ? selectedProviders.join(',') : undefined,
         category: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
-        format
+        format: formatStr
       };
 
       // Add advanced filters if they exist
@@ -543,7 +496,7 @@ const GamesPage: React.FC = () => {
         }
 
         if (advancedFilters.releaseDate) {
-          params.releaseDateStart = format(advancedFilters.releaseDate, 'yyyy-MM-dd');
+          params.releaseDateStart = formatDate(advancedFilters.releaseDate, 'yyyy-MM-dd');
         }
 
         if (advancedFilters.features && advancedFilters.features.length > 0) {
@@ -555,18 +508,48 @@ const GamesPage: React.FC = () => {
         }
       }
 
-      // Export data
-      const blob = await gamesService.exportGames(params);
+      // If we have the data already, we can use it directly instead of making an API call
+      let blob;
+
+      if (exportData.length > 0 && (format === ExportFormat.CSV || format === ExportFormat.JSON)) {
+        // Client-side export for CSV and JSON
+        if (format === ExportFormat.CSV) {
+          // Create CSV content
+          const headers = columns.map(col => col.label || col.id).join(',');
+          const rows = exportData.map(row =>
+            columns.map(col => {
+              const value = row[col.id];
+              // Handle special cases like objects, arrays, etc.
+              if (typeof value === 'object' && value !== null) {
+                return JSON.stringify(value).replace(/"/g, '""');
+              }
+              return value !== undefined && value !== null ? String(value).replace(/"/g, '""') : '';
+            }).join(',')
+          ).join('\n');
+
+          const csvContent = `${headers}\n${rows}`;
+          blob = new Blob([csvContent], { type: 'text/csv' });
+        } else if (format === ExportFormat.JSON) {
+          // Create JSON content
+          const jsonContent = JSON.stringify(exportData, null, 2);
+          blob = new Blob([jsonContent], { type: 'application/json' });
+        }
+      } else {
+        // Server-side export for other formats or when we need to process all data
+        blob = await gamesService.exportGames(params);
+      }
 
       // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `games-report-${format(new Date(), 'yyyy-MM-dd')}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `games-report-${formatDate(new Date(), 'yyyy-MM-dd')}.${formatStr}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
     } catch (err) {
       console.error('[GAMES PAGE] Error exporting data:', err);
       setError('Failed to export data. Please try again later.');
@@ -860,21 +843,9 @@ const GamesPage: React.FC = () => {
             color="primary"
             startIcon={<RefreshIcon />}
             onClick={handleApplyFilters}
-            sx={{ mr: 2 }}
           >
             Apply Filters
           </Button>
-
-          <span>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              disabled={loading || games.length === 0}
-              onClick={() => handleExport('csv')}
-            >
-              Export
-            </Button>
-          </span>
         </Box>
       </Paper>
 
@@ -972,28 +943,38 @@ const GamesPage: React.FC = () => {
           </Alert>
         )}
 
-        <EnhancedUnifiedDataTable
+        <EnhancedTable
           columns={columns}
           data={games}
           loading={loading}
-          pagination={{
-            pageIndex: page,
-            pageSize: pageSize,
-            totalCount: totalCount,
-            onPageChange: handlePageChange,
-            onPageSizeChange: handlePageSizeChange
-          }}
-          sorting={{
-            sortBy: sortBy,
-            sortDirection: sortDirection,
-            onSortingChange: handleSortingChange
-          }}
-          enableRowSelection
-          enableColumnResizing
-          enableSorting
-          enableFiltering
-          enableExport
+          title="Games Data"
+          emptyMessage="No games data available"
+          idField="id"
           onExport={handleExport}
+          features={{
+            sorting: true,
+            filtering: {
+              enabled: true,
+              quickFilter: true,
+              advancedFilter: true
+            },
+            pagination: {
+              enabled: true,
+              defaultPageSize: pageSize,
+              pageSizeOptions: [10, 25, 50, 100]
+            },
+            columnManagement: {
+              enabled: true,
+              allowReordering: true,
+              allowHiding: true,
+              allowResizing: true
+            },
+            export: {
+              enabled: true,
+              formats: [ExportFormat.CSV, ExportFormat.EXCEL, ExportFormat.PDF]
+            }
+          }}
+          onRowClick={handleViewGameDetails}
         />
       </Paper>
 
@@ -1047,7 +1028,7 @@ const GamesPage: React.FC = () => {
                   </Typography>
 
                   <Typography variant="body1" sx={{ mb: 1 }}>
-                    <strong>Release Date:</strong> {selectedGame.releaseDate ? format(new Date(selectedGame.releaseDate), 'MMM dd, yyyy') : 'N/A'}
+                    <strong>Release Date:</strong> {selectedGame.releaseDate ? formatDate(new Date(selectedGame.releaseDate), 'MMM dd, yyyy') : 'N/A'}
                   </Typography>
 
                   <Box sx={{ mb: 1 }}>
@@ -1163,7 +1144,7 @@ const GamesPage: React.FC = () => {
 
                       {gamePerformance.period && (
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                          Data period: {format(new Date(gamePerformance.period.startDate), 'MMM dd, yyyy')} to {format(new Date(gamePerformance.period.endDate), 'MMM dd, yyyy')}
+                          Data period: {formatDate(new Date(gamePerformance.period.startDate), 'MMM dd, yyyy')} to {formatDate(new Date(gamePerformance.period.endDate), 'MMM dd, yyyy')}
                         </Typography>
                       )}
                     </>

@@ -21,19 +21,19 @@ namespace PPrePorter.API.Features.Configuration
             {
                 // Specify the default API version
                 options.DefaultApiVersion = new ApiVersion(1, 0);
-                
+
                 // Assume the default API version when a version is not specified
                 options.AssumeDefaultVersionWhenUnspecified = true;
-                
+
                 // Report the API version in the response header
                 options.ReportApiVersions = true;
-                
+
                 // Use multiple ways to read the API version (header, query string, media type)
                 options.ApiVersionReader = ApiVersionReader.Combine(
                     new HeaderApiVersionReader("X-Api-Version"),
                     new QueryStringApiVersionReader("api-version"),
                     new MediaTypeApiVersionReader("v"));
-                
+
                 // Configure conventions
                 options.Conventions.Add(new VersionByNamespaceConvention());
             });
@@ -43,9 +43,13 @@ namespace PPrePorter.API.Features.Configuration
             {
                 // Format the version as "'v'major[.minor][-status]"
                 options.GroupNameFormat = "'v'VVV";
-                
+
                 // Substitute the version in the controller route
                 options.SubstituteApiVersionInUrl = true;
+
+                // Don't include API version in Swagger document names
+                // This prevents conflicts with our custom groups
+                options.AssumeDefaultVersionWhenUnspecified = true;
             });
 
             return services;

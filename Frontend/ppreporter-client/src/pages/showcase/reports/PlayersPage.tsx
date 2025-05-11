@@ -25,13 +25,14 @@ import {
   Chip,
   Collapse
 } from '@mui/material';
-import EnhancedUnifiedDataTable, { ExportFormat } from '../../../components/tables/EnhancedUnifiedDataTable';
-import { ColumnDef } from '../../../components/tables/UnifiedDataTable';
+import { EnhancedTable } from '../../../components/tables/enhanced';
+import { ColumnDef, ExportFormat } from '../../../components/tables/enhanced/types';
 import MultiSelect, { MultiSelectOption } from '../../../components/common/MultiSelect';
-import { format } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { Player } from '../../../types/players';
 
 // Import icons
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -85,6 +86,7 @@ interface Filters {
   bonusEnabled?: boolean;
 }
 
+// Define interfaces for metadata
 interface WhiteLabel {
   id: string;
   name: string;
@@ -100,50 +102,14 @@ interface Status {
   name: string;
 }
 
-interface Player {
-  id: string;
-  username: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  country?: string;
-  status?: string;
-  registrationDate?: string;
-  lastLoginDate?: string;
-  balance?: number;
-  totalDeposits?: number;
-  totalWithdrawals?: number;
-  totalBets?: number;
-  totalWins?: number;
-  netProfit?: number;
-  currency?: string;
-  vipLevel?: string;
-  kycStatus?: string;
-  phoneNumber?: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  isVerified?: boolean;
-  notes?: string;
+// Define custom PlayerMetadata interface for our component
+interface PlayersMetadata {
+  whiteLabels: WhiteLabel[];
+  countries: Country[];
+  statuses: Status[];
+  vipLevels?: string[];
+  kycStatuses?: string[];
   tags?: string[];
-  whiteLabel?: string;
-  whiteLabelId?: number;
-  platform?: string;
-  device?: string;
-  browser?: string;
-  os?: string;
-  ipAddress?: string;
-  referrer?: string;
-  affiliateId?: string;
-  campaignId?: string;
-  promotionCode?: string;
-  bonusEligible?: boolean;
-  smsEnabled?: boolean;
-  emailEnabled?: boolean;
-  phoneEnabled?: boolean;
-  postEnabled?: boolean;
 }
 
 /**
@@ -186,122 +152,98 @@ const PlayersPage: React.FC = () => {
   const columns: ColumnDef[] = [
     {
       id: 'username',
-      header: 'Username',
-      accessorKey: 'username',
-      cell: (info: any) => info.getValue(),
-      enableSorting: true,
-      size: 150,
+      label: 'Username',
+      type: 'text',
+      sortable: true,
+      width: 150,
     },
     {
       id: 'email',
-      header: 'Email',
-      accessorKey: 'email',
-      cell: (info: any) => info.getValue(),
-      enableSorting: true,
-      size: 200,
+      label: 'Email',
+      type: 'text',
+      sortable: true,
+      width: 200,
     },
     {
       id: 'country',
-      header: 'Country',
-      accessorKey: 'country',
-      cell: (info: any) => info.getValue(),
-      enableSorting: true,
-      size: 120,
+      label: 'Country',
+      type: 'text',
+      sortable: true,
+      width: 120,
     },
     {
       id: 'status',
-      header: 'Status',
-      accessorKey: 'status',
-      cell: (info: any) => (
+      label: 'Status',
+      format: (value, row: Player) => (
         <Chip
-          label={info.getValue()}
+          label={row.status}
           size="small"
           color={
-            info.getValue() === 'Active' ? 'success' :
-            info.getValue() === 'Inactive' ? 'default' :
-            info.getValue() === 'Blocked' ? 'error' :
+            row.status === 'Active' ? 'success' :
+            row.status === 'Inactive' ? 'default' :
+            row.status === 'Blocked' ? 'error' :
             'primary'
           }
         />
       ),
-      enableSorting: true,
-      size: 120,
+      sortable: true,
+      width: 120,
     },
     {
       id: 'registrationDate',
-      header: 'Registration Date',
-      accessorKey: 'registrationDate',
-      cell: (info: any) => format(new Date(info.getValue()), 'MMM dd, yyyy'),
-      enableSorting: true,
-      size: 150,
+      label: 'Registration Date',
+      type: 'date',
+      dateFormat: 'medium',
+      sortable: true,
+      width: 150,
     },
     {
       id: 'lastLoginDate',
-      header: 'Last Login',
-      accessorKey: 'lastLoginDate',
-      cell: (info: any) => info.getValue() ? format(new Date(info.getValue()), 'MMM dd, yyyy') : '-',
-      enableSorting: true,
-      size: 150,
+      label: 'Last Login',
+      format: (value, row: Player) => row.lastLoginDate ? formatDate(new Date(row.lastLoginDate), 'MMM dd, yyyy') : '-',
+      sortable: true,
+      width: 150,
     },
     {
       id: 'balance',
-      header: 'Balance',
-      accessorKey: 'balance',
-      cell: (info: any) => formatCurrency(info.getValue() || 0),
-      enableSorting: true,
-      size: 120,
+      label: 'Balance',
+      type: 'currency',
+      sortable: true,
+      width: 120,
     },
     {
       id: 'totalDeposits',
-      header: 'Total Deposits',
-      accessorKey: 'totalDeposits',
-      cell: (info: any) => formatCurrency(info.getValue() || 0),
-      enableSorting: true,
-      size: 150,
+      label: 'Total Deposits',
+      type: 'currency',
+      sortable: true,
+      width: 150,
     },
     {
       id: 'totalBets',
-      header: 'Total Bets',
-      accessorKey: 'totalBets',
-      cell: (info: any) => formatCurrency(info.getValue() || 0),
-      enableSorting: true,
-      size: 120,
+      label: 'Total Bets',
+      type: 'currency',
+      sortable: true,
+      width: 120,
     },
     {
       id: 'netProfit',
-      header: 'Net Profit',
-      accessorKey: 'netProfit',
-      cell: (info: any) => {
-        const value = info.getValue() || 0;
+      label: 'Net Profit',
+      format: (value, row: Player) => {
+        const netProfit = row.netProfit || 0;
         return (
           <Typography
             variant="body2"
             sx={{
-              color: value >= 0 ? 'success.main' : 'error.main',
+              color: netProfit >= 0 ? 'success.main' : 'error.main',
               fontWeight: 'medium'
             }}
           >
-            {formatCurrency(value)}
+            {formatCurrency(netProfit)}
           </Typography>
         );
       },
-      enableSorting: true,
-      size: 120,
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (info: any) => (
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleViewPlayerDetails(info.row.original)}
-        >
-          View
-        </Button>
-      ),
-      enableSorting: false,
-      size: 100,
+      sortable: true,
+      width: 120,
     }
   ];
 
@@ -348,10 +290,14 @@ const PlayersPage: React.FC = () => {
 
       // Set countries
       if (metadata.countries) {
-        setCountries(metadata.countries);
+        const countryObjects = Array.isArray(metadata.countries)
+          ? metadata.countries.map(c => typeof c === 'string' ? { id: c, name: c } : c)
+          : [];
+
+        setCountries(countryObjects);
 
         // Convert countries to MultiSelect options
-        const countryOptions = metadata.countries.map((country: Country) => ({
+        const countryOptions = countryObjects.map((country: Country) => ({
           value: country.id,
           label: country.name
         }));
@@ -360,10 +306,14 @@ const PlayersPage: React.FC = () => {
 
       // Set statuses
       if (metadata.statuses) {
-        setStatuses(metadata.statuses);
+        const statusObjects = Array.isArray(metadata.statuses)
+          ? metadata.statuses.map(s => typeof s === 'string' ? { id: s, name: s } : s)
+          : [];
+
+        setStatuses(statusObjects);
 
         // Convert statuses to MultiSelect options
-        const statusOptions = metadata.statuses.map((status: Status) => ({
+        const statusOptions = statusObjects.map((status: Status) => ({
           value: status.id,
           label: status.name
         }));
@@ -385,8 +335,8 @@ const PlayersPage: React.FC = () => {
 
       // Create filters object
       const filters: ReportFilters = {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd'),
         whiteLabelIds: selectedWhiteLabels.length > 0 ? selectedWhiteLabels.map(id => parseInt(id)) : undefined,
         countryIds: selectedCountries.length > 0 ? selectedCountries : undefined,
       };
@@ -397,16 +347,16 @@ const PlayersPage: React.FC = () => {
 
         // Process date filters
         if (advancedFilters.registration) {
-          filters.registrationDate = format(advancedFilters.registration, 'yyyy-MM-dd');
+          filters.registrationDate = formatDate(advancedFilters.registration, 'yyyy-MM-dd');
         }
         if (advancedFilters.firstTimeDeposit) {
-          filters.firstDepositDate = format(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
+          filters.firstDepositDate = formatDate(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastDepositDate) {
-          filters.lastDepositDate = format(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
+          filters.lastDepositDate = formatDate(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastLogin) {
-          filters.lastLoginDate = format(advancedFilters.lastLogin, 'yyyy-MM-dd');
+          filters.lastLoginDate = formatDate(advancedFilters.lastLogin, 'yyyy-MM-dd');
         }
 
         // Process string filters
@@ -489,8 +439,8 @@ const PlayersPage: React.FC = () => {
 
     // Combine basic filters with advanced filters if they exist
     const combinedFilters = {
-      startDate: format(startDate, 'yyyy-MM-dd'),
-      endDate: format(endDate, 'yyyy-MM-dd'),
+      startDate: formatDate(startDate, 'yyyy-MM-dd'),
+      endDate: formatDate(endDate, 'yyyy-MM-dd'),
       selectedWhiteLabels,
       selectedCountries,
       selectedStatuses,
@@ -551,17 +501,22 @@ const PlayersPage: React.FC = () => {
   };
 
   // Handle export
-  const handleExport = async (format: ExportFormat = 'csv'): Promise<void> => {
+  const handleExport = async (format: ExportFormat, exportData: any[]): Promise<void> => {
     try {
       setLoading(true);
 
+      // Convert format to string for API
+      const formatStr = format === ExportFormat.CSV ? 'csv' :
+                        format === ExportFormat.EXCEL ? 'xlsx' :
+                        format === ExportFormat.PDF ? 'pdf' : 'csv';
+
       // Create filters object
       const filters: ReportFilters = {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd'),
         whiteLabelIds: selectedWhiteLabels.length > 0 ? selectedWhiteLabels.map(id => parseInt(id)) : undefined,
         countryIds: selectedCountries.length > 0 ? selectedCountries : undefined,
-        format: format as 'csv' | 'xlsx' | 'pdf'
+        format: formatStr
       };
 
       // Add advanced filters if they exist
@@ -570,16 +525,16 @@ const PlayersPage: React.FC = () => {
 
         // Process date filters
         if (advancedFilters.registration) {
-          filters.registrationDate = format(advancedFilters.registration, 'yyyy-MM-dd');
+          filters.registrationDate = formatDate(advancedFilters.registration, 'yyyy-MM-dd');
         }
         if (advancedFilters.firstTimeDeposit) {
-          filters.firstDepositDate = format(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
+          filters.firstDepositDate = formatDate(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastDepositDate) {
-          filters.lastDepositDate = format(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
+          filters.lastDepositDate = formatDate(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastLogin) {
-          filters.lastLoginDate = format(advancedFilters.lastLogin, 'yyyy-MM-dd');
+          filters.lastLoginDate = formatDate(advancedFilters.lastLogin, 'yyyy-MM-dd');
         }
 
         // Process string filters
@@ -628,18 +583,48 @@ const PlayersPage: React.FC = () => {
         }
       }
 
-      // Export data
-      const blob = await playersService.exportReport(filters, format);
+      // If we have the data already, we can use it directly instead of making an API call
+      let blob;
+
+      if (exportData.length > 0 && (format === ExportFormat.CSV || format === ExportFormat.JSON)) {
+        // Client-side export for CSV and JSON
+        if (format === ExportFormat.CSV) {
+          // Create CSV content
+          const headers = columns.map(col => col.label || col.id).join(',');
+          const rows = exportData.map(row =>
+            columns.map(col => {
+              const value = row[col.id];
+              // Handle special cases like objects, arrays, etc.
+              if (typeof value === 'object' && value !== null) {
+                return JSON.stringify(value).replace(/"/g, '""');
+              }
+              return value !== undefined && value !== null ? String(value).replace(/"/g, '""') : '';
+            }).join(',')
+          ).join('\n');
+
+          const csvContent = `${headers}\n${rows}`;
+          blob = new Blob([csvContent], { type: 'text/csv' });
+        } else if (format === ExportFormat.JSON) {
+          // Create JSON content
+          const jsonContent = JSON.stringify(exportData, null, 2);
+          blob = new Blob([jsonContent], { type: 'application/json' });
+        }
+      } else {
+        // Server-side export for other formats or when we need to process all data
+        blob = await playersService.exportReport(filters, formatStr);
+      }
 
       // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `players-report-${format(new Date(), 'yyyy-MM-dd')}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `players-report-${formatDate(new Date(), 'yyyy-MM-dd')}.${formatStr}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
     } catch (err) {
       console.error('[PLAYERS PAGE] Error exporting data:', err);
       setError('Failed to export data. Please try again later.');
@@ -960,21 +945,9 @@ const PlayersPage: React.FC = () => {
             color="primary"
             startIcon={<RefreshIcon />}
             onClick={handleApplyFilters}
-            sx={{ mr: 2 }}
           >
             Apply Filters
           </Button>
-
-          <span>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              disabled={loading || players.length === 0}
-              onClick={() => handleExport('csv')}
-            >
-              Export
-            </Button>
-          </span>
         </Box>
       </Paper>
 
@@ -1072,28 +1045,38 @@ const PlayersPage: React.FC = () => {
           </Alert>
         )}
 
-        <EnhancedUnifiedDataTable
+        <EnhancedTable
           columns={columns}
           data={players}
           loading={loading}
-          pagination={{
-            pageIndex: page,
-            pageSize: pageSize,
-            totalCount: totalCount,
-            onPageChange: handlePageChange,
-            onPageSizeChange: handlePageSizeChange
-          }}
-          sorting={{
-            sortBy: sortBy,
-            sortDirection: sortDirection,
-            onSortingChange: handleSortingChange
-          }}
-          enableRowSelection
-          enableColumnResizing
-          enableSorting
-          enableFiltering
-          enableExport
+          title="Players Data"
+          emptyMessage="No players data available"
+          idField="id"
           onExport={handleExport}
+          features={{
+            sorting: true,
+            filtering: {
+              enabled: true,
+              quickFilter: true,
+              advancedFilter: true
+            },
+            pagination: {
+              enabled: true,
+              defaultPageSize: pageSize,
+              pageSizeOptions: [10, 25, 50, 100]
+            },
+            columnManagement: {
+              enabled: true,
+              allowReordering: true,
+              allowHiding: true,
+              allowResizing: true
+            },
+            export: {
+              enabled: true,
+              formats: [ExportFormat.CSV, ExportFormat.EXCEL, ExportFormat.PDF]
+            }
+          }}
+          onRowClick={handleViewPlayerDetails}
         />
       </Paper>
 
@@ -1150,14 +1133,14 @@ const PlayersPage: React.FC = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <CalendarTodayIcon sx={{ mr: 1, color: 'primary.main' }} />
                     <Typography variant="body1">
-                      <strong>Registration Date:</strong> {selectedPlayer.registrationDate ? format(new Date(selectedPlayer.registrationDate), 'MMM dd, yyyy') : 'N/A'}
+                      <strong>Registration Date:</strong> {selectedPlayer.registrationDate ? formatDate(new Date(selectedPlayer.registrationDate), 'MMM dd, yyyy') : 'N/A'}
                     </Typography>
                   </Box>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <CalendarTodayIcon sx={{ mr: 1, color: 'primary.main' }} />
                     <Typography variant="body1">
-                      <strong>Last Login:</strong> {selectedPlayer.lastLoginDate ? format(new Date(selectedPlayer.lastLoginDate), 'MMM dd, yyyy') : 'N/A'}
+                      <strong>Last Login:</strong> {selectedPlayer.lastLoginDate ? formatDate(new Date(selectedPlayer.lastLoginDate), 'MMM dd, yyyy') : 'N/A'}
                     </Typography>
                   </Box>
                 </Box>

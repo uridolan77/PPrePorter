@@ -77,6 +77,42 @@ builder.Services.AddSwaggerGen(c =>
 
     // Add operation filter to set default values for parameters
     c.OperationFilter<SwaggerDefaultValueOperationFilter>();
+
+    // Configure document groups for logical organization
+    // These will be used in addition to API version documents
+
+    // Auth group
+    c.SwaggerDoc(SwaggerGroups.Auth, new OpenApiInfo { Title = "Authentication & Users", Version = "v1" });
+
+    // Reports groups
+    c.SwaggerDoc(SwaggerGroups.DailyActions, new OpenApiInfo { Title = "Daily Actions", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.DailyActionGames, new OpenApiInfo { Title = "Daily Action Games", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.DailyActionsSimple, new OpenApiInfo { Title = "Daily Actions Simple", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.Players, new OpenApiInfo { Title = "Players", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.Games, new OpenApiInfo { Title = "Games", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.Transactions, new OpenApiInfo { Title = "Transactions", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.SportMetadata, new OpenApiInfo { Title = "Sport Metadata", Version = "v1" });
+
+    // Dashboard groups
+    c.SwaggerDoc(SwaggerGroups.Dashboard, new OpenApiInfo { Title = "Dashboard", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.DashboardInsights, new OpenApiInfo { Title = "Dashboard Insights", Version = "v1" });
+
+    // Configuration groups
+    c.SwaggerDoc(SwaggerGroups.ReportConfig, new OpenApiInfo { Title = "Report Configuration", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.ScheduledReports, new OpenApiInfo { Title = "Scheduled Reports", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.Reports, new OpenApiInfo { Title = "Reports", Version = "v1" });
+
+    // Analytics groups
+    c.SwaggerDoc(SwaggerGroups.Metrics, new OpenApiInfo { Title = "Metrics", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.NaturalLanguage, new OpenApiInfo { Title = "Natural Language", Version = "v1" });
+
+    // Diagnostics groups
+    c.SwaggerDoc(SwaggerGroups.CacheDiagnostics, new OpenApiInfo { Title = "Cache Diagnostics", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.CacheMonitor, new OpenApiInfo { Title = "Cache Monitor", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.CacheTest, new OpenApiInfo { Title = "Cache Test", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.AzureKeyVaultTest, new OpenApiInfo { Title = "Azure Key Vault Test", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.ConnectionStringResolverUtility, new OpenApiInfo { Title = "Connection String Resolver", Version = "v1" });
+    c.SwaggerDoc(SwaggerGroups.ConnectionStringTest, new OpenApiInfo { Title = "Connection String Test", Version = "v1" });
 });
 
 // Register core services including the ConnectionStringResolverService
@@ -638,22 +674,66 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        // Get all API versions from the API version description provider
-        var apiVersionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        // Set the default endpoint to show when Swagger UI loads
+        c.RoutePrefix = "swagger";
+        c.DocumentTitle = "PPrePorter API Documentation";
 
-        // Add a swagger endpoint for each API version
-        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
-        {
-            c.SwaggerEndpoint(
-                $"/swagger/{description.GroupName}/swagger.json",
-                $"PPrePorter API {description.GroupName.ToUpperInvariant()}");
-        }
-
-        c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
-        c.DefaultModelsExpandDepth(-1); // Hide schemas section
+        // Set Daily Actions as the default document to display
+        c.DefaultModelExpandDepth(2);
+        c.DefaultModelRendering(Swashbuckle.AspNetCore.SwaggerUI.ModelRendering.Model);
+        c.DefaultModelsExpandDepth(-1);
+        c.DisplayOperationId();
         c.DisplayRequestDuration();
-        c.EnableFilter();
+        c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
         c.EnableDeepLinking();
+        c.EnableFilter();
+        c.ShowExtensions();
+        c.EnableValidator();
+
+        // Main Reports groups (most important first)
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DailyActions}/swagger.json", "1. Daily Actions");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Players}/swagger.json", "2. Players");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DailyActionGames}/swagger.json", "3. Daily Action Games");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Games}/swagger.json", "4. Games");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Transactions}/swagger.json", "5. Transactions");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.SportMetadata}/swagger.json", "6. Sport Metadata");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DailyActionsSimple}/swagger.json", "7. Daily Actions Simple");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Reports}/swagger.json", "8. Reports");
+
+        // Auth group
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Auth}/swagger.json", "9. Authentication & Users");
+
+        // Dashboard groups
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Dashboard}/swagger.json", "10. Dashboard");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.DashboardInsights}/swagger.json", "11. Dashboard Insights");
+
+        // Configuration groups
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ReportConfig}/swagger.json", "12. Report Configuration");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ScheduledReports}/swagger.json", "13. Scheduled Reports");
+
+        // Analytics groups
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.Metrics}/swagger.json", "14. Metrics");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.NaturalLanguage}/swagger.json", "15. Natural Language");
+
+        // Diagnostics groups (moved to the bottom)
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.CacheDiagnostics}/swagger.json", "D1. Cache Diagnostics");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.CacheMonitor}/swagger.json", "D2. Cache Monitor");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.CacheTest}/swagger.json", "D3. Cache Test");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.AzureKeyVaultTest}/swagger.json", "D4. Azure Key Vault Test");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ConnectionStringResolverUtility}/swagger.json", "D5. Connection String Resolver");
+        c.SwaggerEndpoint($"/swagger/{SwaggerGroups.ConnectionStringTest}/swagger.json", "D6. Connection String Test");
+
+        // We don't need to add API version endpoints separately
+        // We'll use our custom groups instead
+
+        // Set the default document to Daily Actions
+        c.ConfigObject.AdditionalItems["urls.primaryName"] = "1. Daily Actions";
+
+        // Add request/response interceptors for debugging
+        c.UseRequestInterceptor("(req) => { return req; }");
+        c.UseResponseInterceptor("(res) => { return res; }");
+
+        // Note: We've already set these options above
 
         // Add custom CSS to improve the UI
         c.InjectStylesheet("/swagger-ui/custom.css");

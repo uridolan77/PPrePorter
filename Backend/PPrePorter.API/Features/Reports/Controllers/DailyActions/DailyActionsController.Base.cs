@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Interfaces;
 using System.Text.Json;
@@ -13,6 +14,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
     [ApiController]
     [Route("api/reports/daily-actions")]
     [Authorize]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.DailyActions)]
     public partial class DailyActionsController : ControllerBase
     {
         private readonly IDailyActionsService _dailyActionsService;

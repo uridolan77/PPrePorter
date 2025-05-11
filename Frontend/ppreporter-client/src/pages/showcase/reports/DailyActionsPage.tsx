@@ -25,15 +25,15 @@ import {
   Chip,
   Collapse
 } from '@mui/material';
-import EnhancedUnifiedDataTable, { ExportFormat } from '../../../components/tables/EnhancedUnifiedDataTable';
-import { ColumnDef } from '../../../components/tables/UnifiedDataTable';
+import { EnhancedTable } from '../../../components/tables/enhanced';
+import { ColumnDef, ExportFormat } from '../../../components/tables/enhanced/types';
 import FilterPanel, { FilterDefinition, FilterType } from '../../../components/common/FilterPanel';
 import MultiSelect, { MultiSelectOption } from '../../../components/common/MultiSelect';
 import ReportExport from '../../../components/reports/ReportExport';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { format, subDays } from 'date-fns';
+import { format as formatDate, subDays } from 'date-fns';
 import { FEATURES } from '../../../config/constants';
 import dailyActionsService from '../../../services/api/dailyActionsService';
 // Import the ReportFilters type from the service file
@@ -322,8 +322,8 @@ const DailyActionsPage: React.FC = () => {
 
     try {
       // Format dates for API
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = formatDate(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = formatDate(endDate, 'yyyy-MM-dd');
 
       // Create filters object
       const filters: Filters = {
@@ -358,16 +358,16 @@ const DailyActionsPage: React.FC = () => {
 
         // Process date filters
         if (advancedFilters.registration) {
-          filters.registrationDate = format(advancedFilters.registration, 'yyyy-MM-dd');
+          filters.registrationDate = formatDate(advancedFilters.registration, 'yyyy-MM-dd');
         }
         if (advancedFilters.firstTimeDeposit) {
-          filters.firstDepositDate = format(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
+          filters.firstDepositDate = formatDate(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastDepositDate) {
-          filters.lastDepositDate = format(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
+          filters.lastDepositDate = formatDate(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastLogin) {
-          filters.lastLoginDate = format(advancedFilters.lastLogin, 'yyyy-MM-dd');
+          filters.lastLoginDate = formatDate(advancedFilters.lastLogin, 'yyyy-MM-dd');
         }
 
         // Process string filters
@@ -645,8 +645,8 @@ const DailyActionsPage: React.FC = () => {
 
     // Combine basic filters with advanced filters if they exist
     const combinedFilters = {
-      startDate: format(startDate, 'yyyy-MM-dd'),
-      endDate: format(endDate, 'yyyy-MM-dd'),
+      startDate: formatDate(startDate, 'yyyy-MM-dd'),
+      endDate: formatDate(endDate, 'yyyy-MM-dd'),
       selectedWhiteLabels,
       selectedCountries,
       ...advancedFilters
@@ -689,8 +689,8 @@ const DailyActionsPage: React.FC = () => {
     try {
       setLoading(true);
       console.log('[DAILY ACTIONS PAGE] Exporting data with filters:', {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd'),
         selectedWhiteLabels,
         selectedCountries,
         groupBy
@@ -698,8 +698,8 @@ const DailyActionsPage: React.FC = () => {
 
       // Create filters object
       const filters: ReportFilters = {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
+        startDate: formatDate(startDate, 'yyyy-MM-dd'),
+        endDate: formatDate(endDate, 'yyyy-MM-dd'),
         whiteLabelIds: selectedWhiteLabels.length > 0 ? selectedWhiteLabels.map(id => parseInt(id)) : undefined,
         countryIds: selectedCountries.length > 0 ? selectedCountries : undefined,
         groupBy: convertGroupByToBackendValue(groupBy)
@@ -711,16 +711,16 @@ const DailyActionsPage: React.FC = () => {
 
         // Process date filters
         if (advancedFilters.registration) {
-          filters.registrationDate = format(advancedFilters.registration, 'yyyy-MM-dd');
+          filters.registrationDate = formatDate(advancedFilters.registration, 'yyyy-MM-dd');
         }
         if (advancedFilters.firstTimeDeposit) {
-          filters.firstDepositDate = format(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
+          filters.firstDepositDate = formatDate(advancedFilters.firstTimeDeposit, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastDepositDate) {
-          filters.lastDepositDate = format(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
+          filters.lastDepositDate = formatDate(advancedFilters.lastDepositDate, 'yyyy-MM-dd');
         }
         if (advancedFilters.lastLogin) {
-          filters.lastLoginDate = format(advancedFilters.lastLogin, 'yyyy-MM-dd');
+          filters.lastLoginDate = formatDate(advancedFilters.lastLogin, 'yyyy-MM-dd');
         }
 
         // Process string filters
@@ -776,7 +776,7 @@ const DailyActionsPage: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `DailyActions_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}_${groupBy}.csv`;
+      a.download = `DailyActions_${formatDate(startDate, 'yyyyMMdd')}_${formatDate(endDate, 'yyyyMMdd')}_${groupBy}.csv`;
       document.body.appendChild(a);
       a.click();
 
@@ -1517,7 +1517,7 @@ const DailyActionsPage: React.FC = () => {
             No data available for the selected filters. Try adjusting your filters or click "Apply Filters" to load data.
           </Alert>
         ) : (
-          <EnhancedUnifiedDataTable
+          <EnhancedTable
             data={dailyActions}
             columns={[
               {
@@ -1525,9 +1525,9 @@ const DailyActionsPage: React.FC = () => {
                 label: groupByOptions.find(option => option.id === groupBy)?.name || groupBy,
                 format: (value: any, row: DailyAction) => {
                   return row.groupValue ? row.groupValue :
-                    groupBy === 'Day' && row.date ? format(new Date(row.date), 'MMM dd, yyyy') :
-                    groupBy === 'Month' && row.date ? format(new Date(row.date), 'MMMM yyyy') :
-                    groupBy === 'Year' && row.date ? format(new Date(row.date), 'yyyy') :
+                    groupBy === 'Day' && row.date ? formatDate(new Date(row.date), 'MMM dd, yyyy') :
+                    groupBy === 'Month' && row.date ? formatDate(new Date(row.date), 'MMMM yyyy') :
+                    groupBy === 'Year' && row.date ? formatDate(new Date(row.date), 'yyyy') :
                     groupBy === 'Label' ? row.whiteLabelName :
                     groupBy === 'Country' && row.country ? row.country :
                     groupBy === 'Tracker' && row.tracker ? row.tracker :
@@ -1601,14 +1601,10 @@ const DailyActionsPage: React.FC = () => {
               sorting: true,
               filtering: true,
               pagination: true,
-              virtualization: false,
-              microVisualizations: false,
-              exportable: true
+              export: true
             }}
             emptyMessage="No data available for the selected filters. Try adjusting your filters or click 'Apply Filters' to load data."
-            maxHeight="600px"
-            rowsPerPageOptions={[5, 10, 25, 50, 100]}
-            defaultRowsPerPage={10}
+            sx={{ maxHeight: '600px', overflow: 'auto' }}
             idField="id"
             // Enhanced features
             enableColumnSelection={true}
@@ -1664,8 +1660,8 @@ const DailyActionsPage: React.FC = () => {
                 targetGrouping: 'Day',
                 label: 'View by Day',
                 transformFilter: (row: any) => ({
-                  startDate: row.date ? format(new Date(row.date), 'yyyy-MM-01') : '',
-                  endDate: row.date ? format(new Date(row.date), 'yyyy-MM-dd') : '',
+                  startDate: row.date ? formatDate(new Date(row.date), 'yyyy-MM-01') : '',
+                  endDate: row.date ? formatDate(new Date(row.date), 'yyyy-MM-dd') : '',
                   groupBy: 'Day'
                 })
               },
@@ -1693,7 +1689,7 @@ const DailyActionsPage: React.FC = () => {
               <Box sx={{ p: 2 }}>
                 <Typography variant="subtitle1" gutterBottom>
                   Details for {groupBy === 'Day' || groupBy === 'Month' || groupBy === 'Year' ?
-                    format(new Date(row.date), 'MMM dd, yyyy') :
+                    formatDate(new Date(row.date), 'MMM dd, yyyy') :
                     row.groupValue || 'Selected Item'}
                 </Typography>
                 <Grid container spacing={2}>

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.CQRS.Users.Commands;
 using PPrePorter.CQRS.Users.Queries;
 
@@ -13,6 +14,7 @@ namespace PPrePorter.API.Features.Users.V1
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [Authorize(Roles = "Admin")]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.Users)]
     public class UsersController : ControllerBase
     {
         private readonly IMediator _mediator;

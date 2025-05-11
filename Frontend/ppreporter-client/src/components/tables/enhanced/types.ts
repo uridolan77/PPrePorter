@@ -1,4 +1,4 @@
-import { TableFeatures } from '../UnifiedDataTable';
+import type { TableFeatures } from '../UnifiedDataTable';
 import { SxProps, Theme, TooltipProps } from '@mui/material';
 import React from 'react';
 
@@ -559,4 +559,27 @@ export interface EnhancedTableProps {
   onRedo?: () => void;
   onImport?: (data: any[]) => void;
   onCalculatedColumnChange?: (columnId: string, values: Record<string, any>) => void;
+
+  // Legacy EnhancedUnifiedDataTable compatibility props
+  enableColumnSelection?: boolean;
+  enableAdvancedFiltering?: boolean;
+  enableExportOptions?: boolean;
+  enableColumnReordering?: boolean;
+  enableRowGrouping?: boolean;
+  enableSummaryRow?: boolean;
+  enableExpandableRows?: boolean;
+  enableKeyboardNavigation?: boolean;
+  enableStickyColumns?: boolean;
+  enableResponsiveDesign?: boolean;
+  enableDrillDown?: boolean;
+  filterDefinitions?: any[];
+  groupableColumns?: string[];
+  stickyColumnIds?: string[];
+  drillDownConfig?: any[];
+  aggregations?: any[];
+  onExportFormat?: (format: string) => void;
+  onApplyAdvancedFilters?: (filters: Record<string, any>) => void;
+  onColumnOrderChange?: (columns: Array<{id: string}>) => void;
+  onGroupingChange?: (groupBy: string | null) => void;
+  onRowExpand?: (rowId: string, expanded: boolean) => void;
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Models.DailyActions;
 using System;
@@ -12,6 +13,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
     [ApiController]
     [Route("api/reports/daily-actions-simple")]
     [Authorize]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.DailyActionsSimple)]
     public class DailyActionsSimpleController : ControllerBase
     {
         private readonly IDailyActionsSimpleService _dailyActionsService;

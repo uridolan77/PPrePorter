@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Interfaces;
 using System.Text.Json;
@@ -13,12 +14,14 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
     [ApiController]
     [Route("api/reports/players")]
     [Authorize]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.Players)]
     public partial class PlayerController : ControllerBase
     {
         private readonly IPlayerService _playerService;
         private readonly IWhiteLabelService _whiteLabelService;
         private readonly ICountryService _countryService;
         private readonly ICurrencyService _currencyService;
+        private readonly IDailyActionsService _dailyActionsService;
         private readonly ILogger<PlayerController> _logger;
         private readonly IMemoryCache _memoryCache;
         private readonly IGlobalCacheService _cacheService;
@@ -34,6 +37,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
             IWhiteLabelService whiteLabelService,
             ICountryService countryService,
             ICurrencyService currencyService,
+            IDailyActionsService dailyActionsService,
             ILogger<PlayerController> logger,
             IMemoryCache memoryCache,
             IGlobalCacheService cacheService)
@@ -42,6 +46,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
             _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
             _countryService = countryService ?? throw new ArgumentNullException(nameof(countryService));
             _currencyService = currencyService ?? throw new ArgumentNullException(nameof(currencyService));
+            _dailyActionsService = dailyActionsService ?? throw new ArgumentNullException(nameof(dailyActionsService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
             _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));

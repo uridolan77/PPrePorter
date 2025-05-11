@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace PPrePorter.API.Features.Utilities
     /// </summary>
     [ApiController]
     [Route("api/utilities/connection-string")]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.ConnectionStringResolverUtility)]
     public class ConnectionStringResolverUtilityController : ControllerBase
     {
         private readonly IAzureKeyVaultConnectionStringResolver _connectionStringResolver;

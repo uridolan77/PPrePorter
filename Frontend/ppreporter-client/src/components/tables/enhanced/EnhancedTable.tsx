@@ -100,14 +100,37 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
   // Feature-specific props
   renderRowDetail,
   initialState,
-  stateFromUrl = false
+  stateFromUrl = false,
+
+  // Legacy EnhancedUnifiedDataTable compatibility props
+  enableColumnSelection,
+  enableAdvancedFiltering,
+  enableExportOptions,
+  enableColumnReordering,
+  enableRowGrouping,
+  enableSummaryRow,
+  enableExpandableRows,
+  enableKeyboardNavigation,
+  enableStickyColumns,
+  enableResponsiveDesign,
+  enableDrillDown,
+  filterDefinitions,
+  groupableColumns,
+  stickyColumnIds,
+  drillDownConfig: drillDownConfigProp,
+  aggregations,
+  onExportFormat,
+  onApplyAdvancedFilters,
+  onColumnOrderChange,
+  onGroupingChange,
+  onRowExpand
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Initialize feature configurations with defaults
+  // Initialize feature configurations with defaults, using legacy props if provided
   const sortingConfig = useMemo(() => {
     if (typeof features.sorting === 'boolean') {
       return features.sorting ? { enabled: true } : { enabled: false };
@@ -116,11 +139,15 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
   }, [features.sorting]);
 
   const filteringConfig = useMemo(() => {
+    // Use enableAdvancedFiltering if provided
+    if (enableAdvancedFiltering !== undefined) {
+      return { enabled: true, quickFilter: true, advancedFilter: enableAdvancedFiltering };
+    }
     if (typeof features.filtering === 'boolean') {
       return features.filtering ? { enabled: true, quickFilter: true, advancedFilter: true } : { enabled: false };
     }
     return features.filtering || { enabled: false };
-  }, [features.filtering]);
+  }, [features.filtering, enableAdvancedFiltering]);
 
   const paginationConfig = useMemo(() => {
     if (typeof features.pagination === 'boolean') {
@@ -130,67 +157,111 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
   }, [features.pagination]);
 
   const groupingConfig = useMemo(() => {
+    // Use enableRowGrouping if provided
+    if (enableRowGrouping !== undefined) {
+      return { enabled: enableRowGrouping };
+    }
     if (typeof features.grouping === 'boolean') {
       return features.grouping ? { enabled: true } : { enabled: false };
     }
     return features.grouping || { enabled: false };
-  }, [features.grouping]);
+  }, [features.grouping, enableRowGrouping]);
 
   const aggregationConfig = useMemo(() => {
+    // Use enableSummaryRow if provided
+    if (enableSummaryRow !== undefined) {
+      return { enabled: enableSummaryRow, showInFooter: true };
+    }
     if (typeof features.aggregation === 'boolean') {
       return features.aggregation ? { enabled: true, showInFooter: true } : { enabled: false };
     }
     return features.aggregation || { enabled: false };
-  }, [features.aggregation]);
+  }, [features.aggregation, enableSummaryRow]);
 
   const columnManagementConfig = useMemo(() => {
+    // Use enableColumnSelection and enableColumnReordering if provided
+    if (enableColumnSelection !== undefined || enableColumnReordering !== undefined) {
+      return {
+        enabled: enableColumnSelection || enableColumnReordering || false,
+        allowReordering: enableColumnReordering || false,
+        allowHiding: enableColumnSelection || false,
+        allowPinning: false
+      };
+    }
     if (typeof features.columnManagement === 'boolean') {
       return features.columnManagement ? { enabled: true, allowReordering: true, allowHiding: true, allowPinning: true } : { enabled: false };
     }
     return features.columnManagement || { enabled: false };
-  }, [features.columnManagement]);
+  }, [features.columnManagement, enableColumnSelection, enableColumnReordering]);
 
   const expandableRowsConfig = useMemo(() => {
+    // Use enableExpandableRows if provided
+    if (enableExpandableRows !== undefined) {
+      return { enabled: enableExpandableRows };
+    }
     if (typeof features.expandableRows === 'boolean') {
       return features.expandableRows ? { enabled: true } : { enabled: false };
     }
     return features.expandableRows || { enabled: false };
-  }, [features.expandableRows]);
+  }, [features.expandableRows, enableExpandableRows]);
 
   const keyboardNavigationConfig = useMemo(() => {
+    // Use enableKeyboardNavigation if provided
+    if (enableKeyboardNavigation !== undefined) {
+      return { enabled: enableKeyboardNavigation, allowCellNavigation: true };
+    }
     if (typeof features.keyboardNavigation === 'boolean') {
       return features.keyboardNavigation ? { enabled: true, allowCellNavigation: true } : { enabled: false };
     }
     return features.keyboardNavigation || { enabled: false };
-  }, [features.keyboardNavigation]);
+  }, [features.keyboardNavigation, enableKeyboardNavigation]);
 
   const stickyColumnsConfig = useMemo(() => {
+    // Use enableStickyColumns if provided
+    if (enableStickyColumns !== undefined) {
+      return { enabled: enableStickyColumns };
+    }
     if (typeof features.stickyColumns === 'boolean') {
       return features.stickyColumns ? { enabled: true } : { enabled: false };
     }
     return features.stickyColumns || { enabled: false };
-  }, [features.stickyColumns]);
+  }, [features.stickyColumns, enableStickyColumns]);
 
   const responsiveConfig = useMemo(() => {
+    // Use enableResponsiveDesign if provided
+    if (enableResponsiveDesign !== undefined) {
+      return { enabled: enableResponsiveDesign };
+    }
     if (typeof features.responsive === 'boolean') {
       return features.responsive ? { enabled: true } : { enabled: false };
     }
     return features.responsive || { enabled: false };
-  }, [features.responsive]);
+  }, [features.responsive, enableResponsiveDesign]);
 
   const drillDownConfig = useMemo(() => {
+    // Use enableDrillDown and drillDownConfigProp if provided
+    if (enableDrillDown !== undefined) {
+      return {
+        enabled: enableDrillDown,
+        configs: drillDownConfigProp || []
+      };
+    }
     if (typeof features.drillDown === 'boolean') {
       return features.drillDown ? { enabled: true } : { enabled: false };
     }
     return features.drillDown || { enabled: false };
-  }, [features.drillDown]);
+  }, [features.drillDown, enableDrillDown, drillDownConfigProp]);
 
   const exportConfig = useMemo(() => {
+    // Use enableExportOptions if provided
+    if (enableExportOptions !== undefined) {
+      return { enabled: enableExportOptions };
+    }
     if (typeof features.export === 'boolean') {
       return features.export ? { enabled: true } : { enabled: false };
     }
     return features.export || { enabled: false };
-  }, [features.export]);
+  }, [features.export, enableExportOptions]);
 
   // Initialize state
   const [tableState, setTableState] = useState<TableState>(() => {
@@ -200,7 +271,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
       columns: {
         visible: columns.map(col => col.id),
         order: columns.map(col => col.id),
-        sticky: columns.filter(col => col.pinned).map(col => col.id),
+        sticky: stickyColumnIds || columns.filter(col => col.pinned).map(col => col.id),
         widths: columns.reduce((acc, col) => ({ ...acc, [col.id]: col.width || 150 }), {})
       }
     };
@@ -326,7 +397,12 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         page: 0
       }
     }));
-  }, []);
+
+    // Call legacy callback if provided
+    if (onApplyAdvancedFilters) {
+      onApplyAdvancedFilters(filters);
+    }
+  }, [onApplyAdvancedFilters]);
 
   // Handle column visibility change
   const handleColumnVisibilityChange = useCallback((columnId: string, visible: boolean) => {
@@ -354,7 +430,12 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         order: newOrder
       }
     }));
-  }, []);
+
+    // Call legacy callback if provided
+    if (onColumnOrderChange) {
+      onColumnOrderChange(newOrder.map(id => ({ id })));
+    }
+  }, [onColumnOrderChange]);
 
   // Handle sticky column change
   const handleStickyColumnChange = useCallback((columnId: string, sticky: boolean) => {
@@ -405,7 +486,12 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         groupByColumn: columnId
       }
     }));
-  }, []);
+
+    // Call legacy callback if provided
+    if (onGroupingChange) {
+      onGroupingChange(columnId);
+    }
+  }, [onGroupingChange]);
 
   // Handle hierarchical grouping levels change
   const handleGroupingLevelsChange = useCallback((columnIds: string[]) => {
@@ -508,8 +594,14 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
     setTableState(prevState => {
       const currentExpandedRows = [...prevState.expandedRows];
       const rowIndex = currentExpandedRows.indexOf(rowId);
+      const isExpanded = rowIndex === -1;
 
-      if (rowIndex === -1) {
+      // Call legacy callback if provided
+      if (onRowExpand) {
+        onRowExpand(rowId, isExpanded);
+      }
+
+      if (isExpanded) {
         // Expand row
         if (expandableRowsConfig.singleExpand) {
           // If single expand, replace the array
@@ -533,7 +625,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         };
       }
     });
-  }, [expandableRowsConfig]);
+  }, [expandableRowsConfig, onRowExpand]);
 
   // Handle expand all rows
   const handleExpandAllRows = useCallback(() => {
@@ -629,26 +721,32 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
 
   // Handle export
   const handleExport = useCallback((format: ExportFormat) => {
-    if (onExport) {
-      // Get all data or just visible columns
-      const exportData = processedData.map(row => {
-        const exportRow: Record<string, any> = {};
+    // Get all data or just visible columns
+    const exportData = processedData.map(row => {
+      const exportRow: Record<string, any> = {};
 
-        // Include only visible columns if configured
-        const columnsToExport = exportConfig.includeHiddenColumns
-          ? columns
-          : columns.filter(col => tableState.columns.visible.includes(col.id));
+      // Include only visible columns if configured
+      const columnsToExport = exportConfig.includeHiddenColumns
+        ? columns
+        : columns.filter(col => tableState.columns.visible.includes(col.id));
 
-        columnsToExport.forEach(column => {
-          exportRow[column.label] = row[column.id];
-        });
-
-        return exportRow;
+      columnsToExport.forEach(column => {
+        exportRow[column.label] = row[column.id];
       });
 
+      return exportRow;
+    });
+
+    // Call legacy callback if provided
+    if (onExportFormat) {
+      onExportFormat(format.toString());
+    }
+
+    // Call standard callback if provided
+    if (onExport) {
       onExport(format, exportData);
     }
-  }, [onExport, processedData, columns, tableState.columns.visible, exportConfig]);
+  }, [onExport, onExportFormat, processedData, columns, tableState.columns.visible, exportConfig]);
 
   // Handle drill down
   const handleDrillDown = useCallback((row: any, sourceGrouping: string, targetGrouping: string, filters: Record<string, any>) => {

@@ -14,6 +14,7 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
     [ApiController]
     [Route("api/cache-diagnostics")]
     [AllowAnonymous] // Allow anonymous access for testing
+    [ApiExplorerSettings(GroupName = SwaggerGroups.CacheDiagnostics)]
     public class CacheDiagnosticsController : ControllerBase
     {
         private readonly IMemoryCache _memoryCache;
@@ -42,10 +43,10 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
         {
             // Get cache statistics
             var globalCacheStats = _globalCacheService.GetStatistics();
-            
+
             // Get memory cache statistics using reflection (since there's no public API)
             var memoryCacheStats = GetMemoryCacheStats();
-            
+
             // Get cache settings
             var settings = new
             {
@@ -62,11 +63,11 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
                 ExcludedPaths = _cacheSettings.ExcludedPaths,
                 ExcludedMethods = _cacheSettings.ExcludedMethods
             };
-            
+
             // Add response headers for diagnostics
             Response.Headers.Append("X-Cache-Diagnostics", "true");
             Response.Headers.Append("X-Cache-Enabled", _cacheSettings.Enabled.ToString());
-            
+
             return Ok(new
             {
                 timestamp = DateTime.UtcNow,
@@ -77,7 +78,7 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
                 responseHeaders = Response.Headers.ToDictionary(h => h.Key, h => h.Value.ToString())
             });
         }
-        
+
         /// <summary>
         /// Test response caching with a simple endpoint
         /// </summary>
@@ -86,19 +87,19 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
         public IActionResult TestResponseCaching()
         {
             string requestId = Guid.NewGuid().ToString("N");
-            
+
             // Add explicit cache control headers
             Response.Headers.CacheControl = "public, max-age=30";
             var expiresDate = DateTime.UtcNow.AddSeconds(30);
             Response.Headers.Expires = expiresDate.ToString("R");
-            
+
             // Add request ID for tracking
             Response.Headers.Append("X-Request-ID", requestId);
-            
+
             // Log the request
-            _logger.LogInformation("Cache diagnostics test requested at {Time}, RequestId: {RequestId}", 
+            _logger.LogInformation("Cache diagnostics test requested at {Time}, RequestId: {RequestId}",
                 DateTime.UtcNow, requestId);
-            
+
             return Ok(new
             {
                 requestId = requestId,
@@ -107,7 +108,7 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
                 requestTime = DateTime.UtcNow.ToString("HH:mm:ss.fff")
             });
         }
-        
+
         /// <summary>
         /// Get memory cache statistics using reflection
         /// </summary>
@@ -117,7 +118,7 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
             {
                 // Use reflection to access internal cache statistics
                 var cacheType = _memoryCache.GetType();
-                
+
                 // Try to get the cache entries count
                 int entriesCount = 0;
                 var entriesField = cacheType.GetField("_entries", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -133,7 +134,7 @@ namespace PPrePorter.API.Features.Monitoring.Controllers
                         }
                     }
                 }
-                
+
                 return new
                 {
                     EntriesCount = entriesCount,

@@ -22,13 +22,11 @@ namespace PPrePorter.API.Features.Configuration
         /// </summary>
         public void Configure(SwaggerGenOptions options)
         {
-            // Add a swagger document for each discovered API version
-            foreach (var description in _provider.ApiVersionDescriptions)
-            {
-                options.SwaggerDoc(
-                    description.GroupName,
-                    CreateInfoForApiVersion(description));
-            }
+            // Note: We don't need to add API version documents here
+            // They are already added in Program.cs with SwaggerDoc calls
+
+            // The custom groups are already configured in Program.cs
+            // We don't need to do anything here
         }
 
         /// <summary>

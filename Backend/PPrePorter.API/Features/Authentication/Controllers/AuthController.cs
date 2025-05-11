@@ -13,6 +13,7 @@ namespace PPrePorter.API.Features.Authentication.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [ApiExplorerSettings(GroupName = SwaggerGroups.Auth)]
     public class AuthController : ControllerBase
     {
         private readonly PPRePorterDbContext _dbContext;
