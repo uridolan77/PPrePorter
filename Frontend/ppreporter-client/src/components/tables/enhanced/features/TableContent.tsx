@@ -152,13 +152,27 @@ const TableContent: React.FC<TableContentProps> = ({
     }
   };
 
+  // Debug data
+  console.log('TableContent data:', {
+    dataType: typeof data,
+    isArray: Array.isArray(data),
+    dataLength: Array.isArray(data) ? data.length : 'N/A',
+    paginatedDataLength: paginatedData.length,
+    firstItem: paginatedData.length > 0 ? paginatedData[0] : null
+  });
+
   // If no data, show empty message
-  if (data.length === 0) {
+  if (!Array.isArray(data) || data.length === 0) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
           {emptyMessage}
         </Typography>
+        {process.env.NODE_ENV === 'development' && (
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            Debug: Data is {Array.isArray(data) ? 'an empty array' : `not an array (${typeof data})`}
+          </Typography>
+        )}
       </Box>
     );
   }

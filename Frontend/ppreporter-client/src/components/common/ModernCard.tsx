@@ -13,7 +13,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 // Card variant types
-export type ModernCardVariant = 
+export type ModernCardVariant =
   | 'teal'    // Teal with wave pattern
   | 'purple'  // Purple with wave pattern
   | 'blue'    // Blue with wave pattern
@@ -121,8 +121,8 @@ const ModernCard: React.FC<ModernCardProps> = ({
 
   // Get accent position styles
   const getAccentStyles = () => {
-    const thickness = 4;
-    
+    const thickness = 8;
+
     switch (accentPosition) {
       case 'top':
         return {
@@ -210,25 +210,25 @@ const ModernCard: React.FC<ModernCardProps> = ({
         sx={{
           position: 'relative',
           zIndex: 2,
-          p: 2,
-          '&:last-child': { pb: 2 },
+          p: 3,
+          '&:last-child': { pb: 3 },
           ...contentSx
         }}
       >
         {/* Card header with title and actions */}
         {(title || showMoreMenu) && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             mb: 1,
-            ...headerSx 
+            ...headerSx
           }}>
             {title && (
               <Box>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
+                <Typography
+                  variant="subtitle2"
+                  sx={{
                     fontWeight: 500,
                     color: theme.palette.text.secondary
                   }}
@@ -237,12 +237,12 @@ const ModernCard: React.FC<ModernCardProps> = ({
                 </Typography>
               </Box>
             )}
-            
+
             {showMoreMenu && (
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={onMoreClick}
-                sx={{ 
+                sx={{
                   color: theme.palette.text.secondary
                 }}
               >
@@ -251,34 +251,34 @@ const ModernCard: React.FC<ModernCardProps> = ({
             )}
           </Box>
         )}
-        
+
         {/* Card content */}
         {children}
-        
+
         {/* Value and trend display */}
         {value && (
           <Box sx={{ mt: 2 }}>
-            <Typography 
-              variant="h4" 
-              component="div" 
+            <Typography
+              variant="h4"
+              component="div"
               fontWeight="medium"
             >
               {value}
             </Typography>
-            
+
             {trend !== null && trend !== undefined && (
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                <Typography 
-                  variant="body2" 
+                <Typography
+                  variant="body2"
                   color={trend >= 0 ? 'success.main' : 'error.main'}
                   fontWeight="medium"
                 >
                   {formatTrend(trend)}
                 </Typography>
-                
+
                 {trendLabel && (
-                  <Typography 
-                    variant="caption" 
+                  <Typography
+                    variant="caption"
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
@@ -289,18 +289,18 @@ const ModernCard: React.FC<ModernCardProps> = ({
             )}
           </Box>
         )}
-        
+
         {/* Action button */}
         {showActionButton && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            mt: 2 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            mt: 2
           }}>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={onActionClick}
-              sx={{ 
+              sx={{
                 bgcolor: alpha(colors.main, 0.1),
                 color: colors.main,
                 '&:hover': {

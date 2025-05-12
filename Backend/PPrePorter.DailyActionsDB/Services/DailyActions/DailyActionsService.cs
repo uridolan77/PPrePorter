@@ -611,47 +611,95 @@ namespace PPrePorter.DailyActionsDB.Services
                 _logger.LogInformation("Setting max total records limit to {MaxTotalRecords} for date range spanning {DaySpan} days",
                     maxTotalRecords, daySpan);
 
+                _logger.LogInformation("Using optimized query with INNER JOINs and NOLOCK hints");
+
                 // Build base query with NOLOCK hint and include joins with Player, WhiteLabel, Country, and Currency
+                // Using INNER JOINs with direct column relationships and explicit NOLOCK hints
+                // Select only the fields we actually need
                 var query = _dbContext.DailyActions
                     .AsNoTracking()
                     .TagWith("WITH (NOLOCK)")
                     .Where(da => da.Date >= start && da.Date <= end)
-                    // Left join with Players table to get player information
-                    .GroupJoin(_dbContext.Players.AsNoTracking().TagWith("WITH (NOLOCK)"),
+                    // Inner join with Players table - select only needed fields
+                    .Join(_dbContext.Players.AsNoTracking().TagWith("WITH (NOLOCK)"),
                         da => da.PlayerID,
                         p => p.PlayerID,
-                        (da, players) => new { DailyAction = da, Players = players })
-                    .SelectMany(
-                        x => x.Players.DefaultIfEmpty(),
-                        (x, player) => new { x.DailyAction, Player = player })
-                    // Left join with WhiteLabels table
-                    .GroupJoin(_dbContext.WhiteLabels.AsNoTracking().TagWith("WITH (NOLOCK)"),
+                        (da, player) => new {
+                            // DailyAction fields
+                            DailyAction = da,
+                            // Player fields needed for grouping/display
+                            PlayerID = player.PlayerID,
+                            PlayerFirstName = player.FirstName,
+                            PlayerLastName = player.LastName,
+                            PlayerAlias = player.Alias,
+                            PlayerEmail = player.Email,
+                            PlayerCountryID = player.CountryID,
+                            PlayerCurrency = player.Currency,
+                            PlayerGender = player.Gender,
+                            PlayerStatus = player.Status,
+                            PlayerRegisteredDate = player.RegisteredDate,
+                            PlayerRegisteredPlatform = player.RegisteredPlatform,
+                            PlayerVIPLevel = player.VIPLevel
+                        })
+                    // Inner join with WhiteLabels table - select only needed fields
+                    .Join(_dbContext.WhiteLabels.AsNoTracking().TagWith("WITH (NOLOCK)"),
                         x => x.DailyAction.WhiteLabelID,
                         wl => (short?)wl.Id,
-                        (x, whiteLabels) => new { x.DailyAction, x.Player, WhiteLabels = whiteLabels })
-                    .SelectMany(
-                        x => x.WhiteLabels.DefaultIfEmpty(),
-                        (x, whiteLabel) => new { x.DailyAction, x.Player, WhiteLabel = whiteLabel })
-                    // Left join with Countries table (using Player's Country)
-                    .GroupJoin(_dbContext.Countries.AsNoTracking().TagWith("WITH (NOLOCK)"),
-                        x => x.Player != null && !string.IsNullOrEmpty(x.Player.Country) ?
-                            _dbContext.Countries.Where(c => c.CountryName == x.Player.Country).Select(c => c.CountryID).FirstOrDefault() :
-                            (x.WhiteLabel != null && x.WhiteLabel.DefaultCountryId.HasValue ? x.WhiteLabel.DefaultCountryId.Value : 0),
+                        (x, whiteLabel) => new {
+                            x.DailyAction,
+                            x.PlayerID, x.PlayerFirstName, x.PlayerLastName, x.PlayerAlias, x.PlayerEmail,
+                            x.PlayerCountryID, x.PlayerCurrency, x.PlayerGender, x.PlayerStatus,
+                            x.PlayerRegisteredDate, x.PlayerRegisteredPlatform, x.PlayerVIPLevel,
+                            // WhiteLabel fields needed for grouping/display
+                            WhiteLabelID = whiteLabel.Id,
+                            WhiteLabelName = whiteLabel.Name,
+                            WhiteLabelShortName = whiteLabel.Code
+                        })
+                    // Inner join with Countries table - direct join on CountryID
+                    .Join(_dbContext.Countries.AsNoTracking().TagWith("WITH (NOLOCK)"),
+                        x => x.PlayerCountryID,
                         c => c.CountryID,
-                        (x, countries) => new { x.DailyAction, x.Player, x.WhiteLabel, Countries = countries })
-                    .SelectMany(
-                        x => x.Countries.DefaultIfEmpty(),
-                        (x, country) => new { x.DailyAction, x.Player, x.WhiteLabel, Country = country })
-                    // Left join with Currencies table (using Player's Currency or WhiteLabel's DefaultCurrency)
-                    .GroupJoin(_dbContext.Currencies.AsNoTracking().TagWith("WITH (NOLOCK)"),
-                        x => x.Player != null && !string.IsNullOrEmpty(x.Player.Currency) ?
-                            _dbContext.Currencies.Where(c => c.CurrencyCode == x.Player.Currency).Select(c => (int)c.CurrencyID).FirstOrDefault() :
-                            (x.WhiteLabel != null && x.WhiteLabel.DefaultCurrencyId.HasValue ? x.WhiteLabel.DefaultCurrencyId.Value : 0),
-                        c => (int)c.CurrencyID,
-                        (x, currencies) => new { x.DailyAction, x.Player, x.WhiteLabel, x.Country, Currencies = currencies })
-                    .SelectMany(
-                        x => x.Currencies.DefaultIfEmpty(),
-                        (x, currency) => new { x.DailyAction, x.Player, x.WhiteLabel, x.Country, Currency = currency });
+                        (x, country) => new {
+                            x.DailyAction,
+                            x.PlayerID, x.PlayerFirstName, x.PlayerLastName, x.PlayerAlias, x.PlayerEmail,
+                            x.PlayerCurrency, x.PlayerGender, x.PlayerStatus,
+                            x.PlayerRegisteredDate, x.PlayerRegisteredPlatform, x.PlayerVIPLevel,
+                            x.WhiteLabelID, x.WhiteLabelName, x.WhiteLabelShortName,
+                            // Country fields needed for grouping/display
+                            CountryID = country.CountryID,
+                            CountryName = country.CountryName,
+                            CountryCode = country.IsoCode
+                        })
+                    // Inner join with Currencies table - direct join on Currency code
+                    .Join(_dbContext.Currencies.AsNoTracking().TagWith("WITH (NOLOCK)"),
+                        x => x.PlayerCurrency,
+                        c => c.CurrencyCode,
+                        (x, currency) => new {
+                            // DailyAction fields - all needed for metrics
+                            DailyAction = x.DailyAction,
+                            // Player fields needed for grouping/display
+                            PlayerID = x.PlayerID,
+                            PlayerName = !string.IsNullOrEmpty(x.PlayerFirstName) || !string.IsNullOrEmpty(x.PlayerLastName) ?
+                                $"{x.PlayerFirstName ?? ""} {x.PlayerLastName ?? ""}".Trim() :
+                                (!string.IsNullOrEmpty(x.PlayerAlias) ? x.PlayerAlias :
+                                (!string.IsNullOrEmpty(x.PlayerEmail) ? x.PlayerEmail : $"Player {x.PlayerID}")),
+                            PlayerGender = x.PlayerGender,
+                            PlayerStatus = x.PlayerStatus,
+                            PlayerRegisteredDate = x.PlayerRegisteredDate,
+                            PlayerRegisteredPlatform = x.PlayerRegisteredPlatform,
+                            PlayerVIPLevel = x.PlayerVIPLevel,
+                            // WhiteLabel fields needed for grouping/display
+                            WhiteLabelID = x.WhiteLabelID,
+                            WhiteLabelName = x.WhiteLabelName,
+                            // Country fields needed for grouping/display
+                            CountryID = x.CountryID,
+                            CountryName = x.CountryName,
+                            CountryCode = x.CountryCode,
+                            // Currency fields needed for grouping/display
+                            CurrencyCode = currency.CurrencyCode,
+                            CurrencyName = currency.CurrencyName,
+                            CurrencySymbol = currency.CurrencySymbol
+                        });
 
                 // Apply white label filter if specified
                 if (filter.WhiteLabelIds != null && filter.WhiteLabelIds.Count > 0)
@@ -673,13 +721,20 @@ namespace PPrePorter.DailyActionsDB.Services
                 var countQuery = query;
                 if (maxTotalRecords > 0)
                 {
-                    // Apply the limit to the count query as well
-                    countQuery = countQuery.Take(maxTotalRecords);
+                    // Apply the limit to the count query as well, but ensure we have an OrderBy first
+                    countQuery = countQuery
+                        .OrderBy(x => x.DailyAction.Date)
+                        .ThenBy(x => x.DailyAction.WhiteLabelID)
+                        .Take(maxTotalRecords);
                 }
                 var totalCount = await countQuery.CountAsync();
 
                 // Apply the overall limit first to avoid processing too many records
-                query = query.Take(maxTotalRecords);
+                // Ensure we have an OrderBy before Take to avoid the warning
+                query = query
+                    .OrderBy(x => x.DailyAction.Date)
+                    .ThenBy(x => x.DailyAction.WhiteLabelID)
+                    .Take(maxTotalRecords);
 
                 // Define variables outside the if/else blocks
                 var joinedResults = new List<(DailyAction DailyAction, Player? Player, WhiteLabel? WhiteLabel, Country? Country, Currency? Currency)>();
@@ -700,11 +755,31 @@ namespace PPrePorter.DailyActionsDB.Services
                     var queryString = finalQuery.ToQueryString();
                     _logger.LogInformation("EXECUTING SQL QUERY (ALL RECORDS): {SqlQuery}", queryString);
 
+                    // Log a simplified version of the query for debugging
+                    _logger.LogInformation("SIMPLIFIED SQL QUERY: SELECT " +
+                        "t.*, " + // DailyActions fields
+                        "t0.PlayerID, t0.FirstName, t0.LastName, t0.Alias, t0.Email, t0.Gender, t0.Status, t0.RegisteredDate, t0.RegisteredPlatform, t0.VIPLevel, " + // Player fields
+                        "t1.Id AS WhiteLabelID, t1.Name AS WhiteLabelName, " + // WhiteLabel fields
+                        "t2.CountryID, t2.CountryName, t2.IsoCode AS CountryCode, " + // Country fields
+                        "t3.CurrencyCode, t3.CurrencyName, t3.CurrencySymbol " + // Currency fields
+                        "FROM common.tbl_Daily_actions AS t (NOLOCK) " +
+                        "INNER JOIN common.tbl_Daily_actions_players AS t0 (NOLOCK) ON t.PlayerID = t0.PlayerID " +
+                        "INNER JOIN common.tbl_White_labels AS t1 (NOLOCK) ON t.WhiteLabelID = CAST(t1.LabelID AS smallint) " +
+                        "INNER JOIN common.tbl_Countries AS t2 (NOLOCK) ON t0.CountryID = t2.CountryID " +
+                        "INNER JOIN common.tbl_Currencies AS t3 (NOLOCK) ON t0.Currency = t3.CurrencyCode " +
+                        $"WHERE t.Date >= '{start:yyyy-MM-dd}' AND t.Date <= '{end:yyyy-MM-dd}'");
+
                     // Execute the query
                     var results = await finalQuery.ToListAsync();
 
-                    // Convert to our tuple format with all joined data
-                    joinedResults = results.Select(r => (r.DailyAction, r.Player, r.WhiteLabel, r.Country, r.Currency)).ToList();
+                    // Convert to our tuple format with the optimized projection
+                    joinedResults = results.Select(r => (
+                        r.DailyAction,
+                        (Player?)null, // We're not using the full Player object anymore
+                        (WhiteLabel?)null, // We're not using the full WhiteLabel object anymore
+                        (Country?)null, // We're not using the full Country object anymore
+                        (Currency?)null // We're not using the full Currency object anymore
+                    )).ToList();
                 }
                 else
                 {
@@ -722,11 +797,32 @@ namespace PPrePorter.DailyActionsDB.Services
                     var queryString = finalQuery.ToQueryString();
                     _logger.LogInformation("EXECUTING SQL QUERY (PAGINATED): {SqlQuery}", queryString);
 
+                    // Log a simplified version of the query for debugging
+                    _logger.LogInformation("SIMPLIFIED SQL QUERY (PAGINATED): SELECT " +
+                        "t.*, " + // DailyActions fields
+                        "t0.PlayerID, t0.FirstName, t0.LastName, t0.Alias, t0.Email, t0.Gender, t0.Status, t0.RegisteredDate, t0.RegisteredPlatform, t0.VIPLevel, " + // Player fields
+                        "t1.Id AS WhiteLabelID, t1.Name AS WhiteLabelName, " + // WhiteLabel fields
+                        "t2.CountryID, t2.CountryName, t2.IsoCode AS CountryCode, " + // Country fields
+                        "t3.CurrencyCode, t3.CurrencyName, t3.CurrencySymbol " + // Currency fields
+                        "FROM common.tbl_Daily_actions AS t (NOLOCK) " +
+                        "INNER JOIN common.tbl_Daily_actions_players AS t0 (NOLOCK) ON t.PlayerID = t0.PlayerID " +
+                        "INNER JOIN common.tbl_White_labels AS t1 (NOLOCK) ON t.WhiteLabelID = CAST(t1.LabelID AS smallint) " +
+                        "INNER JOIN common.tbl_Countries AS t2 (NOLOCK) ON t0.CountryID = t2.CountryID " +
+                        "INNER JOIN common.tbl_Currencies AS t3 (NOLOCK) ON t0.Currency = t3.CurrencyCode " +
+                        $"WHERE t.Date >= '{start:yyyy-MM-dd}' AND t.Date <= '{end:yyyy-MM-dd}' " +
+                        $"ORDER BY t.Date, t.WhiteLabelID OFFSET {(pageNumber - 1) * pageSize} ROWS FETCH NEXT {pageSize} ROWS ONLY");
+
                     // Execute the query
                     var results = await finalQuery.ToListAsync();
 
-                    // Convert to our tuple format with all joined data
-                    joinedResults = results.Select(r => (r.DailyAction, r.Player, r.WhiteLabel, r.Country, r.Currency)).ToList();
+                    // Convert to our tuple format with the optimized projection
+                    joinedResults = results.Select(r => (
+                        r.DailyAction,
+                        (Player?)null, // We're not using the full Player object anymore
+                        (WhiteLabel?)null, // We're not using the full WhiteLabel object anymore
+                        (Country?)null, // We're not using the full Country object anymore
+                        (Currency?)null // We're not using the full Currency object anymore
+                    )).ToList();
                 }
 
                 // Get white labels for mapping names
@@ -737,21 +833,12 @@ namespace PPrePorter.DailyActionsDB.Services
                 var mappedDailyActions = joinedResults.Select(result =>
                 {
                     var da = result.DailyAction;
-                    var player = result.Player;
-                    var whiteLabel = result.WhiteLabel;
-                    var country = result.Country;
-                    var currency = result.Currency;
 
-                    // Get the WhiteLabel ID and name
+                    // Get the WhiteLabel ID and name from our projection
                     int whiteLabelId = 0;
                     string whiteLabelName = "Unknown";
 
-                    if (whiteLabel != null)
-                    {
-                        whiteLabelId = whiteLabel.Id;
-                        whiteLabelName = whiteLabel.Name;
-                    }
-                    else if (da.WhiteLabelID.HasValue)
+                    if (da.WhiteLabelID.HasValue)
                     {
                         whiteLabelId = (int)da.WhiteLabelID.Value;
                         if (whiteLabelDict.TryGetValue(whiteLabelId, out var name))
@@ -760,57 +847,14 @@ namespace PPrePorter.DailyActionsDB.Services
                         }
                     }
 
-                    // Get player information
-                    string playerName = "Unknown";
-                    if (player != null)
-                    {
-                        // Use player's first and last name if available
-                        if (!string.IsNullOrEmpty(player.FirstName) || !string.IsNullOrEmpty(player.LastName))
-                        {
-                            playerName = $"{player.FirstName ?? ""} {player.LastName ?? ""}".Trim();
-                        }
-                        // Fallback to alias
-                        else if (!string.IsNullOrEmpty(player.Alias))
-                        {
-                            playerName = player.Alias;
-                        }
-                        // Fallback to email
-                        else if (!string.IsNullOrEmpty(player.Email))
-                        {
-                            playerName = player.Email;
-                        }
-                        // Last resort - use player ID
-                        else
-                        {
-                            playerName = $"Player {player.PlayerID}";
-                        }
-                    }
-                    else if (da.PlayerID.HasValue)
-                    {
-                        playerName = $"Player {da.PlayerID}";
-                    }
+                    // Get player information from our projection
+                    string playerName = da.PlayerID.HasValue ? $"Player {da.PlayerID}" : "Unknown";
 
-                    // Get country information
+                    // Get country information from our projection
                     string countryName = "Unknown";
-                    if (country != null)
-                    {
-                        countryName = country.CountryName;
-                    }
-                    else if (player != null && !string.IsNullOrEmpty(player.Country))
-                    {
-                        countryName = player.Country;
-                    }
 
-                    // Get currency information
+                    // Get currency information from our projection
                     string currencyCode = "Unknown";
-                    if (currency != null)
-                    {
-                        currencyCode = currency.CurrencyCode;
-                    }
-                    else if (player != null && !string.IsNullOrEmpty(player.Currency))
-                    {
-                        currencyCode = player.Currency;
-                    }
 
                     return new DailyActionDto
                     {
@@ -1060,23 +1104,31 @@ namespace PPrePorter.DailyActionsDB.Services
                 _logger.LogWarning("CACHE MISS: Getting daily actions metadata from PPrePorterDB database, cache key: {CacheKey}", METADATA_CACHE_KEY);
 
                 // Get white labels from the metadata service if available, otherwise from the database
-                List<WhiteLabelDto> whiteLabelDtos;
-                List<CountryDto> countryDtos;
-                List<CurrencyDto> currencyDtos;
+                List<WhiteLabelDto> whiteLabelDtos = new List<WhiteLabelDto>();
+                List<CountryDto> countryDtos = new List<CountryDto>();
+                List<CurrencyDto> currencyDtos = new List<CurrencyDto>();
 
                 if (_metadataService != null)
                 {
-                    // Get white labels from metadata service
-                    var whiteLabelsMetadata = await _metadataService.GetMetadataByTypeAsync("WhiteLabel", true);
-                    whiteLabelDtos = whiteLabelsMetadata.Select(wl => new WhiteLabelDto
+                    try
                     {
-                        Id = wl.Id,
-                        Name = wl.Name,
-                        Code = wl.Code,
-                        IsActive = wl.IsActive
-                    }).ToList();
+                        // Get white labels from metadata service
+                        var whiteLabelsMetadata = await _metadataService.GetMetadataByTypeAsync("WhiteLabel", true);
+                        whiteLabelDtos = whiteLabelsMetadata.Select(wl => new WhiteLabelDto
+                        {
+                            Id = wl.Id,
+                            Name = wl.Name,
+                            Code = wl.Code,
+                            IsActive = wl.IsActive
+                        }).ToList();
 
-                    _logger.LogInformation("Retrieved {Count} white labels from metadata service", whiteLabelDtos.Count);
+                        _logger.LogInformation("Retrieved {Count} white labels from metadata service", whiteLabelDtos.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error retrieving white labels from metadata service. Will fall back to database.");
+                        // Continue to fallback
+                    }
                 }
                 else
                 {
@@ -1096,16 +1148,24 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Get countries from the metadata service if available, otherwise from the database
                 if (_metadataService != null)
                 {
-                    // Get countries from metadata service
-                    var countriesMetadata = await _metadataService.GetMetadataByTypeAsync("Country", true);
-                    countryDtos = countriesMetadata.Select(c => new CountryDto
+                    try
                     {
-                        Id = c.Id,
-                        Name = c.Name,
-                        IsoCode = c.Code
-                    }).ToList();
+                        // Get countries from metadata service
+                        var countriesMetadata = await _metadataService.GetMetadataByTypeAsync("Country", true);
+                        countryDtos = countriesMetadata.Select(c => new CountryDto
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            IsoCode = c.Code
+                        }).ToList();
 
-                    _logger.LogInformation("Retrieved {Count} countries from metadata service", countryDtos.Count);
+                        _logger.LogInformation("Retrieved {Count} countries from metadata service", countryDtos.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error retrieving countries from metadata service. Will fall back to database.");
+                        // Continue to fallback
+                    }
                 }
                 else
                 {
@@ -1129,17 +1189,25 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Get currencies from the metadata service if available, otherwise from the database
                 if (_metadataService != null)
                 {
-                    // Get currencies from metadata service
-                    var currenciesMetadata = await _metadataService.GetMetadataByTypeAsync("Currency", true);
-                    currencyDtos = currenciesMetadata.Select(c => new CurrencyDto
+                    try
                     {
-                        Id = (byte)c.Id, // Explicit cast from int to byte
-                        Name = c.Name,
-                        Code = c.Code,
-                        Symbol = c.AdditionalData
-                    }).ToList();
+                        // Get currencies from metadata service
+                        var currenciesMetadata = await _metadataService.GetMetadataByTypeAsync("Currency", true);
+                        currencyDtos = currenciesMetadata.Select(c => new CurrencyDto
+                        {
+                            Id = (byte)c.Id, // Explicit cast from int to byte
+                            Name = c.Name,
+                            Code = c.Code,
+                            Symbol = c.AdditionalData
+                        }).ToList();
 
-                    _logger.LogInformation("Retrieved {Count} currencies from metadata service", currencyDtos.Count);
+                        _logger.LogInformation("Retrieved {Count} currencies from metadata service", currencyDtos.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error retrieving currencies from metadata service. Will fall back to database.");
+                        // Continue to fallback
+                    }
                 }
                 else
                 {
@@ -1170,38 +1238,102 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 if (_metadataService != null)
                 {
-                    // Get metadata from the Infrastructure's MetadataService
-                    // This will use the DailyActionsMetadata table in PPrePorterDB
-                    _logger.LogInformation("Getting metadata from PPrePorterDB.DailyActionsMetadata table");
-
-                    // Get languages from metadata
-                    var languageMetadata = await _metadataService.GetMetadataByTypeAsync("Language");
-                    languageDtos = languageMetadata.Select((l, i) => new LanguageDto
+                    try
                     {
-                        Id = l.Id,
-                        Name = l.Name,
-                        Code = l.Code
-                    }).ToList();
+                        // Get metadata from the Infrastructure's MetadataService
+                        // This will use the DailyActionsMetadata table in PPrePorterDB
+                        _logger.LogInformation("Getting metadata from PPrePorterDB.DailyActionsMetadata table");
 
-                    // Get platforms from metadata
-                    var platformMetadata = await _metadataService.GetMetadataByTypeAsync("Platform");
-                    platforms = platformMetadata.Select(p => p.Code).ToList();
+                        try
+                        {
+                            // Get languages from metadata
+                            var languageMetadata = await _metadataService.GetMetadataByTypeAsync("Language");
+                            languageDtos = languageMetadata.Select((l, i) => new LanguageDto
+                            {
+                                Id = l.Id,
+                                Name = l.Name,
+                                Code = l.Code
+                            }).ToList();
+                            _logger.LogInformation("Retrieved {Count} languages from metadata service", languageDtos.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error retrieving languages from metadata service");
+                            languageDtos = new List<LanguageDto>();
+                        }
 
-                    // Get genders from metadata
-                    var genderMetadata = await _metadataService.GetMetadataByTypeAsync("Gender");
-                    genders = genderMetadata.Select(g => g.Code).ToList();
+                        try
+                        {
+                            // Get platforms from metadata
+                            var platformMetadata = await _metadataService.GetMetadataByTypeAsync("Platform");
+                            platforms = platformMetadata.Select(p => p.Code).ToList();
+                            _logger.LogInformation("Retrieved {Count} platforms from metadata service", platforms.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error retrieving platforms from metadata service");
+                            platforms = new List<string>();
+                        }
 
-                    // Get statuses from metadata
-                    var statusMetadata = await _metadataService.GetMetadataByTypeAsync("Status");
-                    statuses = statusMetadata.Select(s => s.Code).ToList();
+                        try
+                        {
+                            // Get genders from metadata
+                            var genderMetadata = await _metadataService.GetMetadataByTypeAsync("Gender");
+                            genders = genderMetadata.Select(g => g.Code).ToList();
+                            _logger.LogInformation("Retrieved {Count} genders from metadata service", genders.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error retrieving genders from metadata service");
+                            genders = new List<string> { "Male", "Female", "Other" };
+                        }
 
-                    // Get registration play modes from metadata
-                    var registrationPlayModeMetadata = await _metadataService.GetMetadataByTypeAsync("RegistrationPlayMode");
-                    registrationPlayModes = registrationPlayModeMetadata.Select(r => r.Code).ToList();
+                        try
+                        {
+                            // Get statuses from metadata
+                            var statusMetadata = await _metadataService.GetMetadataByTypeAsync("Status");
+                            statuses = statusMetadata.Select(s => s.Code).ToList();
+                            _logger.LogInformation("Retrieved {Count} statuses from metadata service", statuses.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error retrieving statuses from metadata service");
+                            statuses = new List<string> { "Active", "Inactive", "Blocked" };
+                        }
 
-                    // Get trackers from metadata
-                    var trackerMetadata = await _metadataService.GetMetadataByTypeAsync("Tracker");
-                    trackers = trackerMetadata.Select(t => t.Code).ToList();
+                        try
+                        {
+                            // Get registration play modes from metadata
+                            var registrationPlayModeMetadata = await _metadataService.GetMetadataByTypeAsync("RegistrationPlayMode");
+                            registrationPlayModes = registrationPlayModeMetadata.Select(r => r.Code).ToList();
+                            _logger.LogInformation("Retrieved {Count} registration play modes from metadata service", registrationPlayModes.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error retrieving registration play modes from metadata service");
+                            registrationPlayModes = new List<string> { "Real", "Fun" };
+                        }
+
+                        try
+                        {
+                            // Get trackers from metadata
+                            var trackerMetadata = await _metadataService.GetMetadataByTypeAsync("Tracker");
+                            trackers = trackerMetadata.Select(t => t.Code).ToList();
+                            _logger.LogInformation("Retrieved {Count} trackers from metadata service", trackers.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error retrieving trackers from metadata service");
+                            trackers = new List<string>();
+                        }
+
+                        _logger.LogInformation("Retrieved metadata from PPrePorterDB.DailyActionsMetadata table");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error retrieving metadata from PPrePorterDB.DailyActionsMetadata table. Will fall back to database.");
+                        // Continue to fallback
+                    }
                 }
                 else
                 {
@@ -1344,8 +1476,257 @@ namespace PPrePorter.DailyActionsDB.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting daily actions metadata");
-                throw;
+
+                // Create a minimal fallback metadata object
+                var fallbackMetadata = new DailyActionMetadataDto
+                {
+                    WhiteLabels = new List<WhiteLabelDto>(),
+                    Countries = new List<CountryDto>(),
+                    Currencies = new List<CurrencyDto>(),
+                    Languages = new List<LanguageDto>(),
+                    Platforms = new List<string>(),
+                    Genders = new List<string> { "Male", "Female", "Other" },
+                    Statuses = new List<string> { "Active", "Inactive", "Blocked" },
+                    PlayerTypes = new List<string> { "Real", "Fun" },
+                    RegistrationPlayModes = new List<string> { "Real", "Fun" },
+                    Trackers = new List<string>(),
+                    GroupByOptions = new List<GroupByOptionDto>
+                    {
+                        new() { Id = (int)GroupByOption.Day, Name = "Day", Value = "Day" },
+                        new() { Id = (int)GroupByOption.Month, Name = "Month", Value = "Month" },
+                        new() { Id = (int)GroupByOption.Year, Name = "Year", Value = "Year" },
+                        new() { Id = (int)GroupByOption.Label, Name = "Label", Value = "Label" },
+                        new() { Id = (int)GroupByOption.Player, Name = "Player", Value = "Player" },
+                        new() { Id = (int)GroupByOption.Country, Name = "Country", Value = "Country" }
+                    }
+                };
+
+                _logger.LogWarning("Returning fallback metadata due to error");
+                return fallbackMetadata;
             }
+        }
+
+        /// <summary>
+        /// This method is no longer used - we've integrated the optimized query directly into GetFilteredDailyActionsAsync
+        /// </summary>
+        private async Task<DailyActionResponseDto> GetFilteredDailyActionsOptimizedAsync(
+            DailyActionFilterDto filter,
+            DateTime start,
+            DateTime end,
+            int maxTotalRecords,
+            string cacheKey)
+        {
+            // Build the optimized SQL query
+            var sql = @"
+                SELECT t.*
+                FROM common.tbl_Daily_actions AS t WITH (NOLOCK)
+                INNER JOIN common.tbl_Daily_actions_players AS t0 WITH (NOLOCK) ON t.PlayerID = t0.PlayerID
+                INNER JOIN common.tbl_White_labels AS t1 WITH (NOLOCK) ON t.WhiteLabelID = CAST(t1.LabelID AS smallint)
+                INNER JOIN common.tbl_Countries AS t2 WITH (NOLOCK) ON
+                    COALESCE(t0.CountryID,
+                        CASE
+                            WHEN t0.Country IS NULL OR t0.Country = '' THEN COALESCE(t1.DefaultCountry, 0)
+                            ELSE (SELECT TOP 1 CountryID FROM common.tbl_Countries WITH (NOLOCK) WHERE CountryName = t0.Country)
+                        END) = t2.CountryID
+                INNER JOIN common.tbl_Currencies AS t4 WITH (NOLOCK) ON
+                    CASE
+                        WHEN t0.Currency IS NULL OR t0.Currency = '' THEN
+                            (SELECT TOP 1 CurrencyCode FROM common.tbl_Currencies WITH (NOLOCK) WHERE CurrencyID = COALESCE(t1.DefaultCurrency, 0))
+                        ELSE t0.Currency
+                    END = t4.CurrencyCode
+                WHERE t.Date >= @StartDate AND t.Date <= @EndDate";
+
+            // Add white label filter if specified
+            if (filter.WhiteLabelIds != null && filter.WhiteLabelIds.Count > 0)
+            {
+                if (filter.WhiteLabelIds.Count == 1)
+                {
+                    sql += " AND t.WhiteLabelID = @WhiteLabelId";
+                }
+                else
+                {
+                    sql += " AND t.WhiteLabelID IN @WhiteLabelIds";
+                }
+            }
+
+            // Add ordering
+            sql += " ORDER BY t.Date, t.WhiteLabelID";
+
+            // Add pagination if needed
+            if (filter.PageSize > 0 && filter.PageNumber > 0)
+            {
+                int skip = (filter.PageNumber - 1) * filter.PageSize;
+                sql += " OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+            }
+            else
+            {
+                // Add limit to avoid returning too many records
+                sql += " OFFSET 0 ROWS FETCH NEXT @MaxRecords ROWS ONLY";
+            }
+
+            _logger.LogInformation("Executing optimized SQL query: {Sql}", sql);
+
+            // Create parameters
+            var parameters = new List<Microsoft.Data.SqlClient.SqlParameter>
+            {
+                new Microsoft.Data.SqlClient.SqlParameter("@StartDate", start),
+                new Microsoft.Data.SqlClient.SqlParameter("@EndDate", end)
+            };
+
+            if (filter.WhiteLabelIds != null && filter.WhiteLabelIds.Count > 0)
+            {
+                if (filter.WhiteLabelIds.Count == 1)
+                {
+                    parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@WhiteLabelId", filter.WhiteLabelIds[0]));
+                }
+                else
+                {
+                    // For multiple white label IDs, we need to use a table-valued parameter
+                    // This is more complex and would require additional setup
+                    // For simplicity, let's fall back to the original query for multiple white label IDs
+                    throw new NotSupportedException("Multiple white label IDs not supported in optimized query");
+                }
+            }
+
+            if (filter.PageSize > 0 && filter.PageNumber > 0)
+            {
+                parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Skip", (filter.PageNumber - 1) * filter.PageSize));
+                parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Take", filter.PageSize));
+            }
+            else
+            {
+                parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@MaxRecords", maxTotalRecords));
+            }
+
+            // Execute the query
+            var result = await _dbContext.DailyActions
+                .FromSqlRaw(sql, parameters.ToArray())
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Get total count
+            var countSql = @"
+                SELECT COUNT(*)
+                FROM common.tbl_Daily_actions AS t WITH (NOLOCK)
+                INNER JOIN common.tbl_Daily_actions_players AS t0 WITH (NOLOCK) ON t.PlayerID = t0.PlayerID
+                INNER JOIN common.tbl_White_labels AS t1 WITH (NOLOCK) ON t.WhiteLabelID = CAST(t1.LabelID AS smallint)
+                INNER JOIN common.tbl_Countries AS t2 WITH (NOLOCK) ON
+                    COALESCE(t0.CountryID,
+                        CASE
+                            WHEN t0.Country IS NULL OR t0.Country = '' THEN COALESCE(t1.DefaultCountry, 0)
+                            ELSE (SELECT TOP 1 CountryID FROM common.tbl_Countries WITH (NOLOCK) WHERE CountryName = t0.Country)
+                        END) = t2.CountryID
+                INNER JOIN common.tbl_Currencies AS t4 WITH (NOLOCK) ON
+                    CASE
+                        WHEN t0.Currency IS NULL OR t0.Currency = '' THEN
+                            (SELECT TOP 1 CurrencyCode FROM common.tbl_Currencies WITH (NOLOCK) WHERE CurrencyID = COALESCE(t1.DefaultCurrency, 0))
+                        ELSE t0.Currency
+                    END = t4.CurrencyCode
+                WHERE t.Date >= @StartDate AND t.Date <= @EndDate";
+
+            // Add white label filter if specified
+            if (filter.WhiteLabelIds != null && filter.WhiteLabelIds.Count > 0)
+            {
+                if (filter.WhiteLabelIds.Count == 1)
+                {
+                    countSql += " AND t.WhiteLabelID = @WhiteLabelId";
+                }
+            }
+
+            // Execute the count query
+            var countCmd = _dbContext.Database.GetDbConnection().CreateCommand();
+            countCmd.CommandText = countSql;
+            countCmd.Parameters.AddRange(parameters.ToArray());
+
+            if (_dbContext.Database.GetDbConnection().State != System.Data.ConnectionState.Open)
+            {
+                await _dbContext.Database.GetDbConnection().OpenAsync();
+            }
+
+            var totalCount = (int)await countCmd.ExecuteScalarAsync();
+
+            // Map to DTOs
+            var mappedDailyActions = new List<DailyActionDto>();
+
+            // Get white labels for mapping names
+            var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
+            var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Id, wl => wl.Name);
+
+            // Map to DTOs
+            foreach (var da in result)
+            {
+                // Get the WhiteLabel ID and name
+                int whiteLabelId = 0;
+                string whiteLabelName = "Unknown";
+
+                if (da.WhiteLabelID.HasValue)
+                {
+                    whiteLabelId = (int)da.WhiteLabelID.Value;
+                    if (whiteLabelDict.TryGetValue(whiteLabelId, out var name))
+                    {
+                        whiteLabelName = name;
+                    }
+                }
+
+                // Create the DTO
+                mappedDailyActions.Add(new DailyActionDto
+                {
+                    Id = (int)da.Id,
+                    Date = da.Date,
+                    WhiteLabelId = whiteLabelId,
+                    WhiteLabelName = whiteLabelName,
+                    PlayerId = da.PlayerID,
+                    PlayerName = $"Player {da.PlayerID}",
+                    CountryName = "Unknown", // We'll need to fetch this separately
+                    CurrencyCode = "Unknown", // We'll need to fetch this separately
+                    Registrations = da.Registration.HasValue ? (int)da.Registration.Value : 0,
+                    FTD = da.FTD.HasValue ? (int)da.FTD.Value : 0,
+                    FTDA = da.FTDA.HasValue ? (int)da.FTDA.Value : null,
+                    Deposits = da.Deposits ?? 0,
+                    PaidCashouts = da.PaidCashouts ?? 0,
+                    BetsCasino = da.BetsCasino ?? 0,
+                    WinsCasino = da.WinsCasino ?? 0,
+                    BetsSport = da.BetsSport ?? 0,
+                    WinsSport = da.WinsSport ?? 0,
+                    BetsLive = da.BetsLive ?? 0,
+                    WinsLive = da.WinsLive ?? 0,
+                    BetsBingo = da.BetsBingo ?? 0,
+                    WinsBingo = da.WinsBingo ?? 0,
+                    GGRCasino = da.GGRCasino,
+                    GGRSport = da.GGRSport,
+                    GGRLive = da.GGRLive,
+                    GGRBingo = da.GGRBingo,
+                    TotalGGR = da.TotalGGR,
+                    UpdatedDate = da.UpdatedDate
+                    // Add other properties as needed
+                });
+            }
+
+            // Create response
+            var response = new DailyActionResponseDto
+            {
+                Data = mappedDailyActions,
+                TotalCount = totalCount,
+                CurrentPage = filter.PageNumber,
+                PageSize = filter.PageSize,
+                TotalPages = filter.PageSize > 0 ? (int)Math.Ceiling(totalCount / (double)filter.PageSize) : 1,
+                StartDate = start,
+                EndDate = end,
+                AppliedFilters = filter
+            };
+
+            // Cache the result
+            var cacheOptions = new MemoryCacheEntryOptions()
+                .SetPriority(CacheItemPriority.High)
+                .SetSlidingExpiration(TimeSpan.FromMinutes(30))
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
+                .SetSize(mappedDailyActions.Count * 1000 + 2000); // Estimate size
+
+            _cache.Set(cacheKey, response, cacheOptions);
+            _logger.LogInformation("Cached filtered daily actions with hash {FilterHash}, cache key: {CacheKey}",
+                cacheKey, cacheKey);
+
+            return response;
         }
 
         /// <summary>

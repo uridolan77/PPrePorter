@@ -3,6 +3,7 @@ import dashboardService from './dashboardService';
 import contextualService from './contextualService';
 import playersService from './playersService';
 import gamesService from './gamesService';
+import dailyActionGamesService from './dailyActionGamesService';
 
 /**
  * API services index
@@ -13,5 +14,6 @@ export default {
   dashboard: dashboardService,
   contextual: contextualService,
   players: playersService,
-  games: gamesService
+  games: gamesService,
+  dailyActionGames: dailyActionGamesService
 };

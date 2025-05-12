@@ -40,10 +40,10 @@ const TestContextualExplanation = lazy(() => import('./components/dashboard/Test
 
 // Report pages
 const DailyActionsPage = lazy(() => import('./pages/showcase/reports/DailyActionsPage'));
-const DailyActionsPageRefactored = lazy(() => import('./pages/showcase/reports/DailyActionsPageRefactored'));
 const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/DailyActionsAdvancedPage'));
 const PlayersPage = lazy(() => import('./pages/showcase/reports/PlayersPage'));
 const GamesPage = lazy(() => import('./pages/showcase/reports/GamesPage'));
+const DailyActionGamesPage = lazy(() => import('./pages/reports/DailyActionGamesPage'));
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
@@ -126,7 +126,7 @@ const App: React.FC = () => {
                   } />
                   <Route path="/reports/daily-actions" element={
                     <Suspense fallback={<LoadingFallback />}>
-                      <DailyActionsPageRefactored />
+                      <DailyActionsPage />
                     </Suspense>
                   } />
                   <Route path="/reports/daily-actions/advanced" element={
@@ -152,6 +152,11 @@ const App: React.FC = () => {
                   <Route path="/reports/games/advanced" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <SimpleDashboard />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/daily-action-games" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DailyActionGamesPage />
                     </Suspense>
                   } />
                   <Route path="/reports/*" element={
@@ -252,16 +257,6 @@ const App: React.FC = () => {
               <Route path="/showcase/flat-modern-style-example" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <FlatModernStyleExample />
-                </Suspense>
-              } />
-              <Route path="/showcase/daily-actions-original" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <DailyActionsPage />
-                </Suspense>
-              } />
-              <Route path="/showcase/daily-actions-refactored" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <DailyActionsPageRefactored />
                 </Suspense>
               } />
 

@@ -75,9 +75,17 @@ export const getFlatModernCardSx = (
     position: 'relative',
     borderRadius: 2,
     overflow: 'hidden',
+    border: '1px solid rgba(0, 0, 0, 0.08)',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
     ...(deepShadow ? {
-      boxShadow: '0px 10px 15px rgba(0, 0, 0, 0.04), 0px 20px 25px rgba(0, 0, 0, 0.1)',
-    } : {}),
+      boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.12), 0px 24px 32px rgba(0, 0, 0, 0.16)',
+    } : {
+      boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.1), 0px 4px 8px rgba(0, 0, 0, 0.14)',
+    }),
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: '0px 16px 32px rgba(0, 0, 0, 0.16), 0px 32px 48px rgba(0, 0, 0, 0.2)',
+    },
     '&::before': {
       content: '""',
       position: 'absolute',
@@ -101,11 +109,20 @@ export const getFlatModernButtonSx = (
 ): SxProps<Theme> => {
   return {
     textTransform: 'none',
-    fontWeight: 500,
+    fontWeight: 600,
     borderRadius: 1,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06), 0px 4px 6px rgba(0, 0, 0, 0.1)',
+    padding: '8px 16px',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1), 0px 2px 4px rgba(0, 0, 0, 0.12)',
     '&:hover': {
-      boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.05), 0px 10px 15px rgba(0, 0, 0, 0.1)',
+      boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.12), 0px 4px 8px rgba(0, 0, 0, 0.14)',
+      transform: 'translateY(-2px)',
+    },
+    '&.MuiButton-outlined': {
+      borderWidth: '2px',
+      '&:hover': {
+        borderWidth: '2px',
+      },
     },
     ...additionalSx
   };
@@ -169,11 +186,17 @@ export const getFlatModernPaperSx = (
 ): SxProps<Theme> => {
   return {
     borderRadius: 2,
+    border: '1px solid rgba(0, 0, 0, 0.08)',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
     ...(deepShadow ? {
-      boxShadow: '0px 10px 15px rgba(0, 0, 0, 0.04), 0px 20px 25px rgba(0, 0, 0, 0.1)',
+      boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.12), 0px 24px 32px rgba(0, 0, 0, 0.16)',
     } : {
-      boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06), 0px 1px 3px rgba(0, 0, 0, 0.1)',
+      boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.1), 0px 4px 8px rgba(0, 0, 0, 0.14)',
     }),
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0px 16px 32px rgba(0, 0, 0, 0.16), 0px 32px 48px rgba(0, 0, 0, 0.2)',
+    },
     ...additionalSx
   };
 };

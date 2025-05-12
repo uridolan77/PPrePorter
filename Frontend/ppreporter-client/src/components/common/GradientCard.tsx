@@ -60,8 +60,14 @@ const GradientCard: React.FC<GradientCardProps> = ({
       sx={{
         background: getBackground(),
         color: getTextColor(),
-        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.12), 0px 24px 32px rgba(0, 0, 0, 0.16)',
         borderRadius: 3,
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0px 16px 32px rgba(0, 0, 0, 0.16), 0px 32px 48px rgba(0, 0, 0, 0.2)',
+        },
         overflow: 'hidden',
         height: '100%',
         ...rest.sx
@@ -74,7 +80,7 @@ const GradientCard: React.FC<GradientCardProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            p: 2,
+            p: 3,
             ...headerSx
           }}
         >
@@ -120,8 +126,8 @@ const GradientCard: React.FC<GradientCardProps> = ({
 
       <CardContent
         sx={{
-          p: 2,
-          '&:last-child': { pb: 2 },
+          p: 3,
+          '&:last-child': { pb: 3 },
           ...contentSx
         }}
       >

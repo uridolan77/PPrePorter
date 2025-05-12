@@ -39,7 +39,8 @@ export const fetchPlayers = createAsyncThunk(
   'entities/fetchPlayers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.client.get('/players');
+      console.log('[ENTITIES_SLICE] Using API endpoint: /api/players');
+      const response = await api.client.get('/api/players');
       return response.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch players';
@@ -52,7 +53,8 @@ export const fetchGames = createAsyncThunk(
   'entities/fetchGames',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.client.get('/games');
+      console.log('[ENTITIES_SLICE] Using API endpoint: /api/games');
+      const response = await api.client.get('/api/games');
       return response.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch games';
@@ -65,7 +67,8 @@ export const fetchTransactions = createAsyncThunk(
   'entities/fetchTransactions',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.client.get('/transactions');
+      console.log('[ENTITIES_SLICE] Using API endpoint: /api/transactions');
+      const response = await api.client.get('/api/transactions');
       return response.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transactions';

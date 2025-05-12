@@ -20,82 +20,82 @@ export interface FlatModernCardProps extends Omit<CardProps, 'variant'> {
    * Card title
    */
   title?: string;
-  
+
   /**
    * Card subtitle
    */
   subtitle?: string;
-  
+
   /**
    * Main value to display
    */
   value?: string | number;
-  
+
   /**
    * Trend percentage (positive or negative)
    */
   trend?: number | null;
-  
+
   /**
    * Label for the trend
    */
   trendLabel?: string;
-  
+
   /**
    * Icon to display
    */
   icon?: React.ReactNode;
-  
+
   /**
    * Icon for the action button
    */
   actionIcon?: React.ReactNode;
-  
+
   /**
    * Whether to show the more menu
    */
   showMoreMenu?: boolean;
-  
+
   /**
    * Whether to show the action button
    */
   showActionButton?: boolean;
-  
+
   /**
    * Callback for action button click
    */
   onActionClick?: () => void;
-  
+
   /**
    * Callback for more menu click
    */
   onMoreClick?: () => void;
-  
+
   /**
    * Color variant
    */
   variant?: AccentVariant;
-  
+
   /**
    * Custom styles for card content
    */
   contentSx?: any;
-  
+
   /**
    * Custom styles for card header
    */
   headerSx?: any;
-  
+
   /**
    * Custom styles for icon
    */
   iconSx?: any;
-  
+
   /**
    * Position of the accent stripe
    */
   accentPosition?: AccentPosition;
-  
+
   /**
    * Whether to show the wave pattern background
    */
@@ -147,46 +147,46 @@ const FlatModernCard: React.FC<FlatModernCardProps> = ({
       {...rest}
     >
       {/* Accent and wave pattern */}
-      <CardAccent 
-        position={accentPosition} 
-        variant={variant} 
-        showWavePattern={showWavePattern} 
+      <CardAccent
+        position={accentPosition}
+        variant={variant}
+        showWavePattern={showWavePattern}
       />
 
       <CardContent
         sx={{
           position: 'relative',
           zIndex: 2,
-          p: 2,
-          '&:last-child': { pb: 2 },
+          p: 3,
+          '&:last-child': { pb: 3 },
           ...contentSx
         }}
       >
         {/* Card header with title and actions */}
         {(title || showMoreMenu) && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             mb: 1,
-            ...headerSx 
+            ...headerSx
           }}>
             {title && (
               <Box>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
+                <Typography
+                  variant="subtitle2"
+                  sx={{
                     fontWeight: 500,
                     color: theme.palette.text.secondary
                   }}
                 >
                   {title}
                 </Typography>
-                
+
                 {subtitle && (
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
+                  <Typography
+                    variant="caption"
+                    sx={{
                       color: theme.palette.text.secondary,
                       display: 'block',
                       mt: 0.5
@@ -197,12 +197,12 @@ const FlatModernCard: React.FC<FlatModernCardProps> = ({
                 )}
               </Box>
             )}
-            
+
             {showMoreMenu && (
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={onMoreClick}
-                sx={{ 
+                sx={{
                   color: theme.palette.text.secondary
                 }}
               >
@@ -211,46 +211,46 @@ const FlatModernCard: React.FC<FlatModernCardProps> = ({
             )}
           </Box>
         )}
-        
+
         {/* Card content */}
         {children}
-        
+
         {/* Value and trend display */}
         {value && (
           <Box sx={{ mt: 2 }}>
-            <Typography 
-              variant="h4" 
-              component="div" 
+            <Typography
+              variant="h4"
+              component="div"
               fontWeight="medium"
             >
               {value}
             </Typography>
-            
+
             {trend !== null && trend !== undefined && (
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                 {trend >= 0 ? (
-                  <TrendingUpIcon 
-                    fontSize="small" 
+                  <TrendingUpIcon
+                    fontSize="small"
                     sx={{ color: theme.palette.success.main, mr: 0.5 }}
                   />
                 ) : (
-                  <TrendingDownIcon 
-                    fontSize="small" 
+                  <TrendingDownIcon
+                    fontSize="small"
                     sx={{ color: theme.palette.error.main, mr: 0.5 }}
                   />
                 )}
-                
-                <Typography 
-                  variant="body2" 
+
+                <Typography
+                  variant="body2"
                   color={trend >= 0 ? 'success.main' : 'error.main'}
                   fontWeight="medium"
                 >
                   {formatTrend(trend)}
                 </Typography>
-                
+
                 {trendLabel && (
-                  <Typography 
-                    variant="caption" 
+                  <Typography
+                    variant="caption"
                     color="text.secondary"
                     sx={{ ml: 1 }}
                   >
@@ -261,7 +261,7 @@ const FlatModernCard: React.FC<FlatModernCardProps> = ({
             )}
           </Box>
         )}
-        
+
         {/* Icon display */}
         {icon && (
           <Box
@@ -283,18 +283,18 @@ const FlatModernCard: React.FC<FlatModernCardProps> = ({
             {icon}
           </Box>
         )}
-        
+
         {/* Action button */}
         {showActionButton && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            mt: 2 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            mt: 2
           }}>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={onActionClick}
-              sx={{ 
+              sx={{
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 color: theme.palette.primary.main,
                 '&:hover': {

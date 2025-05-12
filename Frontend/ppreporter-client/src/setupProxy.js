@@ -23,19 +23,34 @@ module.exports = function(app) {
       proxyReq.setHeader('X-Forwarded-Proto', 'https');
       proxyReq.setHeader('Origin', 'http://localhost:3001');
 
-      // Log proxy requests
+      // Add a custom header to identify proxy requests
+      proxyReq.setHeader('X-Proxy-Request', 'true');
+
+      // Log proxy requests with more details
       console.log(`[PROXY] ${req.method} ${req.url} -> ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
+      console.log(`[PROXY] Headers: ${JSON.stringify(proxyReq.getHeaders())}`);
     },
     onError: (err, req, res) => {
       console.error('[PROXY ERROR]', err);
+
+      // Log more detailed error information
+      console.error(`[PROXY ERROR DETAILS] URL: ${req.url}, Method: ${req.method}`);
+      console.error(`[PROXY ERROR DETAILS] Error Code: ${err.code}, Message: ${err.message}`);
+
       res.writeHead(500, {
         'Content-Type': 'application/json',
       });
       res.end(JSON.stringify({
         message: 'Proxy error. The API server may be down or unreachable.',
         error: err.message,
+        code: err.code,
+        url: req.url,
+        method: req.method
       }));
     },
+    // Add a timeout to the proxy request
+    proxyTimeout: 10000, // 10 seconds
+    timeout: 10000, // 10 seconds
   };
 
   // Proxy all API requests
@@ -78,12 +93,15 @@ module.exports = function(app) {
     })
   );
 
-  // Proxy health check endpoint
+  // Proxy health check endpoint with shorter timeout
   app.use(
     '/health',
     createProxyMiddleware({
       ...commonOptions,
       // No path rewrite needed for health
+      // Use a shorter timeout for health checks
+      proxyTimeout: 5000, // 5 seconds
+      timeout: 5000, // 5 seconds
       onProxyRes: (proxyRes, req, res) => {
         // Add CORS headers to the response
         proxyRes.headers['Access-Control-Allow-Origin'] = '*';
@@ -91,8 +109,9 @@ module.exports = function(app) {
         proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
 
-        // Log proxy response
+        // Log proxy response with more details
         console.log(`[PROXY RESPONSE] ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
+        console.log(`[PROXY RESPONSE HEADERS] ${JSON.stringify(proxyRes.headers)}`);
       }
     })
   );

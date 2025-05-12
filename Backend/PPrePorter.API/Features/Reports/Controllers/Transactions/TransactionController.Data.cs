@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using PPrePorter.DailyActionsDB.Models;
+using PPrePorter.DailyActionsDB.Models.Transactions;
 using System.Dynamic;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PPrePorter.API.Features.Reports.Controllers.Transactions
 {
@@ -41,7 +43,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
                 // Log the parameters being used for the cache key
                 _logger.LogInformation("CONTROLLER [{Timestamp}]: Getting transactions with parameters: startDate={StartDate}, endDate={EndDate}, playerId={PlayerId}, transactionType={TransactionType}, whiteLabelId={WhiteLabelId}",
                     DateTime.UtcNow.ToString("HH:mm:ss.fff"),
-                    start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"), 
+                    start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"),
                     playerId, transactionType, whiteLabelId);
 
                 // Calculate expected cache key format for debugging
@@ -51,28 +53,66 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
 
                 // Get transactions data - measure time
                 var getDataStartTime = DateTime.UtcNow;
-                
-                // Get all transactions first
-                var transactions = await _transactionService.GetAllTransactionsAsync();
-                
-                // Apply filters
-                transactions = transactions.Where(t => t.TransactionDate >= start && t.TransactionDate <= end);
-                
+
+                // GUARDRAIL: Check if at least one filter is provided
+                bool hasFilter = startDate.HasValue || endDate.HasValue ||
+                                !string.IsNullOrEmpty(playerId) ||
+                                !string.IsNullOrEmpty(transactionType) ||
+                                !string.IsNullOrEmpty(whiteLabelId);
+
+                if (!hasFilter)
+                {
+                    _logger.LogWarning("No filters provided for transaction query. This could result in a large dataset. Requiring at least one filter.");
+                    return BadRequest(new {
+                        message = "At least one filter must be provided. Please specify startDate, endDate, playerId, transactionType, or whiteLabelId.",
+                        totalCount = 0,
+                        data = new List<object>()
+                    });
+                }
+
+                // Get transactions based on filters
+                IEnumerable<Transaction> transactions;
+
                 if (!string.IsNullOrEmpty(playerId))
+                {
+                    _logger.LogInformation("Filtering transactions by player ID: {PlayerId}", playerId);
+                    transactions = await _transactionService.GetTransactionsByPlayerIdAsync(playerId);
+                }
+                else if (!string.IsNullOrEmpty(transactionType))
+                {
+                    _logger.LogInformation("Filtering transactions by transaction type: {TransactionType}", transactionType);
+                    transactions = await _transactionService.GetTransactionsByTransactionTypeAsync(transactionType);
+                }
+                else if (!string.IsNullOrEmpty(whiteLabelId))
+                {
+                    _logger.LogInformation("Filtering transactions by white label ID: {WhiteLabelId}", whiteLabelId);
+                    transactions = await _transactionService.GetTransactionsByWhiteLabelIdAsync(whiteLabelId);
+                }
+                else
+                {
+                    _logger.LogInformation("Filtering transactions by date range: {StartDate} to {EndDate}", start, end);
+                    transactions = await _transactionService.GetByDateRangeAsync(start, end);
+                }
+
+                // Apply additional filters if needed
+                if (!string.IsNullOrEmpty(playerId) && transactions.Any(t => t.PlayerId != playerId))
                 {
                     transactions = transactions.Where(t => t.PlayerId == playerId);
                 }
-                
-                if (!string.IsNullOrEmpty(transactionType))
+
+                if (!string.IsNullOrEmpty(transactionType) && transactions.Any(t => t.TransactionType != transactionType))
                 {
                     transactions = transactions.Where(t => t.TransactionType == transactionType);
                 }
-                
-                if (!string.IsNullOrEmpty(whiteLabelId))
+
+                if (!string.IsNullOrEmpty(whiteLabelId) && transactions.Any(t => t.WhitelabelId != whiteLabelId))
                 {
                     transactions = transactions.Where(t => t.WhitelabelId == whiteLabelId);
                 }
-                
+
+                // Apply date range filter if not already applied
+                transactions = transactions.Where(t => t.TransactionDate >= start && t.TransactionDate <= end);
+
                 var getDataEndTime = DateTime.UtcNow;
                 var getDataElapsedMs = (getDataEndTime - getDataStartTime).TotalMilliseconds;
 
@@ -92,15 +132,22 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
 
                     // Add all properties from Transaction
                     obj["id"] = transaction.Id;
-                    obj["transactionId"] = transaction.TransactionId;
                     obj["transactionDate"] = transaction.TransactionDate;
                     obj["playerId"] = transaction.PlayerId;
-                    obj["whiteLabelId"] = transaction.WhitelabelId;
-                    obj["gameId"] = transaction.GameId;
-                    obj["gameName"] = transaction.GameName;
-                    obj["amount"] = transaction.Amount;
                     obj["transactionType"] = transaction.TransactionType;
+                    obj["amount"] = transaction.Amount;
+                    obj["originalAmount"] = transaction.OriginalAmount;
+                    obj["details"] = transaction.Details;
+                    obj["platform"] = transaction.Platform;
+                    obj["status"] = transaction.Status;
                     obj["currency"] = transaction.Currency;
+                    obj["lastUpdated"] = transaction.LastUpdated;
+                    obj["originalTransactionId"] = transaction.OriginalTransactionId;
+                    obj["subDetails"] = transaction.SubDetails;
+                    obj["comments"] = transaction.Comments;
+                    obj["paymentMethod"] = transaction.PaymentMethod;
+                    obj["paymentProvider"] = transaction.PaymentProvider;
+                    obj["transactionInfoId"] = transaction.TransactionInfoId;
 
                     return obj;
                 }).ToList();
@@ -130,8 +177,26 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving transactions data");
-                return StatusCode(500, new { message = "An error occurred while retrieving transactions data" });
+                _logger.LogError(ex, "Error retrieving transactions data: {ErrorMessage}", ex.Message);
+
+                // Return a more informative error response
+                var errorResponse = new
+                {
+                    message = "An error occurred while retrieving transactions data",
+                    error = ex.Message,
+                    filters = new
+                    {
+                        startDate = startDate?.ToString("yyyy-MM-dd"),
+                        endDate = endDate?.ToString("yyyy-MM-dd"),
+                        playerId,
+                        transactionType,
+                        whiteLabelId
+                    },
+                    totalCount = 0,
+                    data = new List<object>()
+                };
+
+                return StatusCode(500, errorResponse);
             }
         }
 
@@ -155,15 +220,22 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
 
                 // Add all properties
                 obj["id"] = transaction.Id;
-                obj["transactionId"] = transaction.TransactionId;
                 obj["transactionDate"] = transaction.TransactionDate;
                 obj["playerId"] = transaction.PlayerId;
-                obj["whiteLabelId"] = transaction.WhitelabelId;
-                obj["gameId"] = transaction.GameId;
-                obj["gameName"] = transaction.GameName;
-                obj["amount"] = transaction.Amount;
                 obj["transactionType"] = transaction.TransactionType;
+                obj["amount"] = transaction.Amount;
+                obj["originalAmount"] = transaction.OriginalAmount;
+                obj["details"] = transaction.Details;
+                obj["platform"] = transaction.Platform;
+                obj["status"] = transaction.Status;
                 obj["currency"] = transaction.Currency;
+                obj["lastUpdated"] = transaction.LastUpdated;
+                obj["originalTransactionId"] = transaction.OriginalTransactionId;
+                obj["subDetails"] = transaction.SubDetails;
+                obj["comments"] = transaction.Comments;
+                obj["paymentMethod"] = transaction.PaymentMethod;
+                obj["paymentProvider"] = transaction.PaymentProvider;
+                obj["transactionInfoId"] = transaction.TransactionInfoId;
 
                 return Ok(obj);
             }

@@ -9,7 +9,8 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
-  Alert
+  Alert,
+  Button
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -312,7 +313,15 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
 
   // Process data based on current state
   const processedData = useMemo(() => {
-    let result = [...data];
+    // Ensure data is an array
+    let result = Array.isArray(data) ? [...data] : [];
+
+    // Log data processing
+    console.log('EnhancedTable processing data:', {
+      dataIsArray: Array.isArray(data),
+      dataLength: Array.isArray(data) ? data.length : 'N/A',
+      resultLength: result.length
+    });
 
     // Apply filtering
     if (filteringConfig.enabled) {
@@ -321,6 +330,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         tableState.filtering.quickFilter,
         tableState.filtering.advancedFilters
       );
+      console.log('After filtering:', { resultLength: result.length });
     }
 
     // Apply sorting
@@ -330,6 +340,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
         tableState.sorting.column,
         tableState.sorting.direction
       );
+      console.log('After sorting:', { resultLength: result.length });
     }
 
     return result;
@@ -817,6 +828,15 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
     ? groupedData
     : processedData;
 
+  // Debug data
+  const debugData = () => {
+    console.log('EnhancedTable data:', data);
+    console.log('EnhancedTable processedData:', processedData);
+    console.log('EnhancedTable displayData:', displayData);
+    console.log('EnhancedTable columns:', columns);
+    console.log('EnhancedTable tableState:', tableState);
+  };
+
   // Render loading state
   if (loading) {
     return (
@@ -826,8 +846,52 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
     );
   }
 
+  // Debug component
+  const DebugPanel = () => {
+    if (process.env.NODE_ENV !== 'development') return null;
+
+    return (
+      <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+        <Typography variant="subtitle2" gutterBottom>EnhancedTable Debug Info:</Typography>
+        <Typography variant="body2">Data type: {typeof data}</Typography>
+        <Typography variant="body2">Is Array: {Array.isArray(data) ? 'Yes' : 'No'}</Typography>
+        <Typography variant="body2">Data length: {Array.isArray(data) ? data.length : 'N/A'}</Typography>
+        <Typography variant="body2">ProcessedData length: {processedData.length}</Typography>
+        <Typography variant="body2">DisplayData length: {displayData.length}</Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={debugData}
+          sx={{ mt: 1 }}
+        >
+          Log Data
+        </Button>
+      </Box>
+    );
+  };
+
   return (
     <Paper elevation={0} variant="outlined" sx={{ width: '100%', mb: 2, ...sx }}>
+      {/* Debug Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom>EnhancedTable Debug Info:</Typography>
+          <Typography variant="body2">Data type: {typeof data}</Typography>
+          <Typography variant="body2">Is Array: {Array.isArray(data) ? 'Yes' : 'No'}</Typography>
+          <Typography variant="body2">Data length: {Array.isArray(data) ? data.length : 'N/A'}</Typography>
+          <Typography variant="body2">ProcessedData length: {processedData.length}</Typography>
+          <Typography variant="body2">DisplayData length: {displayData.length}</Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={debugData}
+            sx={{ mt: 1 }}
+          >
+            Log Data
+          </Button>
+        </Box>
+      )}
+
       {/* Table header with title, search, and actions */}
       <Toolbar
         sx={{

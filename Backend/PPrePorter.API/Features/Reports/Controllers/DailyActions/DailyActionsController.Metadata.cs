@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PPrePorter.DailyActionsDB.Models;
+using PPrePorter.DailyActionsDB.Models.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
 {
@@ -35,12 +39,50 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
         {
             try
             {
-                var metadata = await _dailyActionsService.GetDailyActionsMetadataAsync();
-                return Ok(metadata);
+                _logger.LogInformation("Getting daily actions metadata");
+
+                // Create a fallback metadata object with empty collections
+                var fallbackMetadata = new DailyActionMetadataDto
+                {
+                    WhiteLabels = new List<WhiteLabelDto>(),
+                    Countries = new List<CountryDto>(),
+                    Currencies = new List<CurrencyDto>(),
+                    Languages = new List<LanguageDto>(),
+                    Platforms = new List<string>(),
+                    Genders = new List<string>(),
+                    Statuses = new List<string>(),
+                    PlayerTypes = new List<string> { "Real", "Fun" },
+                    RegistrationPlayModes = new List<string>(),
+                    Trackers = new List<string>(),
+                    GroupByOptions = new List<GroupByOptionDto>
+                    {
+                        new GroupByOptionDto { Value = "date", Name = "Date" },
+                        new GroupByOptionDto { Value = "whiteLabel", Name = "White Label" },
+                        new GroupByOptionDto { Value = "player", Name = "Player" },
+                        new GroupByOptionDto { Value = "country", Name = "Country" },
+                        new GroupByOptionDto { Value = "currency", Name = "Currency" }
+                    }
+                };
+
+                try
+                {
+                    var metadata = await _dailyActionsService.GetDailyActionsMetadataAsync();
+                    return Ok(metadata);
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("tbl_Metadata"))
+                {
+                    _logger.LogError(ex, "Error retrieving daily actions metadata: Table 'tbl_Metadata' not found. Using fallback metadata.");
+                    return Ok(fallbackMetadata);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error retrieving daily actions metadata. Using fallback metadata.");
+                    return Ok(fallbackMetadata);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving daily actions metadata");
+                _logger.LogError(ex, "Critical error retrieving daily actions metadata");
                 return StatusCode(500, new { message = "An error occurred while retrieving daily actions metadata" });
             }
         }

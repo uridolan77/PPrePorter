@@ -123,7 +123,7 @@ namespace PPrePorter.Infrastructure.Data
 
             modelBuilder.Entity<MetadataItem>(entity =>
             {
-                entity.ToTable("tbl_Metadata");
+                entity.ToTable("DailyActionsMetadata", "dbo");
                 entity.HasKey(e => e.Id);
 
                 // Create a unique index on MetadataType and Code

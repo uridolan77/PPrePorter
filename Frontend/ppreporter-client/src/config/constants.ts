@@ -1,48 +1,52 @@
 /**
  * API configuration
  */
-export const API_BASE_URL: string = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
-export const API_TIMEOUT: number = 30000; // 30 seconds
+export const API_BASE_URL: string = process.env.REACT_APP_API_URL || 'https://localhost:7075';
+export const API_TIMEOUT: number = 10000; // 10 seconds - reduced from 30 seconds
+
+// Log the API URL being used
+console.log('API_BASE_URL configured as:', API_BASE_URL);
 
 /**
  * API endpoints
  */
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    REFRESH_TOKEN: '/auth/refresh-token',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    RESET_PASSWORD: '/auth/reset-password',
-    VERIFY_EMAIL: '/auth/verify-email',
-    CHANGE_PASSWORD: '/auth/change-password',
-    PROFILE: '/auth/profile'
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register',
+    LOGOUT: '/api/auth/logout',
+    REFRESH_TOKEN: '/api/auth/refresh-token',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
+    VERIFY_EMAIL: '/api/auth/verify-email',
+    CHANGE_PASSWORD: '/api/auth/change-password',
+    PROFILE: '/api/auth/profile'
   },
   DASHBOARD: {
-    STATS: '/dashboard/stats',
-    PLAYER_REGISTRATIONS: '/dashboard/player-registrations',
-    RECENT_TRANSACTIONS: '/dashboard/recent-transactions',
-    TOP_GAMES: '/dashboard/top-games',
-    CASINO_REVENUE: '/dashboard/casino-revenue',
-    PLAYER_JOURNEY: '/dashboard/player-journey',
-    KPI: '/dashboard/kpi',
-    PREFERENCES: '/dashboard/preferences',
-    QUERY: '/dashboard/query'
+    STATS: '/api/dashboard/stats',
+    PLAYER_REGISTRATIONS: '/api/dashboard/player-registrations',
+    RECENT_TRANSACTIONS: '/api/dashboard/recent-transactions',
+    TOP_GAMES: '/api/dashboard/top-games',
+    CASINO_REVENUE: '/api/dashboard/casino-revenue',
+    PLAYER_JOURNEY: '/api/dashboard/player-journey',
+    KPI: '/api/dashboard/kpi',
+    PREFERENCES: '/api/dashboard/preferences',
+    QUERY: '/api/dashboard/query'
   },
   REPORTS: {
-    DAILY_ACTIONS: '/reports/daily-actions',
-    PLAYER_ACTIVITY: '/reports/player-activity',
-    REVENUE: '/reports/revenue',
-    PROMOTIONAL: '/reports/promotional',
-    COMPLIANCE: '/reports/compliance',
-    EXPORT: '/reports/export',
-    SCHEDULE: '/reports/schedule'
+    DAILY_ACTIONS: '/api/reports/daily-actions',
+    DAILY_ACTION_GAMES: '/api/reports/daily-action-games',
+    PLAYER_ACTIVITY: '/api/reports/player-activity',
+    REVENUE: '/api/reports/revenue',
+    PROMOTIONAL: '/api/reports/promotional',
+    COMPLIANCE: '/api/reports/compliance',
+    EXPORT: '/api/reports/export',
+    SCHEDULE: '/api/reports/schedule'
   },
   NATURAL_LANGUAGE: {
-    QUERY: '/natural-language/query',
-    HISTORY: '/natural-language/history',
-    SUGGESTIONS: '/natural-language/suggestions'
+    QUERY: '/api/natural-language/query',
+    HISTORY: '/api/natural-language/history',
+    SUGGESTIONS: '/api/natural-language/suggestions'
   }
 };
 
@@ -124,6 +128,9 @@ export const FEATURES = {
   DATA_ALERTS: true,
   USE_MOCK_DATA_FOR_UI_TESTING: false // Set to false to use real API calls instead of mock data
 };
+
+// Log the mock data setting
+console.log('USE_MOCK_DATA_FOR_UI_TESTING:', FEATURES.USE_MOCK_DATA_FOR_UI_TESTING ? 'ENABLED' : 'DISABLED');
 
 export default {
   API_BASE_URL,

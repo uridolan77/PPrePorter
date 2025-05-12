@@ -215,6 +215,9 @@ namespace PPrePorter.DailyActionsDB.Repositories
         /// </summary>
         public async Task<IEnumerable<Player>> GetByRegistrationDateRangeAsync(DateTime startDate, DateTime endDate)
         {
+            // Ensure endDate includes the entire day
+            endDate = endDate.Date.AddDays(1).AddSeconds(-1);
+
             string cacheKey = $"{_cacheKeyPrefix}RegistrationDateRange_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
 
             // Try to get from cache first
@@ -226,14 +229,27 @@ namespace PPrePorter.DailyActionsDB.Repositories
 
             // Get from database
             _logger.LogDebug("Cache miss for {CacheKey}, querying database", cacheKey);
+            _logger.LogInformation("Executing query for players registered between {StartDate} and {EndDate}",
+                startDate.ToString("yyyy-MM-dd HH:mm:ss"), endDate.ToString("yyyy-MM-dd HH:mm:ss"));
 
             try
             {
-                var result = await _dbSet
+                // Create the query with explicit date range filter
+                var query = _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .Where(p => p.RegisteredDate >= startDate && p.RegisteredDate <= endDate)
-                    .ToListAsync();
+                    .TagWith("WITH (NOLOCK)");
+
+                // Add the date range filter
+                query = query.Where(p => p.RegisteredDate >= startDate && p.RegisteredDate <= endDate);
+
+                // Log the SQL query being executed (for debugging)
+                _logger.LogInformation("Executing SQL query for players with RegisteredDate between {StartDate} and {EndDate}",
+                    startDate, endDate);
+
+                var result = await query.ToListAsync();
+
+                _logger.LogInformation("Retrieved {Count} players registered between {StartDate} and {EndDate}",
+                    result.Count(), startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
 
                 // Cache the result
                 if (_enableCaching)

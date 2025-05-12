@@ -321,6 +321,142 @@ export interface ReportSharing {
 
 export default Report;
 
+/**
+ * Daily Action Game interface
+ * Represents a game's daily action data from the /api/reports/daily-action-games/data endpoint
+ */
+export interface DailyActionGame {
+  /**
+   * Record ID
+   */
+  id: number;
+
+  /**
+   * Game date
+   */
+  gameDate: string;
+
+  /**
+   * Player ID
+   */
+  playerId: number;
+
+  /**
+   * Game ID
+   */
+  gameId: number;
+
+  /**
+   * Platform
+   */
+  platform: string;
+
+  /**
+   * Real bet amount
+   */
+  realBetAmount: number;
+
+  /**
+   * Real win amount
+   */
+  realWinAmount: number;
+
+  /**
+   * Bonus bet amount
+   */
+  bonusBetAmount: number;
+
+  /**
+   * Bonus win amount
+   */
+  bonusWinAmount: number;
+
+  /**
+   * Net gaming revenue
+   */
+  netGamingRevenue: number;
+
+  /**
+   * Number of real bets
+   */
+  numberOfRealBets: number;
+
+  /**
+   * Number of bonus bets
+   */
+  numberOfBonusBets: number;
+
+  /**
+   * Number of sessions
+   */
+  numberOfSessions: number;
+
+  /**
+   * Number of real wins
+   */
+  numberOfRealWins: number;
+
+  /**
+   * Number of bonus wins
+   */
+  numberOfBonusWins: number;
+
+  /**
+   * Original real bet amount
+   */
+  realBetAmountOriginal: number;
+
+  /**
+   * Original real win amount
+   */
+  realWinAmountOriginal: number;
+
+  /**
+   * Original bonus bet amount
+   */
+  bonusBetAmountOriginal: number;
+
+  /**
+   * Original bonus win amount
+   */
+  bonusWinAmountOriginal: number;
+
+  /**
+   * Original net gaming revenue
+   */
+  netGamingRevenueOriginal: number;
+
+  /**
+   * Update date
+   */
+  updateDate: string;
+}
+
+/**
+ * Daily Action Games Response interface
+ */
+export interface DailyActionGamesResponse {
+  /**
+   * Array of daily action games data
+   */
+  data: DailyActionGame[];
+
+  /**
+   * Total count of records
+   */
+  totalCount: number;
+
+  /**
+   * Start date of the query
+   */
+  startDate: string;
+
+  /**
+   * End date of the query
+   */
+  endDate: string;
+}
+
 // Group By Options
 export type GroupByOption = 'Day' | 'Month' | 'Year' | 'Country' | 'Platform' | 'Game' | 'Currency';
 
@@ -401,7 +537,9 @@ export type SummaryMetricType =
   'retentionRate' |
   'activeUsers' |
   'avgSessionDuration' |
-  'betCount';
+  'betCount' |
+  'totalFTD' |
+  'totalCashouts';
 
 // Metric Definition
 export interface MetricDefinition {
@@ -430,6 +568,8 @@ export interface DailyActionsSummary {
   activeUsers?: number;
   avgSessionDuration?: number;
   betCount?: number;
+  totalFTD?: number;
+  totalCashouts?: number;
 
   // Trends with comparison periods
   trends?: {

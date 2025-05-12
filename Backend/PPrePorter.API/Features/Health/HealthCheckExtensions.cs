@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PPrePorter.API.Features.Health;
+using PPrePorter.API.Features.Health.Redis;
 using PPrePorter.Core.Interfaces;
+using System;
 
 namespace PPrePorter.API.Extensions
 {
@@ -86,11 +88,12 @@ namespace PPrePorter.API.Extensions
                     failureStatus: HealthStatus.Degraded,
                     tags: new[] { "database", "sql", "dailyactions" })
 
-                // Add Redis health check if configured
-                .AddRedis(
+                // Add custom Redis health check with timeout if configured
+                .AddCustomRedis(
                     redisConnectionString: redisConnectionString,
                     name: "Redis",
                     failureStatus: HealthStatus.Degraded,
+                    timeout: TimeSpan.FromSeconds(3), // Set a 3-second timeout
                     tags: new[] { "cache", "redis" })
 
                 // Add custom health check

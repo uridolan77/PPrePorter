@@ -10,27 +10,27 @@ export interface CardAccentProps {
    * Position of the accent stripe
    */
   position?: AccentPosition;
-  
+
   /**
    * Color variant of the accent
    */
   variant?: AccentVariant;
-  
+
   /**
    * Whether to show a wave pattern background
    */
   showWavePattern?: boolean;
-  
+
   /**
    * Thickness of the accent stripe in pixels
    */
   thickness?: number;
-  
+
   /**
    * Custom color for the accent (overrides variant)
    */
   color?: string;
-  
+
   /**
    * Opacity of the wave pattern (0-1)
    */
@@ -45,16 +45,16 @@ const CardAccent: React.FC<CardAccentProps> = ({
   position = 'left',
   variant = 'teal',
   showWavePattern = false,
-  thickness = 4,
+  thickness = 8,
   color,
   patternOpacity = 0.1
 }) => {
   const theme = useTheme();
-  
+
   // Get color based on variant
   const getColor = (): string => {
     if (color) return color;
-    
+
     const variantColors = {
       teal: theme.palette.primary.main,
       purple: theme.palette.secondary.main,
@@ -63,10 +63,10 @@ const CardAccent: React.FC<CardAccentProps> = ({
       amber: theme.palette.warning.main,
       red: theme.palette.error.main
     };
-    
+
     return variantColors[variant] || theme.palette.primary.main;
   };
-  
+
   // Get position styles
   const getPositionStyles = () => {
     switch (position) {
@@ -105,9 +105,9 @@ const CardAccent: React.FC<CardAccentProps> = ({
         };
     }
   };
-  
+
   const accentColor = getColor();
-  
+
   return (
     <>
       {/* Accent stripe */}
@@ -119,7 +119,7 @@ const CardAccent: React.FC<CardAccentProps> = ({
           zIndex: 1
         }}
       />
-      
+
       {/* Wave pattern background */}
       {showWavePattern && (
         <Box

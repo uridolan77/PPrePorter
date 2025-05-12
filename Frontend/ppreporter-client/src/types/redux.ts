@@ -1,5 +1,6 @@
 import { DashboardStats, DashboardComponentErrors } from './dashboard';
 import { EntityState } from '@reduxjs/toolkit';
+import { DailyActionGamesState } from '../store/slices/dailyActionGamesSlice';
 
 /**
  * Root state interface for the entire Redux store
@@ -11,7 +12,10 @@ export interface RootState {
   naturalLanguage: NaturalLanguageState;
   entities: EntitiesState;
   ui: UIState;
+  dailyActionGames: DailyActionGamesState;
 }
+
+// DailyActionGamesState is now imported from dailyActionGamesSlice.ts
 
 /**
  * Dashboard state interface

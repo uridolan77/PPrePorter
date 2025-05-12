@@ -4,7 +4,7 @@ import mockDataService from '../../mockData';
 // Constants
 // Always use the full URL to avoid client calling itself
 // This ensures we're always pointing to the actual API server
-const API_URL = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://localhost:7075';
 
 // Log the API URL being used
 console.log('API URL configured as:', API_URL);
@@ -16,15 +16,24 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'false');
 console.log('Mock data mode is disabled, using real API calls');
 
+// Force disable mock data for all API calls
+const FORCE_REAL_API_CALLS = true; // Set to true to always use real API calls
+if (FORCE_REAL_API_CALLS) {
+  console.log('FORCE_REAL_API_CALLS is enabled - all API calls will use the real API regardless of localStorage settings');
+}
+
 // Function to check API availability without automatically enabling mock data
 const checkApiAvailability = async () => {
   try {
-    // Extract the base URL without the /api part for health check
-    const baseUrl = API_URL.replace('/api', '');
-    console.log('Checking API availability at:', `${baseUrl}/health`);
+    // Use the base URL for health check
+    console.log('Checking API availability at:', `${API_URL}/api/health`);
 
-    // Try to ping the API server
-    const response = await fetch(`${baseUrl}/health`, {
+    // Create an AbortController to timeout the request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    // Try to ping the API server with a timeout
+    const response = await fetch(`${API_URL}/api/health`, {
       method: 'HEAD',
       cache: 'no-cache',
       credentials: 'include',
@@ -33,7 +42,11 @@ const checkApiAvailability = async () => {
       },
       redirect: 'follow',
       referrerPolicy: 'no-referrer',
+      signal: controller.signal
     });
+
+    // Clear the timeout
+    clearTimeout(timeoutId);
 
     console.log('API health check successful, status:', response.status);
     return true;
@@ -56,7 +69,7 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json; v=1.0', // Add API version to match Swagger
   },
-  timeout: 30000, // 30 seconds
+  timeout: 10000, // 10 seconds - reduced from 30 seconds to fail faster if API is unreachable
   withCredentials: false, // Set to false to avoid CORS preflight issues
 });
 
@@ -72,7 +85,13 @@ apiClient.interceptors.request.use(
     }
 
     // Check if we should use mock data
-    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+    let useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+    // Override with FORCE_REAL_API_CALLS if enabled
+    if (FORCE_REAL_API_CALLS) {
+      useMockData = false;
+    }
+
     console.log('Using mock data?', useMockData);
 
     // If mock data is enabled, we'll handle it directly here
@@ -94,7 +113,7 @@ apiClient.interceptors.request.use(
         console.log('[API CLIENT] Params:', method.toLowerCase() === 'get' ? config.params : data);
 
         // Extract the endpoint from the URL (remove the base URL)
-        const baseUrl = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
+        const baseUrl = process.env.REACT_APP_API_URL || 'https://localhost:7075';
         const endpoint = url.replace(baseUrl, '');
         console.log('[API CLIENT] Extracted endpoint:', endpoint);
 
@@ -128,7 +147,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   async (response: AxiosResponse): Promise<AxiosResponse> => {
     // Check if we should use mock data
-    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+    let useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+    // Override with FORCE_REAL_API_CALLS if enabled
+    if (FORCE_REAL_API_CALLS) {
+      useMockData = false;
+    }
 
     // If mock data is enabled and we have mock data in the config
     if (useMockData && (response.config as any).mockData) {
@@ -164,7 +188,12 @@ apiClient.interceptors.response.use(
     console.error('[API CLIENT RESPONSE] API Response Error:', error.response?.status, error.config?.url, error.response?.data);
 
     // Check if we should use mock data
-    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+    let useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+    // Override with FORCE_REAL_API_CALLS if enabled
+    if (FORCE_REAL_API_CALLS) {
+      useMockData = false;
+    }
 
     // If mock data is enabled and we have mock data in the config
     if (useMockData && error.config && (error.config as any).mockData) {
@@ -217,7 +246,13 @@ apiClient.interceptors.response.use(
     // This interceptor is for token refresh, not for mock data
     // The mock data interceptor is already handling errors
     // Only proceed with token refresh if mock data is disabled
-    const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+    let useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+    // Override with FORCE_REAL_API_CALLS if enabled
+    if (FORCE_REAL_API_CALLS) {
+      useMockData = false;
+    }
+
     if (useMockData) {
       return Promise.reject(error);
     }
@@ -247,7 +282,7 @@ apiClient.interceptors.response.use(
         }
 
         // Call token refresh endpoint
-        const response = await axios.post(`${API_URL}/auth/refresh-token`, {
+        const response = await axios.post(`${API_URL}/api/auth/refresh-token`, {
           refreshToken,
         });
 

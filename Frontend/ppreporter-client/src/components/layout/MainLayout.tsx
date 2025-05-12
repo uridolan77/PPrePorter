@@ -126,6 +126,7 @@ const MainLayout: React.FC = () => {
         { text: 'Advanced Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions/advanced' },
         { text: 'Players Report', icon: <PersonIcon />, path: '/reports/players' },
         { text: 'Games Report', icon: <VideogameAssetIcon />, path: '/reports/games' },
+        { text: 'Daily Action Games', icon: <VideogameAssetIcon />, path: '/reports/daily-action-games' },
         { text: 'Financial', icon: <BarChartIcon />, path: '/reports/financial' },
         { text: 'Performance', icon: <TimelineIcon />, path: '/reports/performance' },
         { text: 'Geographic', icon: <PublicIcon />, path: '/reports/geographic' }

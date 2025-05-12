@@ -18,7 +18,18 @@ import naturalLanguageMockData from './naturalLanguage';
  * Check if mock data should be used
  */
 export const shouldUseMockData = (): boolean => {
-  return FEATURES.USE_MOCK_DATA_FOR_UI_TESTING;
+  // Always check the current value from localStorage, not just the initial FEATURES value
+  const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+
+  // Force disable mock data
+  const FORCE_REAL_API_CALLS = true;
+
+  if (FORCE_REAL_API_CALLS) {
+    console.log('[MOCK] FORCE_REAL_API_CALLS is enabled - mock data is forcibly disabled');
+    return false;
+  }
+
+  return useMockData;
 };
 
 /**
@@ -28,6 +39,12 @@ export const shouldUseMockData = (): boolean => {
  * @returns Mock data for the endpoint
  */
 export const getMockData = (endpoint: string, params?: any): any => {
+  // Check if we should use mock data first
+  if (!shouldUseMockData()) {
+    console.log(`[MOCK] Mock data is disabled, not providing mock data for: ${endpoint}`);
+    return null;
+  }
+
   console.log(`[MOCK] Getting mock data for endpoint: ${endpoint}`, params);
 
   // Normalize the endpoint by removing leading slash and any API prefix
@@ -43,6 +60,7 @@ export const getMockData = (endpoint: string, params?: any): any => {
   const category = segments[0];
 
   console.log(`[MOCK] Category: ${category}, Segments:`, segments);
+  console.log(`[MOCK] USE_MOCK_DATA_FOR_UI_TESTING from localStorage:`, localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING'));
 
   let result;
 

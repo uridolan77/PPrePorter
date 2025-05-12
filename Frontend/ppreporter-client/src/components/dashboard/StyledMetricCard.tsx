@@ -92,7 +92,7 @@ const StyledMetricCard: React.FC<StyledMetricCardProps> = ({
     <GradientCard
       gradientVariant={variant}
       sx={sx}
-      contentSx={{ flex: 1, position: 'relative', p: 2.5 }}
+      contentSx={{ flex: 1, position: 'relative', p: 3 }}
     >
         {/* Card header with title and actions */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>

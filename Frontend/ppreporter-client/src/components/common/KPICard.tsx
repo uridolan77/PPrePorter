@@ -107,8 +107,14 @@ const KPICard: React.FC<KPICardProps> = ({
         bgcolor: color,
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.05), 0px 10px 15px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.12), 0px 24px 32px rgba(0, 0, 0, 0.16)',
         borderRadius: 2,
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0px 16px 32px rgba(0, 0, 0, 0.16), 0px 32px 48px rgba(0, 0, 0, 0.2)',
+        },
         ...sx
       }}
     >
@@ -116,7 +122,7 @@ const KPICard: React.FC<KPICardProps> = ({
         position="left"
         variant={getAccentVariant()}
       />
-      <CardContent sx={{ flex: 1, position: 'relative', p: 2 }}>
+      <CardContent sx={{ flex: 1, position: 'relative', p: 3 }}>
         {/* Card header with title and actions */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
