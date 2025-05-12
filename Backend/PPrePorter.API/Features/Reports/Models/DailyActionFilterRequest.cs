@@ -1,4 +1,5 @@
 using PPrePorter.DailyActionsDB.Models.DailyActions;
+using PPrePorter.DailyActionsDB.Models.DTOs;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -45,6 +46,6 @@ namespace PPrePorter.API.Features.Reports.Models
         /// <summary>
         /// Group by option
         /// </summary>
-        public GroupByOption GroupBy { get; set; } = GroupByOption.None;
+        public GroupByOption GroupBy { get; set; } = GroupByOption.Day;
     }
 }

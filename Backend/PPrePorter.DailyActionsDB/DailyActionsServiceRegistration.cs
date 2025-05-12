@@ -7,7 +7,6 @@ using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Services;
-using PPrePorter.DailyActionsDB.Services.DailyActions;
 
 namespace PPrePorter.DailyActionsDB
 {

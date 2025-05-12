@@ -157,7 +157,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.v1
                 var filter = new DailyActionFilterDto
                 {
                     WhiteLabelIds = request.WhiteLabelIds,
-                    PlayerIds = request.PlayerIds,
+                    PlayerIds = request.PlayerIds?.ConvertAll(id => (long)id),
                     PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber,
                     PageSize = request.PageSize <= 0 ? 50 : request.PageSize,
                     GroupBy = request.GroupBy

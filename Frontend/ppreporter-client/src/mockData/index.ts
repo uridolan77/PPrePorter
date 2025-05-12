@@ -22,11 +22,13 @@ export const shouldUseMockData = (): boolean => {
   const useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
 
   // Force disable mock data
-  const FORCE_REAL_API_CALLS = true;
+  const FORCE_REAL_API_CALLS = false;
 
   if (FORCE_REAL_API_CALLS) {
     console.log('[MOCK] FORCE_REAL_API_CALLS is enabled - mock data is forcibly disabled');
     return false;
+  } else {
+    console.log('[MOCK] FORCE_REAL_API_CALLS is disabled - mock data will be used if enabled in localStorage');
   }
 
   return useMockData;

@@ -743,7 +743,7 @@ namespace PPrePorter.DailyActionsDB.Services.DailyActions
                 .GroupBy(da => da.WhiteLabelId)
                 .Select(group =>
                 {
-                    var whiteLabelId = group.Key ?? 0;
+                    var whiteLabelId = group.Key;
                     var whiteLabelName = _whiteLabelNames.TryGetValue(whiteLabelId, out var name)
                         ? name
                         : $"White Label {whiteLabelId}";
@@ -794,7 +794,7 @@ namespace PPrePorter.DailyActionsDB.Services.DailyActions
                 .OrderBy(da => da.WhiteLabelName)
                 .ToList();
 
-            _logger.LogInformation("Grouped by white label: returning {0} white label groups", result.Count);
+            _logger.LogInformation("Grouped by white label: returning {Count} white label groups", result.Count);
             return result;
         }
 
@@ -896,7 +896,7 @@ namespace PPrePorter.DailyActionsDB.Services.DailyActions
                 .OrderBy(da => da.PlayerId)
                 .ToList();
 
-            _logger.LogInformation("Grouped by player: returning {0} player groups", result.Count);
+            _logger.LogInformation("Grouped by player: returning {Count} player groups", result.Count);
             return result;
         }
 

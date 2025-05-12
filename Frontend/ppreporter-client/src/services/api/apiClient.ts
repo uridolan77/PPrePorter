@@ -13,13 +13,15 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Initialize mock data flag in localStorage
 // This ensures the flag is set when the application starts
-localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'false');
-console.log('Mock data mode is disabled, using real API calls');
+localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
+console.log('Mock data mode is enabled, using mock data for UI testing');
 
 // Force disable mock data for all API calls
-const FORCE_REAL_API_CALLS = true; // Set to true to always use real API calls
+const FORCE_REAL_API_CALLS = false; // Set to false to allow mock data toggle to work
 if (FORCE_REAL_API_CALLS) {
   console.log('FORCE_REAL_API_CALLS is enabled - all API calls will use the real API regardless of localStorage settings');
+} else {
+  console.log('FORCE_REAL_API_CALLS is disabled - mock data toggle will work based on localStorage settings');
 }
 
 // Function to check API availability without automatically enabling mock data
