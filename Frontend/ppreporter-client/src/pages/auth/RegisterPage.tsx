@@ -11,6 +11,10 @@ import RegisterForm from '../../components/auth/RegisterForm';
 import { useAuth } from '../../hooks/useAuth';
 import { RegistrationData } from '../../types/auth';
 
+// Import CSS and custom components for RegisterPage
+import './RegisterPage.css';
+import { BoxContainer, LogoContainer, TermsContainer } from './RegisterPageComponents';
+
 // Define RegisterFormData interface to match the component's expected props
 interface RegisterFormData {
   firstName: string;
@@ -106,6 +110,7 @@ const RegisterPage: React.FC = () => {
     <Container
       component="main"
       maxWidth="sm"
+      // Use inline sx prop with direct object
       sx={{
         height: '100vh',
         display: 'flex',
@@ -114,23 +119,9 @@ const RegisterPage: React.FC = () => {
         py: 2 // Reduced padding from 4 to 2
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}
-      >
+      <BoxContainer>
         {/* Logo */}
-        <Box
-          sx={{
-            width: '100%',
-            mb: 2, // Reduced from 6 to 2 to bring form closer to logo
-            display: 'flex',
-            justifyContent: 'center',
-            userSelect: 'none', // Make unselectable
-          }}
-        >
+        <LogoContainer sx={{ mb: 2 }}> {/* Reduced from 6 to 2 to bring form closer to logo */}
           <img
             src="/assets/preplogo.png"
             alt="PPrePorter Logo"
@@ -145,16 +136,14 @@ const RegisterPage: React.FC = () => {
             }}
             draggable="false" // Prevent dragging
           />
-        </Box>
+        </LogoContainer>
 
         {/* Error Alert */}
         {error && (
           <Alert
             severity="error"
-            sx={{
-              width: '100%',
-              mb: 3
-            }}
+            style={{ width: '100%' }}
+            sx={{ mb: 3 }}
           >
             {error}
           </Alert>
@@ -172,11 +161,10 @@ const RegisterPage: React.FC = () => {
         />
 
         {/* Terms & Support Section */}
-        <Box
+        <TermsContainer
           sx={{
             mt: 2, // Reduced from 4 to 2
-            p: 1, // Reduced from 2 to 1
-            textAlign: 'center',
+            p: 1 // Reduced from 2 to 1
           }}
         >
           <Typography variant="caption" color="text.secondary">
@@ -185,8 +173,8 @@ const RegisterPage: React.FC = () => {
             <a href="/privacy">Privacy Policy</a>.
             {' '}Need help? <a href="/support">Contact Support</a>
           </Typography>
-        </Box>
-      </Box>
+        </TermsContainer>
+      </BoxContainer>
     </Container>
   );
 };

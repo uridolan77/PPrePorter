@@ -248,11 +248,19 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                 // Process string-based group by options if provided
                 ProcessStringBasedGroupBy(filter);
 
+                // Log the received date range
+                _logger.LogInformation("Received date range for filtered-grouped: StartDate={StartDate}, EndDate={EndDate}",
+                    filter.StartDate?.ToString("yyyy-MM-dd"), filter.EndDate?.ToString("yyyy-MM-dd"));
+
                 // Default date range to yesterday-today if not specified
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
                 filter.StartDate ??= yesterday;
                 filter.EndDate ??= today;
+
+                // Log the final date range after defaults
+                _logger.LogInformation("Final date range after defaults for filtered-grouped: StartDate={StartDate}, EndDate={EndDate}",
+                    filter.StartDate?.ToString("yyyy-MM-dd"), filter.EndDate?.ToString("yyyy-MM-dd"));
 
                 // Remove pagination for grouping (we'll return all grouped results)
                 // Set a large page size to get all records
@@ -263,14 +271,17 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     filter.PageSize, filter.PageNumber);
 
                 // Get all filtered daily actions data
+                _logger.LogInformation("Calling GetFilteredDailyActionsAsync with date range: StartDate={StartDate}, EndDate={EndDate}",
+                    filter.StartDate?.ToString("yyyy-MM-dd"), filter.EndDate?.ToString("yyyy-MM-dd"));
                 var result = await _dailyActionsService.GetFilteredDailyActionsAsync(filter);
+                _logger.LogInformation("GetFilteredDailyActionsAsync returned {Count} records", result.Data.Count());
 
                 // Get white labels for mapping names
                 var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
                 var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Id, wl => wl.Name);
 
                 // Group data based on the groupBy parameter
-                var groupedData = GroupDailyActionsData(result.Data, filter.GroupBy, whiteLabelDict);
+                var groupedData = GroupDailyActionsData(result.Data, filter.GroupBy, whiteLabelDict, filter.StartDate.Value, filter.EndDate.Value);
 
                 // Get summary metrics
                 var summary = await _dailyActionsService.GetSummaryMetricsAsync(
@@ -312,6 +323,10 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                 // Log the response
                 _logger.LogInformation("GetFilteredGroupedDailyActionsData: Returning response with {Count} grouped records",
                     groupedData.Count());
+
+                // Log the date range and number of records in the response
+                _logger.LogInformation("GetFilteredGroupedDailyActionsData: Returning response with {Count} grouped records, date range: {StartDate} to {EndDate}",
+                    groupedData.Count(), filter.StartDate?.ToString("yyyy-MM-dd"), filter.EndDate?.ToString("yyyy-MM-dd"));
 
                 // Return the grouped data with summary
                 return Ok(response);
@@ -517,8 +532,10 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
         /// <param name="data">Raw daily actions data</param>
         /// <param name="groupBy">GroupBy option (Day=0, Month=1, Year=2, Label=3, etc.)</param>
         /// <param name="whiteLabelDict">Dictionary of white label IDs to names</param>
+        /// <param name="startDate">Start date of the filter range</param>
+        /// <param name="endDate">End date of the filter range</param>
         /// <returns>Grouped data with summed metrics</returns>
-        private IEnumerable<object> GroupDailyActionsData(IEnumerable<DailyActionDto> data, GroupByOption groupBy, Dictionary<int, string> whiteLabelDict)
+        private IEnumerable<object> GroupDailyActionsData(IEnumerable<DailyActionDto> data, GroupByOption groupBy, Dictionary<int, string> whiteLabelDict, DateTime startDate, DateTime endDate)
         {
             if (data == null || !data.Any())
             {
@@ -673,107 +690,134 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
             _logger.LogInformation("GroupDailyActionsData: Created {Count} groups after grouping by {GroupBy}",
                 groups.Count, groupBy);
 
-            // Special handling for Day grouping with no label selected
-            // If we have only one group for Day, it means we're not properly grouping by day
-            if (groupBy == GroupByOption.Day && groups.Count == 1 && data.Count() > 1)
+            // For Day grouping, always use the date as the key
+            // This ensures we get one group per day in the date range
+            if (groupBy == GroupByOption.Day)
             {
-                _logger.LogWarning("GroupDailyActionsData: Only one group for Day grouping with {Count} records. Forcing grouping by date.", data.Count());
+                _logger.LogInformation("GroupDailyActionsData: Using explicit date grouping for Day option with {Count} records", data.Count());
 
-                // Instead of trying to cast, let's create a new list of grouped data directly
-                var forcedGroupedData = data
-                    .GroupBy(da => da.Date.Date)
-                    .Select(g => {
-                        // Log each group
-                        _logger.LogInformation("GroupDailyActionsData: Processing forced date group with key {Key}, containing {Count} records",
-                            g.Key, g.Count());
+                // Create a list of all dates in the filter range
+                var allDates = new List<DateTime>();
+                for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
+                {
+                    allDates.Add(date);
+                }
 
-                        // Create the base object with the group key
-                        var baseObj = new
-                        {
-                            groupKey = "Day",
-                            groupValue = g.Key.ToString("yyyy-MM-dd"),
-                            date = g.Key,
-                        };
+                _logger.LogInformation("GroupDailyActionsData: Created {Count} dates from filter range {StartDate} to {EndDate}: {Dates}",
+                    allDates.Count, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"),
+                    string.Join(", ", allDates.Select(d => d.ToString("yyyy-MM-dd"))));
 
-                        // Add all the summed metrics
-                        var metrics = new
-                        {
-                            // Basic metrics
-                            registrations = g.Sum(da => da.Registrations),
-                            ftd = g.Sum(da => da.FTD),
-                            ftda = g.Sum(da => da.FTDA),
-                            deposits = g.Sum(da => da.Deposits),
-                            depositsCreditCard = g.Sum(da => da.DepositsCreditCard),
-                            depositsNeteller = g.Sum(da => da.DepositsNeteller),
-                            depositsMoneyBookers = g.Sum(da => da.DepositsMoneyBookers),
-                            depositsOther = g.Sum(da => da.DepositsOther),
-                            cashoutRequests = g.Sum(da => da.CashoutRequests),
-                            paidCashouts = g.Sum(da => da.PaidCashouts),
+                // Get the actual dates that have data
+                var datesWithData = data.Select(da => da.Date.Date).Distinct().ToList();
+                _logger.LogInformation("GroupDailyActionsData: Found {Count} distinct dates with data: {Dates}",
+                    datesWithData.Count, string.Join(", ", datesWithData.Select(d => d.ToString("yyyy-MM-dd"))));
 
-                            // Casino metrics
-                            betsCasino = g.Sum(da => da.BetsCasino),
-                            winsCasino = g.Sum(da => da.WinsCasino),
-                            ggrCasino = g.Sum(da => da.GGRCasino),
 
-                            // Sport metrics
-                            betsSport = g.Sum(da => da.BetsSport),
-                            winsSport = g.Sum(da => da.WinsSport),
-                            ggrSport = g.Sum(da => da.GGRSport),
+                // Create a list to hold our results
+                var forcedGroupedData = new List<object>();
 
-                            // Live metrics
-                            betsLive = g.Sum(da => da.BetsLive),
-                            winsLive = g.Sum(da => da.WinsLive),
-                            ggrLive = g.Sum(da => da.GGRLive),
+                // Process each date in the range
+                foreach (var date in allDates)
+                {
+                    // Get data for this date if it exists
+                    var dateData = data.Where(da => da.Date.Date == date).ToList();
 
-                            // Bingo metrics
-                            betsBingo = g.Sum(da => da.BetsBingo),
-                            winsBingo = g.Sum(da => da.WinsBingo),
-                            ggrBingo = g.Sum(da => da.GGRBingo),
+                    _logger.LogInformation("GroupDailyActionsData: Processing date {Date}, found {Count} records",
+                        date.ToString("yyyy-MM-dd"), dateData.Count);
 
-                            // Total GGR
-                            totalGGR = g.Sum(da => da.TotalGGR)
-                        };
+                    // Create the base object with the group key
+                    var baseObj = new
+                    {
+                        groupKey = "Day",
+                        groupValue = date.ToString("yyyy-MM-dd"),
+                        date = date,
+                    };
 
-                        // Create a simplified structure for grouped data
-                        return new
-                        {
-                            id = Guid.NewGuid().ToString(), // Generate a unique ID for the grouped record
-                            groupKey = ((dynamic)baseObj).groupKey,
-                            groupValue = ((dynamic)baseObj).groupValue,
+                    // Add all the summed metrics - if no data for this date, use zeros
+                    var metrics = new
+                    {
+                        // Basic metrics
+                        registrations = dateData.Any() ? dateData.Sum(da => da.Registrations) : 0,
+                        ftd = dateData.Any() ? dateData.Sum(da => da.FTD) : 0,
+                        ftda = dateData.Any() ? dateData.Sum(da => da.FTDA) : 0,
+                        deposits = dateData.Any() ? dateData.Sum(da => da.Deposits) : 0,
+                        depositsCreditCard = dateData.Any() ? dateData.Sum(da => da.DepositsCreditCard) : 0,
+                        depositsNeteller = dateData.Any() ? dateData.Sum(da => da.DepositsNeteller) : 0,
+                        depositsMoneyBookers = dateData.Any() ? dateData.Sum(da => da.DepositsMoneyBookers) : 0,
+                        depositsOther = dateData.Any() ? dateData.Sum(da => da.DepositsOther) : 0,
+                        cashoutRequests = dateData.Any() ? dateData.Sum(da => da.CashoutRequests) : 0,
+                        paidCashouts = dateData.Any() ? dateData.Sum(da => da.PaidCashouts) : 0,
 
-                            // Include the most important metrics
-                            registrations = ((dynamic)metrics).registrations,
-                            ftd = ((dynamic)metrics).ftd,
-                            deposits = ((dynamic)metrics).deposits,
-                            paidCashouts = ((dynamic)metrics).paidCashouts,
+                        // Casino metrics
+                        betsCasino = dateData.Any() ? dateData.Sum(da => da.BetsCasino) : 0,
+                        winsCasino = dateData.Any() ? dateData.Sum(da => da.WinsCasino) : 0,
+                        ggrCasino = dateData.Any() ? dateData.Sum(da => da.GGRCasino) : 0,
 
-                            // Casino metrics
-                            betsCasino = ((dynamic)metrics).betsCasino,
-                            winsCasino = ((dynamic)metrics).winsCasino,
-                            ggrCasino = ((dynamic)metrics).ggrCasino,
+                        // Sport metrics
+                        betsSport = dateData.Any() ? dateData.Sum(da => da.BetsSport) : 0,
+                        winsSport = dateData.Any() ? dateData.Sum(da => da.WinsSport) : 0,
+                        ggrSport = dateData.Any() ? dateData.Sum(da => da.GGRSport) : 0,
 
-                            // Sport metrics
-                            betsSport = ((dynamic)metrics).betsSport,
-                            winsSport = ((dynamic)metrics).winsSport,
-                            ggrSport = ((dynamic)metrics).ggrSport,
+                        // Live metrics
+                        betsLive = dateData.Any() ? dateData.Sum(da => da.BetsLive) : 0,
+                        winsLive = dateData.Any() ? dateData.Sum(da => da.WinsLive) : 0,
+                        ggrLive = dateData.Any() ? dateData.Sum(da => da.GGRLive) : 0,
 
-                            // Live metrics
-                            betsLive = ((dynamic)metrics).betsLive,
-                            winsLive = ((dynamic)metrics).winsLive,
-                            ggrLive = ((dynamic)metrics).ggrLive,
+                        // Bingo metrics
+                        betsBingo = dateData.Any() ? dateData.Sum(da => da.BetsBingo) : 0,
+                        winsBingo = dateData.Any() ? dateData.Sum(da => da.WinsBingo) : 0,
+                        ggrBingo = dateData.Any() ? dateData.Sum(da => da.GGRBingo) : 0,
 
-                            // Bingo metrics
-                            betsBingo = ((dynamic)metrics).betsBingo,
-                            winsBingo = ((dynamic)metrics).winsBingo,
-                            ggrBingo = ((dynamic)metrics).ggrBingo,
+                        // Total GGR
+                        totalGGR = dateData.Any() ? dateData.Sum(da => da.TotalGGR) : 0
+                    };
 
-                            // Total GGR
-                            totalGGR = ((dynamic)metrics).totalGGR
-                        };
-                    })
-                    .ToList();
+                    // Create a simplified structure for grouped data
+                    var groupedItem = new
+                    {
+                        id = Guid.NewGuid().ToString(), // Generate a unique ID for the grouped record
+                        groupKey = ((dynamic)baseObj).groupKey,
+                        groupValue = ((dynamic)baseObj).groupValue,
+                        date = ((dynamic)baseObj).date,
 
-                _logger.LogInformation("GroupDailyActionsData: Forced grouping by date created {Count} groups", forcedGroupedData.Count);
+                        // Include the most important metrics
+                        registrations = ((dynamic)metrics).registrations,
+                        ftd = ((dynamic)metrics).ftd,
+                        deposits = ((dynamic)metrics).deposits,
+                        paidCashouts = ((dynamic)metrics).paidCashouts,
+
+                        // Casino metrics
+                        betsCasino = ((dynamic)metrics).betsCasino,
+                        winsCasino = ((dynamic)metrics).winsCasino,
+                        ggrCasino = ((dynamic)metrics).ggrCasino,
+
+                        // Sport metrics
+                        betsSport = ((dynamic)metrics).betsSport,
+                        winsSport = ((dynamic)metrics).winsSport,
+                        ggrSport = ((dynamic)metrics).ggrSport,
+
+                        // Live metrics
+                        betsLive = ((dynamic)metrics).betsLive,
+                        winsLive = ((dynamic)metrics).winsLive,
+                        ggrLive = ((dynamic)metrics).ggrLive,
+
+                        // Bingo metrics
+                        betsBingo = ((dynamic)metrics).betsBingo,
+                        winsBingo = ((dynamic)metrics).winsBingo,
+                        ggrBingo = ((dynamic)metrics).ggrBingo,
+
+                        // Total GGR
+                        totalGGR = ((dynamic)metrics).totalGGR
+                    };
+
+                    // Add to our results list
+                    forcedGroupedData.Add(groupedItem);
+                }
+
+                // Sort by date
+                forcedGroupedData = forcedGroupedData.OrderBy(d => ((dynamic)d).date).ToList();
+
+                _logger.LogInformation("GroupDailyActionsData: Day grouping created {Count} groups", forcedGroupedData.Count);
 
                 // Return the forced grouped data directly
                 return forcedGroupedData;

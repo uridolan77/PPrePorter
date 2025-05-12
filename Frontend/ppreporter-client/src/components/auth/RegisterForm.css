@@ -1,0 +1,24 @@
+.logo-title-container {
+  text-align: center;
+}
+
+.terms-container {
+  /* No specific styles needed, just a container */
+}
+
+.login-link-container {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.social-divider-container {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.social-buttons-container {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}

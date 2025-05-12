@@ -26,6 +26,16 @@ import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import { CommonProps } from '../../types/common';
 
+// Import CSS and custom components
+import './RegisterForm.css';
+import {
+  LogoTitleContainer,
+  TermsContainer,
+  LoginLinkContainer,
+  SocialDividerContainer,
+  SocialButtonsContainer
+} from './LogoTitleContainer';
+
 interface RegisterFormData {
   firstName: string;
   lastName: string;
@@ -191,7 +201,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         }}
       >
         {/* Logo and Title */}
-        <Box sx={{ textAlign: 'center', mb: 1 }}> /* Reduced margin from 2 to 1 */
+        <LogoTitleContainer sx={{ mb: 1 }}> {/* Reduced margin from 2 to 1 */}
           {logoUrl && logoUrl.trim() !== '' && (
             <img
               src={logoUrl}
@@ -200,13 +210,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           )}
-          <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold', mb: 0.5 }}> /* Added mb: 0.5 instead of gutterBottom */
-            Create an Account
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Fill in the form below to create your account
-          </Typography>
-        </Box>
+          {/* Title and subtitle removed as requested */}
+        </LogoTitleContainer>
 
         {/* Error Message */}
         {error && (
@@ -345,7 +350,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         />
 
         {/* Terms and Conditions */}
-        <Box>
+        <TermsContainer>
           <FormControlLabel
             control={
               <Checkbox
@@ -372,7 +377,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           {formErrors.agreeToTerms && (
             <FormHelperText error>{formErrors.agreeToTerms}</FormHelperText>
           )}
-        </Box>
+        </TermsContainer>
 
         {/* Submit Button */}
         <Button
@@ -388,7 +393,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         </Button>
 
         {/* Login Link */}
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
+        <LoginLinkContainer sx={{ mt: 2 }}>
           <Typography variant="body2" color="text.secondary">
             Already have an account?{' '}
             <Link
@@ -400,20 +405,20 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               Sign in
             </Link>
           </Typography>
-        </Box>
+        </LoginLinkContainer>
 
         {/* Social Registration Options */}
         {showSocialLogin && (
           <>
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+            <SocialDividerContainer sx={{ mt: 2 }}>
               <Divider sx={{ flex: 1 }} />
               <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
                 or sign up with
               </Typography>
               <Divider sx={{ flex: 1 }} />
-            </Box>
+            </SocialDividerContainer>
 
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <SocialButtonsContainer sx={{ mt: 2 }}>
               <Button
                 variant="outlined"
                 fullWidth
@@ -434,7 +439,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               >
                 Microsoft
               </Button>
-            </Box>
+            </SocialButtonsContainer>
           </>
         )}
       </Box>

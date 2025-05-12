@@ -1,0 +1,15 @@
+.header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-placeholder {
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}

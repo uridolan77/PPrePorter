@@ -1003,35 +1003,29 @@ namespace PPrePorter.DailyActionsDB.Services
                     };
                 }).ToList();
 
-                // Apply grouping if specified
+                // Apply grouping for all GroupByOptions
                 List<DailyActionDto> result;
-                if (filter.GroupBy != GroupByOption.Day)
-                {
-                    _logger.LogInformation("Applying grouping by {GroupBy}", filter.GroupBy);
 
-                    // Group the data based on the selected option
-                    var groupedData = filter.GroupBy switch
-                    {
-                        GroupByOption.Month => GroupByMonth(mappedDailyActions),
-                        GroupByOption.Year => GroupByYear(mappedDailyActions),
-                        GroupByOption.Label => GroupByWhiteLabel(mappedDailyActions),
-                        GroupByOption.Country => GroupByCountry(mappedDailyActions),
-                        GroupByOption.Tracker => GroupByTracker(mappedDailyActions),
-                        GroupByOption.Currency => GroupByCurrency(mappedDailyActions),
-                        GroupByOption.Gender => GroupByGender(mappedDailyActions),
-                        GroupByOption.Platform => GroupByPlatform(mappedDailyActions),
-                        GroupByOption.Ranking => GroupByRanking(mappedDailyActions),
-                        GroupByOption.Player => GroupByPlayer(mappedDailyActions),
-                        _ => mappedDailyActions // Default to no grouping
-                    };
+                _logger.LogInformation("Applying grouping by {GroupBy}", filter.GroupBy);
 
-                    result = groupedData;
-                }
-                else
+                // Group the data based on the selected option
+                var groupedData = filter.GroupBy switch
                 {
-                    // No grouping needed
-                    result = mappedDailyActions;
-                }
+                    GroupByOption.Day => GroupByDay(mappedDailyActions),
+                    GroupByOption.Month => GroupByMonth(mappedDailyActions),
+                    GroupByOption.Year => GroupByYear(mappedDailyActions),
+                    GroupByOption.Label => GroupByWhiteLabel(mappedDailyActions),
+                    GroupByOption.Country => GroupByCountry(mappedDailyActions),
+                    GroupByOption.Tracker => GroupByTracker(mappedDailyActions),
+                    GroupByOption.Currency => GroupByCurrency(mappedDailyActions),
+                    GroupByOption.Gender => GroupByGender(mappedDailyActions),
+                    GroupByOption.Platform => GroupByPlatform(mappedDailyActions),
+                    GroupByOption.Ranking => GroupByRanking(mappedDailyActions),
+                    GroupByOption.Player => GroupByPlayer(mappedDailyActions),
+                    _ => mappedDailyActions // Default to no grouping
+                };
+
+                result = groupedData;
 
                 // Calculate summary metrics
                 var summary = await GetSummaryMetricsAsync(startDate, endDate,
@@ -1744,6 +1738,66 @@ namespace PPrePorter.DailyActionsDB.Services
                 var hash = sha256.ComputeHash(bytes);
                 return Convert.ToBase64String(hash);
             }
+        }
+
+        /// <summary>
+        /// Groups daily actions by day
+        /// </summary>
+        private List<DailyActionDto> GroupByDay(List<DailyActionDto> dailyActions)
+        {
+            _logger.LogInformation("Grouping by day with {Count} records", dailyActions.Count);
+
+            return dailyActions
+                .GroupBy(da => da.Date.Date)
+                .Select(group =>
+                {
+                    var firstItem = group.First();
+                    var dayName = group.Key.ToString("yyyy-MM-dd");
+
+                    _logger.LogInformation("Creating day group for {Day} with {Count} records",
+                        dayName, group.Count());
+
+                    return new DailyActionDto
+                    {
+                        Id = 0, // Not applicable for grouped data
+                        Date = group.Key,
+                        WhiteLabelId = 0, // Not applicable for grouped data
+                        WhiteLabelName = "All White Labels",
+                        GroupKey = "Day",
+                        GroupValue = dayName,
+                        // Sum all numeric fields
+                        Registrations = group.Sum(da => da.Registrations),
+                        FTD = group.Sum(da => da.FTD),
+                        FTDA = group.Sum(da => da.FTDA),
+                        Deposits = group.Sum(da => da.Deposits),
+                        DepositsCreditCard = group.Sum(da => da.DepositsCreditCard),
+                        DepositsNeteller = group.Sum(da => da.DepositsNeteller),
+                        DepositsMoneyBookers = group.Sum(da => da.DepositsMoneyBookers),
+                        DepositsOther = group.Sum(da => da.DepositsOther),
+                        CashoutRequests = group.Sum(da => da.CashoutRequests),
+                        PaidCashouts = group.Sum(da => da.PaidCashouts),
+                        // Casino metrics
+                        BetsCasino = group.Sum(da => da.BetsCasino),
+                        WinsCasino = group.Sum(da => da.WinsCasino),
+                        // Sport metrics
+                        BetsSport = group.Sum(da => da.BetsSport),
+                        WinsSport = group.Sum(da => da.WinsSport),
+                        // Live metrics
+                        BetsLive = group.Sum(da => da.BetsLive),
+                        WinsLive = group.Sum(da => da.WinsLive),
+                        // Bingo metrics
+                        BetsBingo = group.Sum(da => da.BetsBingo),
+                        WinsBingo = group.Sum(da => da.WinsBingo),
+                        // Calculate GGR values
+                        GGRCasino = group.Sum(da => da.BetsCasino) - group.Sum(da => da.WinsCasino),
+                        GGRSport = group.Sum(da => da.BetsSport) - group.Sum(da => da.WinsSport),
+                        GGRLive = group.Sum(da => da.BetsLive) - group.Sum(da => da.WinsLive),
+                        GGRBingo = group.Sum(da => da.BetsBingo) - group.Sum(da => da.WinsBingo),
+                        TotalGGR = group.Sum(da => da.TotalGGR)
+                    };
+                })
+                .OrderBy(da => da.Date)
+                .ToList();
         }
 
         /// <summary>

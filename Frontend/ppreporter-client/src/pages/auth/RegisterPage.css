@@ -1,0 +1,16 @@
+.box-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  user-select: none;
+}
+
+.terms-container {
+  text-align: center;
+}

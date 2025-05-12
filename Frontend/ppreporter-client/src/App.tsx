@@ -18,12 +18,17 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 // Layouts
 import MainLayout from './components/layout/MainLayout';
 
+// Import custom loading container
+import LoadingContainer from './components/loading/LoadingContainer';
+
 // Loading component for suspense fallback
-const LoadingFallback: React.FC = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <CircularProgress />
-  </Box>
-);
+const LoadingFallback: React.FC = () => {
+  return (
+    <LoadingContainer>
+      <CircularProgress />
+    </LoadingContainer>
+  );
+};
 
 // Lazy load all page components for better performance
 // Auth pages

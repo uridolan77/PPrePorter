@@ -21,22 +21,25 @@ import {
 } from '../../store/slices/dashboardSlice';
 import {
   selectSummaryStats,
-  selectCasinoRevenue,
-  selectTopGames,
+  // These selectors will be used when implementing charts
+  // selectCasinoRevenue,
+  // selectTopGames,
   selectRecentTransactions,
   selectDashboardLoading,
   selectDashboardError
 } from '../../store/selectors';
-
 // Import dashboard components
 import {
   DashboardMetrics,
   RecentTransactionsTable
 } from '../../components/dashboard';
-
 // Import common components
 import ErrorDisplay from '../../components/common/ErrorDisplay';
 import LoadingOverlay from '../../components/common/LoadingOverlay';
+
+// Import CSS and custom components for AnalyticsPage
+import './AnalyticsPage.css';
+import { HeaderFlexContainer, ChartPlaceholderContainer } from './AnalyticsPageComponents';
 
 /**
  * AnalyticsPage component
@@ -47,8 +50,9 @@ const AnalyticsPage: React.FC = () => {
 
   // Redux state
   const summaryStats = useSelector(selectSummaryStats);
-  const casinoRevenue = useSelector(selectCasinoRevenue);
-  const topGames = useSelector(selectTopGames);
+  // These selectors will be used when implementing charts
+  // const casinoRevenue = useSelector(selectCasinoRevenue);
+  // const topGames = useSelector(selectTopGames);
   const recentTransactions = useSelector(selectRecentTransactions);
   const isLoading = useSelector(selectDashboardLoading);
   const error = useSelector(selectDashboardError);
@@ -73,7 +77,7 @@ const AnalyticsPage: React.FC = () => {
   }, [loadDashboardData]);
 
   // Handle tab change
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -82,15 +86,8 @@ const AnalyticsPage: React.FC = () => {
     loadDashboardData();
   };
 
-  // Dashboard data for charts
-  const dashboardData = {
-    revenueByDay: casinoRevenue || [],
-    playersByGame: topGames?.map(game => ({
-      ...game,
-      game: game.game || 'Unknown',
-      value: game.value || 0
-    })) || []
-  };
+  // We'll implement chart data preparation when needed
+  // For now, we're using direct data in the components
 
   return (
     <>
@@ -101,7 +98,7 @@ const AnalyticsPage: React.FC = () => {
       <Container maxWidth="xl">
         {/* Dashboard Header */}
         <Box component="div" sx={{ mb: 3 }}>
-          <Box component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <HeaderFlexContainer>
             <Box component="div">
               <Typography variant="h4" component="h1" gutterBottom>
                 Analytics Dashboard
@@ -118,7 +115,7 @@ const AnalyticsPage: React.FC = () => {
             >
               Refresh Data
             </Button>
-          </Box>
+          </HeaderFlexContainer>
         </Box>
 
         {/* Error Display */}
@@ -166,7 +163,7 @@ const AnalyticsPage: React.FC = () => {
               <Grid item xs={12}>
                 <Paper sx={{ p: 3, borderRadius: 2 }}>
                   <Typography variant="h6" gutterBottom>Performance Overview</Typography>
-                  <Box component="div" sx={{ height: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: '1px dashed rgba(0, 0, 0, 0.12)', borderRadius: 1, p: 3 }}>
+                  <ChartPlaceholderContainer sx={{ p: 3 }}>
                     <Typography variant="h6" gutterBottom>
                       Charts Placeholder
                     </Typography>
@@ -175,7 +172,7 @@ const AnalyticsPage: React.FC = () => {
                       <br />
                       Please install the required packages to view the charts.
                     </Typography>
-                  </Box>
+                  </ChartPlaceholderContainer>
                 </Paper>
               </Grid>
 
