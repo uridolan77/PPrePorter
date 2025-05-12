@@ -3,6 +3,7 @@ using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Models.Reports;
 using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Infrastructure.Models.Metadata;
+using PPrePorter.Infrastructure.Entities;
 
 namespace PPrePorter.Infrastructure.Data
 {
@@ -29,7 +30,7 @@ namespace PPrePorter.Infrastructure.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
-        public DbSet<UserPreference> UserPreferences { get; set; }
+        public DbSet<Domain.Entities.PPReporter.UserPreference> UserPreferences { get; set; }
         public DbSet<DailyAction> DailyActions { get; set; }
         public DbSet<WhiteLabel> WhiteLabels { get; set; }
         public DbSet<UserWhiteLabel> UserWhiteLabels { get; set; }
@@ -41,6 +42,11 @@ namespace PPrePorter.Infrastructure.Data
         public DbSet<GeneratedReport> GeneratedReports { get; set; }
         public DbSet<ReportExport> ReportExports { get; set; }
         public DbSet<MetadataItem> Metadata { get; set; }
+
+        // Dashboard insights related entities
+        public DbSet<Annotation> Annotations { get; set; }
+        public DbSet<SharedAnnotation> SharedAnnotations { get; set; }
+        public DbSet<UserInteraction> UserInteractions { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -105,19 +111,57 @@ namespace PPrePorter.Infrastructure.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<UserPreference>(entity =>
+            modelBuilder.Entity<Domain.Entities.PPReporter.UserPreference>(entity =>
             {
                 entity.ToTable("UserPreferences");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.PreferenceKey).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.PreferenceValue).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            });
 
-                // Relationship with User
-                entity.HasOne(up => up.User)
-                      .WithMany(u => u.Preferences)
-                      .HasForeignKey(up => up.UserId)
+            modelBuilder.Entity<Annotation>(entity =>
+            {
+                entity.ToTable("Annotations");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Type).HasMaxLength(50);
+                entity.Property(e => e.RelatedDimension).HasMaxLength(50);
+                entity.Property(e => e.RelatedMetric).HasMaxLength(50);
+                entity.Property(e => e.CreatedBy).HasMaxLength(100);
+                entity.Property(e => e.UserId).HasMaxLength(50);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.ModifiedAt).HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            modelBuilder.Entity<SharedAnnotation>(entity =>
+            {
+                entity.ToTable("SharedAnnotations");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.AnnotationId).IsRequired();
+                entity.Property(e => e.SharedWithUserId).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.SharedAt).HasDefaultValueSql("GETUTCDATE()");
+
+                // Relationship with Annotation
+                entity.HasOne(sa => sa.Annotation)
+                      .WithMany()
+                      .HasForeignKey(sa => sa.AnnotationId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserInteraction>(entity =>
+            {
+                entity.ToTable("UserInteractions");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ComponentId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.InteractionType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.MetricKey).HasMaxLength(50);
+                entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+
+                // Remove the relationship with UserPreference to avoid ambiguity
+                entity.HasOne<Domain.Entities.PPReporter.UserPreference>()
+                      .WithMany()
+                      .HasForeignKey(ui => ui.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 

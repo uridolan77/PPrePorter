@@ -17,6 +17,7 @@ using PPrePorter.Infrastructure.Services;
 using PPrePorter.API.Features.Dashboard.Insights;
 using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.NLP.Extensions;
+using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.SemanticLayer.Extensions;
 using PPrePorter.DailyActionsDB;
 using PPrePorter.AzureServices;
@@ -265,6 +266,8 @@ builder.Services.AddScoped<IInsightGenerationService, InsightGenerationService>(
 builder.Services.AddScoped<IAnomalyDetectionService, AnomalyDetectionService>();
 builder.Services.AddScoped<ITrendAnalysisService, TrendAnalysisService>();
 builder.Services.AddScoped<IContextualExplanationService, ContextualExplanationService>();
+builder.Services.AddScoped<IDataAnnotationService, DataAnnotationService>();
+builder.Services.AddScoped<IDashboardPersonalizationService, DashboardPersonalizationService>();
 
 // These services now have real implementations
 

@@ -72,12 +72,28 @@ export const fetchDashboardData = createAsyncThunk<
   'dashboard/fetchDashboardData',
   async (filters = {}, { rejectWithValue }) => {
     try {
+      // Option 1: Get all dashboard data in a single call
+      // This is more efficient if the API supports it
+      const dashboardData = await dashboardService.getDashboardData(filters);
+
+      // If the API returns all data in one call, use it directly
+      if (dashboardData && typeof dashboardData === 'object') {
+        return {
+          summary: dashboardData.summary || null,
+          casinoRevenue: dashboardData.revenueChart || [],
+          playerRegistrations: dashboardData.registrationsChart || [],
+          topGames: dashboardData.topGames || [],
+          recentTransactions: dashboardData.recentTransactions || []
+        };
+      }
+
+      // Option 2: Get each piece of data separately
       // Prepare date parameters
       const startDate = filters.startDate || null;
       const endDate = filters.endDate || null;
 
       // Get dashboard stats with filters
-      const stats = await dashboardService.getDashboardStats({
+      const stats = await dashboardService.getDashboardSummary({
         startDate,
         endDate,
         gameCategory: filters.gameCategory,
@@ -88,7 +104,8 @@ export const fetchDashboardData = createAsyncThunk<
       });
 
       // Get player registrations data with date range
-      const playerRegistrations = await dashboardService.getPlayerRegistrations({
+      const playerRegistrations = await dashboardService.getRegistrationsChart({
+        days: 30,
         startDate,
         endDate,
         playerStatus: filters.playerStatus,
@@ -110,29 +127,27 @@ export const fetchDashboardData = createAsyncThunk<
         limit: 5,
         startDate,
         endDate,
-        gameCategory: filters.gameCategory, // Changed from category to gameCategory
+        gameCategory: filters.gameCategory,
         minRevenue: filters.minRevenue,
         maxRevenue: filters.maxRevenue
       });
 
       // Get casino revenue with date range
-      const casinoRevenue = await dashboardService.getCasinoRevenue({
+      const revenueChart = await dashboardService.getRevenueChart({
         startDate,
         endDate,
-        period: 'month', // Added period parameter
-        gameCategory: filters.gameCategory // Changed from category to gameCategory
+        period: 'month',
+        gameCategory: filters.gameCategory
       });
 
       // Combine all data
-      const dashboardData = {
+      return {
         summary: stats,
-        casinoRevenue: casinoRevenue?.dailyRevenue || [],
+        casinoRevenue: revenueChart || [],
         playerRegistrations,
         topGames,
         recentTransactions
       };
-
-      return dashboardData;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -147,8 +162,8 @@ export const fetchRevenueChart = createAsyncThunk<
   'dashboard/fetchRevenueChart',
   async (filters = {}, { rejectWithValue }) => {
     try {
-      const casinoRevenue = await dashboardService.getCasinoRevenue(filters);
-      return casinoRevenue?.dailyRevenue || [];
+      const revenueData = await dashboardService.getRevenueChart(filters);
+      return revenueData || [];
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -163,8 +178,8 @@ export const fetchRegistrationsChart = createAsyncThunk<
   'dashboard/fetchRegistrationsChart',
   async (filters = {}, { rejectWithValue }) => {
     try {
-      const playerRegistrations = await dashboardService.getPlayerRegistrations(filters);
-      return playerRegistrations;
+      const registrationsData = await dashboardService.getRegistrationsChart(filters);
+      return registrationsData;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -252,25 +267,25 @@ export const fetchHeatmapData = createAsyncThunk<
     xAxis?: string;
     yAxis?: string;
     valueMetric?: string;
+    filters?: DashboardFilters;
   },
   ThunkConfig
 >(
   'dashboard/fetchHeatmapData',
   async (params, { rejectWithValue }) => {
     try {
-      // This would normally call a service method
-      // For now, return mock data
-      return {
-        data: [],
+      const heatmapData = await dashboardService.getHeatmap({
+        ...params.filters,
+        timeFrame: params.timeFrame,
         primaryDimension: params.primaryDimension,
         secondaryDimension: params.secondaryDimension,
         metric: params.metric,
-        timeFrame: params.timeFrame,
         dataType: params.dataType,
         xAxis: params.xAxis,
         yAxis: params.yAxis,
         valueMetric: params.valueMetric
-      };
+      });
+      return heatmapData;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -290,14 +305,12 @@ export const fetchPlayerJourneyData = createAsyncThunk<
   'dashboard/fetchPlayerJourneyData',
   async (params, { rejectWithValue }) => {
     try {
-      // This would normally call a service method
-      // For now, return mock data
-      return {
-        nodes: [],
-        links: [],
+      const playerJourneyData = await dashboardService.getPlayerJourney({
+        ...params.filters,
         journeyType: params.journeyType,
         timeFrame: params.timeFrame
-      };
+      });
+      return playerJourneyData;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -318,14 +331,81 @@ export const fetchSegmentComparisonData = createAsyncThunk<
   'dashboard/fetchSegmentComparisonData',
   async (params, { rejectWithValue }) => {
     try {
-      // This would normally call a service method
-      // For now, return mock data
-      return {
-        data: [],
-        segments: params.segments,
-        metrics: params.metrics,
+      const segmentComparisonData = await dashboardService.getSegmentComparison({
+        ...params.filters,
+        segments: params.segments.join(','),
+        metrics: params.metrics.join(','),
         timeFrame: params.timeFrame
-      };
+      });
+      return segmentComparisonData;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// Micro Charts data fetch action
+export const fetchMicroChartsData = createAsyncThunk<
+  any,
+  DashboardFilters | undefined,
+  ThunkConfig
+>(
+  'dashboard/fetchMicroChartsData',
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const microChartsData = await dashboardService.getMicroCharts(filters);
+      return microChartsData;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// Contextual Explorer data fetch action
+export const fetchContextualExplorerData = createAsyncThunk<
+  any,
+  any,
+  ThunkConfig
+>(
+  'dashboard/fetchContextualExplorerData',
+  async (params, { rejectWithValue }) => {
+    try {
+      const contextualExplorerData = await dashboardService.getContextualExplorer(params);
+      return contextualExplorerData;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// User Preferences fetch action
+export const fetchUserPreferences = createAsyncThunk<
+  DashboardPreferences,
+  void,
+  ThunkConfig
+>(
+  'dashboard/fetchUserPreferences',
+  async (_, { rejectWithValue }) => {
+    try {
+      const userPreferences = await dashboardService.getUserPreferences();
+      return userPreferences;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// User Preferences save action
+export const saveUserPreferences = createAsyncThunk<
+  DashboardPreferences,
+  DashboardPreferences,
+  ThunkConfig
+>(
+  'dashboard/saveUserPreferences',
+  async (preferences, { rejectWithValue }) => {
+    try {
+      const savedPreferences = await dashboardService.saveUserPreferences(preferences);
+      return savedPreferences;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -343,23 +423,37 @@ const dashboardSlice = createSlice({
       state.playerRegistrations = [];
       state.topGames = [];
       state.recentTransactions = [];
+      state.heatmapData = null;
+      state.playerJourneyData = null;
+      state.segmentComparisonData = null;
+      state.nlQueryResults = null;
       state.error = null;
       state.componentErrors = {
         summary: null,
         revenue: null,
         registrations: null,
         topGames: null,
-        transactions: null
+        transactions: null,
+        heatmap: null,
+        playerJourney: null,
+        segmentComparison: null
       };
     },
     clearErrors: (state) => {
       state.error = null;
+      state.heatmapError = null;
+      state.playerJourneyError = null;
+      state.segmentComparisonError = null;
+      state.nlQueryError = null;
       state.componentErrors = {
         summary: null,
         revenue: null,
         registrations: null,
         topGames: null,
-        transactions: null
+        transactions: null,
+        heatmap: null,
+        playerJourney: null,
+        segmentComparison: null
       };
     },
     clearComponentError: (state, action: PayloadAction<string | { component: string }>) => {
@@ -546,6 +640,47 @@ const dashboardSlice = createSlice({
     builder.addCase(removeQueryFromFavorites, (state, action) => {
       const queryText = action.payload;
       state.favoriteQueries = state.favoriteQueries.filter(query => query.text !== queryText);
+    });
+
+    // Add reducers for the new actions
+    builder.addCase(fetchMicroChartsData.pending, (state) => {
+      // Add loading state if needed
+    });
+    builder.addCase(fetchMicroChartsData.fulfilled, (state, action) => {
+      // Store micro charts data in state if needed
+    });
+    builder.addCase(fetchMicroChartsData.rejected, (state, action) => {
+      // Handle error if needed
+    });
+
+    builder.addCase(fetchContextualExplorerData.pending, (state) => {
+      // Add loading state if needed
+    });
+    builder.addCase(fetchContextualExplorerData.fulfilled, (state, action) => {
+      // Store contextual explorer data in state if needed
+    });
+    builder.addCase(fetchContextualExplorerData.rejected, (state, action) => {
+      // Handle error if needed
+    });
+
+    builder.addCase(fetchUserPreferences.pending, (state) => {
+      // Add loading state if needed
+    });
+    builder.addCase(fetchUserPreferences.fulfilled, (state, action) => {
+      // Store user preferences in state if needed
+    });
+    builder.addCase(fetchUserPreferences.rejected, (state, action) => {
+      // Handle error if needed
+    });
+
+    builder.addCase(saveUserPreferences.pending, (state) => {
+      // Add loading state if needed
+    });
+    builder.addCase(saveUserPreferences.fulfilled, (state, action) => {
+      // Store saved user preferences in state if needed
+    });
+    builder.addCase(saveUserPreferences.rejected, (state, action) => {
+      // Handle error if needed
     });
   }
 });

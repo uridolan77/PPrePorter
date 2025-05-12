@@ -34,7 +34,10 @@ export const selectDashboardData = createSelector(
     casinoRevenue: dashboard.casinoRevenue,
     playerRegistrations: dashboard.playerRegistrations,
     topGames: dashboard.topGames,
-    recentTransactions: dashboard.recentTransactions
+    recentTransactions: dashboard.recentTransactions,
+    heatmapData: dashboard.heatmapData,
+    playerJourneyData: dashboard.playerJourneyData,
+    segmentComparisonData: dashboard.segmentComparisonData
   })
 );
 
@@ -71,6 +74,21 @@ export const selectTopGames = createSelector(
 export const selectRecentTransactions = createSelector(
   [selectDashboardState],
   (dashboard) => dashboard.recentTransactions
+);
+
+export const selectHeatmapData = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.heatmapData
+);
+
+export const selectPlayerJourneyData = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.playerJourneyData
+);
+
+export const selectSegmentComparisonData = createSelector(
+  [selectDashboardState],
+  (dashboard) => dashboard.segmentComparisonData
 );
 
 export const selectComponentErrors = createSelector(

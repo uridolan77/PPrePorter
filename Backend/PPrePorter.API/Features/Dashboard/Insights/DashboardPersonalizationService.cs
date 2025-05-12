@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.Infrastructure.Data;
+using PPrePorter.Infrastructure.Entities;
+using PPrePorter.Domain.Entities.PPReporter;
 
 namespace PPrePorter.API.Features.Dashboard.Insights
 {
@@ -36,18 +38,86 @@ namespace PPrePorter.API.Features.Dashboard.Insights
         {
             try
             {
-                var cacheKey = $"dashboard:personalization:preferences:{userId}";
+                var cacheKey = $"dashboard:personalization:preferences";
 
-                return await _cachingService.GetOrCreateAsync(
+                // Since we're using a single cache key for all users, we need to filter the results by userId
+                var allPreferences = await _cachingService.GetOrCreateAsync(
                     cacheKey,
-                    async () => await FetchUserPreferencesAsync(userId),
+                    async () => await FetchAllUserPreferencesAsync(),
                     slidingExpiration: TimeSpan.FromMinutes(15),
                     absoluteExpiration: TimeSpan.FromHours(1));
+
+                // Find the preferences for the specified user
+                var userPreferences = allPreferences.FirstOrDefault(p => p.UserId == userId);
+
+                // If not found, fetch directly for this user
+                if (userPreferences == null)
+                {
+                    userPreferences = await FetchUserPreferencesAsync(userId);
+                }
+
+                return userPreferences;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting user preferences for user {UserId}", userId);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Fetch all user preferences from the database
+        /// </summary>
+        private async Task<List<DashboardPreferences>> FetchAllUserPreferencesAsync()
+        {
+            try
+            {
+                // Get all user preferences from the database
+                var userPreferences = await _dbContext.UserPreferences.ToListAsync();
+
+                // Convert to domain entities
+                return userPreferences.Select(up => {
+                    var colorScheme = new ColorSchemePreference
+                    {
+                        BaseTheme = up.BaseTheme ?? "light",
+                        ColorMode = up.ColorMode ?? "standard",
+                        PrimaryColor = up.PrimaryColor ?? "#1976d2",
+                        SecondaryColor = up.SecondaryColor ?? "#dc004e",
+                        PositiveColor = up.PositiveColor ?? "#4caf50",
+                        NegativeColor = up.NegativeColor ?? "#f44336",
+                        NeutralColor = up.NeutralColor ?? "#9e9e9e",
+                        ContrastLevel = up.ContrastLevel ?? 1
+                    };
+
+                    return new DashboardPreferences
+                    {
+                        UserId = up.UserId.ToString(),
+                        ColorScheme = colorScheme,
+                        InformationDensity = up.InformationDensity ?? "medium",
+                        PreferredChartTypes = !string.IsNullOrEmpty(up.PreferredChartTypes)
+                            ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(up.PreferredChartTypes)
+                            : GetDefaultChartTypes(),
+                        PinnedMetrics = !string.IsNullOrEmpty(up.PinnedMetrics)
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(up.PinnedMetrics)
+                            : new List<string> { "Revenue", "Registrations", "FTD" },
+                        ShowAnnotations = up.ShowAnnotations ?? true,
+                        ShowInsights = up.ShowInsights ?? true,
+                        ShowAnomalies = up.ShowAnomalies ?? true,
+                        ShowForecasts = up.ShowForecasts ?? true,
+                        DefaultTimeRange = up.DefaultTimeRange ?? "week",
+                        DefaultDataGranularity = up.DefaultDataGranularity ?? 7,
+                        InsightImportanceThreshold = up.InsightImportanceThreshold ?? 4,
+                        ComponentVisibility = !string.IsNullOrEmpty(up.ComponentVisibility)
+                            ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, bool>>(up.ComponentVisibility)
+                            : GetDefaultComponentVisibility(),
+                        LastUpdated = up.LastUpdated ?? up.UpdatedAt
+                    };
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching all user preferences");
+                return new List<DashboardPreferences>();
             }
         }
 
@@ -69,30 +139,40 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 if (userPreferences != null)
                 {
                     // Convert to domain entity
+                    var colorScheme = new ColorSchemePreference
+                    {
+                        BaseTheme = userPreferences.BaseTheme ?? "light",
+                        ColorMode = userPreferences.ColorMode ?? "standard",
+                        PrimaryColor = userPreferences.PrimaryColor ?? "#1976d2",
+                        SecondaryColor = userPreferences.SecondaryColor ?? "#dc004e",
+                        PositiveColor = userPreferences.PositiveColor ?? "#4caf50",
+                        NegativeColor = userPreferences.NegativeColor ?? "#f44336",
+                        NeutralColor = userPreferences.NeutralColor ?? "#9e9e9e",
+                        ContrastLevel = userPreferences.ContrastLevel ?? 1
+                    };
+
                     return new DashboardPreferences
                     {
                         UserId = userId,
-                        ColorScheme = userPreferences.ColorScheme != null
-                            ? System.Text.Json.JsonSerializer.Deserialize<ColorSchemePreference>(userPreferences.ColorScheme)
-                            : new ColorSchemePreference(),
-                        InformationDensity = userPreferences.InformationDensity,
-                        PreferredChartTypes = userPreferences.PreferredChartTypes != null
+                        ColorScheme = colorScheme,
+                        InformationDensity = userPreferences.InformationDensity ?? "medium",
+                        PreferredChartTypes = !string.IsNullOrEmpty(userPreferences.PreferredChartTypes)
                             ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(userPreferences.PreferredChartTypes)
                             : GetDefaultChartTypes(),
-                        PinnedMetrics = userPreferences.PinnedMetrics != null
+                        PinnedMetrics = !string.IsNullOrEmpty(userPreferences.PinnedMetrics)
                             ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(userPreferences.PinnedMetrics)
                             : new List<string> { "Revenue", "Registrations", "FTD" },
-                        ShowAnnotations = userPreferences.ShowAnnotations,
-                        ShowInsights = userPreferences.ShowInsights,
-                        ShowAnomalies = userPreferences.ShowAnomalies,
-                        ShowForecasts = userPreferences.ShowForecasts,
-                        DefaultTimeRange = userPreferences.DefaultTimeRange,
-                        DefaultDataGranularity = userPreferences.DefaultDataGranularity,
-                        InsightImportanceThreshold = userPreferences.InsightImportanceThreshold,
-                        ComponentVisibility = userPreferences.ComponentVisibility != null
+                        ShowAnnotations = userPreferences.ShowAnnotations ?? true,
+                        ShowInsights = userPreferences.ShowInsights ?? true,
+                        ShowAnomalies = userPreferences.ShowAnomalies ?? true,
+                        ShowForecasts = userPreferences.ShowForecasts ?? true,
+                        DefaultTimeRange = userPreferences.DefaultTimeRange ?? "week",
+                        DefaultDataGranularity = userPreferences.DefaultDataGranularity ?? 7,
+                        InsightImportanceThreshold = userPreferences.InsightImportanceThreshold ?? 4,
+                        ComponentVisibility = !string.IsNullOrEmpty(userPreferences.ComponentVisibility)
                             ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, bool>>(userPreferences.ComponentVisibility)
                             : GetDefaultComponentVisibility(),
-                        LastUpdated = userPreferences.LastUpdated
+                        LastUpdated = userPreferences.LastUpdated ?? userPreferences.UpdatedAt
                     };
                 }
 
@@ -182,18 +262,28 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                 if (userPreferences == null)
                 {
                     // Create new preferences
-                    userPreferences = new Infrastructure.Entities.UserPreference
+                    userPreferences = new UserPreference
                     {
                         UserId = userIdInt,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
                     _dbContext.UserPreferences.Add(userPreferences);
                 }
 
                 // Update properties
-                userPreferences.ColorScheme = preferences.ColorScheme != null
-                    ? System.Text.Json.JsonSerializer.Serialize(preferences.ColorScheme)
-                    : null;
+                if (preferences.ColorScheme != null)
+                {
+                    userPreferences.BaseTheme = preferences.ColorScheme.BaseTheme;
+                    userPreferences.ColorMode = preferences.ColorScheme.ColorMode;
+                    userPreferences.PrimaryColor = preferences.ColorScheme.PrimaryColor;
+                    userPreferences.SecondaryColor = preferences.ColorScheme.SecondaryColor;
+                    userPreferences.PositiveColor = preferences.ColorScheme.PositiveColor;
+                    userPreferences.NegativeColor = preferences.ColorScheme.NegativeColor;
+                    userPreferences.NeutralColor = preferences.ColorScheme.NeutralColor;
+                    userPreferences.ContrastLevel = preferences.ColorScheme.ContrastLevel;
+                }
+
                 userPreferences.InformationDensity = preferences.InformationDensity;
                 userPreferences.PreferredChartTypes = preferences.PreferredChartTypes != null
                     ? System.Text.Json.JsonSerializer.Serialize(preferences.PreferredChartTypes)
@@ -212,12 +302,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                     ? System.Text.Json.JsonSerializer.Serialize(preferences.ComponentVisibility)
                     : null;
                 userPreferences.LastUpdated = DateTime.UtcNow;
+                userPreferences.UpdatedAt = DateTime.UtcNow;
 
                 // Save changes
                 await _dbContext.SaveChangesAsync();
 
                 // Clear cache
-                var cacheKey = $"dashboard:personalization:preferences:{userId}";
+                var cacheKey = $"dashboard:personalization:preferences";
                 await _cachingService.RemoveAsync(cacheKey);
 
                 _logger.LogInformation("Saved dashboard preferences for user {UserId}", userId);
@@ -236,13 +327,8 @@ namespace PPrePorter.API.Features.Dashboard.Insights
         {
             try
             {
-                var cacheKey = $"dashboard:personalization:metrics:{userId}:{userRole}";
-
-                return await _cachingService.GetOrCreateAsync(
-                    cacheKey,
-                    async () => await FetchMetricImportanceRankingsAsync(userId, userRole),
-                    slidingExpiration: TimeSpan.FromMinutes(15),
-                    absoluteExpiration: TimeSpan.FromHours(1));
+                // For simplicity, we'll just calculate this on the fly without caching
+                return await FetchMetricImportanceRankingsAsync(userId, userRole);
             }
             catch (Exception ex)
             {
@@ -397,13 +483,8 @@ namespace PPrePorter.API.Features.Dashboard.Insights
         {
             try
             {
-                var cacheKey = $"dashboard:personalization:recommendations:{userId}:{userRole}";
-
-                return await _cachingService.GetOrCreateAsync(
-                    cacheKey,
-                    async () => await GenerateRecommendationsAsync(userId, userRole),
-                    slidingExpiration: TimeSpan.FromMinutes(15),
-                    absoluteExpiration: TimeSpan.FromHours(1));
+                // For simplicity, we'll just generate recommendations on the fly without caching
+                return await GenerateRecommendationsAsync(userId, userRole);
             }
             catch (Exception ex)
             {
@@ -452,7 +533,7 @@ namespace PPrePorter.API.Features.Dashboard.Insights
         private string GetRecommendedVisualizationType(string metricKey, DashboardPreferences preferences)
         {
             // Check if user has a preferred chart type for this metric
-            if (preferences.PreferredChartTypes != null && 
+            if (preferences.PreferredChartTypes != null &&
                 preferences.PreferredChartTypes.TryGetValue(metricKey.ToLower(), out var chartType))
             {
                 return chartType;
@@ -536,6 +617,66 @@ namespace PPrePorter.API.Features.Dashboard.Insights
             {
                 _logger.LogError(ex, "Error getting preferred visualization types for user {UserId}", userId);
                 return GetDefaultChartTypes();
+            }
+        }
+
+        /// <summary>
+        /// Get user's information density preference (compact vs spacious)
+        /// </summary>
+        public async Task<string> GetUserDensityPreferenceAsync(string userId)
+        {
+            try
+            {
+                // Get user preferences
+                var preferences = await GetUserPreferencesAsync(userId);
+
+                // Return information density or default
+                return preferences.InformationDensity ?? "medium";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting density preference for user {UserId}", userId);
+                return "medium";
+            }
+        }
+
+        /// <summary>
+        /// Get user's preferred color scheme
+        /// </summary>
+        public async Task<ColorSchemePreference> GetUserColorSchemeAsync(string userId)
+        {
+            try
+            {
+                // Get user preferences
+                var preferences = await GetUserPreferencesAsync(userId);
+
+                // Return color scheme or default
+                return preferences.ColorScheme ?? new ColorSchemePreference
+                {
+                    BaseTheme = "light",
+                    ColorMode = "standard",
+                    PrimaryColor = "#1976d2",
+                    SecondaryColor = "#dc004e",
+                    PositiveColor = "#4caf50",
+                    NegativeColor = "#f44336",
+                    NeutralColor = "#9e9e9e",
+                    ContrastLevel = 1
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting color scheme for user {UserId}", userId);
+                return new ColorSchemePreference
+                {
+                    BaseTheme = "light",
+                    ColorMode = "standard",
+                    PrimaryColor = "#1976d2",
+                    SecondaryColor = "#dc004e",
+                    PositiveColor = "#4caf50",
+                    NegativeColor = "#f44336",
+                    NeutralColor = "#9e9e9e",
+                    ContrastLevel = 1
+                };
             }
         }
     }

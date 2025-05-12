@@ -6,6 +6,9 @@ import {
   selectPlayerRegistrations,
   selectTopGames,
   selectRecentTransactions,
+  selectHeatmapData,
+  selectPlayerJourneyData,
+  selectSegmentComparisonData,
   selectDashboardLoading,
   selectDashboardError,
   selectComponentErrors
@@ -68,6 +71,13 @@ import {
   fetchRegistrationsChart,
   fetchTopGames,
   fetchRecentTransactions,
+  fetchHeatmapData,
+  fetchPlayerJourneyData,
+  fetchSegmentComparisonData,
+  fetchMicroChartsData,
+  fetchContextualExplorerData,
+  fetchUserPreferences,
+  saveUserPreferences,
   clearErrors,
   clearComponentError
 } from '../store/slices/dashboardSlice';
@@ -121,6 +131,9 @@ const Dashboard: React.FC = () => {
   const playerRegistrations = useSelector(selectPlayerRegistrations);
   const topGames = useSelector(selectTopGames);
   const recentTransactions = useSelector(selectRecentTransactions);
+  const heatmapData = useSelector(selectHeatmapData);
+  const playerJourneyData = useSelector(selectPlayerJourneyData);
+  const segmentComparisonData = useSelector(selectSegmentComparisonData);
   const isLoading = useSelector(selectDashboardLoading);
   const error = useSelector(selectDashboardError);
   const componentErrors = useSelector(selectComponentErrors);
@@ -471,6 +484,9 @@ const Dashboard: React.FC = () => {
                       <Suspense fallback={<ChartSkeleton />}>
                         <ContextualDataExplorer
                           onAnnotationCreate={handleAnnotationCreate}
+                          onExplore={(params) => {
+                            dispatch(fetchContextualExplorerData(params));
+                          }}
                         />
                       </Suspense>
                     </Paper>
@@ -487,6 +503,13 @@ const Dashboard: React.FC = () => {
                           <Suspense fallback={<ChartSkeleton />}>
                             <ContextualDataExplorer
                               onAnnotationCreate={handleAnnotationCreate}
+                              onExplore={(params) => {
+                                dispatch(fetchHeatmapData({
+                                  ...params,
+                                  timeFrame: 'all'
+                                }));
+                              }}
+                              data={heatmapData}
                             />
                           </Suspense>
                         </Grid>
