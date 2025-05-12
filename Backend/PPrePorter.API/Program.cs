@@ -357,6 +357,9 @@ builder.Services.AddHostedService<PPrePorter.API.Services.SimpleCachePrewarmingS
 // Also register it as a singleton so it can be injected into controllers
 builder.Services.AddSingleton<PPrePorter.API.Services.SimpleCachePrewarmingService>();
 
+// Register the InMemoryCacheInitializerService as a hosted service
+builder.Services.AddHostedService<PPrePorter.API.Services.InMemoryCacheInitializerService>();
+
 builder.Services.AddDailyActionsServices(builder.Configuration);
 
 // Log which database we're using

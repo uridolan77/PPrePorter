@@ -1008,6 +1008,15 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 _logger.LogInformation("Applying grouping by {GroupBy}", filter.GroupBy);
 
+                // Log the data before grouping
+                _logger.LogInformation("About to group {Count} records by {GroupBy}. Date range: {StartDate} to {EndDate}",
+                    mappedDailyActions.Count, filter.GroupBy, start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"));
+
+                // Log the dates in the data
+                var datesInData = mappedDailyActions.Select(da => da.Date.Date).Distinct().OrderBy(d => d).ToList();
+                _logger.LogInformation("Found {Count} distinct dates in the data: {Dates}",
+                    datesInData.Count, string.Join(", ", datesInData.Select(d => d.ToString("yyyy-MM-dd"))));
+
                 // Group the data based on the selected option
                 var groupedData = filter.GroupBy switch
                 {
@@ -1747,15 +1756,52 @@ namespace PPrePorter.DailyActionsDB.Services
         {
             _logger.LogInformation("Grouping by day with {Count} records", dailyActions.Count);
 
-            return dailyActions
+            // Log unique dates in the input data
+            var uniqueDates = dailyActions.Select(da => da.Date.Date).Distinct().OrderBy(d => d).ToList();
+            _logger.LogInformation("Found {Count} unique dates in the input data: {Dates}",
+                uniqueDates.Count,
+                string.Join(", ", uniqueDates.Select(d => d.ToString("yyyy-MM-dd"))));
+
+            // Ensure we have at least one record for each date
+            if (uniqueDates.Count == 0)
+            {
+                _logger.LogWarning("No dates found in the input data. Returning empty list.");
+                return new List<DailyActionDto>();
+            }
+
+            var result = dailyActions
                 .GroupBy(da => da.Date.Date)
                 .Select(group =>
                 {
-                    var firstItem = group.First();
                     var dayName = group.Key.ToString("yyyy-MM-dd");
+                    var recordCount = group.Count();
 
                     _logger.LogInformation("Creating day group for {Day} with {Count} records",
-                        dayName, group.Count());
+                        dayName, recordCount);
+
+                    // Log sample values for this day group
+                    var sampleValues = group.Take(Math.Min(5, recordCount)).ToList();
+                    _logger.LogInformation("Sample values for day {Day}: {@SampleValues}",
+                        dayName,
+                        sampleValues.Select(da => new {
+                            da.Id,
+                            da.Date,
+                            da.WhiteLabelId,
+                            da.Registrations,
+                            da.FTD,
+                            da.Deposits,
+                            da.PaidCashouts
+                        }));
+
+                    // Calculate summed values for logging
+                    var registrations = group.Sum(da => da.Registrations);
+                    var ftd = group.Sum(da => da.FTD);
+                    var deposits = group.Sum(da => da.Deposits);
+                    var paidCashouts = group.Sum(da => da.PaidCashouts);
+
+                    _logger.LogInformation("Summed values for day {Day}: Registrations={Registrations}, FTD={FTD}, " +
+                        "Deposits={Deposits}, PaidCashouts={PaidCashouts}",
+                        dayName, registrations, ftd, deposits, paidCashouts);
 
                     return new DailyActionDto
                     {
@@ -1798,6 +1844,9 @@ namespace PPrePorter.DailyActionsDB.Services
                 })
                 .OrderBy(da => da.Date)
                 .ToList();
+
+            _logger.LogInformation("Grouped by day: returning {Count} day groups", result.Count);
+            return result;
         }
 
         /// <summary>

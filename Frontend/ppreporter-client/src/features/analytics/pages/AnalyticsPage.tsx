@@ -11,20 +11,21 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 // Import common components
-import ErrorDisplay from '../../components/common/ErrorDisplay';
-import LoadingOverlay from '../../components/common/LoadingOverlay';
+import ErrorDisplay from '../../../components/common/ErrorDisplay';
+import LoadingOverlay from '../../../components/common/LoadingOverlay';
 
-// Import custom components for AnalyticsPage
-import { HeaderFlexContainer } from './AnalyticsPageComponents';
-import TabPanel from './TabPanel';
-import ErrorBoundary from './components/ErrorBoundary';
+// Import custom components
+import { 
+  ErrorBoundary, 
+  TabPanel, 
+  HeaderFlexContainer 
+} from '../components/common';
 
 // Import custom hooks
-import { useDashboardData, useTabs } from './hooks';
+import { useDashboardData, useTabs } from '../hooks';
 
 // Import constants and styles
-import { ANALYTICS_TABS } from './constants';
-import { SECTION_STYLE, ERROR_CONTAINER_STYLE, TAB_CONTAINER_STYLE } from './styles';
+import { ANALYTICS_TABS, SECTION_STYLE, ERROR_CONTAINER_STYLE, TAB_CONTAINER_STYLE } from '../constants';
 
 // Lazy load tab components for better performance
 const OverviewTab = lazy(() => import('./tabs/OverviewTab'));
@@ -49,8 +50,7 @@ const AnalyticsPage: React.FC = () => {
 
   const {
     activeTab,
-    handleTabChange,
-    tabs
+    handleTabChange
   } = useTabs({
     tabs: ANALYTICS_TABS,
     initialTab: 0

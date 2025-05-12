@@ -289,10 +289,19 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     filter.EndDate.Value,
                     filter.WhiteLabelIds?.FirstOrDefault());
 
-                // Create the response
+                // Create the response as a datatable structure that the frontend expects
+                // Ensure we're returning a proper TableContent structure
                 var response = new
                 {
-                    data = groupedData,
+                    data = new
+                    {
+                        dataType = "object",
+                        isArray = true,
+                        dataLength = groupedData.Count(),
+                        paginatedDataLength = groupedData.Count(),
+                        firstItem = groupedData.FirstOrDefault(),
+                        items = groupedData
+                    },
                     summary = new
                     {
                         totalRegistrations = summary.TotalRegistrations,
@@ -819,7 +828,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
 
                 _logger.LogInformation("GroupDailyActionsData: Day grouping created {Count} groups", forcedGroupedData.Count);
 
-                // Return the forced grouped data directly
+                // Return the forced grouped data as a list
                 return forcedGroupedData;
             }
 

@@ -1,6 +1,10 @@
 import apiClient from './apiClient';
 import { DailyActionGamesResponse, DailyActionGame } from '../../types/reports';
+// Import from TypeScript version of constants
 import { API_ENDPOINTS } from '../../config/constants';
+
+// Fallback endpoint in case the import structure is different
+const DAILY_ACTION_GAMES_ENDPOINT = '/api/reports/daily-action-games';
 
 /**
  * Query parameters for daily action games
@@ -44,8 +48,30 @@ class DailyActionGamesService {
   async getData(params: DailyActionGamesQueryParams = {}): Promise<DailyActionGamesResponse> {
     try {
       console.log('[DAILY_ACTION_GAMES_SERVICE] Fetching data with params:', params);
-      // Use the correct API endpoint from constants
-      const endpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES + '/data';
+
+      // Try to get the endpoint from the TypeScript structure, fall back to direct path if not available
+      let endpoint;
+      try {
+        // Check if the nested structure exists
+        if (API_ENDPOINTS.REPORTS && API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES) {
+          endpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES + '/data';
+          console.log('[DAILY_ACTION_GAMES_SERVICE] Using TypeScript structure endpoint');
+        } else if ((API_ENDPOINTS as any).DAILY_ACTION_GAMES) {
+          // Try the JavaScript structure
+          endpoint = (API_ENDPOINTS as any).DAILY_ACTION_GAMES.GET_DATA;
+          console.log('[DAILY_ACTION_GAMES_SERVICE] Using JavaScript structure endpoint');
+        } else {
+          // Fall back to hardcoded endpoint
+          endpoint = DAILY_ACTION_GAMES_ENDPOINT + '/data';
+          console.log('[DAILY_ACTION_GAMES_SERVICE] Using fallback endpoint');
+        }
+      } catch (error) {
+        // If any error occurs during endpoint resolution, use the fallback
+        console.error('[DAILY_ACTION_GAMES_SERVICE] Error resolving endpoint:', error);
+        endpoint = DAILY_ACTION_GAMES_ENDPOINT + '/data';
+        console.log('[DAILY_ACTION_GAMES_SERVICE] Using fallback endpoint after error');
+      }
+
       console.log('[DAILY_ACTION_GAMES_SERVICE] Using API endpoint:', endpoint);
       const response = await apiClient.get<any>(
         endpoint,
@@ -190,9 +216,30 @@ class DailyActionGamesService {
         format
       };
 
-      // Use the correct API endpoint from constants
-      const endpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES + '/export';
-      console.log('[DAILY_ACTION_GAMES_SERVICE] Using API endpoint:', endpoint);
+      // Try to get the endpoint from the TypeScript structure, fall back to direct path if not available
+      let endpoint;
+      try {
+        // Check if the nested structure exists
+        if (API_ENDPOINTS.REPORTS && API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES) {
+          endpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES + '/export';
+          console.log('[DAILY_ACTION_GAMES_SERVICE] Using TypeScript structure endpoint for export');
+        } else if ((API_ENDPOINTS as any).DAILY_ACTION_GAMES) {
+          // Try the JavaScript structure
+          endpoint = (API_ENDPOINTS as any).DAILY_ACTION_GAMES.EXPORT;
+          console.log('[DAILY_ACTION_GAMES_SERVICE] Using JavaScript structure endpoint for export');
+        } else {
+          // Fall back to hardcoded endpoint
+          endpoint = DAILY_ACTION_GAMES_ENDPOINT + '/export';
+          console.log('[DAILY_ACTION_GAMES_SERVICE] Using fallback endpoint for export');
+        }
+      } catch (error) {
+        // If any error occurs during endpoint resolution, use the fallback
+        console.error('[DAILY_ACTION_GAMES_SERVICE] Error resolving export endpoint:', error);
+        endpoint = DAILY_ACTION_GAMES_ENDPOINT + '/export';
+        console.log('[DAILY_ACTION_GAMES_SERVICE] Using fallback endpoint for export after error');
+      }
+
+      console.log('[DAILY_ACTION_GAMES_SERVICE] Using API endpoint for export:', endpoint);
       const response = await apiClient.get(endpoint, {
         params: exportParams,
         responseType: 'blob'

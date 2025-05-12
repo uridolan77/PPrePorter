@@ -7,7 +7,7 @@ using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Services;
-using PPrePorter.DailyActionsDB.Interfaces;
+using PPrePorter.DailyActionsDB.Services.DailyActions;
 
 namespace PPrePorter.DailyActionsDB
 {
@@ -145,33 +145,22 @@ namespace PPrePorter.DailyActionsDB
             // This is registered in Program.cs
 
             // Register services
-            // Use scoped for DailyActionsService since we're using the GlobalCacheService for cache persistence
+            // We'll implement the in-memory daily actions service later
+            // services.AddSingleton<IInMemoryDailyActionsService, InMemoryDailyActionsService>();
+
+            // Register the traditional DailyActionsService as a scoped service
             services.AddScoped<IDailyActionsService>(provider =>
             {
                 var logger = provider.GetRequiredService<ILogger<DailyActionsService>>();
                 var cache = provider.GetRequiredService<IGlobalCacheService>();
                 var dbContext = provider.GetRequiredService<DailyActionsDbContext>();
                 var whiteLabelService = provider.GetRequiredService<IWhiteLabelService>();
-
-                // Get the MetadataService from the DI container
-                // This will be the MetadataServiceAdapter registered in Program.cs
-                var metadataService = provider.GetService<IMetadataService>();
-
-                if (metadataService == null)
-                {
-                    logger.LogWarning("MetadataService not found in DI container. Metadata will be retrieved directly from DailyActionsDB.");
-                }
-                else
-                {
-                    logger.LogInformation("Using MetadataService from DI container: {MetadataServiceType}", metadataService.GetType().Name);
-                }
-
                 return new DailyActionsService(
                     logger,
                     cache,
                     dbContext,
                     whiteLabelService,
-                    metadataService);
+                    null);
             });
             services.AddScoped<IWhiteLabelService, WhiteLabelService>();
             services.AddScoped<ICountryService, CountryService>();

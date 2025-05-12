@@ -72,16 +72,17 @@ const ForgotPasswordPage: React.FC = () => {
     <Container
       component="main"
       maxWidth="xs"
-      sx={{
+      style={{
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        py: 4
+        paddingTop: '32px',
+        paddingBottom: '32px'
       }}
     >
-      <Box
-        sx={{
+      <div
+        style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center'
@@ -89,31 +90,31 @@ const ForgotPasswordPage: React.FC = () => {
       >
         <Paper
           elevation={3}
-          sx={{
+          style={{
             maxWidth: 450,
             width: '100%',
-            p: 4,
-            borderRadius: 2
+            padding: '32px',
+            borderRadius: '8px'
           }}
         >
           {success ? (
-            <Box sx={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
               <img
                 src="/email-sent.png"
                 alt="Email Sent"
                 style={{ height: 100, width: 'auto', marginBottom: 16 }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
-              <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+              <Typography variant="h5" component="h1" gutterBottom style={{ fontWeight: 'bold' }}>
                 Check your email
               </Typography>
-              <Typography variant="body1" sx={{ mb: 3 }}>
+              <Typography variant="body1" style={{ marginBottom: '24px' }}>
                 We've sent password reset instructions to:
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 3 }}>
+              <Typography variant="body1" style={{ fontWeight: 'bold', marginBottom: '24px' }}>
                 {email}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" style={{ marginBottom: '24px' }}>
                 If you don't see the email in your inbox, please check your spam folder.
               </Typography>
               <Button
@@ -121,31 +122,31 @@ const ForgotPasswordPage: React.FC = () => {
                 to="/login"
                 variant="outlined"
                 fullWidth
-                sx={{ mt: 2 }}
+                style={{ marginTop: '16px' }}
               >
                 Back to Login
               </Button>
-            </Box>
+            </div>
           ) : (
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <img
                   src="/logo.png"
                   alt="Logo"
                   style={{ height: 60, width: 'auto', marginBottom: 16 }}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
-                <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h5" component="h1" gutterBottom style={{ fontWeight: 'bold' }}>
                   Forgot Password
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Enter your email and we'll send you instructions to reset your password
                 </Typography>
-              </Box>
+              </div>
 
               {/* Error Message */}
               {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" style={{ marginBottom: '24px' }}>
                   {error}
                 </Alert>
               )}
@@ -169,7 +170,7 @@ const ForgotPasswordPage: React.FC = () => {
                   ),
                 }}
                 disabled={loading}
-                sx={{ mb: 3 }}
+                style={{ marginBottom: '24px' }}
               />
 
               <Button
@@ -178,9 +179,10 @@ const ForgotPasswordPage: React.FC = () => {
                 variant="contained"
                 size="large"
                 disabled={loading}
-                sx={{
-                  py: 1.5,
-                  mb: 2
+                style={{
+                  paddingTop: '12px',
+                  paddingBottom: '12px',
+                  marginBottom: '16px'
                 }}
               >
                 {loading ? (
@@ -190,7 +192,7 @@ const ForgotPasswordPage: React.FC = () => {
                 )}
               </Button>
 
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <div style={{ textAlign: 'center', marginTop: '16px' }}>
                 <Typography variant="body2" color="text.secondary" component="span">
                   Remember your password?{' '}
                   <Link
@@ -198,16 +200,16 @@ const ForgotPasswordPage: React.FC = () => {
                     to="/login"
                     variant="body2"
                     underline="hover"
-                    sx={{ fontWeight: 'medium' }}
+                    style={{ fontWeight: 500 }}
                   >
                     Back to Login
                   </Link>
                 </Typography>
-              </Box>
-            </Box>
+              </div>
+            </form>
           )}
         </Paper>
-      </Box>
+      </div>
     </Container>
   );
 };

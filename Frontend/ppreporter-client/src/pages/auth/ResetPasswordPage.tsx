@@ -183,8 +183,8 @@ const ResetPasswordPage: React.FC = () => {
         py: 4
       }}
     >
-      <Box
-        sx={{
+      <div
+        style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center'
@@ -200,7 +200,7 @@ const ResetPasswordPage: React.FC = () => {
           }}
         >
           {success ? (
-            <Box sx={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
               <img
                 src="/check-circle.png"
                 alt="Success"
@@ -222,10 +222,10 @@ const ResetPasswordPage: React.FC = () => {
               >
                 Go to Login
               </Button>
-            </Box>
+            </div>
           ) : (
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <img
                   src="/logo.png"
                   alt="Logo"
@@ -238,7 +238,7 @@ const ResetPasswordPage: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">
                   Enter your new password below
                 </Typography>
-              </Box>
+              </div>
 
               {/* Error Message */}
               {error && (
@@ -332,10 +332,10 @@ const ResetPasswordPage: React.FC = () => {
                   'Reset Password'
                 )}
               </Button>
-            </Box>
+            </form>
           )}
         </Paper>
-      </Box>
+      </div>
     </Container>
   );
 };

@@ -1,26 +1,24 @@
-import React from 'react';
-import { SxProps, Theme } from '@mui/material/styles';
-import './AnalyticsPage.css';
+import { Box, styled, Theme } from '@mui/material';
+import { CHART_CONTAINER_STYLE } from './styles';
 
-interface ContainerProps {
-  sx?: SxProps<Theme>;
-  children: React.ReactNode;
-}
+/**
+ * Header flex container component using MUI Box
+ * Displays content in a flex layout with space between items
+ */
+export const HeaderFlexContainer = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+});
 
-// Header flex container component
-export const HeaderFlexContainer: React.FC<React.PropsWithChildren> = ({ children }) => {
-  return (
-    <div className="header-flex">
-      {children}
-    </div>
-  );
-};
-
-// Chart placeholder container component
-export const ChartPlaceholderContainer: React.FC<ContainerProps> = ({ children, sx }) => {
-  return (
-    <div className="chart-placeholder" style={sx ? { padding: '24px' } : undefined}>
-      {children}
-    </div>
-  );
-};
+/**
+ * Chart placeholder container component using MUI Box
+ * Displays a placeholder for charts with a dashed border
+ */
+export const ChartPlaceholderContainer = styled(Box)({
+  ...CHART_CONTAINER_STYLE,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+});

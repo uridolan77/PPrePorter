@@ -7,6 +7,7 @@ import entitiesReducer from './slices/entitiesSlice';
 import uiReducer from './slices/uiSlice';
 import dailyActionGamesReducer from './slices/dailyActionGamesSlice';
 import integratedReportsReducer from './slices/integratedReportsSlice';
+import analyticsReducer from '../features/analytics/store/slice';
 import { RootState } from '../types/redux';
 
 // Combine all reducers
@@ -18,7 +19,8 @@ const rootReducer = combineReducers({
   entities: entitiesReducer,
   ui: uiReducer,
   dailyActionGames: dailyActionGamesReducer,
-  integratedReports: integratedReportsReducer
+  integratedReports: integratedReportsReducer,
+  analytics: analyticsReducer
 });
 
 // Configure the Redux store

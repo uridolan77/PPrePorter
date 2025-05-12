@@ -52,6 +52,16 @@ namespace PPrePorter.DailyActionsDB.Models.DTOs
         /// Applied filters
         /// </summary>
         public DailyActionFilterDto AppliedFilters { get; set; } = new DailyActionFilterDto();
+
+        /// <summary>
+        /// Last time the historical data was refreshed
+        /// </summary>
+        public DateTime LastHistoricalRefreshTime { get; set; }
+
+        /// <summary>
+        /// Last time today's data was refreshed
+        /// </summary>
+        public DateTime LastTodayRefreshTime { get; set; }
     }
 
     /// <summary>
