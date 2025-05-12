@@ -23,8 +23,9 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import { ResponsiveLine } from '@nivo/line';
-import { ResponsiveBar } from '@nivo/bar';
+// Placeholder for Nivo imports
+// import { ResponsiveLine } from '@nivo/line';
+// import { ResponsiveBar } from '@nivo/bar';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../store/hooks';
 import {
@@ -260,7 +261,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
 
     if (!data || data.length === 0) {
       return (
-        <Box sx={{
+        <Box component="div" sx={{
           height: '100%',
           display: 'flex',
           alignItems: 'center',
@@ -275,151 +276,44 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
 
     if (chartType === 'line') {
       return (
-        <ResponsiveLine
-          data={data as LineChartSeries[]}
-          margin={{ top: 10, right: 110, bottom: 50, left: 60 }}
-          xScale={{ type: 'point' }}
-          yScale={{
-            type: 'linear',
-            min: 'auto',
-            max: 'auto',
-            stacked: false,
-            reverse: false
-          }}
-          axisTop={null}
-          axisRight={null}
-          axisBottom={{
-            tickSize: 5,
-            tickPadding: 5,
-            tickRotation: -45,
-            legend: 'Date',
-            legendOffset: 36,
-            legendPosition: 'middle'
-          }}
-          axisLeft={{
-            tickSize: 5,
-            tickPadding: 5,
-            tickRotation: 0,
-            legend: yAxisLabel,
-            legendOffset: -40,
-            legendPosition: 'middle',
-            format: (value: number) => normalizedMode ? `${value.toFixed(0)}%` : formatValue(value, metricId).replace('£', '')
-          }}
-          colors={{ scheme: 'category10' }}
-          pointSize={10}
-          pointColor={{ theme: 'background' }}
-          pointBorderWidth={2}
-          pointBorderColor={{ from: 'serieColor' }}
-          pointLabelYOffset={-12}
-          enablePointLabel={showDataLabels}
-          pointLabel={(point: any) => formatValue(point.y, metricId)}
-          useMesh={true}
-          legends={[
-            {
-              anchor: 'bottom-right',
-              direction: 'column',
-              justify: false,
-              translateX: 100,
-              translateY: 0,
-              itemsSpacing: 0,
-              itemDirection: 'left-to-right',
-              itemWidth: 80,
-              itemHeight: 20,
-              itemOpacity: 0.75,
-              symbolSize: 12,
-              symbolShape: 'circle',
-              symbolBorderColor: 'rgba(0, 0, 0, .5)',
-              effects: [
-                {
-                  on: 'hover',
-                  style: {
-                    itemBackground: 'rgba(0, 0, 0, .03)',
-                    itemOpacity: 1
-                  }
-                }
-              ]
-            }
-          ]}
-        />
+        <Box component="div" sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: `1px dashed ${theme.palette.divider}`, borderRadius: 1, p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Line Chart Placeholder
+          </Typography>
+          <Typography variant="body2" color="text.secondary" align="center">
+            This component requires the @nivo/line package which is not currently installed.
+            <br />
+            Please install the package to view the line chart visualization.
+          </Typography>
+        </Box>
       );
     } else { // Bar chart
       return (
-        <ResponsiveBar
-          data={data as BarChartDataPoint[]}
-          keys={segmentComparisonData?.data?.find(
-            (item: SegmentData) => item.segmentType === segmentType && item.metricId === metricId
-          )?.values.map((v: any) => v.name) || []}
-          indexBy="date"
-          margin={{ top: 10, right: 110, bottom: 50, left: 60 }}
-          padding={0.3}
-          groupMode="grouped"
-          valueScale={{ type: 'linear' }}
-          indexScale={{ type: 'band', round: true }}
-          colors={{ scheme: 'category10' }}
-          borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
-          axisTop={null}
-          axisRight={null}
-          axisBottom={{
-            tickSize: 5,
-            tickPadding: 5,
-            tickRotation: -45,
-            legend: 'Date',
-            legendPosition: 'middle',
-            legendOffset: 32
-          }}
-          axisLeft={{
-            tickSize: 5,
-            tickPadding: 5,
-            tickRotation: 0,
-            legend: yAxisLabel,
-            legendPosition: 'middle',
-            legendOffset: -40,
-            format: (value: number) => normalizedMode ? `${value.toFixed(0)}%` : formatValue(value, metricId).replace('£', '')
-          }}
-          labelSkipWidth={12}
-          labelSkipHeight={12}
-          labelTextColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
-          enableLabel={showDataLabels}
-          legends={[
-            {
-              dataFrom: 'keys',
-              anchor: 'bottom-right',
-              direction: 'column',
-              justify: false,
-              translateX: 100,
-              translateY: 0,
-              itemsSpacing: 2,
-              itemWidth: 100,
-              itemHeight: 20,
-              itemDirection: 'left-to-right',
-              itemOpacity: 0.85,
-              symbolSize: 20,
-              effects: [
-                {
-                  on: 'hover',
-                  style: {
-                    itemOpacity: 1
-                  }
-                }
-              ]
-            }
-          ]}
-        />
+        <Box component="div" sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: `1px dashed ${theme.palette.divider}`, borderRadius: 1, p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Bar Chart Placeholder
+          </Typography>
+          <Typography variant="body2" color="text.secondary" align="center">
+            This component requires the @nivo/bar package which is not currently installed.
+            <br />
+            Please install the package to view the bar chart visualization.
+          </Typography>
+        </Box>
       );
     }
   };
 
   if (isLoading || segmentComparisonLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (segmentComparisonError) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
+      <Box component="div" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
         <Typography color="error">
           Error loading segment comparison data: {segmentComparisonError}
         </Typography>
@@ -430,7 +324,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
   return (
     <Card elevation={0} sx={{ height: '100%' }}>
       <CardContent sx={{ height: '100%', p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" component="div">
             Segment Comparison
             <Tooltip title="Compare the same metrics across different segments using small multiples visualization">
@@ -440,7 +334,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
             </Tooltip>
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box component="div" sx={{ display: 'flex', gap: 2 }}>
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel id="chart-type-label">Chart Type</InputLabel>
               <Select
@@ -465,7 +359,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
           </Box>
         </Box>
 
-        <Box sx={{ mb: 3 }}>
+        <Box component="div" sx={{ mb: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
             <FormControl size="small" sx={{ minWidth: 250 }}>
               <InputLabel id="metrics-label">Metrics</InputLabel>
@@ -476,7 +370,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
                 label="Metrics"
                 onChange={handleMetricChange}
                 renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  <Box component="div" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {(selected as string[]).map((value) => (
                       <Chip
                         key={value}
@@ -504,7 +398,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
                 label="Segments"
                 onChange={handleSegmentChange}
                 renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  <Box component="div" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {(selected as string[]).map((value) => (
                       <Chip
                         key={value}
@@ -525,7 +419,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
           </Stack>
         </Box>
 
-        <Box sx={{ mb: 2 }}>
+        <Box component="div" sx={{ mb: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center">
             <FormControlLabel
               control={
@@ -552,8 +446,8 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
         </Box>
 
         {focusedSegment ? (
-          <Box sx={{ height: height - 200 }}>
-            <Box sx={{
+          <Box component="div" sx={{ height: height - 200 }}>
+            <Box component="div" sx={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -568,7 +462,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
             </Box>
 
             {/* Screen reader accessible description */}
-            <Box sx={{
+            <Box component="div" sx={{
               position: 'absolute',
               left: '-9999px',
               width: '1px',
@@ -588,7 +482,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
               segments.map(segmentType => (
                 <Grid item xs={12} md={6} key={`${segmentType}-${metricId}`} sx={{ height: 300 }}>
                   <Card variant="outlined" sx={{ height: '100%', position: 'relative' }}>
-                    <Box sx={{
+                    <Box component="div" sx={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -607,7 +501,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
                     </Box>
 
                     {/* Screen reader accessible description */}
-                    <Box sx={{
+                    <Box component="div" sx={{
                       position: 'absolute',
                       left: '-9999px',
                       width: '1px',
@@ -619,7 +513,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
                       {generateAccessibleDescription(segmentType, metricId)}
                     </Box>
 
-                    <Box sx={{ height: 'calc(100% - 49px)' }}>
+                    <Box component="div" sx={{ height: 'calc(100% - 49px)' }}>
                       {renderChart(segmentType, metricId)}
                     </Box>
                   </Card>

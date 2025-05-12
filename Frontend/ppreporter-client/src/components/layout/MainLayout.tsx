@@ -133,7 +133,14 @@ const MainLayout: React.FC = () => {
         { text: 'Geographic', icon: <PublicIcon />, path: '/reports/geographic' }
       ]
     },
-    { text: 'Analytics', icon: <AutoGraphIcon />, path: '/analytics' },
+    { text: 'Analytics', icon: <AutoGraphIcon />, path: '/analytics',
+      subItems: [
+        { text: 'Dashboard', icon: <DashboardIcon />, path: '/analytics' },
+        { text: 'Performance', icon: <TimelineIcon />, path: '/analytics/performance' },
+        { text: 'Player Analysis', icon: <PersonIcon />, path: '/analytics/players' },
+        { text: 'Game Analysis', icon: <VideogameAssetIcon />, path: '/analytics/games' }
+      ]
+    },
     { text: 'Configuration', icon: <TuneIcon />, path: '/configuration' },
     { text: 'API Test', icon: <HelpIcon />, path: '/api-test' }
   ];
@@ -353,17 +360,17 @@ const MainLayout: React.FC = () => {
             <MenuIcon />
           </IconButton>
 
-          <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography variant="subtitle1" color="text.secondary" sx={{ mr: 1 }}>
+          <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+            <Typography variant="subtitle1" color="text.secondary" style={{ marginRight: 8 }}>
               Welcome back,
             </Typography>
             <Typography variant="subtitle1" fontWeight={500} color="text.primary">
               {user?.fullName || user?.username || 'User'}
             </Typography>
-          </Box>
+          </div>
 
           {/* Right side actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             {/* Notification Icon */}
             <Tooltip title="Notifications">
               <IconButton sx={{ mx: 0.5 }} size="small">
@@ -381,12 +388,12 @@ const MainLayout: React.FC = () => {
             </Tooltip>
 
             {/* User Profile */}
-            <Box sx={{ ml: 1.5 }}>
+            <div style={{ marginLeft: 12 }}>
               <Tooltip title="Account settings">
                 <IconButton
                   onClick={handleUserMenuOpen}
                   size="small"
-                  sx={{ padding: 0 }}
+                  style={{ padding: 0 }}
                   aria-controls={userMenuOpen ? 'account-menu' : undefined}
                   aria-haspopup="true"
                   aria-expanded={userMenuOpen ? 'true' : undefined}
@@ -400,18 +407,18 @@ const MainLayout: React.FC = () => {
                   </Avatar>
                 </IconButton>
               </Tooltip>
-            </Box>
-          </Box>
+            </div>
+          </div>
         </Toolbar>
 
         {/* Lower Toolbar - Page title and actions */}
         <Toolbar sx={{ minHeight: 48, height: 48 }}>
-          <Box sx={{ flexGrow: 1 }}>
+          <div style={{ flexGrow: 1 }}>
             <Typography
               variant="h6"
               color="text.primary"
               fontWeight={500}
-              sx={{
+              style={{
                 display: 'block',
                 visibility: 'visible',
                 whiteSpace: 'nowrap',
@@ -419,22 +426,23 @@ const MainLayout: React.FC = () => {
               }}
             >
               {location.pathname.includes('daily-actions') ? 'Daily Actions Report' :
-               location.pathname.includes('players') ? 'Players Report' :
-               location.pathname.includes('games') && !location.pathname.includes('daily-action-games') ? 'Games Report' :
+               location.pathname.includes('players') && !location.pathname.includes('analytics') ? 'Players Report' :
+               location.pathname.includes('games') && !location.pathname.includes('daily-action-games') && !location.pathname.includes('analytics') ? 'Games Report' :
                location.pathname.includes('daily-action-games') ? 'Daily Action Games Report' :
                location.pathname.includes('integrated') ? 'Integrated Reports' :
+               location.pathname.includes('analytics') ? 'Analytics Dashboard' :
                'Dashboard'}
             </Typography>
-          </Box>
+          </div>
 
           {/* Page-specific actions could go here */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Refresh">
-              <IconButton size="small" sx={{ ml: 1 }}>
+              <IconButton size="small" style={{ marginLeft: 8 }}>
                 <RefreshIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </div>
         </Toolbar>
       </AppBar>
 
@@ -512,9 +520,11 @@ const MainLayout: React.FC = () => {
       </Menu>
 
       {/* Navigation Drawer */}
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+      <div
+        style={{
+          width: drawerWidth,
+          flexShrink: 0
+        }}
         aria-label="main navigation"
       >
         {/* Mobile drawer */}
@@ -607,17 +617,16 @@ const MainLayout: React.FC = () => {
             </div>
           )}
         </Drawer>
-      </Box>
+      </div>
 
       {/* Main Content */}
-      <Box
-        component="main"
-        sx={{
+      <main
+        style={{
           flexGrow: 1,
-          p: { xs: 0, md: 0 },
-          width: { md: `calc(100% - ${sidebarOpen ? drawerWidth : collapsedDrawerWidth}px)` },
+          padding: 0,
+          width: `calc(100% - ${sidebarOpen ? drawerWidth : collapsedDrawerWidth}px)`,
           overflow: 'hidden', // Changed from 'auto' to 'hidden'
-          bgcolor: 'background.default',
+          backgroundColor: theme.palette.background.default,
           minHeight: '100vh',
           transition: theme.transitions.create(['width', 'margin'], {
             easing: theme.transitions.easing.sharp,
@@ -630,33 +639,32 @@ const MainLayout: React.FC = () => {
         }}
       >
         {/* This adds spacing below the double header (80px + 48px = 128px) */}
-        <Box sx={{ height: 128, flexShrink: 0 }} />
+        <div style={{ height: 128, flexShrink: 0 }} />
 
         {/* Content area */}
-        <Box sx={{
+        <div style={{
           flexGrow: 1,
           width: '100%', // Changed from 'auto' to '100%'
           borderRadius: '16px 0 0 0',  // Round the top-left corner
-          bgcolor: 'background.paper',
+          backgroundColor: theme.palette.background.paper,
           boxShadow: 'none',
           border: 'none',
-          mx: 0,  // Remove side margins
-          mb: 0,  // Remove bottom margin
+          margin: 0,  // Remove margins
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden', // Prevent outer overflow
         }}>
-          <Box sx={{
-            p: 3,
+          <div style={{
+            padding: 24,
             flexGrow: 1,
             overflow: 'auto', // Enable scrolling on inner content
             width: '100%',
             height: '100%', // Ensure full height
           }}>
             <Outlet /> {/* This renders the current route */}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

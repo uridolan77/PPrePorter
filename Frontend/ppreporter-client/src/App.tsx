@@ -38,6 +38,9 @@ const DashboardSimple = lazy(() => import('./pages/DashboardSimple'));
 const ApiDashboard = lazy(() => import('./pages/ApiDashboard'));
 const TestContextualExplanation = lazy(() => import('./components/dashboard/TestContextualExplanation'));
 
+// Analytics pages
+const AnalyticsPage = lazy(() => import('./pages/analytics/AnalyticsPage'));
+
 // Report pages
 const DailyActionsPage = lazy(() => import('./pages/showcase/reports/DailyActionsPage'));
 const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/DailyActionsAdvancedPage'));
@@ -174,12 +177,12 @@ const App: React.FC = () => {
                   {/* Analytics Routes */}
                   <Route path="/analytics" element={
                     <Suspense fallback={<LoadingFallback />}>
-                      <SimpleDashboard />
+                      <AnalyticsPage />
                     </Suspense>
                   } />
                   <Route path="/analytics/*" element={
                     <Suspense fallback={<LoadingFallback />}>
-                      <SimpleDashboard />
+                      <AnalyticsPage />
                     </Suspense>
                   } />
 

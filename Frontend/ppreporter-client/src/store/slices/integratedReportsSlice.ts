@@ -72,7 +72,7 @@ export interface UserPreferences {
 }
 
 // Define the state interface
-interface IntegratedReportsState {
+export interface IntegratedReportsState {
   dailyActions: {
     data: any[];
     loading: boolean;
@@ -522,17 +522,17 @@ const integratedReportsSlice = createSlice({
   }
 });
 
-// Export selectors
-export const selectDailyActionsData = (state: RootState) => state.integratedReports.dailyActions;
-export const selectPlayerData = (state: RootState) => state.integratedReports.players;
-export const selectGameData = (state: RootState) => state.integratedReports.games;
-export const selectDashboardSummary = (state: RootState) => state.integratedReports.dashboardSummary;
-export const selectRevenueChartData = (state: RootState) => state.integratedReports.revenueChart;
-export const selectRegistrationsChartData = (state: RootState) => state.integratedReports.registrationsChart;
-export const selectTopGamesData = (state: RootState) => state.integratedReports.topGames;
-export const selectRecentTransactionsData = (state: RootState) => state.integratedReports.recentTransactions;
-export const selectHeatmapData = (state: RootState) => state.integratedReports.heatmap;
-export const selectSegmentComparisonData = (state: RootState) => state.integratedReports.segmentComparison;
-export const selectUserPreferences = (state: RootState) => state.integratedReports.userPreferences;
+// Export selectors with null checks
+export const selectDailyActionsData = (state: RootState) => state?.integratedReports?.dailyActions || { data: [], loading: false, error: null };
+export const selectPlayerData = (state: RootState) => state?.integratedReports?.players || { data: [], loading: false, error: null };
+export const selectGameData = (state: RootState) => state?.integratedReports?.games || { data: [], loading: false, error: null };
+export const selectDashboardSummary = (state: RootState) => state?.integratedReports?.dashboardSummary || { data: null, loading: false, error: null };
+export const selectRevenueChartData = (state: RootState) => state?.integratedReports?.revenueChart || { data: [], loading: false, error: null };
+export const selectRegistrationsChartData = (state: RootState) => state?.integratedReports?.registrationsChart || { data: [], loading: false, error: null };
+export const selectTopGamesData = (state: RootState) => state?.integratedReports?.topGames || { data: [], loading: false, error: null };
+export const selectRecentTransactionsData = (state: RootState) => state?.integratedReports?.recentTransactions || { data: [], loading: false, error: null };
+export const selectHeatmapData = (state: RootState) => state?.integratedReports?.heatmap || { data: [], loading: false, error: null };
+export const selectSegmentComparisonData = (state: RootState) => state?.integratedReports?.segmentComparison || { data: [], loading: false, error: null };
+export const selectUserPreferences = (state: RootState) => state?.integratedReports?.userPreferences || { data: null, loading: false, error: null };
 
 export default integratedReportsSlice.reducer;

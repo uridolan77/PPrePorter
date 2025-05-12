@@ -272,7 +272,7 @@ const IntegratedReportsPage: React.FC = () => {
 
   // Update local state when Redux state changes
   useEffect(() => {
-    if (dailyActionsState.data.length > 0) {
+    if (dailyActionsState?.data?.length > 0) {
       setDailyActionData(dailyActionsState.data);
       setLoading(dailyActionsState.loading);
       setError(dailyActionsState.error);
@@ -280,19 +280,19 @@ const IntegratedReportsPage: React.FC = () => {
   }, [dailyActionsState]);
 
   useEffect(() => {
-    if (playersState.data.length > 0) {
+    if (playersState?.data?.length > 0) {
       setPlayerData(playersState.data);
     }
   }, [playersState]);
 
   useEffect(() => {
-    if (gamesState.data.length > 0) {
+    if (gamesState?.data?.length > 0) {
       setGameData(gamesState.data);
     }
   }, [gamesState]);
 
   useEffect(() => {
-    if (userPreferencesState.data) {
+    if (userPreferencesState?.data) {
       setUserPreferences(userPreferencesState.data);
 
       // Apply saved preferences
@@ -669,24 +669,24 @@ const IntegratedReportsPage: React.FC = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{
+      <div style={{
         marginBottom: '32px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start'
       }}>
-        <Box>
+        <div>
           <Typography variant="h4" gutterBottom>
             Integrated Reports
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Comprehensive analytics dashboard combining player, game, and daily action data
           </Typography>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Natural Language Query Panel */}
-      <Paper sx={{ p: 3, mb: 4 }}>
+      <Paper style={{ padding: 24, marginBottom: 32 }}>
         <NaturalLanguageQueryPanel
           onSearch={handleSearch}
           showSuggestions={true}
@@ -698,11 +698,11 @@ const IntegratedReportsPage: React.FC = () => {
       </Paper>
 
       {/* Filters */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <FilterListIcon sx={{ mr: 1 }} />
+      <Paper style={{ padding: 24, marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+          <FilterListIcon style={{ marginRight: 8 }} />
           <Typography variant="h6">Filters</Typography>
-        </Box>
+        </div>
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
@@ -728,7 +728,7 @@ const IntegratedReportsPage: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', height: '100%', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', height: '100%', alignItems: 'center' }}>
               <Button
                 variant="contained"
                 color="primary"
@@ -738,13 +738,13 @@ const IntegratedReportsPage: React.FC = () => {
               >
                 Apply Filters
               </Button>
-            </Box>
+            </div>
           </Grid>
         </Grid>
       </Paper>
 
       {/* Customizable Dashboard */}
-      <Paper sx={{ p: 3, mb: 4 }}>
+      <Paper style={{ padding: 24, marginBottom: 32 }}>
         <AnnotationContextProvider>
           <FilterContextProvider>
             <CustomizableDashboard
@@ -770,7 +770,7 @@ const IntegratedReportsPage: React.FC = () => {
       </Paper>
 
       {/* Tabs for different report types */}
-      <Paper sx={{ mb: 4 }}>
+      <Paper style={{ marginBottom: 32 }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -786,11 +786,11 @@ const IntegratedReportsPage: React.FC = () => {
 
       {/* Tab Content */}
       {activeTab === 0 && (
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <TableChartIcon sx={{ mr: 1 }} />
+        <Paper style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <TableChartIcon style={{ marginRight: 8 }} />
             <Typography variant="h6">Daily Actions Data</Typography>
-          </Box>
+          </div>
 
           <EnhancedTable
             columns={dailyActionColumns}
@@ -828,11 +828,11 @@ const IntegratedReportsPage: React.FC = () => {
       )}
 
       {activeTab === 1 && (
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <PeopleIcon sx={{ mr: 1 }} />
+        <Paper style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <PeopleIcon style={{ marginRight: 8 }} />
             <Typography variant="h6">Players Data</Typography>
-          </Box>
+          </div>
 
           <EnhancedTable
             columns={playerColumns}
@@ -870,11 +870,11 @@ const IntegratedReportsPage: React.FC = () => {
       )}
 
       {activeTab === 2 && (
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <VideogameAssetIcon sx={{ mr: 1 }} />
+        <Paper style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <VideogameAssetIcon style={{ marginRight: 8 }} />
             <Typography variant="h6">Games Data</Typography>
-          </Box>
+          </div>
 
           <EnhancedTable
             columns={gameColumns}
@@ -940,11 +940,11 @@ const IntegratedReportsPage: React.FC = () => {
         onClose={handleWidgetMenuClose}
       >
         <MenuItem onClick={handleEditWidget}>
-          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+          <EditIcon fontSize="small" style={{ marginRight: 8 }} />
           Edit Widget
         </MenuItem>
         <MenuItem onClick={handleRemoveWidget}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+          <DeleteIcon fontSize="small" style={{ marginRight: 8 }} />
           Remove Widget
         </MenuItem>
       </Menu>

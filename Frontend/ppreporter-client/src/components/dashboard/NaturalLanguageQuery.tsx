@@ -32,10 +32,11 @@ import {
   saveQueryToFavorites,
   removeQueryFromFavorites
 } from '../../store/slices/dashboardSlice';
-import { ResponsiveBar } from '@nivo/bar';
-import { ResponsiveLine } from '@nivo/line';
-import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveScatterPlot } from '@nivo/scatterplot';
+// Placeholder for Nivo imports
+// import { ResponsiveBar } from '@nivo/bar';
+// import { ResponsiveLine } from '@nivo/line';
+// import { ResponsivePie } from '@nivo/pie';
+// import { ResponsiveScatterPlot } from '@nivo/scatterplot';
 import { RootState } from '../../store/store';
 import { CommonProps } from '../../types/common';
 
@@ -199,105 +200,48 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
     switch (visualizationType) {
       case 'bar':
         return (
-          <Box sx={{ height: 400 }}>
-            <ResponsiveBar
-              data={data}
-              keys={data.length > 0 ? Object.keys(data[0]).filter(k => k !== xAxis) : []}
-              indexBy={xAxis}
-              margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
-              padding={0.3}
-              valueScale={{ type: 'linear' }}
-              indexScale={{ type: 'band', round: true }}
-              colors={{ scheme: 'nivo' }}
-              axisBottom={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: -45,
-                legend: xAxis,
-                legendPosition: 'middle',
-                legendOffset: 40
-              }}
-              axisLeft={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
-                legend: yAxis,
-                legendPosition: 'middle',
-                legendOffset: -40
-              }}
-              labelSkipWidth={12}
-              labelSkipHeight={12}
-              legends={[
-                {
-                  dataFrom: 'keys',
-                  anchor: 'bottom-right',
-                  direction: 'column',
-                  justify: false,
-                  translateX: 120,
-                  translateY: 0,
-                  itemsSpacing: 2,
-                  itemWidth: 100,
-                  itemHeight: 20,
-                  itemDirection: 'left-to-right',
-                  itemOpacity: 0.85,
-                  symbolSize: 20
-                }
-              ]}
-            />
-          </Box>
+          <div style={{
+            height: 400,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            border: `1px dashed ${theme.palette.divider}`,
+            borderRadius: '4px',
+            padding: '24px'
+          }}>
+            <Typography variant="h6" gutterBottom>
+              Bar Chart Placeholder
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              This component requires the @nivo/bar package which is not currently installed.
+              <br />
+              Please install the package to view the bar chart visualization.
+            </Typography>
+          </div>
         );
 
       case 'line':
         return (
-          <Box sx={{ height: 400 }}>
-            <ResponsiveLine
-              data={data}
-              margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
-              xScale={{ type: 'point' }}
-              yScale={{ type: 'linear', min: 'auto', max: 'auto', stacked: false, reverse: false }}
-              axisTop={null}
-              axisRight={null}
-              axisBottom={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: -45,
-                legend: xAxis,
-                legendOffset: 40,
-                legendPosition: 'middle'
-              }}
-              axisLeft={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
-                legend: yAxis,
-                legendOffset: -40,
-                legendPosition: 'middle'
-              }}
-              pointSize={10}
-              pointColor={{ theme: 'background' }}
-              pointBorderWidth={2}
-              pointBorderColor={{ from: 'serieColor' }}
-              pointLabelYOffset={-12}
-              useMesh={true}
-              legends={[
-                {
-                  anchor: 'bottom-right',
-                  direction: 'column',
-                  justify: false,
-                  translateX: 100,
-                  translateY: 0,
-                  itemsSpacing: 0,
-                  itemDirection: 'left-to-right',
-                  itemWidth: 80,
-                  itemHeight: 20,
-                  itemOpacity: 0.75,
-                  symbolSize: 12,
-                  symbolShape: 'circle',
-                  symbolBorderColor: 'rgba(0, 0, 0, .5)'
-                }
-              ]}
-            />
-          </Box>
+          <div style={{
+            height: 400,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            border: `1px dashed ${theme.palette.divider}`,
+            borderRadius: '4px',
+            padding: '24px'
+          }}>
+            <Typography variant="h6" gutterBottom>
+              Line Chart Placeholder
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              This component requires the @nivo/line package which is not currently installed.
+              <br />
+              Please install the package to view the line chart visualization.
+            </Typography>
+          </div>
         );
     }
   };
@@ -312,106 +256,59 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
 
     switch (visualizationType) {
       case 'pie':
+        const pieChartBoxSx = {
+          height: 400,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          border: `1px dashed ${theme.palette.divider}`,
+          borderRadius: 1,
+          p: 3
+        };
+
         return (
-          <Box sx={{ height: 400 }}>
-            <ResponsivePie
-              data={data}
-              margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
-              innerRadius={0.5}
-              padAngle={0.7}
-              cornerRadius={3}
-              activeOuterRadiusOffset={8}
-              borderWidth={1}
-              borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-              arcLinkLabelsSkipAngle={10}
-              arcLinkLabelsTextColor="#333333"
-              arcLinkLabelsThickness={2}
-              arcLinkLabelsColor={{ from: 'color' }}
-              arcLabelsSkipAngle={10}
-              arcLabelsTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
-              legends={[
-                {
-                  anchor: 'bottom',
-                  direction: 'row',
-                  justify: false,
-                  translateX: 0,
-                  translateY: 56,
-                  itemsSpacing: 0,
-                  itemWidth: 100,
-                  itemHeight: 18,
-                  itemTextColor: '#999',
-                  itemDirection: 'left-to-right',
-                  itemOpacity: 1,
-                  symbolSize: 18,
-                  symbolShape: 'circle',
-                  effects: [
-                    {
-                      on: 'hover',
-                      style: {
-                        itemTextColor: '#000'
-                      }
-                    }
-                  ]
-                }
-              ]}
-            />
+          <Box component="div" sx={pieChartBoxSx}>
+            <Typography variant="h6" gutterBottom>
+              Pie Chart Placeholder
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              This component requires the @nivo/pie package which is not currently installed.
+              <br />
+              Please install the package to view the pie chart visualization.
+            </Typography>
           </Box>
         );
 
       case 'scatter':
+        const scatterPlotBoxSx = {
+          height: 400,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          border: `1px dashed ${theme.palette.divider}`,
+          borderRadius: 1,
+          p: 3
+        };
+
         return (
-          <Box sx={{ height: 400 }}>
-            <ResponsiveScatterPlot
-              data={data}
-              margin={{ top: 60, right: 140, bottom: 70, left: 90 }}
-              xScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-              xFormat={(d: any) => `${d} ${xAxis}`}
-              yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
-              yFormat={(d: any) => `${d} ${yAxis}`}
-              blendMode="multiply"
-              axisTop={null}
-              axisRight={null}
-              axisBottom={{
-                orient: 'bottom',
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
-                legend: xAxis,
-                legendPosition: 'middle',
-                legendOffset: 46
-              }}
-              axisLeft={{
-                orient: 'left',
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
-                legend: yAxis,
-                legendPosition: 'middle',
-                legendOffset: -60
-              }}
-              legends={[
-                {
-                  anchor: 'bottom-right',
-                  direction: 'column',
-                  justify: false,
-                  translateX: 130,
-                  translateY: 0,
-                  itemWidth: 100,
-                  itemHeight: 12,
-                  itemsSpacing: 5,
-                  itemDirection: 'left-to-right',
-                  symbolSize: 12,
-                  symbolShape: 'circle'
-                }
-              ]}
-            />
+          <Box component="div" sx={scatterPlotBoxSx}>
+            <Typography variant="h6" gutterBottom>
+              Scatter Plot Placeholder
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              This component requires the @nivo/scatterplot package which is not currently installed.
+              <br />
+              Please install the package to view the scatter plot visualization.
+            </Typography>
           </Box>
         );
 
       default:
         // If no specific visualization type is provided, display as a table or text
         return (
-          <Box sx={{ p: 2 }}>
+          <Box component="div" sx={{ p: 2 }}>
             <Typography variant="subtitle1" gutterBottom>
               {title || 'Query Results'}
             </Typography>
@@ -503,13 +400,13 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
     }
 
     return (
-      <Box sx={{ mt: 3 }}>
+      <Box component="div" sx={{ mt: 3 }}>
         <Typography variant="h6" gutterBottom>
           Insights
         </Typography>
         <Paper sx={{ p: 2 }}>
           {nlQueryResults.insights.map((insight: string, index: number) => (
-            <Box key={index} sx={{ mb: index < nlQueryResults.insights.length - 1 ? 2 : 0 }}>
+            <Box component="div" key={index} sx={{ mb: index < nlQueryResults.insights.length - 1 ? 2 : 0 }}>
               <Typography variant="body1">
                 {insight}
               </Typography>
@@ -526,7 +423,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
   return (
     <Card elevation={0} sx={{ height: '100%', ...sx }}>
       <CardContent sx={{ height: '100%', p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" component="div">
             Natural Language Query
             <Tooltip title="Ask questions about your data in plain English. The system will interpret your question and generate appropriate visualizations and insights.">
@@ -551,7 +448,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
             Ask questions about your data in natural language:
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+          <Box component="div" sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
             <TextField
               fullWidth
               placeholder="e.g., 'Show me revenue trends by country for the last 6 months'"
@@ -610,9 +507,10 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
                   <Typography variant="subtitle2" gutterBottom>
                     Recent Queries
                   </Typography>
-                  <Box sx={{ mb: 2 }}>
+                  <Box component="div" sx={{ mb: 2 }}>
                     {recentQueries.map((recentQuery, index) => (
                       <Box
+                        component="div"
                         key={index}
                         sx={{
                           display: 'flex',
@@ -648,7 +546,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
               <Typography variant="subtitle2" gutterBottom>
                 Example Queries
               </Typography>
-              <Box>
+              <Box component="div">
                 {exampleQueries.map((exampleQuery, index) => (
                   <Box
                     key={index}
@@ -668,7 +566,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
             </Paper>
           </Collapse>
 
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+          <Box component="div" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
             {favoriteQueries.slice(0, 5).map((fav: { text: string }, index: number) => (
               <Chip
                 key={index}
@@ -693,6 +591,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
 
         {nlQueryLoading ? (
           <Box
+            component="div"
             sx={{
               display: 'flex',
               justifyContent: 'center',
@@ -708,7 +607,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
             </Typography>
           </Box>
         ) : nlQueryError ? (
-          <Box sx={{ p: 2 }}>
+          <Box component="div" sx={{ p: 2 }}>
             <Alert severity="error" sx={{ mb: 2 }}>
               {nlQueryError}
             </Alert>
@@ -718,7 +617,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
           </Box>
         ) : nlQueryResults ? (
           <Fade in={Boolean(nlQueryResults)}>
-            <Box>
+            <Box component="div">
               <Paper sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
                   {nlQueryResults.title || 'Query Results'}
@@ -729,7 +628,7 @@ const NaturalLanguageQuery: React.FC<NaturalLanguageQueryProps> = ({
             </Box>
           </Fade>
         ) : (
-          <Box sx={{ textAlign: 'center', p: 4 }}>
+          <Box component="div" sx={{ textAlign: 'center', p: 4 }}>
             <Typography variant="h5" color="text.secondary" gutterBottom>
               Ask a question about your data
             </Typography>

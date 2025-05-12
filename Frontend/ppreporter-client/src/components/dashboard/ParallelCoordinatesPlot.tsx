@@ -11,10 +11,10 @@ import {
   MenuItem,
   InputLabel,
   IconButton,
-  Tooltip,
   Stack,
   Switch,
   FormControlLabel,
+  Tooltip as MuiTooltip,
   Chip,
   TextField,
   Slider,
@@ -24,9 +24,14 @@ import {
   SelectChangeEvent
 } from '@mui/material';
 import {
-  ParallelCoordinates,
   ResponsiveContainer,
-  Legend
+  Legend,
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip
 } from 'recharts';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -246,7 +251,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
   // Create dimensions toolbar
   const renderDimensionsToolbar = (): React.ReactNode => {
     return (
-      <Box sx={{ mb: 2 }}>
+      <div style={{ marginBottom: '16px' }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1 }}>
             <InputLabel id="dimensions-select-label">Dimensions</InputLabel>
@@ -257,7 +262,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
               onChange={handleDimensionChange}
               label="Dimensions"
               renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                   {(selected as string[]).map((value) => (
                     <Chip
                       key={value}
@@ -265,7 +270,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
                       size="small"
                     />
                   ))}
-                </Box>
+                </div>
               )}
             >
               {dimensions.map((dimension) => (
@@ -308,7 +313,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
           />
         </Stack>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             {filteredData.length} items displayed
           </Typography>
@@ -323,8 +328,8 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
             }
             label="Enable brushing"
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
 
@@ -333,9 +338,9 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
     if (selectedDimensions.length === 0) return null;
 
     return (
-      <Box sx={{ mb: 3 }}>
+      <div style={{ marginBottom: '24px' }}>
         <Typography variant="subtitle2" gutterBottom>
-          <FilterListIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+          <FilterListIcon fontSize="small" sx={{ verticalAlign: 'middle', marginRight: '4px' }} />
           Filters
         </Typography>
 
@@ -353,7 +358,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
 
             return (
               <Grid item xs={12} sm={6} md={4} key={dimId}>
-                <Box sx={{ px: 1 }}>
+                <div style={{ paddingLeft: '8px', paddingRight: '8px' }}>
                   <Typography variant="body2" id={`${dimId}-slider-label`}>
                     {dimension.label}: {formatValue(currentFilter.min, dimension.format)} - {formatValue(currentFilter.max, dimension.format)}
                   </Typography>
@@ -371,12 +376,12 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
                     valueLabelFormat={(value) => formatValue(value, dimension.format)}
                     aria-labelledby={`${dimId}-slider-label`}
                   />
-                </Box>
+                </div>
               </Grid>
             );
           })}
         </Grid>
-      </Box>
+      </div>
     );
   };
 
@@ -385,9 +390,9 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <CircularProgress />
-          </Box>
+          </div>
         </CardContent>
       </Card>
     );
@@ -398,7 +403,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No data to display
             </Typography>
@@ -411,12 +416,12 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
                 variant="outlined"
                 size="small"
                 onClick={() => setFilters({})}
-                sx={{ mt: 2 }}
+                style={{ marginTop: '16px' }}
               >
                 Clear Filters
               </Button>
             )}
-          </Box>
+          </div>
         </CardContent>
       </Card>
     );
@@ -429,44 +434,44 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
     <Card elevation={1}>
       <CardContent>
         {/* Header with title and controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="h6" component="div">
               {title}
             </Typography>
-            <Tooltip title="Compare entities across multiple dimensions in parallel coordinates visualization">
+            <MuiTooltip title="Compare entities across multiple dimensions in parallel coordinates visualization">
               <IconButton size="small" sx={{ ml: 0.5 }}>
                 <InfoOutlinedIcon fontSize="small" />
               </IconButton>
-            </Tooltip>
-          </Box>
+            </MuiTooltip>
+          </div>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Refresh data">
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <MuiTooltip title="Refresh data">
               <IconButton size="small" onClick={onRefresh}>
                 <RefreshIcon fontSize="small" />
               </IconButton>
-            </Tooltip>
+            </MuiTooltip>
 
-            <Tooltip title="Export chart">
+            <MuiTooltip title="Export chart">
               <IconButton size="small" onClick={onExport}>
                 <FileDownloadIcon fontSize="small" />
               </IconButton>
-            </Tooltip>
+            </MuiTooltip>
 
-            <Tooltip title="Zoom in">
+            <MuiTooltip title="Zoom in">
               <IconButton size="small" onClick={handleZoomIn}>
                 <ZoomInIcon fontSize="small" />
               </IconButton>
-            </Tooltip>
+            </MuiTooltip>
 
-            <Tooltip title="Zoom out">
+            <MuiTooltip title="Zoom out">
               <IconButton size="small" onClick={handleZoomOut}>
                 <ZoomOutIcon fontSize="small" />
               </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
+            </MuiTooltip>
+          </div>
+        </div>
 
         {/* Configuration controls */}
         {renderDimensionsToolbar()}
@@ -475,8 +480,8 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
         {renderDimensionFilters()}
 
         {/* Parallel coordinates chart */}
-        <Box
-          sx={{
+        <div
+          style={{
             height: 500,
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'center center',
@@ -484,22 +489,34 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
           }}
         >
           <ResponsiveContainer width="100%" height="100%">
-            <ParallelCoordinates
+            <ComposedChart
               data={filteredData}
-              dimensions={chartDimensions}
-              colorBy={colorScaleConfig as any}
-              strokeWidth={2}
-              showMissingPoints={false}
-              axisTicksPosition="both"
-              animate
               margin={{ top: 20, right: 30, bottom: 50, left: 30 }}
-              axisLineColor={theme.palette.divider}
-              axisTickColor={theme.palette.text.secondary}
-              axisTickLabelColor={theme.palette.text.primary}
-              brushEnabled={brushEnabled}
-            />
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+              <XAxis dataKey="name" stroke={theme.palette.text.primary} />
+              <YAxis stroke={theme.palette.text.primary} />
+              {/* <RechartsTooltip /> */}
+              <Legend />
+              {selectedDimensions.map((dimId, index) => {
+                const dimension = dimensions.find(d => d.id === dimId);
+                if (!dimension) return null;
+
+                return (
+                  <Line
+                    key={dimId}
+                    type="monotone"
+                    dataKey={dimId}
+                    name={dimension.label}
+                    stroke={theme.palette.primary.main}
+                    activeDot={{ r: 8 }}
+                    strokeWidth={2}
+                  />
+                );
+              })}
+            </ComposedChart>
           </ResponsiveContainer>
-        </Box>
+        </div>
       </CardContent>
     </Card>
   );

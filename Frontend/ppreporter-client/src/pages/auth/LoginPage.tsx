@@ -118,18 +118,18 @@ const LoginPage: React.FC = () => {
         py: 2 // Reduced padding from 4 to 2
       }}
     >
-      <Box
-        sx={{
+      <div
+        style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center'
         }}
       >
         {/* Logo */}
-        <Box
-          sx={{
+        <div
+          style={{
             width: '100%',
-            mb: 2, // Reduced from 6 to 2 to bring form closer to logo
+            marginBottom: 16, // Reduced from 6 to 2 to bring form closer to logo
             display: 'flex',
             justifyContent: 'center',
             userSelect: 'none', // Make unselectable
@@ -149,12 +149,12 @@ const LoginPage: React.FC = () => {
             }}
             draggable="false" // Prevent dragging
           />
-        </Box>
+        </div>
 
         {/* Mock Data Toggle - Hidden behind icon */}
-        <Box sx={{ position: 'absolute', top: 20, right: 20 }}>
+        <div style={{ position: 'absolute', top: 20, right: 20 }}>
           <MockDataToggle showDetails={false} collapsed={true} />
-        </Box>
+        </div>
 
         {/* Error Alert */}
         {error && (
@@ -189,10 +189,10 @@ const LoginPage: React.FC = () => {
         />
 
         {/* Terms & Support Section */}
-        <Box
-          sx={{
-            mt: 2, // Reduced from 4 to 2
-            p: 1, // Reduced from 2 to 1
+        <div
+          style={{
+            marginTop: 16, // Reduced from 4 to 2
+            padding: 8, // Reduced from 2 to 1
             textAlign: 'center',
           }}
         >
@@ -202,8 +202,8 @@ const LoginPage: React.FC = () => {
             <a href="/privacy">Privacy Policy</a>.
             {' '}Need help? <a href="/support">Contact Support</a>
           </Typography>
-        </Box>
-      </Box>
+        </div>
+      </div>
     </Container>
   );
 };

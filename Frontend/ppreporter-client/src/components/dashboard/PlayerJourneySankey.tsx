@@ -22,7 +22,8 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { ResponsiveSankey } from '@nivo/sankey';
+// Placeholder for ResponsiveSankey
+// import { ResponsiveSankey } from '@nivo/sankey';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from '../../store/hooks';
 import {
@@ -186,7 +187,7 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
     const targetLinks = node.targetNodes?.length || 0;
 
     return (
-      <Box sx={{ p: 1 }}>
+      <Box component="div" sx={{ p: 1 }}>
         <Typography variant="subtitle2">{label}</Typography>
         <Typography variant="body2">Players: {numberOfPlayers}</Typography>
         <Typography variant="body2">Connections: {sourceLinks + targetLinks}</Typography>
@@ -202,7 +203,7 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
     const percentage = ((link.value / (link.source as SankeyNode).value) * 100).toFixed(1);
 
     return (
-      <Box sx={{ p: 1 }}>
+      <Box component="div" sx={{ p: 1 }}>
         <Typography variant="subtitle2">{sourceLabel} → {targetLabel}</Typography>
         <Typography variant="body2">Players: {numberOfPlayers}</Typography>
         <Typography variant="body2">Conversion: {percentage}%</Typography>
@@ -235,36 +236,36 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
 
   if (isLoading || playerJourneyLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (playerJourneyError) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height, padding: '16px' }}>
         <Typography color="error">
           Error loading player journey data: {playerJourneyError}
         </Typography>
-      </Box>
+      </div>
     );
   }
 
   if (!playerJourneyData || !playerJourneyData.nodes || !playerJourneyData.links) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height, padding: '16px' }}>
         <Typography color="text.secondary">
           No player journey data available
         </Typography>
-      </Box>
+      </div>
     );
   }
 
   return (
     <Card elevation={0} sx={{ height: '100%' }}>
       <CardContent sx={{ height: '100%', p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" component="div">
             Player Journey Analysis
             <Tooltip title="Visualize player flow patterns through your system">
@@ -274,7 +275,7 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
             </Tooltip>
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box component="div" sx={{ display: 'flex', gap: 2 }}>
             <Button
               size="small"
               startIcon={<FileDownloadIcon />}
@@ -318,7 +319,7 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
             </Select>
           </FormControl>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', border: `1px solid ${theme.palette.divider}`, borderRadius: 1, pl: 1 }}>
+          <Box component="div" sx={{ display: 'flex', alignItems: 'center', border: `1px solid ${theme.palette.divider}`, borderRadius: 1, pl: 1 }}>
             <Typography variant="caption" sx={{ mr: 1 }}>
               Zoom:
             </Typography>
@@ -335,7 +336,7 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
         </Stack>
 
         {/* Screen reader accessible description */}
-        <Box sx={{
+        <Box component="div" sx={{
           position: 'absolute',
           left: '-9999px',
           width: '1px',
@@ -348,6 +349,7 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
         </Box>
 
         <Box
+          component="div"
           sx={{
             height: height - 150,
             transform: `scale(${zoomLevel})`,
@@ -355,82 +357,33 @@ const PlayerJourneySankey: React.FC<PlayerJourneySankeyProps> = ({
             transition: 'transform 0.3s ease-out'
           }}
         >
-          <ResponsiveSankey
-            data={{
-              nodes: playerJourneyData.nodes,
-              links: playerJourneyData.links
+          <Box
+            component="div"
+            sx={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              border: `1px dashed ${theme.palette.divider}`,
+              borderRadius: 1,
+              p: 3
             }}
-            margin={{ top: 40, right: 160, bottom: 40, left: 50 }}
-            align="justify"
-            colors={(node: any) => getNodeColor(node)}
-            nodeOpacity={1}
-            nodeHoverOpacity={0.8}
-            nodeHoverOthersOpacity={0.3}
-            nodeThickness={18}
-            nodeSpacing={24}
-            nodeBorderWidth={0}
-            nodeBorderRadius={3}
-            linkOpacity={0.5}
-            linkHoverOpacity={0.8}
-            linkHoverOthersOpacity={0.1}
-            linkContract={3}
-            enableLinkGradient={colorMode === 'category'}
-            labelPosition="outside"
-            labelOrientation="horizontal"
-            labelPadding={16}
-            labelTextColor={{ from: 'color', modifiers: [['darker', 1]] }}
-            animate={true}
-            motionConfig="gentle"
-            legends={[
-              {
-                anchor: 'bottom-right',
-                direction: 'column',
-                translateX: 130,
-                itemWidth: 100,
-                itemHeight: 14,
-                itemDirection: 'right-to-left',
-                itemsSpacing: 2,
-                itemTextColor: '#999',
-                symbolSize: 14,
-                effects: [
-                  {
-                    on: 'hover',
-                    style: {
-                      itemTextColor: '#000'
-                    }
-                  }
-                ]
-              }
-            ]}
-            tooltip={({ node, link }: any) => {
-              if (node) {
-                return getNodeTooltip(node);
-              }
-              if (link) {
-                return getLinkTooltip(link);
-              }
-              return null;
-            }}
-            onClick={(data: any) => {
-              console.log('Clicked:', data);
-            }}
-            onMouseEnter={(data: any, event: any) => {
-              if (data.node) {
-                setNodeHovered(data.node.id);
-              } else if (data.link) {
-                setLinkHovered(`${data.link.source.id}-${data.link.target.id}`);
-              }
-            }}
-            onMouseLeave={() => {
-              setNodeHovered(null);
-              setLinkHovered(null);
-            }}
-          />
+          >
+            <Typography variant="h6" gutterBottom>
+              Sankey Diagram Placeholder
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              This component requires the @nivo/sankey package which is not currently installed.
+              <br />
+              Please install the package to view the player journey visualization.
+            </Typography>
+          </Box>
         </Box>
 
         <Divider sx={{ my: 2 }} />
 
-        <Box>
+        <Box component="div">
           <Typography variant="subtitle2" gutterBottom>
             Insights
           </Typography>
