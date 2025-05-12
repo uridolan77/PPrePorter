@@ -107,23 +107,31 @@ const CardAccent: React.FC<CardAccentProps> = ({
   };
 
   const accentColor = getColor();
+  // Extract position styles to avoid complex union type
+  const positionStyles = getPositionStyles();
+
+  // Create a style object instead of using sx prop
+  const accentStyle = {
+    position: 'absolute',
+    backgroundColor: accentColor,
+    zIndex: 1,
+    top: positionStyles.top,
+    right: positionStyles.right,
+    bottom: positionStyles.bottom,
+    left: positionStyles.left,
+    width: positionStyles.width,
+    height: positionStyles.height
+  } as React.CSSProperties;
 
   return (
     <>
       {/* Accent stripe */}
-      <Box
-        sx={{
-          position: 'absolute',
-          backgroundColor: accentColor,
-          ...getPositionStyles(),
-          zIndex: 1
-        }}
-      />
+      <div style={accentStyle} />
 
       {/* Wave pattern background */}
       {showWavePattern && (
-        <Box
-          sx={{
+        <div
+          style={{
             position: 'absolute',
             top: 0,
             left: 0,

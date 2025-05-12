@@ -375,11 +375,11 @@ export async function generateForecastServer(
 export function clearCache(endpoint?: string): void {
   if (endpoint) {
     // Clear cache for specific endpoint
-    for (const key of cache.keys()) {
+    Array.from(cache.keys()).forEach(key => {
       if (key.startsWith(`${endpoint}:`)) {
         cache.delete(key);
       }
-    }
+    });
   } else {
     // Clear all cache
     cache.clear();

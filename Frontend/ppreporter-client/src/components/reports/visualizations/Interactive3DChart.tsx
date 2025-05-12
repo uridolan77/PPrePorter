@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, Suspense, lazy } from 'react';
 import {
   Box,
   Typography,
@@ -23,10 +23,11 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Html } from '@react-three/drei';
-import * as THREE from 'three';
 import { useAnnotationContext } from '../interactive/AnnotationSystem';
+import Safe3DRenderer from './Safe3DRenderer';
+
+// Lazy load Three.js related components to prevent crashes
+const ThreeComponents = lazy(() => import('./ThreeComponents'));
 
 // Data point interface
 export interface DataPoint3D {
@@ -136,6 +137,23 @@ const Interactive3DChart: React.FC<Interactive3DChartProps> = ({
     setDarkMode(prev => !prev);
   }, []);
 
+  // Handle chart type change
+  const handleChartTypeChange = useCallback((event: SelectChangeEvent) => {
+    // @ts-ignore - Type safety handled by component props
+    const newChartType = event.target.value as '3dScatter' | '3dBar' | '3dSurface';
+    // This would be set via props in a real implementation
+  }, []);
+
+  // Handle color by change
+  const handleColorByChange = useCallback((event: SelectChangeEvent) => {
+    // This would be set via props in a real implementation
+  }, []);
+
+  // Handle size by change
+  const handleSizeByChange = useCallback((event: SelectChangeEvent) => {
+    // This would be set via props in a real implementation
+  }, []);
+
   // Handle point click
   const handlePointClick = useCallback((point: DataPoint3D) => {
     setSelectedPoint(prev => prev?.id === point.id ? null : point);
@@ -210,225 +228,44 @@ const Interactive3DChart: React.FC<Interactive3DChartProps> = ({
     return 0.5;
   }, [sizeBy, data]);
 
-  // Scene component
-  const Scene = () => {
-    const { camera } = useThree();
-    const controlsRef = useRef<any>();
-
-    // Set initial camera position
-    useEffect(() => {
-      camera.position.set(10, 10, 10);
-      camera.lookAt(0, 0, 0);
-    }, [camera]);
-
-    // Auto-rotate
-    useFrame(() => {
-      if (autoRotate && controlsRef.current) {
-        controlsRef.current.autoRotateSpeed = rotationSpeed;
-        controlsRef.current.update();
-      }
-    });
-
-    // Normalized data
+  // Render 3D content with error handling
+  const render3DContent = () => {
     const normalized = normalizedData();
 
     return (
-      <>
-        <OrbitControls
-          ref={controlsRef}
-          autoRotate={autoRotate}
-          enableZoom={enableZoom}
-          enableRotate={enableRotation}
-          enablePan={true}
-        />
-
-        {/* Ambient light */}
-        <ambientLight intensity={darkMode ? 0.3 : 0.5} />
-
-        {/* Directional light */}
-        <directionalLight
-          position={[10, 10, 10]}
-          intensity={darkMode ? 0.7 : 1}
-          castShadow
-        />
-
-        {/* Grid */}
-        {enableGrid && (
-          <gridHelper
-            args={[10, 10, darkMode ? 0x444444 : 0xcccccc, darkMode ? 0x222222 : 0xe0e0e0]}
-            position={[0, -5, 0]}
+      <Safe3DRenderer height={height} fallback={
+        <Typography color="text.secondary">
+          3D visualization could not be loaded. Please try again later.
+        </Typography>
+      }>
+        <Suspense fallback={
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <CircularProgress />
+          </div>
+        }>
+          <ThreeComponents
+            normalizedData={normalized}
+            autoRotate={autoRotate}
+            rotationSpeed={rotationSpeed}
+            enableZoom={enableZoom}
+            enableRotation={enableRotation}
+            enableGrid={enableGrid}
+            enableAxes={enableAxes}
+            enableLabels={enableLabels}
+            darkMode={darkMode}
+            xLabel={xLabel}
+            yLabel={yLabel}
+            zLabel={zLabel}
+            chartType={chartType}
+            getPointColor={getPointColor}
+            getPointSize={getPointSize}
+            handlePointClick={handlePointClick}
+            selectedPoint={selectedPoint}
+            hoveredPoint={hoveredPoint}
+            setHoveredPoint={setHoveredPoint}
           />
-        )}
-
-        {/* Axes */}
-        {enableAxes && (
-          <>
-            {/* X axis */}
-            <line>
-              <bufferGeometry attach="geometry">
-                <bufferAttribute
-                  attach="attributes-position"
-                  args={[new Float32Array([-5, -5, -5, 5, -5, -5]), 3, false]}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial
-                attach="material"
-                color={theme.palette.error.main}
-                linewidth={2}
-              />
-            </line>
-
-            {/* Y axis */}
-            <line>
-              <bufferGeometry attach="geometry">
-                <bufferAttribute
-                  attach="attributes-position"
-                  args={[new Float32Array([-5, -5, -5, -5, 5, -5]), 3, false]}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial
-                attach="material"
-                color={theme.palette.success.main}
-                linewidth={2}
-              />
-            </line>
-
-            {/* Z axis */}
-            <line>
-              <bufferGeometry attach="geometry">
-                <bufferAttribute
-                  attach="attributes-position"
-                  args={[new Float32Array([-5, -5, -5, -5, -5, 5]), 3, false]}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial
-                attach="material"
-                color={theme.palette.primary.main}
-                linewidth={2}
-              />
-            </line>
-
-            {/* Axis labels */}
-            <Text
-              position={[6, -5, -5]}
-              color={theme.palette.error.main}
-              fontSize={0.5}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {xLabel}
-            </Text>
-
-            <Text
-              position={[-5, 6, -5]}
-              color={theme.palette.success.main}
-              fontSize={0.5}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {yLabel}
-            </Text>
-
-            <Text
-              position={[-5, -5, 6]}
-              color={theme.palette.primary.main}
-              fontSize={0.5}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {zLabel}
-            </Text>
-          </>
-        )}
-
-        {/* Data points */}
-        {chartType === '3dScatter' && normalized.map((point) => (
-          <mesh
-            key={point.id}
-            position={[point.normalizedX, point.normalizedY, point.normalizedZ]}
-            scale={getPointSize(point)}
-            onClick={() => handlePointClick(point)}
-            onPointerOver={() => setHoveredPoint(point)}
-            onPointerOut={() => setHoveredPoint(null)}
-          >
-            <sphereGeometry args={[1, 32, 32]} />
-            <meshStandardMaterial
-              color={getPointColor(point)}
-              roughness={0.5}
-              metalness={0.2}
-              emissive={selectedPoint?.id === point.id ? '#ffffff' : '#000000'}
-              emissiveIntensity={selectedPoint?.id === point.id ? 0.5 : 0}
-            />
-
-            {/* Label */}
-            {enableLabels && (point.label || hoveredPoint?.id === point.id) && (
-              <Html
-                position={[0, 1.2, 0]}
-                center
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  pointerEvents: 'none',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {point.label || `(${point.x}, ${point.y}, ${point.z})`}
-              </Html>
-            )}
-          </mesh>
-        ))}
-
-        {/* 3D Bars */}
-        {chartType === '3dBar' && normalized.map((point) => (
-          <mesh
-            key={point.id}
-            position={[
-              point.normalizedX,
-              (point.normalizedY + 5) / 2, // Position at half height
-              point.normalizedZ
-            ]}
-            scale={[
-              getPointSize(point),
-              Math.max(0.1, point.normalizedY + 5), // Height based on Y value
-              getPointSize(point)
-            ]}
-            onClick={() => handlePointClick(point)}
-            onPointerOver={() => setHoveredPoint(point)}
-            onPointerOut={() => setHoveredPoint(null)}
-          >
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial
-              color={getPointColor(point)}
-              roughness={0.5}
-              metalness={0.2}
-              emissive={selectedPoint?.id === point.id ? '#ffffff' : '#000000'}
-              emissiveIntensity={selectedPoint?.id === point.id ? 0.5 : 0}
-            />
-
-            {/* Label */}
-            {enableLabels && (point.label || hoveredPoint?.id === point.id) && (
-              <Html
-                position={[0, (point.normalizedY + 5) / 2 + 0.6, 0]}
-                center
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  pointerEvents: 'none',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {point.label || `(${point.x}, ${point.y}, ${point.z})`}
-              </Html>
-            )}
-          </mesh>
-        ))}
-      </>
+        </Suspense>
+      </Safe3DRenderer>
     );
   };
 
@@ -516,7 +353,7 @@ const Interactive3DChart: React.FC<Interactive3DChartProps> = ({
 
         {/* Rotation controls */}
         {enableRotation && (
-          <Box sx={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
             <Tooltip title="Rotate Left">
               <IconButton size="small" onClick={() => {}}>
                 <RotateLeftIcon fontSize="small" />
@@ -527,12 +364,12 @@ const Interactive3DChart: React.FC<Interactive3DChartProps> = ({
                 <RotateRightIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </div>
         )}
 
         {/* Zoom controls */}
         {enableZoom && (
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
             <Tooltip title="Zoom In">
               <IconButton size="small" onClick={() => {}}>
                 <ZoomInIcon fontSize="small" />
@@ -548,7 +385,7 @@ const Interactive3DChart: React.FC<Interactive3DChartProps> = ({
                 <RestartAltIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </div>
         )}
 
         {/* Dark mode toggle */}
@@ -561,12 +398,7 @@ const Interactive3DChart: React.FC<Interactive3DChartProps> = ({
 
       {/* 3D Canvas */}
       <div style={{ flex: 1, position: 'relative' }}>
-        <Canvas
-          camera={{ position: [10, 10, 10], fov: 60 }}
-          style={{ background: darkMode ? '#111' : '#f5f5f5' }}
-        >
-          <Scene />
-        </Canvas>
+        {render3DContent()}
       </div>
 
       {/* Selected point info */}

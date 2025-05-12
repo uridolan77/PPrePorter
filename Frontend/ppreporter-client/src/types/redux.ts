@@ -13,6 +13,7 @@ export interface RootState {
   entities: EntitiesState;
   ui: UIState;
   dailyActionGames: DailyActionGamesState;
+  integratedReports: any; // Using 'any' as a temporary fix
 }
 
 // DailyActionGamesState is now imported from dailyActionGamesSlice.ts
@@ -261,6 +262,17 @@ export interface DashboardFilters {
   minRevenue?: number | null;
   maxRevenue?: number | null;
   playMode?: string | null;
+  timeFrame?: string;
+  primaryDimension?: string;
+  secondaryDimension?: string;
+  metric?: string;
+  dataType?: string;
+  xAxis?: string;
+  yAxis?: string;
+  valueMetric?: string;
+  journeyType?: string;
+  segments?: string[];
+  metrics?: string[];
 }
 
 /**

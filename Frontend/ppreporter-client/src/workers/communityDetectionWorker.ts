@@ -2,8 +2,8 @@
 // This worker runs community detection algorithms in a separate thread
 
 import { GraphData } from '../components/reports/visualizations/NetworkGraph';
-import { 
-  CommunityDetectionAlgorithm, 
+import {
+  CommunityDetectionAlgorithm,
   CommunityDetectionOptions,
   CommunityStructure,
   detectCommunities
@@ -29,16 +29,16 @@ export type CommunityDetectionWorkerOutputMessage = {
 // Handle messages from the main thread
 self.onmessage = (event: MessageEvent<CommunityDetectionWorkerInputMessage>) => {
   const { type, graphData, options, requestId } = event.data;
-  
+
   if (type === 'detect_communities') {
     try {
       // Send initial progress update
       sendProgressUpdate(0, requestId);
-      
+
       // Check if the graph is too large
       const nodeCount = graphData.nodes.length;
       const linkCount = graphData.links.length;
-      
+
       if (nodeCount > 10000 || linkCount > 50000) {
         // For very large graphs, send progress updates during computation
         const result = detectCommunitiesWithProgress(graphData, options, requestId);
@@ -47,7 +47,7 @@ self.onmessage = (event: MessageEvent<CommunityDetectionWorkerInputMessage>) => 
         // For smaller graphs, just run the algorithm
         const result = detectCommunities(graphData, options);
         sendProgressUpdate(50, requestId);
-        
+
         // Simulate some additional processing time for very small graphs
         // to ensure progress updates are visible
         if (nodeCount < 100) {
@@ -77,7 +77,7 @@ function sendProgressUpdate(progress: number, requestId: string): void {
     progress,
     requestId
   };
-  
+
   self.postMessage(message);
 }
 
@@ -96,7 +96,7 @@ function sendResult(
     communityStructure: result.communityStructure,
     requestId
   };
-  
+
   self.postMessage(message);
 }
 
@@ -111,7 +111,7 @@ function sendError(errorMessage: string, requestId: string): void {
     error: errorMessage,
     requestId
   };
-  
+
   self.postMessage(message);
 }
 
@@ -130,32 +130,32 @@ function detectCommunitiesWithProgress(
 ): { graphData: GraphData; communityStructure: CommunityStructure } {
   // Create a copy of the graph data to avoid modifying the original
   const { nodes, links } = graphData;
-  
+
   // Send progress update
   sendProgressUpdate(10, requestId);
-  
+
   // Create adjacency matrix and node mapping
   const { adjacencyMatrix, nodeIds, nodeIndices } = createAdjacencyMatrix(links, nodes);
-  
+
   // Send progress update
   sendProgressUpdate(30, requestId);
-  
+
   // Detect communities using the specified algorithm
   let communityAssignments: number[];
-  
+
   switch (options.algorithm) {
     case 'louvain':
       communityAssignments = louvainCommunityDetection(
-        adjacencyMatrix, 
-        options.resolution || 1.0, 
+        adjacencyMatrix,
+        options.resolution || 1.0,
         options.randomSeed || 42,
         progress => sendProgressUpdate(30 + progress * 0.4, requestId)
       );
       break;
     case 'leiden':
       communityAssignments = leidenCommunityDetection(
-        adjacencyMatrix, 
-        options.resolution || 1.0, 
+        adjacencyMatrix,
+        options.resolution || 1.0,
         options.randomSeed || 42,
         progress => sendProgressUpdate(30 + progress * 0.4, requestId)
       );
@@ -163,34 +163,34 @@ function detectCommunitiesWithProgress(
     // Add other algorithms with progress reporting
     default:
       communityAssignments = louvainCommunityDetection(
-        adjacencyMatrix, 
-        options.resolution || 1.0, 
+        adjacencyMatrix,
+        options.resolution || 1.0,
         options.randomSeed || 42,
         progress => sendProgressUpdate(30 + progress * 0.4, requestId)
       );
   }
-  
+
   // Send progress update
   sendProgressUpdate(70, requestId);
-  
+
   // Calculate modularity
   const modularity = calculateModularity(adjacencyMatrix, communityAssignments);
-  
+
   // Get community statistics
   const communityStats = getCommunityStatistics(communityAssignments, nodeIds);
-  
+
   // Send progress update
   sendProgressUpdate(80, requestId);
-  
+
   // Update graph data with community assignments
   const updatedNodes = nodes.map((node, index) => ({
     ...node,
     community: communityAssignments[nodeIndices[node.id]]
   }));
-  
+
   // Send progress update
   sendProgressUpdate(90, requestId);
-  
+
   // Create community structure result
   const communityStructure: CommunityStructure = {
     communities: communityAssignments,
@@ -199,10 +199,10 @@ function detectCommunitiesWithProgress(
     communitySizes: communityStats.communitySizes,
     communityNodes: communityStats.communityNodes
   };
-  
+
   // Send progress update
   sendProgressUpdate(100, requestId);
-  
+
   return {
     graphData: {
       nodes: updatedNodes,
@@ -221,27 +221,27 @@ function detectCommunitiesWithProgress(
 function createAdjacencyMatrix(links: any[], nodes: any[]): any {
   const nodeIds: string[] = nodes.map(node => node.id);
   const nodeIndices: { [id: string]: number } = {};
-  
+
   nodeIds.forEach((id, index) => {
     nodeIndices[id] = index;
   });
-  
+
   const n = nodes.length;
   const adjacencyMatrix: number[][] = Array(n).fill(0).map(() => Array(n).fill(0));
-  
+
   links.forEach(link => {
     const sourceIndex = nodeIndices[link.source as string];
     const targetIndex = nodeIndices[link.target as string];
-    
+
     if (sourceIndex !== undefined && targetIndex !== undefined) {
       const weight = link.value !== undefined ? Number(link.value) : 1;
       const validWeight = isNaN(weight) || weight <= 0 ? 1 : weight;
-      
+
       adjacencyMatrix[sourceIndex][targetIndex] = validWeight;
       adjacencyMatrix[targetIndex][sourceIndex] = validWeight;
     }
   });
-  
+
   return { adjacencyMatrix, nodeIds, nodeIndices };
 }
 
@@ -255,10 +255,10 @@ function louvainCommunityDetection(
   progressCallback: (progress: number) => void
 ): number[] {
   const n = adjacencyMatrix.length;
-  
+
   // Initialize each node to its own community
   let communities = Array(n).fill(0).map((_, i) => i);
-  
+
   // Calculate total edge weight
   let totalWeight = 0;
   for (let i = 0; i < n; i++) {
@@ -267,7 +267,7 @@ function louvainCommunityDetection(
     }
   }
   totalWeight /= 2; // Undirected graph, count each edge once
-  
+
   // Calculate node weights
   const nodeWeights = Array(n).fill(0);
   for (let i = 0; i < n; i++) {
@@ -275,7 +275,7 @@ function louvainCommunityDetection(
       nodeWeights[i] += adjacencyMatrix[i][j];
     }
   }
-  
+
   // Set random seed
   Math.seedrandom = (seed: number) => {
     let s = seed;
@@ -285,84 +285,85 @@ function louvainCommunityDetection(
     };
   };
   const random = Math.seedrandom(randomSeed);
-  
+
   // Phase 1: Modularity optimization
   let improvement = true;
   let iteration = 0;
   const maxIterations = 10; // Prevent infinite loops
-  
+
   while (improvement && iteration < maxIterations) {
     improvement = false;
     iteration++;
-    
+
     // Report progress
     progressCallback(iteration / maxIterations);
-    
+
     // Create random order of nodes
     const nodeOrder = Array(n).fill(0).map((_, i) => i);
     for (let i = n - 1; i > 0; i--) {
       const j = Math.floor(random() * (i + 1));
       [nodeOrder[i], nodeOrder[j]] = [nodeOrder[j], nodeOrder[i]];
     }
-    
+
     for (const i of nodeOrder) {
       const currentCommunity = communities[i];
-      
+
       // Calculate modularity gain for moving to each community
       const communityConnections: { [community: number]: number } = {};
-      
+
       for (let j = 0; j < n; j++) {
         if (adjacencyMatrix[i][j] > 0) {
           const communityJ = communities[j];
           communityConnections[communityJ] = (communityConnections[communityJ] || 0) + adjacencyMatrix[i][j];
         }
       }
-      
+
       // Remove node from its current community
       communities[i] = -1;
-      
+
       // Find best community to move to
       let bestCommunity = currentCommunity;
       let bestGain = 0;
-      
+
       for (const community in communityConnections) {
         const communityId = parseInt(community);
-        
+
         // Skip if trying to move to the same community
         if (communityId === currentCommunity) continue;
-        
+
         // Calculate modularity gain
         const gain = calculateModularityGain(
-          adjacencyMatrix, communities, i, communityId, 
-          communityConnections[communityId], nodeWeights[i], 
+          adjacencyMatrix, communities, i, communityId,
+          communityConnections[communityId], nodeWeights[i],
           totalWeight, resolution
         );
-        
+
         if (gain > bestGain) {
           bestGain = gain;
           bestCommunity = communityId;
         }
       }
-      
+
       // Move node to best community
       communities[i] = bestGain > 0 ? bestCommunity : currentCommunity;
-      
+
       // Check if we made an improvement
       if (communities[i] !== currentCommunity) {
         improvement = true;
       }
     }
   }
-  
+
   // Phase 2: Community aggregation (simplified)
   // Renumber communities to be consecutive
-  const uniqueCommunities = [...new Set(communities)];
+  const uniqueCommunitiesSet = new Set(communities);
+  const uniqueCommunities = Array.from(uniqueCommunitiesSet);
   const communityMap: { [oldId: number]: number } = {};
-  
+
   uniqueCommunities.forEach((community, index) => {
     communityMap[community] = index;
   });
-  
+
   return communities.map(community => communityMap[community]);
 }
 
@@ -388,7 +389,7 @@ function calculateModularityGain(
       }
     }
   }
-  
+
   // Calculate modularity gain
   return (
     edgeWeightToCommunity - resolution * (communityWeight * nodeWeight) / (2 * totalWeight)
@@ -416,7 +417,7 @@ function calculateModularity(
   communities: number[]
 ): number {
   const n = adjacencyMatrix.length;
-  
+
   // Calculate total edge weight
   let totalWeight = 0;
   for (let i = 0; i < n; i++) {
@@ -425,7 +426,7 @@ function calculateModularity(
     }
   }
   totalWeight /= 2; // Undirected graph, count each edge once
-  
+
   // Calculate node weights
   const nodeWeights = Array(n).fill(0);
   for (let i = 0; i < n; i++) {
@@ -433,10 +434,10 @@ function calculateModularity(
       nodeWeights[i] += adjacencyMatrix[i][j];
     }
   }
-  
+
   // Calculate modularity
   let modularity = 0;
-  
+
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       if (communities[i] === communities[j]) {
@@ -444,7 +445,7 @@ function calculateModularity(
       }
     }
   }
-  
+
   return modularity / (2 * totalWeight);
 }
 
@@ -456,22 +457,23 @@ function getCommunityStatistics(
   nodeIds: string[]
 ): { communityCount: number; communitySizes: number[]; communityNodes: { [communityId: number]: string[] } } {
   // Count communities
-  const uniqueCommunities = [...new Set(communities)];
+  const uniqueCommunitiesSet = new Set(communities);
+  const uniqueCommunities = Array.from(uniqueCommunitiesSet);
   const communityCount = uniqueCommunities.length;
-  
+
   // Calculate community sizes
   const communitySizes = Array(communityCount).fill(0);
   const communityNodes: { [communityId: number]: string[] } = {};
-  
+
   communities.forEach((community, index) => {
     communitySizes[community]++;
-    
+
     if (!communityNodes[community]) {
       communityNodes[community] = [];
     }
-    
+
     communityNodes[community].push(nodeIds[index]);
   });
-  
+
   return { communityCount, communitySizes, communityNodes };
 }

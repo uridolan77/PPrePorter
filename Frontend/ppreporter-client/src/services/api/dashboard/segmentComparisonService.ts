@@ -6,12 +6,19 @@ import { DashboardFilters } from '../../../types/redux';
  * Handles API calls related to segment comparison data
  */
 
+// Define a custom interface that extends DashboardFilters but with string segments and metrics
+interface SegmentComparisonFilters extends Omit<DashboardFilters, 'segments' | 'metrics'> {
+  segments?: string;
+  metrics?: string;
+  timeFrame?: string;
+}
+
 /**
  * Get segment comparison data
- * @param {DashboardFilters} filters - Dashboard filters
+ * @param {SegmentComparisonFilters} filters - Dashboard filters with string segments and metrics
  * @returns {Promise<any>} Promise object with segment comparison data
  */
-const getSegmentComparison = async (filters?: DashboardFilters): Promise<any> => {
+const getSegmentComparison = async (filters?: SegmentComparisonFilters): Promise<any> => {
   try {
     const response = await apiClient.get('/api/Dashboard/segment-comparison', { params: filters });
     return response.data;

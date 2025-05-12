@@ -153,15 +153,15 @@ const MainLayout: React.FC = () => {
   const drawerContent = (
     <>
       <Toolbar sx={{ px: 2, height: 128 }}>  {/* Increased height to match page header */}
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box
-            sx={{
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div
+            style={{
               width: 100,  /* Increased from 40 to 100 */
               height: 100, /* Increased from 40 to 100 */
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              mr: 2,
+              marginRight: 16,
               userSelect: 'none', // Make unselectable
             }}
           >
@@ -176,16 +176,16 @@ const MainLayout: React.FC = () => {
               }}
               draggable="false" // Prevent dragging
             />
-          </Box>
-          <Box>
+          </div>
+          <div>
             <Typography variant="h6" component="div" sx={{ fontWeight: 600, letterSpacing: '0.5px' }}>
               PPrePorter
             </Typography>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mt: -0.5 }}>
               Dashboard
             </Typography>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </Toolbar>
       <Divider sx={{ borderColor: (theme) => theme.palette.grey[200], opacity: 0.6 }} />
       <List sx={{ pt: 2, px: 2 }}>
@@ -300,8 +300,15 @@ const MainLayout: React.FC = () => {
     </>
   );
 
+  // Use style prop instead of sx to avoid complex union type
+  const mainContainerStyle = {
+    display: 'flex',
+    height: '100vh',
+    width: '100%'
+  };
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <div style={mainContainerStyle}>
       {/* App Bar */}
       <AppBar
         position="fixed"
@@ -474,14 +481,14 @@ const MainLayout: React.FC = () => {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <Box sx={{ px: 2, py: 1.5 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+        <div style={{ padding: '12px 16px' }}>
+          <Typography variant="subtitle1" style={{ fontWeight: 500 }}>
             {user?.fullName || user?.username || 'User'}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" color="text.secondary" style={{ marginTop: 4 }}>
             {user?.email || ''}
           </Typography>
-        </Box>
+        </div>
         <Divider sx={{ borderColor: (theme) => theme.palette.grey[100] }} />
         {userMenuItems.map((item) => (
           <MenuItem
@@ -557,15 +564,15 @@ const MainLayout: React.FC = () => {
           open
         >
           {sidebarOpen ? drawerContent : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
-              <Box
-                sx={{
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16 }}>
+              <div
+                style={{
                   width: 60,  /* Increased from 40 to 60 for collapsed sidebar */
                   height: 60, /* Increased from 40 to 60 for collapsed sidebar */
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  mb: 2,
+                  marginBottom: 16,
                   userSelect: 'none', // Make unselectable
                   overflow: 'hidden', // Prevent overflow
                 }}
@@ -581,7 +588,7 @@ const MainLayout: React.FC = () => {
                   }}
                   draggable="false" // Prevent dragging
                 />
-              </Box>
+              </div>
               {mainNavItems.map((item) => (
                 <Tooltip key={item.text} title={item.text} placement="right">
                   <IconButton
@@ -597,7 +604,7 @@ const MainLayout: React.FC = () => {
                   </IconButton>
                 </Tooltip>
               ))}
-            </Box>
+            </div>
           )}
         </Drawer>
       </Box>
@@ -650,7 +657,7 @@ const MainLayout: React.FC = () => {
           </Box>
         </Box>
       </Box>
-    </Box>
+    </div>
   );
 };
 

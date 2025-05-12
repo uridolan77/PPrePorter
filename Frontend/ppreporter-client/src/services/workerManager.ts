@@ -25,6 +25,9 @@ interface WorkerInfo {
 
 // Request callbacks
 interface RequestCallbacks {
+  type: WorkerType;
+  message: any;
+  processing: boolean;
   onSuccess: (result: any) => void;
   onProgress?: (progress: number) => void;
   onError?: (error: string) => void;
@@ -36,7 +39,7 @@ export class WorkerManager {
   private workers: Map<string, WorkerInfo> = new Map();
   private pendingRequests: Map<string, RequestCallbacks> = new Map();
   private maxWorkers: number;
-  
+
   /**
    * Constructor
    * @param maxWorkers Maximum number of workers per type
@@ -44,7 +47,7 @@ export class WorkerManager {
   private constructor(maxWorkers: number = 4) {
     this.maxWorkers = maxWorkers;
   }
-  
+
   /**
    * Get singleton instance
    * @param maxWorkers Maximum number of workers per type
@@ -56,7 +59,7 @@ export class WorkerManager {
     }
     return WorkerManager.instance;
   }
-  
+
   /**
    * Initialize workers
    * @param types Worker types to initialize
@@ -69,7 +72,7 @@ export class WorkerManager {
       }
     });
   }
-  
+
   /**
    * Create a new worker
    * @param type Worker type
@@ -78,7 +81,7 @@ export class WorkerManager {
   private createWorker(type: WorkerType): string {
     const workerId = `${type}-${uuidv4()}`;
     let worker: Worker;
-    
+
     // Create worker based on type
     switch (type) {
       case 'community_detection':
@@ -93,27 +96,27 @@ export class WorkerManager {
       default:
         throw new Error(`Unknown worker type: ${type}`);
     }
-    
+
     // Set up message handler
     worker.onmessage = (event) => {
       this.handleWorkerMessage(workerId, event);
     };
-    
+
     // Set up error handler
     worker.onerror = (error) => {
       this.handleWorkerError(workerId, error);
     };
-    
+
     // Store worker info
     this.workers.set(workerId, {
       worker,
       type,
       status: 'idle'
     });
-    
+
     return workerId;
   }
-  
+
   /**
    * Handle worker message
    * @param workerId Worker ID
@@ -122,19 +125,19 @@ export class WorkerManager {
   private handleWorkerMessage(workerId: string, event: MessageEvent): void {
     const workerInfo = this.workers.get(workerId);
     if (!workerInfo) return;
-    
+
     const { type, requestId, progress, error } = event.data;
     const callbacks = this.pendingRequests.get(requestId);
-    
+
     if (!callbacks) return;
-    
+
     switch (type) {
       case 'progress_update':
         if (callbacks.onProgress) {
           callbacks.onProgress(progress);
         }
         break;
-        
+
       case 'communities_detected':
       case 'anomalies_detected':
       case 'model_created':
@@ -145,32 +148,32 @@ export class WorkerManager {
         // Success
         callbacks.onSuccess(event.data);
         this.pendingRequests.delete(requestId);
-        
+
         // Mark worker as idle
         workerInfo.status = 'idle';
         workerInfo.currentRequestId = undefined;
-        
+
         // Process next request if any
         this.processNextRequest(workerInfo.type);
         break;
-        
+
       case 'error':
         // Error
         if (callbacks.onError) {
           callbacks.onError(error);
         }
         this.pendingRequests.delete(requestId);
-        
+
         // Mark worker as idle
         workerInfo.status = 'idle';
         workerInfo.currentRequestId = undefined;
-        
+
         // Process next request if any
         this.processNextRequest(workerInfo.type);
         break;
     }
   }
-  
+
   /**
    * Handle worker error
    * @param workerId Worker ID
@@ -179,10 +182,10 @@ export class WorkerManager {
   private handleWorkerError(workerId: string, error: ErrorEvent): void {
     const workerInfo = this.workers.get(workerId);
     if (!workerInfo) return;
-    
+
     // Mark worker as error
     workerInfo.status = 'error';
-    
+
     // Notify pending request if any
     if (workerInfo.currentRequestId) {
       const callbacks = this.pendingRequests.get(workerInfo.currentRequestId);
@@ -191,16 +194,16 @@ export class WorkerManager {
       }
       this.pendingRequests.delete(workerInfo.currentRequestId);
     }
-    
+
     // Terminate and recreate worker
     workerInfo.worker.terminate();
     this.workers.delete(workerId);
     this.createWorker(workerInfo.type);
-    
+
     // Process next request if any
     this.processNextRequest(workerInfo.type);
   }
-  
+
   /**
    * Process next request for a worker type
    * @param type Worker type
@@ -209,33 +212,33 @@ export class WorkerManager {
     // Find an idle worker
     const idleWorker = Array.from(this.workers.entries())
       .find(([_, info]) => info.type === type && info.status === 'idle');
-    
+
     if (!idleWorker) return;
-    
+
     // Find a pending request
     const pendingRequest = Array.from(this.pendingRequests.entries())
       .find(([_, callbacks]) => callbacks.type === type && !callbacks.processing);
-    
+
     if (!pendingRequest) return;
-    
+
     // Process request
     const [requestId, callbacks] = pendingRequest;
     const [workerId, workerInfo] = idleWorker;
-    
+
     // Mark worker as busy
     workerInfo.status = 'busy';
     workerInfo.currentRequestId = requestId;
-    
+
     // Mark request as processing
     callbacks.processing = true;
-    
+
     // Send message to worker
     workerInfo.worker.postMessage({
       ...callbacks.message,
       requestId
     });
   }
-  
+
   /**
    * Detect communities using a worker
    * @param graphData Graph data
@@ -253,7 +256,7 @@ export class WorkerManager {
     onError?: (error: string) => void
   ): string {
     const requestId = uuidv4();
-    
+
     // Store callbacks
     this.pendingRequests.set(requestId, {
       type: 'community_detection',
@@ -267,26 +270,25 @@ export class WorkerManager {
       onError,
       processing: false
     });
-    
+
     // Ensure we have at least one worker
     let hasWorker = false;
-    for (const [_, info] of this.workers.entries()) {
+    Array.from(this.workers.entries()).forEach(([_, info]) => {
       if (info.type === 'community_detection') {
         hasWorker = true;
-        break;
       }
-    }
-    
+    });
+
     if (!hasWorker) {
       this.createWorker('community_detection');
     }
-    
+
     // Process request
     this.processNextRequest('community_detection');
-    
+
     return requestId;
   }
-  
+
   /**
    * Detect anomalies using a worker
    * @param data Sankey diagram data
@@ -304,7 +306,7 @@ export class WorkerManager {
     onError?: (error: string) => void
   ): string {
     const requestId = uuidv4();
-    
+
     // Store callbacks
     this.pendingRequests.set(requestId, {
       type: 'anomaly_detection',
@@ -318,26 +320,25 @@ export class WorkerManager {
       onError,
       processing: false
     });
-    
+
     // Ensure we have at least one worker
     let hasWorker = false;
-    for (const [_, info] of this.workers.entries()) {
+    Array.from(this.workers.entries()).forEach(([_, info]) => {
       if (info.type === 'anomaly_detection') {
         hasWorker = true;
-        break;
       }
-    }
-    
+    });
+
     if (!hasWorker) {
       this.createWorker('anomaly_detection');
     }
-    
+
     // Process request
     this.processNextRequest('anomaly_detection');
-    
+
     return requestId;
   }
-  
+
   /**
    * Create predictive model using a worker
    * @param data Training data points
@@ -355,7 +356,7 @@ export class WorkerManager {
     onError?: (error: string) => void
   ): string {
     const requestId = uuidv4();
-    
+
     // Store callbacks
     this.pendingRequests.set(requestId, {
       type: 'predictive_surface',
@@ -369,26 +370,25 @@ export class WorkerManager {
       onError,
       processing: false
     });
-    
+
     // Ensure we have at least one worker
     let hasWorker = false;
-    for (const [_, info] of this.workers.entries()) {
+    Array.from(this.workers.entries()).forEach(([_, info]) => {
       if (info.type === 'predictive_surface') {
         hasWorker = true;
-        break;
       }
-    }
-    
+    });
+
     if (!hasWorker) {
       this.createWorker('predictive_surface');
     }
-    
+
     // Process request
     this.processNextRequest('predictive_surface');
-    
+
     return requestId;
   }
-  
+
   /**
    * Generate predictions using a worker
    * @param data Training data points
@@ -412,7 +412,7 @@ export class WorkerManager {
     onError?: (error: string) => void
   ): string {
     const requestId = uuidv4();
-    
+
     // Store callbacks
     this.pendingRequests.set(requestId, {
       type: 'predictive_surface',
@@ -429,53 +429,51 @@ export class WorkerManager {
       onError,
       processing: false
     });
-    
+
     // Ensure we have at least one worker
     let hasWorker = false;
-    for (const [_, info] of this.workers.entries()) {
+    Array.from(this.workers.entries()).forEach(([_, info]) => {
       if (info.type === 'predictive_surface') {
         hasWorker = true;
-        break;
       }
-    }
-    
+    });
+
     if (!hasWorker) {
       this.createWorker('predictive_surface');
     }
-    
+
     // Process request
     this.processNextRequest('predictive_surface');
-    
+
     return requestId;
   }
-  
+
   /**
    * Cancel a request
    * @param requestId Request ID
    */
   public cancelRequest(requestId: string): void {
     // Find worker processing this request
-    for (const [_, info] of this.workers.entries()) {
+    Array.from(this.workers.entries()).forEach(([_, info]) => {
       if (info.currentRequestId === requestId) {
         // Mark worker as idle
         info.status = 'idle';
         info.currentRequestId = undefined;
-        break;
       }
-    }
-    
+    });
+
     // Remove pending request
     this.pendingRequests.delete(requestId);
   }
-  
+
   /**
    * Terminate all workers
    */
   public terminateAll(): void {
-    for (const [_, info] of this.workers.entries()) {
+    Array.from(this.workers.entries()).forEach(([_, info]) => {
       info.worker.terminate();
-    }
-    
+    });
+
     this.workers.clear();
     this.pendingRequests.clear();
   }

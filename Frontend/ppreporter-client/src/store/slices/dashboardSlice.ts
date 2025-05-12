@@ -9,6 +9,7 @@ import {
   RegistrationData,
   TransactionData
 } from '../../types/redux';
+import { DashboardPreferences, DashboardStats } from '../../types/dashboard';
 
 // Helper function to handle API errors
 const handleApiError = (error: any): string => {
@@ -331,10 +332,14 @@ export const fetchSegmentComparisonData = createAsyncThunk<
   'dashboard/fetchSegmentComparisonData',
   async (params, { rejectWithValue }) => {
     try {
+      // Convert arrays to comma-separated strings as expected by the API
+      const segmentsParam = Array.isArray(params.segments) ? params.segments.join(',') : params.segments;
+      const metricsParam = Array.isArray(params.metrics) ? params.metrics.join(',') : params.metrics;
+
       const segmentComparisonData = await dashboardService.getSegmentComparison({
         ...params.filters,
-        segments: params.segments.join(','),
-        metrics: params.metrics.join(','),
+        segments: segmentsParam,
+        metrics: metricsParam,
         timeFrame: params.timeFrame
       });
       return segmentComparisonData;
