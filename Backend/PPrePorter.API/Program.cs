@@ -14,7 +14,7 @@ using PPrePorter.Core.Services;
 using PPrePorter.Infrastructure;
 using PPrePorter.Infrastructure.Data;
 using PPrePorter.Infrastructure.Services;
-using PPrePorter.API.Features.Dashboard.Insights;
+// using PPrePorter.API.Features.Dashboard.Insights; // No longer needed
 using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.NLP.Extensions;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
@@ -235,7 +235,7 @@ builder.Services.AddResponseCaching(options =>
 });
 
 // Register dashboard services
-builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDashboardService, PPrePorter.Core.Services.DashboardService>();
 builder.Services.AddScoped<IDataFilterService, DataFilterService>();
 
 // Register caching service
@@ -262,12 +262,12 @@ else
 builder.Services.AddScoped<ICachingService, RedisCachingService>();
 
 // Register Data Storytelling related services
-builder.Services.AddScoped<IInsightGenerationService, InsightGenerationService>();
-builder.Services.AddScoped<IAnomalyDetectionService, AnomalyDetectionService>();
-builder.Services.AddScoped<ITrendAnalysisService, TrendAnalysisService>();
-builder.Services.AddScoped<IContextualExplanationService, ContextualExplanationService>();
-builder.Services.AddScoped<IDataAnnotationService, DataAnnotationService>();
-builder.Services.AddScoped<IDashboardPersonalizationService, DashboardPersonalizationService>();
+builder.Services.AddScoped<IInsightGenerationService, PPrePorter.Core.Services.InsightGenerationService>();
+builder.Services.AddScoped<IAnomalyDetectionService, PPrePorter.Core.Services.AnomalyDetectionService>();
+builder.Services.AddScoped<ITrendAnalysisService, PPrePorter.Core.Services.TrendAnalysisService>();
+builder.Services.AddScoped<IContextualExplanationService, PPrePorter.Core.Services.ContextualExplanationService>();
+builder.Services.AddScoped<IDataAnnotationService, PPrePorter.Core.Services.DataAnnotationService>();
+builder.Services.AddScoped<IDashboardPersonalizationService, PPrePorter.Core.Services.DashboardPersonalizationService>();
 
 // These services now have real implementations
 

@@ -274,10 +274,10 @@ const ApiDashboard: React.FC = () => {
         };
 
         // Get dashboard stats with filters
-        const stats = await dashboardService.getDashboardStats(filterParams);
+        const stats = await dashboardService.getDashboardSummary(filterParams);
 
         // Get player registrations data with date range
-        const playerRegistrations = await dashboardService.getPlayerRegistrations({
+        const playerRegistrations = await dashboardService.getRegistrationsChart({
           startDate,
           endDate,
           playerStatus: filtersParam.playerStatus || undefined,
@@ -305,14 +305,14 @@ const ApiDashboard: React.FC = () => {
         });
 
         // Get casino revenue with date range
-        const casinoRevenue = await dashboardService.getCasinoRevenue({
+        const casinoRevenue = await dashboardService.getRevenueChart({
           startDate,
           endDate,
           gameCategory: filtersParam.gameCategory || undefined
         });
 
-        // Get KPI data with filters
-        const kpis = await dashboardService.getKpiData({
+        // Get KPI data with filters - using dashboard summary as a fallback
+        const kpis = await dashboardService.getDashboardSummary({
           startDate,
           endDate,
           gameCategory: filtersParam.gameCategory || undefined,
@@ -329,11 +329,13 @@ const ApiDashboard: React.FC = () => {
           casinoRevenue,
           kpis,
           charts: {
-            revenueByDay: casinoRevenue?.dailyRevenue?.map(item => ({
-              ...item,
-              day: item.day || format(new Date(item.date), 'EEE'),
-              value: item.value || item.revenue
-            })) || [],
+            revenueByDay: Array.isArray(casinoRevenue)
+              ? casinoRevenue.map((item: any) => ({
+                  ...item,
+                  day: item.day || (item.date ? format(new Date(item.date), 'EEE') : ''),
+                  value: item.value || item.revenue || 0
+                }))
+              : [],
             playersByGame: topGames?.map(game => ({
               game: game.name,
               value: game.players
@@ -433,7 +435,7 @@ const ApiDashboard: React.FC = () => {
   if (isLoading && !dashboardData) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 8 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '64px' }}>
           <CircularProgress size={60} />
           <Typography variant="h6" sx={{ mt: 2 }}>
             Loading dashboard...

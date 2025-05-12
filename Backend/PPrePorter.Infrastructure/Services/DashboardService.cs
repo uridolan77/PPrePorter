@@ -1040,7 +1040,7 @@ namespace PPrePorter.Infrastructure.Services
                     return new DashboardPreferences
                     {
                         UserId = userId,
-                        ColorScheme = new ColorSchemePreference
+                        ColorScheme = new Domain.Entities.PPReporter.Dashboard.ColorSchemePreference
                         {
                             UserId = userId,
                             BaseTheme = userPreferences.BaseTheme ?? "light",
@@ -1077,7 +1077,7 @@ namespace PPrePorter.Infrastructure.Services
                 return new DashboardPreferences
                 {
                     UserId = userId,
-                    ColorScheme = new ColorSchemePreference
+                    ColorScheme = new Domain.Entities.PPReporter.Dashboard.ColorSchemePreference
                     {
                         UserId = userId,
                         BaseTheme = "light",
@@ -1209,9 +1209,9 @@ namespace PPrePorter.Infrastructure.Services
             }
         }
 
-        public async Task<AccessibilityOptimizedData> GetAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
+        public async Task<Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData> GetAccessibilityOptimizedDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request)
         {
-            var cacheKey = $"dashboard:accessibility:{request.UserId}:{request.WhiteLabelId}:{request.PlayMode}:{request.VisualizationType}:{request.MetricKey}:{DateTime.UtcNow:yyyyMMdd}";
+            var cacheKey = $"dashboard:accessibility:{request.UserId}:{request.VisualizationType}:{request.MetricKey}:{DateTime.UtcNow:yyyyMMdd}";
 
             return await _cachingService.GetOrCreateAsync(
                 cacheKey,
@@ -1220,7 +1220,7 @@ namespace PPrePorter.Infrastructure.Services
                 absoluteExpiration: TimeSpan.FromHours(1));
         }
 
-        private async Task<AccessibilityOptimizedData> FetchAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
+        private async Task<Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData> FetchAccessibilityOptimizedDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request)
         {
             try
             {
@@ -1234,7 +1234,7 @@ namespace PPrePorter.Infrastructure.Services
                 }
 
                 // Get data based on metric key
-                var result = new AccessibilityOptimizedData
+                var result = new Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData
                 {
                     Title = $"Accessibility Optimized {request.MetricKey} Data",
                     Description = $"This is an accessibility optimized view of {request.MetricKey} data in {request.VisualizationType} format.",
@@ -1272,7 +1272,7 @@ namespace PPrePorter.Infrastructure.Services
             }
         }
 
-        private async Task ProcessRevenueAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+        private async Task ProcessRevenueAccessibilityDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request, Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Get revenue data
@@ -1331,7 +1331,7 @@ namespace PPrePorter.Infrastructure.Services
             }
         }
 
-        private async Task ProcessRegistrationsAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+        private async Task ProcessRegistrationsAccessibilityDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request, Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for registrations accessibility data
@@ -1342,7 +1342,7 @@ namespace PPrePorter.Infrastructure.Services
             result.Data = new { message = "Registration data processing is not yet implemented" };
         }
 
-        private async Task ProcessDepositsAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+        private async Task ProcessDepositsAccessibilityDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request, Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for deposits accessibility data
@@ -1353,7 +1353,7 @@ namespace PPrePorter.Infrastructure.Services
             result.Data = new { message = "Deposit data processing is not yet implemented" };
         }
 
-        private async Task ProcessGamesAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+        private async Task ProcessGamesAccessibilityDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request, Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for games accessibility data
@@ -1364,7 +1364,7 @@ namespace PPrePorter.Infrastructure.Services
             result.Data = new { message = "Game data processing is not yet implemented" };
         }
 
-        private async Task ProcessSummaryAccessibilityDataAsync(AccessibilityDataRequest request, AccessibilityOptimizedData result,
+        private async Task ProcessSummaryAccessibilityDataAsync(Domain.Entities.PPReporter.Dashboard.AccessibilityDataRequest request, Domain.Entities.PPReporter.Dashboard.AccessibilityOptimizedData result,
             List<int> whiteLabelIds, DateTime startDate, DateTime endDate)
         {
             // Implementation for summary accessibility data
@@ -1522,7 +1522,7 @@ namespace PPrePorter.Infrastructure.Services
                 var revenueData = await GetRevenueDataByTimeAsync(query, timeGrouping, request.Metrics);                  foreach (var item in revenueData)
                 {
                     // Create a DashboardDataPoint to avoid ambiguity
-                    var dataPoint = new DashboardDataPoint
+                    var dataPoint = new Domain.Entities.PPReporter.Dashboard.ExplorerDataPoint
                     {
                         Label = item.Key,
                         Timestamp = item.Timestamp,
@@ -1531,7 +1531,7 @@ namespace PPrePorter.Infrastructure.Services
                     };
 
                     // Convert to ExplorerDataPoint and add to result
-                    result.DataPoints.Add(dataPoint.ToExplorerDataPoint());
+                    result.DataPoints.Add(dataPoint);
                 }
 
                 // Calculate aggregations

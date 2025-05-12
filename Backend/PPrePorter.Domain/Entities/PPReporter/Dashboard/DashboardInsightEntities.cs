@@ -32,14 +32,14 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public string Description { get; set; }
         public string Category { get; set; }
         public DateTime DetectedAt { get; set; }
-        public DateTime AnomalyDate { get; set; }
+        public DateTime Date { get; set; }
         public string MetricKey { get; set; }
         public decimal ExpectedValue { get; set; }
         public decimal ActualValue { get; set; }
         public decimal DeviationPercentage { get; set; }
-        public int Severity { get; set; } // 1-5 scale, 5 being most severe
-        public string PotentialCause { get; set; }
-        public bool IsPositive { get; set; } // Whether the anomaly is beneficial
+        public int Severity { get; set; } // 1-10 scale, 10 being most severe
+        public List<string> PossibleCauses { get; set; }
+        public List<string> RecommendedActions { get; set; }
         public Dictionary<string, object> AdditionalData { get; set; }
     }    /// <summary>
     /// Represents a user-created annotation on dashboard data

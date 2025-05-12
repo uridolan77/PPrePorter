@@ -1,9 +1,11 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState, useEffect } from 'react';
 import { Box, CircularProgress, Typography, useTheme, Tabs, Tab } from '@mui/material';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 import { formatCurrency } from '../../utils/formatters';
 import { GameData } from '../../types/redux';
 import VirtualizedTable from '../common/VirtualizedTable';
+import { useDispatch } from 'react-redux';
+import { fetchTopGames } from '../../store/slices/dashboardSlice';
 
 interface TopGamesChartProps {
   data: GameData[];
@@ -70,6 +72,16 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
 }) => {
   const theme = useTheme();
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const dispatch = useDispatch();
+
+  // Fetch top games data if not provided
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      if (!isLoading && !error) {
+        dispatch(fetchTopGames() as any);
+      }
+    }
+  }, [dispatch, data, isLoading, error]);
 
   // Handle view mode change
   const handleViewModeChange = (event: React.SyntheticEvent, newValue: 'chart' | 'table') => {

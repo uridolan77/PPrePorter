@@ -3,27 +3,79 @@ using System.Collections.Generic;
 
 namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
 {
+    /// <summary>
+    /// Result of contextual data exploration
+    /// </summary>
     public class ContextualDataExplorerResult
     {
+        /// <summary>
+        /// Context for exploration
+        /// </summary>
         public string ExplorationContext { get; set; }
+
+        /// <summary>
+        /// Context for exploration (alias for ExplorationContext)
+        /// </summary>
+        public string Context {
+            get => ExplorationContext;
+            set => ExplorationContext = value;
+        }
+
+        /// <summary>
+        /// The key to drill down on
+        /// </summary>
         public string DrillDownKey { get; set; }
+
+        /// <summary>
+        /// How deep to drill down into the data
+        /// </summary>
         public int? DrillDownLevel { get; set; }
-          // Primary result data
+
+        /// <summary>
+        /// Dimension being explored
+        /// </summary>
+        public string Dimension { get; set; }
+
+        /// <summary>
+        /// Primary result data
+        /// </summary>
         public List<ExplorerDataPoint> DataPoints { get; set; }
-        
-        // Context-specific aggregations
+
+        /// <summary>
+        /// Context-specific aggregations
+        /// </summary>
         public Dictionary<string, decimal> Aggregations { get; set; }
-        
-        // Trend analysis
+
+        /// <summary>
+        /// Trend analysis
+        /// </summary>
         public TrendAnalysis TrendInfo { get; set; }
-        
-        // Predictive modeling results (for "what-if" scenarios)
+
+        /// <summary>
+        /// Predictive modeling results (for "what-if" scenarios)
+        /// </summary>
         public PredictiveModelingResult PredictiveResults { get; set; }
-        
-        // Annotations and insights
+
+        /// <summary>
+        /// Annotations
+        /// </summary>
         public List<ExplorerDataAnnotation> Annotations { get; set; }
+
+        /// <summary>
+        /// Insights
+        /// </summary>
         public List<DataInsight> Insights { get; set; }
-    }    public class ExplorerDataPoint
+
+        /// <summary>
+        /// Related metrics
+        /// </summary>
+        public List<string> RelatedMetrics { get; set; } = new List<string>();
+    }
+
+    /// <summary>
+    /// Data point for explorer results
+    /// </summary>
+    public class ExplorerDataPoint
     {
         public string Label { get; set; }
         public Dictionary<string, object> Dimensions { get; set; }
@@ -66,7 +118,12 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public Dictionary<string, object> Dimensions { get; set; }
         public Dictionary<string, decimal> Metrics { get; set; }
         public decimal? ConfidenceInterval { get; set; }
-    }    public class ExplorerDataAnnotation
+    }
+
+    /// <summary>
+    /// Data annotation for explorer results
+    /// </summary>
+    public class ExplorerDataAnnotation
     {
         public string Id { get; set; }
         public string Title { get; set; }

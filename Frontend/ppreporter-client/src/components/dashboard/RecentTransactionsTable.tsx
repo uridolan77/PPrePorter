@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -16,6 +16,8 @@ import {
 } from '@mui/material';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { TransactionData } from '../../types/redux';
+import { useDispatch } from 'react-redux';
+import { fetchRecentTransactions } from '../../store/slices/dashboardSlice';
 
 interface RecentTransactionsTableProps {
   data: TransactionData[];
@@ -36,6 +38,16 @@ const RecentTransactionsTable: React.FC<RecentTransactionsTableProps> = ({
   showHeader = true
 }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+
+  // Fetch recent transactions data if not provided
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      if (!isLoading) {
+        dispatch(fetchRecentTransactions() as any);
+      }
+    }
+  }, [dispatch, data, isLoading]);
 
   // Get status color based on transaction status
   const getStatusColor = (status: string): string => {

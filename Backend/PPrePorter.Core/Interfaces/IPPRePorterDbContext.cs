@@ -2,7 +2,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PPrePorter.Domain.Entities.PPReporter;
+using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.Core.Models.Reports;
+using Dashboard = PPrePorter.Domain.Entities.PPReporter.Dashboard;
 
 namespace PPrePorter.Core.Interfaces
 {
@@ -23,6 +25,9 @@ namespace PPrePorter.Core.Interfaces
         DbSet<GeneratedReport> GeneratedReports { get; set; }
         DbSet<ReportExport> ReportExports { get; set; }
         DbSet<object> Metadata { get; set; }
+        DbSet<DataAnnotation> Annotations { get; set; }
+        DbSet<SharedAnnotation> AnnotationShares { get; set; }
+        DbSet<Dashboard.UserInteraction> UserInteractions { get; set; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

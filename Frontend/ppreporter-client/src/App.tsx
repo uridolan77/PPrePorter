@@ -44,6 +44,7 @@ const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/Dai
 const PlayersPage = lazy(() => import('./pages/showcase/reports/PlayersPage'));
 const GamesPage = lazy(() => import('./pages/showcase/reports/GamesPage'));
 const DailyActionGamesPage = lazy(() => import('./pages/reports/DailyActionGamesPage'));
+const IntegratedReportsPage = lazy(() => import('./pages/reports/IntegratedReportsPage'));
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
@@ -157,6 +158,11 @@ const App: React.FC = () => {
                   <Route path="/reports/daily-action-games" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <DailyActionGamesPage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/integrated" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <IntegratedReportsPage />
                     </Suspense>
                   } />
                   <Route path="/reports/*" element={

@@ -27,11 +27,11 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
     {
         public int Id { get; set; }
         public string PatternType { get; set; } // Linear, Cyclic, Spike, Dip, Step, etc.
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public decimal Magnitude { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public decimal? Magnitude { get; set; }
         public string Description { get; set; }
-        public double ConfidenceScore { get; set; } // 0-1 score of pattern confidence
+        public decimal Significance { get; set; } // 0-1 score of pattern significance
         public bool IsSignificant { get; set; }
     }    /// <summary>
     /// Represents a single data point in a time series
@@ -48,11 +48,14 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
     /// <summary>
     /// Represents a forecast data point
     /// </summary>
-    public class ForecastPoint : DataPoint
+    public class ForecastPoint
     {
+        public DateTime Date { get; set; }
+        public string MetricKey { get; set; }
+        public decimal ForecastValue { get; set; }
         public decimal LowerBound { get; set; }
         public decimal UpperBound { get; set; }
-        public double ConfidenceInterval { get; set; }
+        public decimal ConfidenceLevel { get; set; }
     }
 
     /// <summary>
@@ -60,13 +63,13 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
     /// </summary>
     public class MetricCorrelation
     {
-        public string PrimaryMetricKey { get; set; }
-        public string SecondaryMetricKey { get; set; }
-        public double CorrelationCoefficient { get; set; } // -1 to 1
-        public string CorrelationStrength { get; set; } // Strong, Moderate, Weak
-        public string CorrelationType { get; set; } // Positive, Negative
+        public string MetricA { get; set; }
+        public string MetricB { get; set; }
+        public decimal CorrelationCoefficient { get; set; } // -1 to 1
+        public string Strength { get; set; } // Very Strong, Strong, Moderate, Weak, Very Weak
+        public string Direction { get; set; } // Positive, Negative
         public bool IsSignificant { get; set; }
-        public string Explanation { get; set; }
+        public string Description { get; set; }
     }
 
     /// <summary>
@@ -75,13 +78,16 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
     public class BenchmarkComparisonResult
     {
         public string MetricKey { get; set; }
-        public string IndustrySegment { get; set; }
-        public decimal AverageValue { get; set; }
-        public decimal IndustryAverage { get; set; }
+        public string Segment { get; set; }
+        public decimal ActualValue { get; set; }
+        public decimal BenchmarkValue { get; set; }
         public decimal PercentageDifference { get; set; }
-        public string PerformanceCategory { get; set; } // Above Average, Average, Below Average
+        public decimal Percentile { get; set; }
+        public string ComparisonResult { get; set; } // Above Average, Average, Below Average
+        public string PerformanceCategory { get; set; } // Excellent, Good, Average, Poor, Critical
         public Dictionary<string, decimal> CompetitorValues { get; set; }
-        public string Recommendation { get; set; }
+        public string Description { get; set; }
+        public string Explanation { get; set; }
     }
 
     /// <summary>
@@ -91,8 +97,7 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
     {
         public bool SeasonalityDetected { get; set; }
         public int? PrimaryCycleDays { get; set; }
-        public int? SecondaryCycleDays { get; set; }
-        public double SeasonalityStrength { get; set; } // 0-1 score
+        public decimal SeasonalityStrength { get; set; } // 0-1 score
         public Dictionary<string, double> DayOfWeekPatterns { get; set; }
         public Dictionary<string, double> MonthPatterns { get; set; }
         public List<SeasonalPeak> IdentifiedPeaks { get; set; }
@@ -123,9 +128,9 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
     }
 
     /// <summary>
-    /// Options for trend analysis
+    /// Options for trend analysis (simplified version)
     /// </summary>
-    public class TrendAnalysisOptions
+    public class SimpleTrendAnalysisOptions
     {
         public bool IncludeSeasonality { get; set; } = true;
         public bool DetectOutliers { get; set; } = true;

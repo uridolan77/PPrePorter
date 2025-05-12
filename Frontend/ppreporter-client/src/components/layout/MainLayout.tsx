@@ -122,6 +122,7 @@ const MainLayout: React.FC = () => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Reports', icon: <AssessmentIcon />, path: '/reports',
       subItems: [
+        { text: 'Integrated Reports', icon: <AssessmentIcon />, path: '/reports/integrated' },
         { text: 'Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions' },
         { text: 'Advanced Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions/advanced' },
         { text: 'Players Report', icon: <PersonIcon />, path: '/reports/players' },
@@ -412,7 +413,9 @@ const MainLayout: React.FC = () => {
             >
               {location.pathname.includes('daily-actions') ? 'Daily Actions Report' :
                location.pathname.includes('players') ? 'Players Report' :
-               location.pathname.includes('games') ? 'Games Report' :
+               location.pathname.includes('games') && !location.pathname.includes('daily-action-games') ? 'Games Report' :
+               location.pathname.includes('daily-action-games') ? 'Daily Action Games Report' :
+               location.pathname.includes('integrated') ? 'Integrated Reports' :
                'Dashboard'}
             </Typography>
           </Box>

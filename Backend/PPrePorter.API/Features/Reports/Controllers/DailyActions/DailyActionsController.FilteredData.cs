@@ -27,6 +27,9 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     return BadRequest(new { message = "Filter is required" });
                 }
 
+                // Process string-based group by options if provided
+                ProcessStringBasedGroupBy(filter);
+
                 // Default date range to yesterday-today if not specified
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
@@ -242,6 +245,9 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     return BadRequest(new { message = "Filter is required" });
                 }
 
+                // Process string-based group by options if provided
+                ProcessStringBasedGroupBy(filter);
+
                 // Default date range to yesterday-today if not specified
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
@@ -298,6 +304,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     },
                     totalCount = groupedData.Count(),
                     groupBy = filter.GroupBy,
+                    groupByString = filter.GroupByString,
                     startDate = filter.StartDate,
                     endDate = filter.EndDate
                 };
@@ -330,6 +337,9 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                 {
                     return BadRequest(new { message = "Filter is required" });
                 }
+
+                // Process string-based group by options if provided
+                ProcessStringBasedGroupBy(filter);
 
                 // Default date range to yesterday-today if not specified
                 var today = DateTime.UtcNow.Date;

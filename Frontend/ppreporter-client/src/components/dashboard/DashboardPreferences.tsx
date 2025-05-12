@@ -27,6 +27,7 @@ import UpdateIcon from '@mui/icons-material/Update';
 import { TwitterPicker } from 'react-color';
 import dashboardService from '../../services/api/dashboardService';
 import { CommonProps } from '../../types/common';
+import { DashboardPreferences as DashboardPreferencesType } from '../../types/dashboard';
 
 interface ChartType {
   label: string;
@@ -70,39 +71,23 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
 }) => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState<number>(0);
-  const [preferences, setPreferences] = useState({
-    appearance: {
-      theme: 'light',
-      colorScheme: {
-        primary: theme.palette.primary.main,
-        secondary: theme.palette.secondary.main,
-        success: theme.palette.success.main,
-        error: theme.palette.error.main,
-        warning: theme.palette.warning.main,
-        info: theme.palette.info.main
-      },
-      density: 'comfortable',
-      animations: true,
-      highContrast: false
+  const [preferences, setPreferences] = useState<DashboardPreferencesType>({
+    colorScheme: {
+      baseTheme: 'light',
+      colorMode: 'standard',
+      primaryColor: theme.palette.primary.main,
+      secondaryColor: theme.palette.secondary.main,
+      positiveColor: theme.palette.success.main,
+      negativeColor: theme.palette.error.main,
+      neutralColor: theme.palette.info.main,
+      contrastLevel: 1
     },
-    charts: {
-      defaultChartType: 'line',
-      showLegends: true,
-      showGridLines: true,
-      showDataLabels: false,
-      colorPalette: 'default'
-    },
-    data: {
-      refreshInterval: 0, // 0 means manual refresh
-      defaultDateRange: 'last7days',
-      defaultMetrics: ['revenue', 'registrations', 'topGames', 'transactions'],
-      showRawData: false
-    },
-    notifications: {
-      enableAlerts: true,
-      alertThreshold: 10,
-      emailNotifications: false,
-      desktopNotifications: true
+    informationDensity: 'medium',
+    preferredChartTypes: {
+      revenue: 'line',
+      registrations: 'bar',
+      topGames: 'pie',
+      transactions: 'table'
     }
   });
 
@@ -121,44 +106,67 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
   };
 
   const handleSwitchChange = (section: string, name: string) => (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setPreferences({
-      ...preferences,
-      [section]: {
-        ...preferences[section as keyof typeof preferences],
-        [name]: event.target.checked
-      }
-    });
+    if (section === 'colorScheme') {
+      setPreferences({
+        ...preferences,
+        colorScheme: {
+          ...preferences.colorScheme,
+          [name]: event.target.checked ? 'high-contrast' : 'standard'
+        }
+      });
+    } else {
+      // For other sections
+      setPreferences({
+        ...preferences,
+        [section as keyof DashboardPreferencesType]: event.target.checked ? 'high' : 'medium'
+      });
+    }
   };
 
   const handleSelectChange = (section: string, name: string) => (event: SelectChangeEvent<string>): void => {
-    setPreferences({
-      ...preferences,
-      [section]: {
-        ...preferences[section as keyof typeof preferences],
-        [name]: event.target.value
-      }
-    });
+    if (section === 'colorScheme') {
+      setPreferences({
+        ...preferences,
+        colorScheme: {
+          ...preferences.colorScheme,
+          [name]: event.target.value
+        }
+      });
+    } else if (section === 'preferredChartTypes') {
+      setPreferences({
+        ...preferences,
+        preferredChartTypes: {
+          ...preferences.preferredChartTypes,
+          [name]: event.target.value
+        }
+      });
+    } else {
+      // For informationDensity
+      setPreferences({
+        ...preferences,
+        informationDensity: event.target.value as 'low' | 'medium' | 'high'
+      });
+    }
   };
 
   const handleSliderChange = (section: string, name: string) => (event: Event, newValue: number | number[]): void => {
-    setPreferences({
-      ...preferences,
-      [section]: {
-        ...preferences[section as keyof typeof preferences],
-        [name]: newValue
-      }
-    });
+    if (section === 'colorScheme') {
+      setPreferences({
+        ...preferences,
+        colorScheme: {
+          ...preferences.colorScheme,
+          [name]: newValue
+        }
+      });
+    }
   };
 
   const handleColorChange = (color: string, colorName: string): void => {
     setPreferences({
       ...preferences,
-      appearance: {
-        ...preferences.appearance,
-        colorScheme: {
-          ...preferences.appearance.colorScheme,
-          [colorName]: color
-        }
+      colorScheme: {
+        ...preferences.colorScheme,
+        [colorName]: color
       }
     });
   };
@@ -168,7 +176,7 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
       onSave(preferences);
     } else {
       try {
-        await dashboardService.saveDashboardPreferences(preferences);
+        await dashboardService.saveUserPreferences(preferences);
         // Show success message or notification
       } catch (error) {
         console.error('Error saving preferences:', error);
@@ -194,8 +202,6 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
       >
         <Tab label="Appearance" />
         <Tab label="Charts" />
-        <Tab label="Data" />
-        <Tab label="Notifications" />
       </Tabs>
 
       {/* Appearance Tab */}
@@ -208,9 +214,9 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                 <Select
                   labelId="theme-select-label"
                   id="theme-select"
-                  value={preferences.appearance.theme}
+                  value={preferences.colorScheme.baseTheme}
                   label="Theme"
-                  onChange={handleSelectChange('appearance', 'theme')}
+                  onChange={handleSelectChange('colorScheme', 'baseTheme')}
                 >
                   <MenuItem value="light">Light</MenuItem>
                   <MenuItem value="dark">Dark</MenuItem>
@@ -219,17 +225,17 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
               </FormControl>
 
               <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel id="density-select-label">Density</InputLabel>
+                <InputLabel id="density-select-label">Information Density</InputLabel>
                 <Select
                   labelId="density-select-label"
                   id="density-select"
-                  value={preferences.appearance.density}
-                  label="Density"
-                  onChange={handleSelectChange('appearance', 'density')}
+                  value={preferences.informationDensity}
+                  label="Information Density"
+                  onChange={handleSelectChange('informationDensity', '')}
                 >
-                  <MenuItem value="comfortable">Comfortable</MenuItem>
-                  <MenuItem value="compact">Compact</MenuItem>
-                  <MenuItem value="spacious">Spacious</MenuItem>
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
                 </Select>
               </FormControl>
 
@@ -237,22 +243,32 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={preferences.appearance.animations}
-                      onChange={handleSwitchChange('appearance', 'animations')}
-                    />
-                  }
-                  label="Enable animations"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.appearance.highContrast}
-                      onChange={handleSwitchChange('appearance', 'highContrast')}
+                      checked={preferences.colorScheme.colorMode === 'high-contrast'}
+                      onChange={handleSwitchChange('colorScheme', 'colorMode')}
                     />
                   }
                   label="High contrast mode"
                 />
               </FormGroup>
+
+              <Typography gutterBottom>
+                Contrast Level
+              </Typography>
+              <Box sx={{ px: 2 }}>
+                <Slider
+                  value={preferences.colorScheme.contrastLevel}
+                  onChange={handleSliderChange('colorScheme', 'contrastLevel')}
+                  step={0.1}
+                  marks={[
+                    { value: 0.5, label: 'Low' },
+                    { value: 1, label: 'Medium' },
+                    { value: 1.5, label: 'High' }
+                  ]}
+                  min={0.5}
+                  max={1.5}
+                  valueLabelDisplay="auto"
+                />
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -264,8 +280,8 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                   Primary Color
                 </Typography>
                 <TwitterPicker
-                  color={preferences.appearance.colorScheme.primary}
-                  onChangeComplete={(color) => handleColorChange(color.hex, 'primary')}
+                  color={preferences.colorScheme.primaryColor}
+                  onChangeComplete={(color) => handleColorChange(color.hex, 'primaryColor')}
                   triangle="hide"
                 />
               </Box>
@@ -274,8 +290,18 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                   Secondary Color
                 </Typography>
                 <TwitterPicker
-                  color={preferences.appearance.colorScheme.secondary}
-                  onChangeComplete={(color) => handleColorChange(color.hex, 'secondary')}
+                  color={preferences.colorScheme.secondaryColor}
+                  onChangeComplete={(color) => handleColorChange(color.hex, 'secondaryColor')}
+                  triangle="hide"
+                />
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  Positive Color
+                </Typography>
+                <TwitterPicker
+                  color={preferences.colorScheme.positiveColor}
+                  onChangeComplete={(color) => handleColorChange(color.hex, 'positiveColor')}
                   triangle="hide"
                 />
               </Box>
@@ -290,13 +316,13 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel id="chart-type-select-label">Default Chart Type</InputLabel>
+                <InputLabel id="revenue-chart-type-select-label">Revenue Chart Type</InputLabel>
                 <Select
-                  labelId="chart-type-select-label"
-                  id="chart-type-select"
-                  value={preferences.charts.defaultChartType}
-                  label="Default Chart Type"
-                  onChange={handleSelectChange('charts', 'defaultChartType')}
+                  labelId="revenue-chart-type-select-label"
+                  id="revenue-chart-type-select"
+                  value={preferences.preferredChartTypes.revenue}
+                  label="Revenue Chart Type"
+                  onChange={handleSelectChange('preferredChartTypes', 'revenue')}
                 >
                   {chartTypes.map((type) => (
                     <MenuItem key={type.value} value={type.value}>
@@ -310,179 +336,67 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
               </FormControl>
 
               <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel id="color-palette-select-label">Color Palette</InputLabel>
+                <InputLabel id="registrations-chart-type-select-label">Registrations Chart Type</InputLabel>
                 <Select
-                  labelId="color-palette-select-label"
-                  id="color-palette-select"
-                  value={preferences.charts.colorPalette}
-                  label="Color Palette"
-                  onChange={handleSelectChange('charts', 'colorPalette')}
+                  labelId="registrations-chart-type-select-label"
+                  id="registrations-chart-type-select"
+                  value={preferences.preferredChartTypes.registrations}
+                  label="Registrations Chart Type"
+                  onChange={handleSelectChange('preferredChartTypes', 'registrations')}
                 >
-                  <MenuItem value="default">Default</MenuItem>
-                  <MenuItem value="monochrome">Monochrome</MenuItem>
-                  <MenuItem value="pastel">Pastel</MenuItem>
-                  <MenuItem value="vibrant">Vibrant</MenuItem>
+                  {chartTypes.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {type.icon}
+                        <Typography sx={{ ml: 1 }}>{type.label}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.charts.showLegends}
-                      onChange={handleSwitchChange('charts', 'showLegends')}
-                    />
-                  }
-                  label="Show legends"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.charts.showGridLines}
-                      onChange={handleSwitchChange('charts', 'showGridLines')}
-                    />
-                  }
-                  label="Show grid lines"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.charts.showDataLabels}
-                      onChange={handleSwitchChange('charts', 'showDataLabels')}
-                    />
-                  }
-                  label="Show data labels"
-                />
-              </FormGroup>
-            </Grid>
-          </Grid>
-        </Box>
-      )}
-
-      {/* Data Tab */}
-      {activeTab === 2 && (
-        <Box>
-          <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel id="date-range-select-label">Default Date Range</InputLabel>
+                <InputLabel id="topGames-chart-type-select-label">Top Games Chart Type</InputLabel>
                 <Select
-                  labelId="date-range-select-label"
-                  id="date-range-select"
-                  value={preferences.data.defaultDateRange}
-                  label="Default Date Range"
-                  onChange={handleSelectChange('data', 'defaultDateRange')}
+                  labelId="topGames-chart-type-select-label"
+                  id="topGames-chart-type-select"
+                  value={preferences.preferredChartTypes.topGames}
+                  label="Top Games Chart Type"
+                  onChange={handleSelectChange('preferredChartTypes', 'topGames')}
                 >
-                  <MenuItem value="today">Today</MenuItem>
-                  <MenuItem value="yesterday">Yesterday</MenuItem>
-                  <MenuItem value="last7days">Last 7 Days</MenuItem>
-                  <MenuItem value="last30days">Last 30 Days</MenuItem>
-                  <MenuItem value="thisMonth">This Month</MenuItem>
-                  <MenuItem value="lastMonth">Last Month</MenuItem>
+                  {chartTypes.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {type.icon}
+                        <Typography sx={{ ml: 1 }}>{type.label}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
 
-              <Typography gutterBottom>
-                Auto-refresh Interval (minutes)
-              </Typography>
-              <Box sx={{ px: 2 }}>
-                <Slider
-                  value={preferences.data.refreshInterval}
-                  onChange={handleSliderChange('data', 'refreshInterval')}
-                  step={5}
-                  marks={[
-                    { value: 0, label: 'Off' },
-                    { value: 15, label: '15m' },
-                    { value: 30, label: '30m' },
-                    { value: 60, label: '1h' }
-                  ]}
-                  min={0}
-                  max={60}
-                  valueLabelDisplay="auto"
-                  valueLabelFormat={(value) => value === 0 ? 'Off' : `${value}m`}
-                />
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.data.showRawData}
-                      onChange={handleSwitchChange('data', 'showRawData')}
-                    />
-                  }
-                  label="Show raw data tables"
-                />
-              </FormGroup>
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <InputLabel id="transactions-chart-type-select-label">Transactions Display Type</InputLabel>
+                <Select
+                  labelId="transactions-chart-type-select-label"
+                  id="transactions-chart-type-select"
+                  value={preferences.preferredChartTypes.transactions}
+                  label="Transactions Display Type"
+                  onChange={handleSelectChange('preferredChartTypes', 'transactions')}
+                >
+                  <MenuItem value="table">Table</MenuItem>
+                  <MenuItem value="line">Line Chart</MenuItem>
+                  <MenuItem value="bar">Bar Chart</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </Box>
       )}
 
-      {/* Notifications Tab */}
-      {activeTab === 3 && (
-        <Box>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.notifications.enableAlerts}
-                      onChange={handleSwitchChange('notifications', 'enableAlerts')}
-                    />
-                  }
-                  label="Enable alerts"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.notifications.emailNotifications}
-                      onChange={handleSwitchChange('notifications', 'emailNotifications')}
-                    />
-                  }
-                  label="Email notifications"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.notifications.desktopNotifications}
-                      onChange={handleSwitchChange('notifications', 'desktopNotifications')}
-                    />
-                  }
-                  label="Desktop notifications"
-                />
-              </FormGroup>
-            </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography gutterBottom>
-                Alert Threshold (%)
-              </Typography>
-              <Box sx={{ px: 2 }}>
-                <Slider
-                  value={preferences.notifications.alertThreshold}
-                  onChange={handleSliderChange('notifications', 'alertThreshold')}
-                  step={5}
-                  marks={[
-                    { value: 5, label: '5%' },
-                    { value: 25, label: '25%' },
-                    { value: 50, label: '50%' }
-                  ]}
-                  min={5}
-                  max={50}
-                  valueLabelDisplay="auto"
-                  valueLabelFormat={(value) => `${value}%`}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>
-      )}
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, gap: 2 }}>
         <Button

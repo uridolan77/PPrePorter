@@ -55,13 +55,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Revenue",
                         MetricKey = "Revenue",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = date,
+                        Date = date,
                         ActualValue = value,
                         ExpectedValue = expectedValue,
                         DeviationPercentage = deviationPercentage,
                         Severity = Math.Abs(deviationPercentage) > 30 ? 5 : Math.Abs(deviationPercentage) > 20 ? 4 : 3,
-                        IsPositive = deviationPercentage > 0,
-                        PotentialCause = GeneratePotentialCause("Revenue", deviationPercentage)
+                        PossibleCauses = new List<string> { GeneratePotentialCause("Revenue", deviationPercentage) },
+                        RecommendedActions = new List<string> { "Monitor for continued pattern", "Review recent promotions" }
                     });
                 }
 
@@ -106,13 +106,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Registration",
                         MetricKey = "Registrations",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = date,
+                        Date = date,
                         ActualValue = value,
                         ExpectedValue = expectedValue,
                         DeviationPercentage = deviationPercentage,
                         Severity = Math.Abs(deviationPercentage) > 30 ? 5 : Math.Abs(deviationPercentage) > 20 ? 4 : 3,
-                        IsPositive = deviationPercentage > 0,
-                        PotentialCause = GeneratePotentialCause("Registrations", deviationPercentage)
+                        PossibleCauses = new List<string> { GeneratePotentialCause("Registrations", deviationPercentage) },
+                        RecommendedActions = new List<string> { "Review marketing campaigns", "Check registration process" }
                     });
                 }
 
@@ -135,13 +135,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Registration",
                         MetricKey = "FTD",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = date,
+                        Date = date,
                         ActualValue = value,
                         ExpectedValue = expectedValue,
                         DeviationPercentage = deviationPercentage,
                         Severity = Math.Abs(deviationPercentage) > 30 ? 5 : Math.Abs(deviationPercentage) > 20 ? 4 : 3,
-                        IsPositive = deviationPercentage > 0,
-                        PotentialCause = GeneratePotentialCause("FTD", deviationPercentage)
+                        PossibleCauses = new List<string> { GeneratePotentialCause("FTD", deviationPercentage) },
+                        RecommendedActions = new List<string> { "Review deposit bonuses", "Check payment processing" }
                     });
                 }
 
@@ -186,15 +186,21 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                             Category = "Game",
                             MetricKey = "GameRevenue",
                             DetectedAt = DateTime.UtcNow,
-                            AnomalyDate = DateTime.UtcNow.Date,
+                            Date = DateTime.UtcNow.Date,
                             ActualValue = game.Revenue,
                             ExpectedValue = mean,
                             DeviationPercentage = deviationPercentage,
                             Severity = Math.Abs(deviationPercentage) > 50 ? 5 : Math.Abs(deviationPercentage) > 30 ? 4 : 3,
-                            IsPositive = deviationPercentage > 0,
-                            PotentialCause = deviationPercentage > 0
-                                ? $"{game.GameName} is performing exceptionally well. Consider featuring it more prominently."
-                                : $"{game.GameName} is underperforming. Consider checking for technical issues or player feedback."
+                            PossibleCauses = new List<string> {
+                                deviationPercentage > 0
+                                    ? $"{game.GameName} is performing exceptionally well."
+                                    : $"{game.GameName} is underperforming."
+                            },
+                            RecommendedActions = new List<string> {
+                                deviationPercentage > 0
+                                    ? "Consider featuring it more prominently."
+                                    : "Check for technical issues or player feedback."
+                            }
                         });
                     }
                 }
@@ -240,13 +246,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                             Category = "Transaction",
                             MetricKey = "TransactionAmount",
                             DetectedAt = DateTime.UtcNow,
-                            AnomalyDate = transaction.TransactionDate.Date,
+                            Date = transaction.TransactionDate.Date,
                             ActualValue = transaction.Amount,
                             ExpectedValue = mean,
                             DeviationPercentage = deviationPercentage,
                             Severity = Math.Abs(deviationPercentage) > 100 ? 5 : Math.Abs(deviationPercentage) > 50 ? 4 : 3,
-                            IsPositive = transaction.TransactionType == "Deposit",
-                            PotentialCause = $"Unusual {transaction.TransactionType.ToLower()} amount detected. This may require review."
+                            PossibleCauses = new List<string> { $"Unusual {transaction.TransactionType.ToLower()} amount detected." },
+                            RecommendedActions = new List<string> { "Review transaction details", "Check for potential fraud" }
                         });
                     }
                 }
@@ -264,13 +270,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Transaction",
                         MetricKey = "FailedTransactions",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = DateTime.UtcNow.Date,
+                        Date = DateTime.UtcNow.Date,
                         ActualValue = failedPercentage,
                         ExpectedValue = 5, // Expect around 5% failure rate
                         DeviationPercentage = failedPercentage - 5,
                         Severity = failedPercentage > 20 ? 5 : failedPercentage > 15 ? 4 : 3,
-                        IsPositive = false,
-                        PotentialCause = "High transaction failure rate may indicate payment processing issues or fraud attempts."
+                        PossibleCauses = new List<string> { "High transaction failure rate may indicate payment processing issues or fraud attempts." },
+                        RecommendedActions = new List<string> { "Check payment gateway status", "Review recent failed transactions" }
                     });
                 }
 
@@ -305,13 +311,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Summary",
                         MetricKey = "Revenue",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = summary.Date,
+                        Date = summary.Date,
                         ActualValue = summary.Revenue,
                         ExpectedValue = 0, // We don't have the expected value
                         DeviationPercentage = summary.RevenueChange,
                         Severity = Math.Abs(summary.RevenueChange) > 30 ? 5 : 4,
-                        IsPositive = summary.RevenueChange > 0,
-                        PotentialCause = GeneratePotentialCause("Revenue", summary.RevenueChange)
+                        PossibleCauses = new List<string> { GeneratePotentialCause("Revenue", summary.RevenueChange) },
+                        RecommendedActions = new List<string> { "Analyze revenue sources", "Review recent promotions" }
                     });
                 }
 
@@ -324,13 +330,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Summary",
                         MetricKey = "Registrations",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = summary.Date,
+                        Date = summary.Date,
                         ActualValue = summary.Registrations,
                         ExpectedValue = 0, // We don't have the expected value
                         DeviationPercentage = summary.RegistrationsChange,
                         Severity = Math.Abs(summary.RegistrationsChange) > 30 ? 5 : 4,
-                        IsPositive = summary.RegistrationsChange > 0,
-                        PotentialCause = GeneratePotentialCause("Registrations", summary.RegistrationsChange)
+                        PossibleCauses = new List<string> { GeneratePotentialCause("Registrations", summary.RegistrationsChange) },
+                        RecommendedActions = new List<string> { "Review marketing campaigns", "Check registration process" }
                     });
                 }
 
@@ -343,13 +349,13 @@ namespace PPrePorter.API.Features.Dashboard.Insights
                         Category = "Summary",
                         MetricKey = "FTD",
                         DetectedAt = DateTime.UtcNow,
-                        AnomalyDate = summary.Date,
+                        Date = summary.Date,
                         ActualValue = summary.FTD,
                         ExpectedValue = 0, // We don't have the expected value
                         DeviationPercentage = summary.FTDChange,
                         Severity = Math.Abs(summary.FTDChange) > 30 ? 5 : 4,
-                        IsPositive = summary.FTDChange > 0,
-                        PotentialCause = GeneratePotentialCause("FTD", summary.FTDChange)
+                        PossibleCauses = new List<string> { GeneratePotentialCause("FTD", summary.FTDChange) },
+                        RecommendedActions = new List<string> { "Review deposit bonuses", "Check payment processing" }
                     });
                 }
 

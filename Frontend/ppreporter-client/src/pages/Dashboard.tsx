@@ -67,6 +67,7 @@ const AdvancedDashboard = lazy(() => import('../components/dashboard/AdaptiveDas
 
 import {
   fetchDashboardData,
+  fetchDashboardSummary,
   fetchRevenueChart,
   fetchRegistrationsChart,
   fetchTopGames,
@@ -218,9 +219,16 @@ const Dashboard: React.FC = () => {
 
   // Memoized function to load dashboard summary
   const loadDashboardSummary = useCallback(() => {
+    // First try to get all dashboard data in one call
     dispatch(fetchDashboardData({
       playMode: getPlayModeFromTab(tabValue)
     }));
+
+    // Also fetch individual components data if needed
+    dispatch(fetchDashboardSummary({
+      playMode: getPlayModeFromTab(tabValue)
+    }));
+
     setLastRefreshed(new Date());
   }, [dispatch, tabValue]);
 
@@ -327,7 +335,12 @@ const Dashboard: React.FC = () => {
 
   if (isLoading && !summaryStats) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '50vh'
+      }}>
         <CircularProgress />
       </Box>
     );
@@ -484,7 +497,7 @@ const Dashboard: React.FC = () => {
                       <Suspense fallback={<ChartSkeleton />}>
                         <ContextualDataExplorer
                           onAnnotationCreate={handleAnnotationCreate}
-                          onExplore={(params) => {
+                          onFilter={(params) => {
                             dispatch(fetchContextualExplorerData(params));
                           }}
                         />
@@ -503,7 +516,7 @@ const Dashboard: React.FC = () => {
                           <Suspense fallback={<ChartSkeleton />}>
                             <ContextualDataExplorer
                               onAnnotationCreate={handleAnnotationCreate}
-                              onExplore={(params) => {
+                              onFilter={(params) => {
                                 dispatch(fetchHeatmapData({
                                   ...params,
                                   timeFrame: 'all'

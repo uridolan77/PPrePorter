@@ -10,12 +10,19 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public string Title { get; set; }
         public string Description { get; set; }
         public string Type { get; set; } // e.g., "note", "alert", "insight"
+        public string DataType { get; set; } // e.g., "revenue", "registrations", "deposits"
         public string RelatedDimension { get; set; }
         public string RelatedMetric { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public string UserId { get; set; }
         public DateTime ModifiedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string Color { get; set; }
+        public string Icon { get; set; }
+        public bool IsPublic { get; set; }
 
         // Conversion method to create ExplorerDataAnnotation
         public ExplorerDataAnnotation ToExplorerDataAnnotation()

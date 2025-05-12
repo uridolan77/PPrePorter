@@ -12,31 +12,31 @@ namespace PPrePorter.Core.Interfaces
         /// <summary>
         /// Get explanation for a specific metric based on user context
         /// </summary>
-        Task<MetricExplanation> GetMetricExplanationAsync(string metricKey, string userRole, int experienceLevel);
-        
+        Task<MetricExplanation> GetMetricExplanationAsync(string metricKey, string userRole = null, int? experienceLevel = null);
+
         /// <summary>
         /// Get explanations for all summary metrics on the dashboard
         /// </summary>
-        Task<Dictionary<string, MetricExplanation>> GetSummaryMetricExplanationsAsync(string userRole, int experienceLevel);
-        
+        Task<Dictionary<string, MetricExplanation>> GetSummaryMetricExplanationsAsync(string userRole = null, int? experienceLevel = null);
+
         /// <summary>
         /// Get contextual explanation for a specific insight
         /// </summary>
-        Task<string> GetInsightExplanationAsync(DashboardInsight insight, string userRole, int experienceLevel);
-        
+        Task<string> GetInsightExplanationAsync(DashboardInsight insight, string userRole = null, int? experienceLevel = null);
+
         /// <summary>
         /// Get explanation for why a specific anomaly is significant
         /// </summary>
-        Task<string> GetAnomalyExplanationAsync(DataAnomaly anomaly, string userRole, int experienceLevel);
-        
+        Task<string> GetAnomalyExplanationAsync(DataAnomaly anomaly, string userRole = null, int? experienceLevel = null);
+
         /// <summary>
         /// Get business impact explanation for a metric or anomaly
         /// </summary>
         Task<string> GetBusinessImpactExplanationAsync(string metricKey, decimal value, decimal change, string userRole);
-        
+
         /// <summary>
         /// Get explanations for industry terminology used in the dashboard
         /// </summary>
-        Task<Dictionary<string, string>> GetTerminologyExplanationsAsync(string userRole, int experienceLevel);
+        Task<Dictionary<string, string>> GetTerminologyExplanationsAsync(string userRole = null, int? experienceLevel = null);
     }
 }

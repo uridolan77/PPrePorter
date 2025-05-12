@@ -26,6 +26,9 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     return BadRequest(new { message = "Filter is required" });
                 }
 
+                // Process string-based group by options if provided
+                ProcessStringBasedGroupBy(filter);
+
                 // Default date range to yesterday-today if not specified
                 var today = DateTime.UtcNow.Date;
                 var yesterday = today.AddDays(-1);
@@ -78,6 +81,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     },
                     TotalCount = result.TotalCount,
                     GroupByLevels = filter.GroupByLevels,
+                    GroupByLevelsStrings = filter.GroupByLevelsStrings,
                     StartDate = filter.StartDate.Value,
                     EndDate = filter.EndDate.Value,
                     AppliedFilters = filter
@@ -111,6 +115,17 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                 {
                     return BadRequest(new { message = "Invalid request parameters" });
                 }
+
+                // Process string-based group by if provided
+                if (!string.IsNullOrEmpty(request.GroupByString))
+                {
+                    request.GroupBy = ConvertStringToGroupByOption(request.GroupByString);
+                    _logger.LogInformation("Converted GroupByString '{GroupByString}' to GroupBy enum value '{GroupBy}'",
+                        request.GroupByString, request.GroupBy);
+                }
+
+                // Process string-based group by in filter
+                ProcessStringBasedGroupBy(request.Filter);
 
                 _logger.LogInformation("Loading children for parent path: {ParentPath}, child level: {ChildLevel}, group by: {GroupBy}",
                     request.ParentPath, request.ChildLevel, request.GroupBy);

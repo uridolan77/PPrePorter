@@ -122,7 +122,7 @@ const ResizableColumnsExample: React.FC = () => {
         and reordered by dragging the entire column header.
       </Typography>
 
-      <Box sx={{ mt: 3 }}>
+      <div style={{ marginTop: '24px' }}>
         <EnhancedTable
           data={data}
           columns={columns}
@@ -162,7 +162,7 @@ const ResizableColumnsExample: React.FC = () => {
             }
           }}
         />
-      </Box>
+      </div>
     </Paper>
   );
 };

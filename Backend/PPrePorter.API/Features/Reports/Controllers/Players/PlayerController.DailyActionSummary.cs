@@ -21,6 +21,8 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
         /// <param name="casinoName">Optional casino name filter</param>
         /// <param name="country">Optional country filter</param>
         /// <param name="currency">Optional currency filter</param>
+        /// <param name="groupBy">Optional group by option (numeric enum value: 0=Day, 1=Month, 2=Year, 3=Label, 4=Country, 10=Player, etc.)</param>
+        /// <param name="groupByString">Optional group by option as string (alternative to numeric enum, e.g., "Day", "Month", "Year", "Label", "Country", "Player")</param>
         /// <param name="page">Page number (1-based, defaults to 1)</param>
         /// <param name="pageSize">Page size (defaults to 20, max 100)</param>
         [HttpGet("daily-action-summary")]
@@ -30,6 +32,8 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
             [FromQuery] string? casinoName = null,
             [FromQuery] string? country = null,
             [FromQuery] string? currency = null,
+            [FromQuery] GroupByOption? groupBy = null,
+            [FromQuery] string? groupByString = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
@@ -49,18 +53,35 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
                 if (pageSize < 1) pageSize = 20;
                 if (pageSize > 100) pageSize = 100;
 
+                // Process string-based group by if provided
+                if (!string.IsNullOrEmpty(groupByString) && groupBy == null)
+                {
+                    // Try to parse as enum directly (case-insensitive)
+                    if (Enum.TryParse<GroupByOption>(groupByString, true, out var parsedGroupBy))
+                    {
+                        groupBy = parsedGroupBy;
+                        _logger.LogInformation("Converted groupByString '{GroupByString}' to groupBy enum value '{GroupBy}'",
+                            groupByString, groupBy);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Could not parse groupByString '{GroupByString}' to a valid GroupByOption enum value",
+                            groupByString);
+                    }
+                }
+
                 // Log the parameters
                 _logger.LogInformation("CONTROLLER [{Timestamp}]: Getting player daily action summary with parameters: " +
                     "startDate={StartDate}, endDate={EndDate}, casinoName={CasinoName}, country={Country}, " +
-                    "currency={Currency}, page={Page}, pageSize={PageSize}",
+                    "currency={Currency}, groupBy={GroupBy}, groupByString={GroupByString}, page={Page}, pageSize={PageSize}",
                     DateTime.UtcNow.ToString("HH:mm:ss.fff"),
                     startDate?.ToString("yyyy-MM-dd"),
                     endDate?.ToString("yyyy-MM-dd"),
-                    casinoName, country, currency, page, pageSize);
+                    casinoName, country, currency, groupBy, groupByString, page, pageSize);
 
                 // Create cache key
                 string cacheKey = $"PlayerDailyActionSummary_{startDate?.ToString("yyyyMMdd")}_{endDate?.ToString("yyyyMMdd")}_" +
-                    $"{casinoName ?? "all"}_{country ?? "all"}_{currency ?? "all"}_{page}_{pageSize}";
+                    $"{casinoName ?? "all"}_{country ?? "all"}_{currency ?? "all"}_{groupBy?.ToString() ?? "none"}_{page}_{pageSize}";
 
                 // Try to get from cache first
                 if (_cacheService.TryGetValue(cacheKey, out PlayerDailyActionSummaryResponseDto? cachedResponse))
@@ -212,6 +233,8 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
         /// <param name="casinoName">Optional casino name filter</param>
         /// <param name="country">Optional country filter</param>
         /// <param name="currency">Optional currency filter</param>
+        /// <param name="groupBy">Optional group by option (numeric enum value: 0=Day, 1=Month, 2=Year, 3=Label, 4=Country, 10=Player, etc.)</param>
+        /// <param name="groupByString">Optional group by option as string (alternative to numeric enum, e.g., "Day", "Month", "Year", "Label", "Country", "Player")</param>
         /// <param name="format">Export format (json or csv, defaults to csv)</param>
         [HttpGet("daily-action-summary/export")]
         public async Task<IActionResult> ExportPlayerDailyActionSummary(
@@ -220,6 +243,8 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
             [FromQuery] string? casinoName = null,
             [FromQuery] string? country = null,
             [FromQuery] string? currency = null,
+            [FromQuery] GroupByOption? groupBy = null,
+            [FromQuery] string? groupByString = null,
             [FromQuery] string format = "csv")
         {
             try
@@ -233,14 +258,31 @@ namespace PPrePorter.API.Features.Reports.Controllers.Players
                 startDate ??= DateTime.UtcNow.Date.AddDays(-1); // Yesterday
                 endDate ??= DateTime.UtcNow.Date; // Today
 
+                // Process string-based group by if provided
+                if (!string.IsNullOrEmpty(groupByString) && groupBy == null)
+                {
+                    // Try to parse as enum directly (case-insensitive)
+                    if (Enum.TryParse<GroupByOption>(groupByString, true, out var parsedGroupBy))
+                    {
+                        groupBy = parsedGroupBy;
+                        _logger.LogInformation("Converted groupByString '{GroupByString}' to groupBy enum value '{GroupBy}'",
+                            groupByString, groupBy);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Could not parse groupByString '{GroupByString}' to a valid GroupByOption enum value",
+                            groupByString);
+                    }
+                }
+
                 // Log the parameters
                 _logger.LogInformation("CONTROLLER [{Timestamp}]: Exporting player daily action summary with parameters: " +
                     "startDate={StartDate}, endDate={EndDate}, casinoName={CasinoName}, country={Country}, " +
-                    "currency={Currency}, format={Format}",
+                    "currency={Currency}, groupBy={GroupBy}, groupByString={GroupByString}, format={Format}",
                     DateTime.UtcNow.ToString("HH:mm:ss.fff"),
                     startDate?.ToString("yyyy-MM-dd"),
                     endDate?.ToString("yyyy-MM-dd"),
-                    casinoName, country, currency, format);
+                    casinoName, country, currency, groupBy, groupByString, format);
 
                 // Get players based on filters
                 IEnumerable<PPrePorter.DailyActionsDB.Models.Players.Player> players;

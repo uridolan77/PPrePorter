@@ -6,6 +6,7 @@ import naturalLanguageReducer from './slices/naturalLanguageSlice';
 import entitiesReducer from './slices/entitiesSlice';
 import uiReducer from './slices/uiSlice';
 import dailyActionGamesReducer from './slices/dailyActionGamesSlice';
+import integratedReportsReducer from './slices/integratedReportsSlice';
 import { RootState } from '../types/redux';
 
 // Combine all reducers
@@ -16,7 +17,8 @@ const rootReducer = combineReducers({
   naturalLanguage: naturalLanguageReducer,
   entities: entitiesReducer,
   ui: uiReducer,
-  dailyActionGames: dailyActionGamesReducer
+  dailyActionGames: dailyActionGamesReducer,
+  integratedReports: integratedReportsReducer
 });
 
 // Configure the Redux store

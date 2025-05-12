@@ -15,11 +15,31 @@ namespace PPrePorter.DailyActionsDB.Models.DTOs
         // White Label filters
         public List<int>? WhiteLabelIds { get; set; }
 
-        // Organization options
+        /// <summary>
+        /// Group by option (numeric enum value)
+        /// </summary>
+        /// <example>0</example>
         public GroupByOption GroupBy { get; set; } = GroupByOption.Day;
 
-        // Multi-level grouping options
+        /// <summary>
+        /// String-based group by option (alternative to enum-based GroupBy)
+        /// Accepted values: "Day", "Month", "Year", "Label", "Country", "Tracker", "Currency", "Gender", "Platform", "Ranking", "Player"
+        /// </summary>
+        /// <example>Day</example>
+        public string? GroupByString { get; set; }
+
+        /// <summary>
+        /// Multi-level grouping options (list of numeric enum values)
+        /// </summary>
+        /// <example>[0]</example>
         public List<GroupByOption> GroupByLevels { get; set; } = new List<GroupByOption> { GroupByOption.Day };
+
+        /// <summary>
+        /// String-based group by levels (alternative to enum-based GroupByLevels)
+        /// Accepted values: "Day", "Month", "Year", "Label", "Country", "Tracker", "Currency", "Gender", "Platform", "Ranking", "Player"
+        /// </summary>
+        /// <example>["Day"]</example>
+        public List<string>? GroupByLevelsStrings { get; set; }
 
         // Tracking filters
         public List<string>? Trackers { get; set; }

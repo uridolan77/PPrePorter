@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Grid, Typography, Box, Button } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PeopleIcon from '@mui/icons-material/People';
@@ -11,6 +11,8 @@ import EmptyState from '../common/EmptyState';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { CommonProps } from '../../types/common';
 import { DashboardStats } from '../../types/dashboard';
+import { useDispatch } from 'react-redux';
+import { fetchDashboardSummary } from '../../store/slices/dashboardSlice';
 
 interface DashboardMetricsProps extends CommonProps {
   stats?: DashboardStats | null;
@@ -32,6 +34,15 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
   onRetry,
   sx
 }) => {
+  const dispatch = useDispatch();
+
+  // Fetch dashboard summary data if not provided
+  useEffect(() => {
+    if (!stats && !loading && !error) {
+      dispatch(fetchDashboardSummary() as any);
+    }
+  }, [dispatch, stats, loading, error]);
+
   // If there's an error, return an error message
   if (error) {
     return (

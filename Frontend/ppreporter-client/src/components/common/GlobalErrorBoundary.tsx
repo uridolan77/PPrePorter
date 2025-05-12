@@ -103,11 +103,11 @@ class GlobalErrorBoundary extends Component<GlobalErrorBoundaryProps, GlobalErro
           </Typography>
 
           {process.env.NODE_ENV !== 'production' && errorInfo && (
-            <Box sx={{
-              mb: 3,
-              p: 2,
-              bgcolor: 'grey.100',
-              borderRadius: 1,
+            <div style={{
+              marginBottom: '24px',
+              padding: '16px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px',
               textAlign: 'left',
               overflow: 'auto',
               maxHeight: 200
@@ -115,10 +115,10 @@ class GlobalErrorBoundary extends Component<GlobalErrorBoundaryProps, GlobalErro
               <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
                 {errorInfo.componentStack}
               </Typography>
-            </Box>
+            </div>
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
             <Button
               variant="contained"
               color="primary"
@@ -134,7 +134,7 @@ class GlobalErrorBoundary extends Component<GlobalErrorBoundaryProps, GlobalErro
             >
               Report Error
             </Button>
-          </Box>
+          </div>
         </Paper>
       );
     }

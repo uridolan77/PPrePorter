@@ -1,8 +1,10 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useEffect } from 'react';
 import { Box, CircularProgress, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { CommonProps } from '../../types/common';
+import { useDispatch } from 'react-redux';
+import { fetchRevenueChart } from '../../store/slices/dashboardSlice';
 
 // Revenue data item interface
 interface RevenueDataItem {
@@ -43,6 +45,16 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const dispatch = useDispatch();
+
+  // Fetch revenue chart data if not provided
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      if (!isLoading && !error) {
+        dispatch(fetchRevenueChart() as any);
+      }
+    }
+  }, [dispatch, data, isLoading, error]);
 
   // Format data for chart display - memoized to prevent unnecessary recalculations
   const chartData: ChartDataItem[] = useMemo(() => {

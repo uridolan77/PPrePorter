@@ -29,7 +29,7 @@ namespace PPrePorter.Infrastructure.Services
         public async Task<UserContext> GetCurrentUserAsync()
         {
             var httpContext = _httpContextAccessor.HttpContext;
-            
+
             if (httpContext == null)
             {
                 _logger.LogWarning("HttpContext is null when trying to get current user");
@@ -37,17 +37,21 @@ namespace PPrePorter.Infrastructure.Services
             }
 
             var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            
+
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogWarning("User identifier claim not found in the current HttpContext");
                 throw new InvalidOperationException("User is not authenticated");
-            }            try
+            }
+
+            try
             {
                 // Get user details from the database
                 var user = await _dbContext.Users
                     .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));                if (user == null)
+                    .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
+
+                if (user == null)
                 {
                     _logger.LogWarning("User with ID {UserId} not found in database", userId);
                     throw new InvalidOperationException($"User with ID {userId} not found");

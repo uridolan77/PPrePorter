@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Core.Models.Reports;
 using PPrePorter.Domain.Entities.PPReporter;
+using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.Infrastructure.Models.Metadata;
 using PPrePorter.Infrastructure.Entities;
+using Dashboard = PPrePorter.Domain.Entities.PPReporter.Dashboard;
 
 namespace PPrePorter.Infrastructure.Data
 {
@@ -44,9 +46,9 @@ namespace PPrePorter.Infrastructure.Data
         public DbSet<MetadataItem> Metadata { get; set; }
 
         // Dashboard insights related entities
-        public DbSet<Annotation> Annotations { get; set; }
-        public DbSet<SharedAnnotation> SharedAnnotations { get; set; }
-        public DbSet<UserInteraction> UserInteractions { get; set; }
+        public DbSet<DataAnnotation> Annotations { get; set; }
+        public DbSet<Dashboard.SharedAnnotation> AnnotationShares { get; set; }
+        public DbSet<Dashboard.UserInteraction> UserInteractions { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -119,37 +121,35 @@ namespace PPrePorter.Infrastructure.Data
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
             });
 
-            modelBuilder.Entity<Annotation>(entity =>
+            modelBuilder.Entity<DataAnnotation>(entity =>
             {
                 entity.ToTable("Annotations");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.Type).HasMaxLength(50);
+                entity.Property(e => e.DataType).HasMaxLength(50);
                 entity.Property(e => e.RelatedDimension).HasMaxLength(50);
                 entity.Property(e => e.RelatedMetric).HasMaxLength(50);
                 entity.Property(e => e.CreatedBy).HasMaxLength(100);
                 entity.Property(e => e.UserId).HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.ModifiedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.Color).HasMaxLength(20);
+                entity.Property(e => e.Icon).HasMaxLength(50);
             });
 
-            modelBuilder.Entity<SharedAnnotation>(entity =>
+            modelBuilder.Entity<Dashboard.SharedAnnotation>(entity =>
             {
-                entity.ToTable("SharedAnnotations");
+                entity.ToTable("AnnotationShares");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.AnnotationId).IsRequired();
                 entity.Property(e => e.SharedWithUserId).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.SharedAt).HasDefaultValueSql("GETUTCDATE()");
-
-                // Relationship with Annotation
-                entity.HasOne(sa => sa.Annotation)
-                      .WithMany()
-                      .HasForeignKey(sa => sa.AnnotationId)
-                      .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<UserInteraction>(entity =>
+            modelBuilder.Entity<Dashboard.UserInteraction>(entity =>
             {
                 entity.ToTable("UserInteractions");
                 entity.HasKey(e => e.Id);
@@ -157,12 +157,6 @@ namespace PPrePorter.Infrastructure.Data
                 entity.Property(e => e.InteractionType).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.MetricKey).HasMaxLength(50);
                 entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
-
-                // Remove the relationship with UserPreference to avoid ambiguity
-                entity.HasOne<Domain.Entities.PPReporter.UserPreference>()
-                      .WithMany()
-                      .HasForeignKey(ui => ui.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<MetadataItem>(entity =>

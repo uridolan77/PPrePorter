@@ -1,8 +1,10 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useEffect } from 'react';
 import { Box, CircularProgress, Typography, useTheme, useMediaQuery } from '@mui/material';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, ComposedChart } from 'recharts';
 import { formatDate } from '../../utils/formatters';
 import { RegistrationData } from '../../types/redux';
+import { useDispatch } from 'react-redux';
+import { fetchRegistrationsChart } from '../../store/slices/dashboardSlice';
 
 interface PlayerRegistrationsChartProps {
   data: RegistrationData[];
@@ -49,19 +51,29 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
  * Player Registrations Chart component
  * Displays a bar chart of player registrations over time
  */
-const PlayerRegistrationsChart: React.FC<PlayerRegistrationsChartProps> = ({ 
-  data, 
-  isLoading = false, 
+const PlayerRegistrationsChart: React.FC<PlayerRegistrationsChartProps> = ({
+  data,
+  isLoading = false,
   height = 300,
   showFTD = true
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const dispatch = useDispatch();
+
+  // Fetch registrations chart data if not provided
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      if (!isLoading) {
+        dispatch(fetchRegistrationsChart() as any);
+      }
+    }
+  }, [dispatch, data, isLoading]);
 
   // Memoize the chart data to prevent unnecessary recalculations
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    
+
     return data.map((item) => ({
       date: formatDate(item.date),
       registrations: item.registrations,
@@ -100,31 +112,31 @@ const PlayerRegistrationsChart: React.FC<PlayerRegistrationsChartProps> = ({
           }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="date" 
-            angle={-45} 
-            textAnchor="end" 
+          <XAxis
+            dataKey="date"
+            angle={-45}
+            textAnchor="end"
             height={60}
             tick={{ fontSize: 12 }}
           />
-          <YAxis 
+          <YAxis
             yAxisId="left"
             tick={{ fontSize: 12 }}
           />
           {showFTD && (
-            <YAxis 
-              yAxisId="right" 
-              orientation="right" 
+            <YAxis
+              yAxisId="right"
+              orientation="right"
               tick={{ fontSize: 12 }}
             />
           )}
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar 
+          <Bar
             yAxisId="left"
-            dataKey="registrations" 
-            name="Registrations" 
-            fill={theme.palette.primary.main} 
+            dataKey="registrations"
+            name="Registrations"
+            fill={theme.palette.primary.main}
             radius={[4, 4, 0, 0]}
           />
           {showFTD && (

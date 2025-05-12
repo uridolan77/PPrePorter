@@ -412,6 +412,23 @@ export const saveUserPreferences = createAsyncThunk<
   }
 );
 
+// Dashboard Summary action
+export const fetchDashboardSummary = createAsyncThunk<
+  DashboardStats,
+  DashboardFilters | undefined,
+  ThunkConfig
+>(
+  'dashboard/fetchDashboardSummary',
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const summary = await dashboardService.getDashboardSummary(filters);
+      return summary;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 // Dashboard slice
 const dashboardSlice = createSlice({
   name: 'dashboard',
@@ -498,6 +515,19 @@ const dashboardSlice = createSlice({
         state.componentErrors.summary = action.payload ?
           (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
           new Error('Failed to fetch dashboard data');
+      })
+
+      // fetchDashboardSummary
+      .addCase(fetchDashboardSummary.pending, (state) => {
+        state.componentErrors.summary = null;
+      })
+      .addCase(fetchDashboardSummary.fulfilled, (state, action) => {
+        state.summaryStats = action.payload;
+      })
+      .addCase(fetchDashboardSummary.rejected, (state, action) => {
+        state.componentErrors.summary = action.payload ?
+          (action.payload instanceof Error ? action.payload : new Error(action.payload as string)) :
+          new Error('Failed to fetch dashboard summary');
       })
 
       // fetchRevenueChart
