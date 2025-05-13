@@ -97,15 +97,15 @@ const TealDashboardShowcase: React.FC = () => {
 
   return (
     <ThemeProvider theme={tealTheme}>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 3 }}>
+      <div style={{ backgroundColor: '#f5f5f5', minHeight: '100vh', paddingTop: 24, paddingBottom: 24 }}>
         <Container maxWidth="xl">
           {/* Dashboard Header */}
-          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h4" component="h1" fontWeight="bold">
               $A$A Analytics Dashboard
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
@@ -130,11 +130,11 @@ const TealDashboardShowcase: React.FC = () => {
               <IconButton>
                 <SettingsIcon />
               </IconButton>
-            </Box>
-          </Box>
+            </div>
+          </div>
 
           {/* Tabs */}
-          <Box sx={{ mb: 3 }}>
+          <div style={{ marginBottom: 24 }}>
             <Tabs
               value={tabValue}
               onChange={handleTabChange}
@@ -147,10 +147,10 @@ const TealDashboardShowcase: React.FC = () => {
               <Tab label="Transactions" />
               <Tab label="Reports" />
             </Tabs>
-          </Box>
+          </div>
 
           {/* Metric Cards */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={3} style={{ marginBottom: 32 }}>
             <Grid item xs={12} sm={6} md={3}>
               <StyledMetricCard
                 title="Registrations First-Time Deposits"
@@ -194,30 +194,30 @@ const TealDashboardShowcase: React.FC = () => {
           </Grid>
 
           {/* Charts Row */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={3} style={{ marginBottom: 32 }}>
             <Grid item xs={12} md={6}>
               <GradientCard
                 gradientVariant="teal"
                 title="Day-Day Actions"
                 icon={<MoreVertIcon />}
               >
-                  <Box sx={{ height: 300 }}>
+                  <div style={{ height: 300 }}>
                     {/* Bar chart placeholder */}
-                    <Box
-                      sx={{
+                    <div
+                      style={{
                         height: '100%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        bgcolor: 'grey.100',
-                        borderRadius: 1
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: 4
                       }}
                     >
                       <Typography variant="body2" color="text.secondary">
                         Bar Chart Visualization
                       </Typography>
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
               </GradientCard>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -226,28 +226,28 @@ const TealDashboardShowcase: React.FC = () => {
                 title="Total Actions"
                 icon={<MoreVertIcon />}
               >
-                  <Box sx={{ height: 300 }}>
+                  <div style={{ height: 300 }}>
                     {/* Line chart placeholder */}
-                    <Box
-                      sx={{
+                    <div
+                      style={{
                         height: '100%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        bgcolor: 'grey.100',
-                        borderRadius: 1
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: 4
                       }}
                     >
                       <Typography variant="body2" color="text.secondary">
                         Line Chart Visualization
                       </Typography>
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
               </GradientCard>
             </Grid>
           </Grid>
         </Container>
-      </Box>
+      </div>
     </ThemeProvider>
   );
 };

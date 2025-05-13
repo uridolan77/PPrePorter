@@ -17,7 +17,8 @@ import {
   Button,
   FormHelperText,
   Tooltip,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -119,6 +120,11 @@ export interface MultiSelectProps extends CommonProps {
    * Custom name for the component
    */
   name?: string;
+
+  /**
+   * Whether the component is in a loading state
+   */
+  loading?: boolean;
 }
 
 /**
@@ -147,7 +153,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   name,
   sx,
   className,
-  style
+  style,
+  loading = false
 }) => {
   // State for search term
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -204,7 +211,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
     // Always show chips for all selected items
     return (
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
         {selected.map((selectedValue) => {
           const option = options.find(opt => opt.value.toString() === selectedValue.toString());
           return (
@@ -235,9 +242,51 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             />
           );
         })}
-      </Box>
+      </div>
     );
   };
+
+  // If loading, show a loading message
+  if (loading) {
+    return (
+      <FormControl
+        fullWidth
+        size={size}
+        error={!!error}
+        disabled={true}
+        required={required}
+        sx={{
+          width: width,
+          ...sx
+        }}
+        className={className}
+        style={style}
+      >
+        {label && <InputLabel id={`${id || 'multi-select'}-label`}>{label}</InputLabel>}
+        <Select
+          labelId={`${id || 'multi-select'}-label`}
+          id={id || 'multi-select'}
+          name={name}
+          multiple
+          value={[]}
+          input={<OutlinedInput label={label} />}
+          renderValue={() => <Typography color="text.secondary">Loading options...</Typography>}
+        >
+          <MenuItem disabled>
+            <div style={{ display: 'flex', alignItems: 'center', padding: 8 }}>
+              <CircularProgress size={20} style={{ marginRight: 8 }} />
+              <Typography variant="body2" color="text.secondary">
+                Loading options...
+              </Typography>
+            </div>
+          </MenuItem>
+        </Select>
+        {helperText && (
+          <FormHelperText>{helperText}</FormHelperText>
+        )}
+      </FormControl>
+    );
+  }
 
   // If no options are provided, show a message
   if (!options || options.length === 0) {
@@ -333,18 +382,18 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         }}
       >
         {/* Search input and Select All/Clear All in a sticky container */}
-        <Box
-          sx={{
+        <div
+          style={{
             position: 'sticky',
             top: 0,
-            bgcolor: 'background.paper',
+            backgroundColor: '#fff',
             zIndex: 2,
             borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
           }}
         >
           {/* Search input */}
           {searchable && (
-            <Box sx={{ p: 1 }}>
+            <div style={{ padding: 8 }}>
               <TextField
                 size="small"
                 placeholder="Search..."
@@ -373,17 +422,17 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                   ) : null,
                 }}
               />
-            </Box>
+            </div>
           )}
 
           {/* Select all/none options */}
           {showSelectAllOption && filteredOptions.length > 0 && (
-            <Box sx={{ px: 1, py: 0.5, display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
               <Button size="small" onClick={handleSelectAll}>Select All</Button>
               <Button size="small" onClick={handleSelectNone}>Clear All</Button>
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
 
         {/* No options message */}
         {filteredOptions.length === 0 && (
@@ -406,7 +455,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
               alignItems: 'center'
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
               <Checkbox
                 checked={value.some(val =>
                   val.toString() === option.value.toString()
@@ -416,10 +465,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                 primary={option.label}
                 secondary={option.group}
               />
-            </Box>
+            </div>
             {option.description && (
               <Tooltip title={option.description} arrow>
-                <InfoOutlinedIcon fontSize="small" color="action" sx={{ ml: 1 }} />
+                <InfoOutlinedIcon fontSize="small" color="action" style={{ marginLeft: 8 }} />
               </Tooltip>
             )}
           </MenuItem>

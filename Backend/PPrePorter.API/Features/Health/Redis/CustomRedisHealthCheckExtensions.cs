@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -34,6 +35,14 @@ namespace PPrePorter.API.Features.Health.Redis
                     timeout),
                 failureStatus,
                 tags));
+        }
+
+        /// <summary>
+        /// Check if Redis is enabled in the application settings
+        /// </summary>
+        public static bool IsRedisEnabled(IConfiguration configuration)
+        {
+            return configuration.GetSection("AppSettings").GetValue<bool>("UseRedis", false);
         }
     }
 }

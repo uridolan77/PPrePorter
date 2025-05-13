@@ -133,29 +133,29 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
           horizontal: 'right'
         }}
       >
-        <Box sx={{ p: 2, width: 300 }}>
+        <div style={{ padding: 16, width: 300 }}>
           <Typography variant="subtitle1" gutterBottom>
             Advanced Filters
           </Typography>
 
           {filterableColumns.map(column => (
-            <Box key={column.id} sx={{ mb: 2 }}>
+            <div key={column.id} style={{ marginBottom: 16 }}>
               <Typography variant="caption">{column.label}</Typography>
               {renderFilterInput(column, localFilters[column.id], value => {
                 handleFilterChange(column.id, value);
               })}
-            </Box>
+            </div>
           ))}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
             <Button size="small" onClick={handleReset}>
               Reset
             </Button>
             <Button size="small" variant="contained" onClick={handleApply}>
               Apply
             </Button>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </Popover>
     </>
   );
@@ -173,7 +173,7 @@ const renderFilterInput = (
     case 'number':
     case 'currency':
       return (
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <TextField
             size="small"
             type="number"
@@ -196,7 +196,7 @@ const renderFilterInput = (
             }}
             sx={{ flex: 1 }}
           />
-        </Box>
+        </div>
       );
 
     case 'text':
@@ -235,11 +235,11 @@ const Filtering: React.FC<FilteringComponentProps> = ({
   onAdvancedFiltersChange
 }) => {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       {config.quickFilter && (
         <QuickFilter value={quickFilterValue} onChange={onQuickFilterChange} />
       )}
-      
+
       {config.advancedFilter && (
         <AdvancedFilter
           columns={columns}
@@ -247,7 +247,7 @@ const Filtering: React.FC<FilteringComponentProps> = ({
           onChange={onAdvancedFiltersChange}
         />
       )}
-    </Box>
+    </div>
   );
 };
 

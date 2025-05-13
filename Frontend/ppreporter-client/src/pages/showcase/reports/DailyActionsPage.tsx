@@ -180,6 +180,7 @@ const DailyActionsPage: React.FC = () => {
 
   // State for advanced features
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [showFiltersPanel, setShowFiltersPanel] = useState<boolean>(true); // State for collapsible filters panel
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showColumnSelector, setShowColumnSelector] = useState<boolean>(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
@@ -999,6 +1000,11 @@ const DailyActionsPage: React.FC = () => {
     setShowAdvancedFilters(!showAdvancedFilters);
   };
 
+  // Handle filters panel toggle
+  const handleToggleFiltersPanel = (): void => {
+    setShowFiltersPanel(!showFiltersPanel);
+  };
+
   // Handle advanced filter change
   const handleAdvancedFilterChange = (id: string, value: any): void => {
     setAdvancedFilters({
@@ -1094,15 +1100,15 @@ const DailyActionsPage: React.FC = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box>
+      <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
           <Typography variant="h4" gutterBottom>
             Daily Actions Report
           </Typography>
           <Typography variant="body1" color="text.secondary">
             View and analyze daily player activities, deposits, and gaming revenue
           </Typography>
-        </Box>
+        </div>
         <Button
           variant="contained"
           color="primary"
@@ -1112,26 +1118,37 @@ const DailyActionsPage: React.FC = () => {
         >
           Advanced Report
         </Button>
-      </Box>
+      </div>
 
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <FilterListIcon sx={{ mr: 1 }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <FilterListIcon style={{ marginRight: 8 }} />
             <Typography variant="h6">Filters</Typography>
-          </Box>
-          <Button
-            color="primary"
-            onClick={handleToggleAdvancedFilters}
-            endIcon={showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          >
-            {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
-          </Button>
-        </Box>
-
-        {/* Basic Filters */}
-        <Grid container spacing={3}>
+          </div>
+          <div>
+            <Button
+              color="primary"
+              onClick={handleToggleAdvancedFilters}
+              endIcon={showAdvancedFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              style={{ marginRight: 8 }}
+              disabled={!showFiltersPanel}
+            >
+              {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+            </Button>
+            <Button
+              color="primary"
+              onClick={handleToggleFiltersPanel}
+              endIcon={showFiltersPanel ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            >
+              {showFiltersPanel ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+          </div>
+        </div>
+        <Collapse in={showFiltersPanel}>
+          {/* Basic Filters */}
+          <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
@@ -1240,8 +1257,8 @@ const DailyActionsPage: React.FC = () => {
 
         {/* Advanced Filters */}
         <Collapse in={showAdvancedFilters} timeout="auto" unmountOnExit>
-          <Box sx={{ mt: 3 }}>
-            <Divider sx={{ mb: 3 }} />
+          <div style={{ marginTop: 24 }}>
+            <Divider style={{ marginBottom: 24 }} />
             <Typography variant="subtitle1" gutterBottom>
               Advanced Filters
             </Typography>
@@ -1281,11 +1298,11 @@ const DailyActionsPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('regPlayMode', e.target.value)}
                     label="Reg Play Mode"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </div>
                     )}
                   >
                     {['Casino', 'Sport', 'Live', 'Bingo'].map((mode) => (
@@ -1306,11 +1323,11 @@ const DailyActionsPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('platform', e.target.value)}
                     label="Platform"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </div>
                     )}
                   >
                     {['Mobile', 'Web'].map((platform) => (
@@ -1323,7 +1340,7 @@ const DailyActionsPage: React.FC = () => {
               </Grid>
 
               {/* Player Status */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid item xs={12} style={{ marginTop: 16 }}>
                 <Typography variant="subtitle2" color="primary" gutterBottom>
                   Player Status
                 </Typography>
@@ -1338,11 +1355,11 @@ const DailyActionsPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('status', e.target.value)}
                     label="Status"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </div>
                     )}
                   >
                     {['Active', 'Blocked', 'Inactive'].map((status) => (
@@ -1363,11 +1380,11 @@ const DailyActionsPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('gender', e.target.value)}
                     label="Gender"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </div>
                     )}
                   >
                     {['Male', 'Female'].map((gender) => (
@@ -1388,11 +1405,11 @@ const DailyActionsPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('currency', e.target.value)}
                     label="Currency"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </div>
                     )}
                   >
                     {['AUD', 'CAD', 'EUR', 'GBP', 'NZD'].map((currency) => (
@@ -1413,11 +1430,11 @@ const DailyActionsPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('playersType', e.target.value)}
                     label="Players Type"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </div>
                     )}
                   >
                     {['Real', 'Fun'].map((type) => (
@@ -1430,7 +1447,7 @@ const DailyActionsPage: React.FC = () => {
               </Grid>
 
               {/* Date Filters */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid item xs={12} style={{ marginTop: 16 }}>
                 <Typography variant="subtitle2" color="primary" gutterBottom>
                   Date Filters
                 </Typography>
@@ -1481,7 +1498,7 @@ const DailyActionsPage: React.FC = () => {
               </Grid>
 
               {/* Communication Preferences */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid item xs={12} style={{ marginTop: 16 }}>
                 <Typography variant="subtitle2" color="primary" gutterBottom>
                   Communication Preferences
                 </Typography>
@@ -1563,7 +1580,7 @@ const DailyActionsPage: React.FC = () => {
               </Grid>
 
               {/* Players Input */}
-              <Grid item xs={12} sx={{ mt: 2 }}>
+              <Grid item xs={12} style={{ marginTop: 16 }}>
                 <Typography variant="subtitle2" color="primary" gutterBottom>
                   Specific Players
                 </Typography>
@@ -1580,41 +1597,42 @@ const DailyActionsPage: React.FC = () => {
               </Grid>
             </Grid>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
               <Button
                 variant="outlined"
                 onClick={handleResetAdvancedFilters}
-                sx={{ mr: 2 }}
+                style={{ marginRight: 16 }}
               >
                 Reset Advanced Filters
               </Button>
-            </Box>
-          </Box>
+            </div>
+          </div>
         </Collapse>
 
-        {/* Action Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 3 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<RefreshIcon />}
-            onClick={handleApplyFilters}
-            sx={{ mr: 2 }}
-          >
-            Apply Filters
-          </Button>
-
-          <span>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 24 }}>
             <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              disabled={loading || dailyActions.length === 0}
-              onClick={handleExport}
+              variant="contained"
+              color="primary"
+              startIcon={<RefreshIcon />}
+              onClick={handleApplyFilters}
+              style={{ marginRight: 16 }}
             >
-              Export
+              Apply Filters
             </Button>
-          </span>
-        </Box>
+
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                disabled={loading || dailyActions.length === 0}
+                onClick={handleExport}
+              >
+                Export
+              </Button>
+            </span>
+          </div>
+        </Collapse>
       </Paper>
 
       {/* Configurable Summary Cards */}
@@ -1630,10 +1648,10 @@ const DailyActionsPage: React.FC = () => {
 
       {/* Data Table */}
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <TableChartIcon sx={{ mr: 1 }} />
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+          <TableChartIcon style={{ marginRight: 8 }} />
           <Typography variant="h6">Daily Actions Data</Typography>
-        </Box>
+        </div>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -1642,9 +1660,9 @@ const DailyActionsPage: React.FC = () => {
         )}
 
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
             <CircularProgress />
-          </Box>
+          </div>
         ) : dailyActions.length === 0 ? (
           <Alert severity="info">
             No data available for the selected filters. Try adjusting your filters or click "Apply Filters" to load data.
@@ -1780,7 +1798,6 @@ const DailyActionsPage: React.FC = () => {
               }
             }}
             emptyMessage="No data available for the selected filters. Try adjusting your filters or click 'Apply Filters' to load data."
-            sx={{ maxHeight: '600px', overflow: 'auto' }}
             idField="id"
             // Enhanced features
             enableColumnSelection={true}
@@ -1874,7 +1891,7 @@ const DailyActionsPage: React.FC = () => {
                 'Unknown Date';
 
               return (
-                <Box sx={{ p: 2 }}>
+                <div style={{ padding: 16 }}>
                   <Typography variant="subtitle1" gutterBottom>
                     Details for {groupBy === 'Day' || groupBy === 'Month' || groupBy === 'Year' ?
                       (isValidDate ? formattedDate : row.groupValue || 'Selected Item') :
@@ -1910,7 +1927,7 @@ const DailyActionsPage: React.FC = () => {
                     </Typography>
                   </Grid>
                 </Grid>
-              </Box>
+              </div>
               );
             }}
             onExportFormat={(format: string) => {

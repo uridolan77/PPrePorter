@@ -448,6 +448,9 @@ export interface TableState {
     groupByColumn: string | null;
     groupByLevels: string[];
     expandedGroups: string[]; // Paths of expanded groups in hierarchical mode
+    hierarchical?: boolean;
+    currentLevel?: number;
+    parentPath?: string;
   };
   columns: {
     visible: string[];

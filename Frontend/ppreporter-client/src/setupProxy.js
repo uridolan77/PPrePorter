@@ -49,8 +49,8 @@ module.exports = function(app) {
       }));
     },
     // Add a timeout to the proxy request
-    proxyTimeout: 10000, // 10 seconds
-    timeout: 10000, // 10 seconds
+    proxyTimeout: 60000, // 60 seconds
+    timeout: 60000, // 60 seconds
   };
 
   // Proxy all API requests

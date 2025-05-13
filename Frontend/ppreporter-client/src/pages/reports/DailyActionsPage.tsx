@@ -38,7 +38,6 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import DailyActionsFilterPanel from '../../components/reports/DailyActionsFilterPanel';
 
 // Types
-
 interface DailyAction {
   id: string;
   date: string;
@@ -304,103 +303,124 @@ const DailyActionsPage: React.FC = () => {
         console.log('[DAILY ACTIONS PAGE] Raw response:', JSON.stringify(response, null, 2));
 
         // Check if the response has the expected structure
-        if (response && response.data) {
-          console.log('[DAILY ACTIONS PAGE] Response data structure:', response.data);
+        if (response) {
+          console.log('[DAILY ACTIONS PAGE] Got data from service:', response);
+          console.log('[DAILY ACTIONS PAGE] Response type:', typeof response);
+          console.log('[DAILY ACTIONS PAGE] Response keys:', Object.keys(response));
 
-          // Check if the data property has an items array (new structure)
-          if (response.data.items && Array.isArray(response.data.items)) {
-            console.log('[DAILY ACTIONS PAGE] Response has items array with length:', response.data.items.length);
-            console.log('[DAILY ACTIONS PAGE] First item:', response.data.items[0]);
-            console.log('[DAILY ACTIONS PAGE] Response data details:', {
-              count: response.data.items.length,
-              firstItem: response.data.items[0],
-              responseStructure: Object.keys(response),
-              dataType: typeof response.data,
-              isArray: Array.isArray(response.data.items),
-              groupBy: groupBy,
-              backendGroupBy: filters.groupBy,
-              hasGroupValue: response.data.items[0]?.groupValue !== undefined,
-              hasGroupKey: response.data.items[0]?.groupKey !== undefined,
-              groupValues: response.data.items.map((item: DailyAction) => item.groupValue).filter(Boolean).slice(0, 5),
-              uniqueWhiteLabelNames: Array.from(new Set(response.data.items.map((item: DailyAction) => item.whiteLabelName))).slice(0, 10),
-              uniqueDates: Array.from(new Set(response.data.items.map((item: DailyAction) => item.date))).sort()
-            });
-          } else {
-            // Old structure - data is an array directly
-            console.log('[DAILY ACTIONS PAGE] Response has data property with length:', response.data.length);
-            console.log('[DAILY ACTIONS PAGE] First item:', response.data[0]);
-            console.log('[DAILY ACTIONS PAGE] Response data details:', {
-              count: response.data.length,
-              firstItem: response.data[0],
-              responseStructure: Object.keys(response),
-              dataType: typeof response.data,
-              isArray: Array.isArray(response.data),
-              groupBy: groupBy,
-              backendGroupBy: filters.groupBy,
-              hasGroupValue: response.data[0]?.groupValue !== undefined,
-              hasGroupKey: response.data[0]?.groupKey !== undefined,
-              groupValues: response.data.map((item: DailyAction) => item.groupValue).filter(Boolean).slice(0, 5),
-              uniqueWhiteLabelNames: Array.from(new Set(response.data.map((item: DailyAction) => item.whiteLabelName))).slice(0, 10),
-              uniqueDates: Array.from(new Set(response.data.map((item: DailyAction) => item.date))).sort()
-            });
+          // Process the data based on the response structure
+          let processedData: DailyAction[] = [];
+
+          // Check if response has a data property that is an array
+          if (response.data && Array.isArray(response.data)) {
+            console.log('[DAILY ACTIONS PAGE] Response has data array with length:', response.data.length);
+            processedData = response.data;
           }
-
-          // If we're grouping by Label, check if we have duplicate white label names
-          if (groupBy === 'Label') {
-            const whiteLabelCounts = response.data.reduce((acc: {[key: string]: number}, item: DailyAction) => {
-              const name = item.whiteLabelName || 'Unknown';
-              acc[name] = (acc[name] || 0) + 1;
-              return acc;
-            }, {});
-
-            const duplicates = Object.entries(whiteLabelCounts)
-              .filter(([_, count]) => (count as number) > 1)
-              .map(([name, count]) => `${name} (${count as number})`);
-
-            if (duplicates.length > 0) {
-              console.log('[DAILY ACTIONS PAGE] Found duplicate white label names:', duplicates);
+          // Check if response has a data.items property that is an array
+          else if (response.data && response.data.items && Array.isArray(response.data.items)) {
+            console.log('[DAILY ACTIONS PAGE] Response has data.items array with length:', response.data.items.length);
+            processedData = response.data.items;
+          }
+          // Check if response has an items property that is an array
+          else if (response.items && Array.isArray(response.items)) {
+            console.log('[DAILY ACTIONS PAGE] Response has items array with length:', response.items.length);
+            processedData = response.items;
+          }
+          // Check if response itself is an array
+          else if (Array.isArray(response)) {
+            console.log('[DAILY ACTIONS PAGE] Response is an array with length:', response.length);
+            processedData = response;
+          }
+          // Check if response is an object with numeric keys (array-like object)
+          else if (typeof response === 'object' && response !== null) {
+            const keys = Object.keys(response).filter(key => !isNaN(Number(key)));
+            if (keys.length > 0) {
+              console.log('[DAILY ACTIONS PAGE] Response is an array-like object with length:', keys.length);
+              processedData = keys.map(key => response[key]);
             }
           }
 
-          // Check if the data property has an items array (new structure)
-          if (response.data.items && Array.isArray(response.data.items)) {
-            // New structure - use the items array
-            setDailyActions(response.data.items);
+          // If processedData is still empty but we have data in the response, log a warning
+          if (processedData.length === 0) {
+            console.warn('[DAILY ACTIONS PAGE] No data extracted from response. Response structure:', Object.keys(response));
 
-            // Set summary metrics if available in the response
-            if (response.summary) {
-              setSummary(response.summary);
-            } else {
-              // Calculate summary metrics if not provided by the API
-              const summaryData: Summary = {
-                totalRegistrations: response.data.items.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
-                totalFTD: response.data.items.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
-                totalDeposits: response.data.items.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
-                totalCashouts: response.data.items.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
-                totalGGR: response.data.items.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
-              };
-
-              setSummary(summaryData);
+            // Additional check for empty data array
+            if (response.data && Array.isArray(response.data) && response.data.length === 0) {
+              console.warn('[DAILY ACTIONS PAGE] Data array exists but is empty');
             }
+          }
+
+          // Transform the data to ensure it has the required properties
+          const transformedData = processedData.map(item => {
+            // Add groupValue property based on groupBy if it doesn't exist
+            let groupValue = item.groupValue || '';
+
+            if (!groupValue) {
+              if (groupBy === 'Day' && item.date) {
+                groupValue = format(new Date(item.date), 'MMM dd, yyyy');
+              } else if (groupBy === 'Month' && item.date) {
+                groupValue = format(new Date(item.date), 'MMMM yyyy');
+              } else if (groupBy === 'Year' && item.date) {
+                groupValue = format(new Date(item.date), 'yyyy');
+              } else if (groupBy === 'Label') {
+                groupValue = item.whiteLabelName || '';
+              } else if (groupBy === 'Country') {
+                groupValue = item.country || '';
+              } else if (groupBy === 'Tracker') {
+                groupValue = item.tracker || '';
+              } else if (groupBy === 'Currency') {
+                groupValue = item.currency || '';
+              } else if (groupBy === 'Gender') {
+                groupValue = item.gender || '';
+              } else if (groupBy === 'Platform') {
+                groupValue = item.platform || '';
+              } else if (groupBy === 'Ranking') {
+                groupValue = item.ranking || '';
+              } else if (groupBy === 'Player') {
+                groupValue = item.playerId ? `Player ${item.playerId}` : '';
+              }
+            }
+
+            // Ensure all required numeric properties have default values
+            return {
+              ...item,
+              id: item.id || `row-${Math.random().toString(36).substr(2, 9)}`,
+              groupValue,
+              registrations: item.registrations || 0,
+              ftd: item.ftd || 0,
+              deposits: item.deposits || 0,
+              paidCashouts: item.paidCashouts || 0,
+              ggrCasino: item.ggrCasino || 0,
+              ggrSport: item.ggrSport || 0,
+              ggrLive: item.ggrLive || 0,
+              totalGGR: item.totalGGR || 0
+            };
+          });
+
+          // Log the first item for debugging
+          if (transformedData.length > 0) {
+            console.log('[DAILY ACTIONS PAGE] First transformed item:', transformedData[0]);
+          }
+
+          // Set the processed data to state
+          setDailyActions(transformedData);
+
+          // Process summary data
+          if (response.summary) {
+            console.log('[DAILY ACTIONS PAGE] Using summary from response:', response.summary);
+            setSummary(response.summary);
           } else {
-            // Old structure - data is an array directly
-            setDailyActions(response.data);
+            // Calculate summary metrics if not provided by the API
+            console.log('[DAILY ACTIONS PAGE] Calculating summary from data');
+            const summaryData: Summary = {
+              totalRegistrations: processedData.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
+              totalFTD: processedData.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
+              totalDeposits: processedData.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
+              totalCashouts: processedData.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
+              totalGGR: processedData.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
+            };
 
-            // Set summary metrics if available in the response
-            if (response.summary) {
-              setSummary(response.summary);
-            } else {
-              // Calculate summary metrics if not provided by the API
-              const summaryData: Summary = {
-                totalRegistrations: response.data.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
-                totalFTD: response.data.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
-                totalDeposits: response.data.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
-                totalCashouts: response.data.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
-                totalGGR: response.data.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
-              };
-
-              setSummary(summaryData);
-            }
+            setSummary(summaryData);
           }
         } else {
           console.error('[DAILY ACTIONS PAGE] Invalid response format:', response);
@@ -538,6 +558,8 @@ const DailyActionsPage: React.FC = () => {
 
     return stabilizedData.map((el) => el[0]);
   };
+
+
 
   // Convert frontend groupBy string to backend GroupByOption enum value
   const convertGroupByToBackendValue = (groupByString: string): number => {
@@ -817,53 +839,6 @@ const DailyActionsPage: React.FC = () => {
                       Deposits
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'depositsCreditCard' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'depositsCreditCard'}
-                      direction={orderBy === 'depositsCreditCard' ? order : 'asc'}
-                      onClick={() => handleRequestSort('depositsCreditCard')}
-                    >
-                      Deposits CC
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'depositsNeteller' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'depositsNeteller'}
-                      direction={orderBy === 'depositsNeteller' ? order : 'asc'}
-                      onClick={() => handleRequestSort('depositsNeteller')}
-                    >
-                      Deposits Neteller
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'depositsMoneyBookers' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'depositsMoneyBookers'}
-                      direction={orderBy === 'depositsMoneyBookers' ? order : 'asc'}
-                      onClick={() => handleRequestSort('depositsMoneyBookers')}
-                    >
-                      Deposits Skrill
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'depositsOther' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'depositsOther'}
-                      direction={orderBy === 'depositsOther' ? order : 'asc'}
-                      onClick={() => handleRequestSort('depositsOther')}
-                    >
-                      Deposits Other
-                    </TableSortLabel>
-                  </TableCell>
-
-                  {/* Cashout Metrics */}
-                  <TableCell align="right" sortDirection={orderBy === 'cashoutRequests' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'cashoutRequests'}
-                      direction={orderBy === 'cashoutRequests' ? order : 'asc'}
-                      onClick={() => handleRequestSort('cashoutRequests')}
-                    >
-                      Cashout Requests
-                    </TableSortLabel>
-                  </TableCell>
                   <TableCell align="right" sortDirection={orderBy === 'paidCashouts' ? order : false}>
                     <TableSortLabel
                       active={orderBy === 'paidCashouts'}
@@ -874,25 +849,7 @@ const DailyActionsPage: React.FC = () => {
                     </TableSortLabel>
                   </TableCell>
 
-                  {/* Casino Metrics */}
-                  <TableCell align="right" sortDirection={orderBy === 'betsCasino' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'betsCasino'}
-                      direction={orderBy === 'betsCasino' ? order : 'asc'}
-                      onClick={() => handleRequestSort('betsCasino')}
-                    >
-                      Casino Bets
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'winsCasino' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'winsCasino'}
-                      direction={orderBy === 'winsCasino' ? order : 'asc'}
-                      onClick={() => handleRequestSort('winsCasino')}
-                    >
-                      Casino Wins
-                    </TableSortLabel>
-                  </TableCell>
+                  {/* GGR Metrics */}
                   <TableCell align="right" sortDirection={orderBy === 'ggrCasino' ? order : false}>
                     <TableSortLabel
                       active={orderBy === 'ggrCasino'}
@@ -900,26 +857,6 @@ const DailyActionsPage: React.FC = () => {
                       onClick={() => handleRequestSort('ggrCasino')}
                     >
                       Casino GGR
-                    </TableSortLabel>
-                  </TableCell>
-
-                  {/* Sports Metrics */}
-                  <TableCell align="right" sortDirection={orderBy === 'betsSport' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'betsSport'}
-                      direction={orderBy === 'betsSport' ? order : 'asc'}
-                      onClick={() => handleRequestSort('betsSport')}
-                    >
-                      Sports Bets
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'winsSport' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'winsSport'}
-                      direction={orderBy === 'winsSport' ? order : 'asc'}
-                      onClick={() => handleRequestSort('winsSport')}
-                    >
-                      Sports Wins
                     </TableSortLabel>
                   </TableCell>
                   <TableCell align="right" sortDirection={orderBy === 'ggrSport' ? order : false}>
@@ -931,26 +868,6 @@ const DailyActionsPage: React.FC = () => {
                       Sports GGR
                     </TableSortLabel>
                   </TableCell>
-
-                  {/* Live Metrics */}
-                  <TableCell align="right" sortDirection={orderBy === 'betsLive' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'betsLive'}
-                      direction={orderBy === 'betsLive' ? order : 'asc'}
-                      onClick={() => handleRequestSort('betsLive')}
-                    >
-                      Live Bets
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'winsLive' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'winsLive'}
-                      direction={orderBy === 'winsLive' ? order : 'asc'}
-                      onClick={() => handleRequestSort('winsLive')}
-                    >
-                      Live Wins
-                    </TableSortLabel>
-                  </TableCell>
                   <TableCell align="right" sortDirection={orderBy === 'ggrLive' ? order : false}>
                     <TableSortLabel
                       active={orderBy === 'ggrLive'}
@@ -958,35 +875,6 @@ const DailyActionsPage: React.FC = () => {
                       onClick={() => handleRequestSort('ggrLive')}
                     >
                       Live GGR
-                    </TableSortLabel>
-                  </TableCell>
-
-                  {/* Bingo Metrics */}
-                  <TableCell align="right" sortDirection={orderBy === 'betsBingo' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'betsBingo'}
-                      direction={orderBy === 'betsBingo' ? order : 'asc'}
-                      onClick={() => handleRequestSort('betsBingo')}
-                    >
-                      Bingo Bets
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'winsBingo' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'winsBingo'}
-                      direction={orderBy === 'winsBingo' ? order : 'asc'}
-                      onClick={() => handleRequestSort('winsBingo')}
-                    >
-                      Bingo Wins
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sortDirection={orderBy === 'ggrBingo' ? order : false}>
-                    <TableSortLabel
-                      active={orderBy === 'ggrBingo'}
-                      direction={orderBy === 'ggrBingo' ? order : 'asc'}
-                      onClick={() => handleRequestSort('ggrBingo')}
-                    >
-                      Bingo GGR
                     </TableSortLabel>
                   </TableCell>
 
@@ -1013,19 +901,7 @@ const DailyActionsPage: React.FC = () => {
                     <TableRow key={row.id || `row-${index}`}>
                       {/* Display the appropriate value based on the groupBy option */}
                       <TableCell sx={{ fontWeight: 'bold' }}>
-                        {row.groupValue ? row.groupValue :
-                         groupBy === 'Day' && row.date ? format(new Date(row.date), 'MMM dd, yyyy') :
-                         groupBy === 'Month' && row.date ? format(new Date(row.date), 'MMMM yyyy') :
-                         groupBy === 'Year' && row.date ? format(new Date(row.date), 'yyyy') :
-                         groupBy === 'Label' ? row.whiteLabelName :
-                         groupBy === 'Country' && row.country ? row.country :
-                         groupBy === 'Tracker' && row.tracker ? row.tracker :
-                         groupBy === 'Currency' && row.currency ? row.currency :
-                         groupBy === 'Gender' && row.gender ? row.gender :
-                         groupBy === 'Platform' && row.platform ? row.platform :
-                         groupBy === 'Ranking' && row.ranking ? row.ranking :
-                         groupBy === 'Player' && row.playerId ? `Player ${row.playerId}` :
-                         row[groupBy.toLowerCase() as keyof DailyAction] || 'N/A'}
+                        {row.groupValue || 'N/A'}
                       </TableCell>
 
                       {/* Registration and Player Metrics */}
@@ -1034,34 +910,12 @@ const DailyActionsPage: React.FC = () => {
 
                       {/* Deposit Metrics */}
                       <TableCell align="right">{formatCurrency(row.deposits)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.depositsCreditCard || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.depositsNeteller || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.depositsMoneyBookers || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.depositsOther || 0)}</TableCell>
-
-                      {/* Cashout Metrics */}
-                      <TableCell align="right">{formatCurrency(row.cashoutRequests || 0)}</TableCell>
                       <TableCell align="right">{formatCurrency(row.paidCashouts)}</TableCell>
 
-                      {/* Casino Metrics */}
-                      <TableCell align="right">{formatCurrency(row.betsCasino || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.winsCasino || 0)}</TableCell>
+                      {/* GGR Metrics */}
                       <TableCell align="right">{formatCurrency(row.ggrCasino)}</TableCell>
-
-                      {/* Sports Metrics */}
-                      <TableCell align="right">{formatCurrency(row.betsSport || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.winsSport || 0)}</TableCell>
                       <TableCell align="right">{formatCurrency(row.ggrSport)}</TableCell>
-
-                      {/* Live Metrics */}
-                      <TableCell align="right">{formatCurrency(row.betsLive || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.winsLive || 0)}</TableCell>
                       <TableCell align="right">{formatCurrency(row.ggrLive)}</TableCell>
-
-                      {/* Bingo Metrics */}
-                      <TableCell align="right">{formatCurrency(row.betsBingo || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.winsBingo || 0)}</TableCell>
-                      <TableCell align="right">{formatCurrency(row.ggrBingo || 0)}</TableCell>
 
                       {/* Total GGR */}
                       <TableCell align="right">{formatCurrency(row.totalGGR)}</TableCell>

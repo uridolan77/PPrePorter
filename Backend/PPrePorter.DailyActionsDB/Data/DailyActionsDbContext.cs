@@ -246,6 +246,23 @@ namespace PPrePorter.DailyActionsDB.Data
             {
                 entity.ToTable("tbl_Daily_actions_games", schema: "common");
                 entity.HasKey(e => e.ID);
+
+                // Configure decimal properties with proper precision and scale
+                entity.Property(e => e.RealBetAmount).HasColumnType("money");
+                entity.Property(e => e.RealWinAmount).HasColumnType("money");
+                entity.Property(e => e.BonusBetAmount).HasColumnType("money");
+                entity.Property(e => e.BonusWinAmount).HasColumnType("money");
+                entity.Property(e => e.NetGamingRevenue).HasColumnType("money");
+                entity.Property(e => e.NumberofRealBets).HasColumnType("money");
+                entity.Property(e => e.NumberofBonusBets).HasColumnType("money");
+                entity.Property(e => e.NumberofSessions).HasColumnType("money");
+                entity.Property(e => e.NumberofRealWins).HasColumnType("money");
+                entity.Property(e => e.NumberofBonusWins).HasColumnType("money");
+                entity.Property(e => e.RealBetAmountOriginal).HasColumnType("money");
+                entity.Property(e => e.RealWinAmountOriginal).HasColumnType("money");
+                entity.Property(e => e.BonusBetAmountOriginal).HasColumnType("money");
+                entity.Property(e => e.BonusWinAmountOriginal).HasColumnType("money");
+                entity.Property(e => e.NetGamingRevenueOriginal).HasColumnType("money");
             });
 
             // Configure Interaction entity

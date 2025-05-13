@@ -140,7 +140,7 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
 
   // Define row detail renderer
   const renderRowDetail = (row: DailyAction) => (
-    <Box sx={{ p: 2 }}>
+    <div style={{ padding: 16 }}>
       <Typography variant="subtitle1" gutterBottom>
         Details for {groupBy === 'Day' || groupBy === 'Month' || groupBy === 'Year' ?
           format(new Date(row.date), 'MMM dd, yyyy') :
@@ -150,12 +150,12 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
         This section shows detailed information about player activity, including session data,
         game preferences, and financial metrics.
       </Typography>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
+      <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Average Session Duration</Typography>
           <Typography variant="body1">{row.avgSessionDuration || '45 minutes'}</Typography>
-        </Box>
-        <Box sx={{ flex: 1 }}>
+        </div>
+        <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Average Bet Size</Typography>
           <Typography variant="body1">
             {(row.bets / (row.betCount || 1)).toLocaleString('en-GB', {
@@ -165,21 +165,21 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
               maximumFractionDigits: 2
             })}
           </Typography>
-        </Box>
-        <Box sx={{ flex: 1 }}>
+        </div>
+        <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Conversion Rate</Typography>
           <Typography variant="body1">
             {row.conversionRate ? `${row.conversionRate.toFixed(2)}%` : '3.2%'}
           </Typography>
-        </Box>
-        <Box sx={{ flex: 1 }}>
+        </div>
+        <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Retention Rate</Typography>
           <Typography variant="body1">
             {row.retentionRate ? `${row.retentionRate.toFixed(2)}%` : '68.5%'}
           </Typography>
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -194,7 +194,7 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
     >
       <CardAccent position="left" variant="teal" />
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
         <Typography variant="h6" component="h2">
           {groupBy} Report
         </Typography>
@@ -206,7 +206,7 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
         >
           Export Data
         </Button>
-      </Box>
+      </div>
 
       <EnhancedTable
         columns={getColumns()}

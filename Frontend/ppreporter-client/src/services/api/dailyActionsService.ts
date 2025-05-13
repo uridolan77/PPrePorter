@@ -25,6 +25,13 @@ interface DrillDownRequest {
   drillDownItem: any;
 }
 
+interface HierarchicalDataRequest {
+  parentPath: string;
+  childLevel: number;
+  groupBy: string;
+  filters: ReportFilters;
+}
+
 // GroupBy mapping - maps frontend string values to backend enum values
 const GROUP_BY_MAPPING: { [key: string]: number } = {
   'Day': 0,
@@ -67,7 +74,8 @@ if ((API_ENDPOINTS as any).DAILY_ACTIONS) {
     EXPORT: `${API_ENDPOINTS.REPORTS.DAILY_ACTIONS}/export`,
     SAVE_CONFIG: `${API_ENDPOINTS.REPORTS.DAILY_ACTIONS}/config/save`,
     GET_CONFIGS: `${API_ENDPOINTS.REPORTS.DAILY_ACTIONS}/config/list`,
-    DRILL_DOWN: `${API_ENDPOINTS.REPORTS.DAILY_ACTIONS}/drill-down`
+    DRILL_DOWN: `${API_ENDPOINTS.REPORTS.DAILY_ACTIONS}/drill-down`,
+    HIERARCHICAL_DATA: `${API_ENDPOINTS.REPORTS.DAILY_ACTIONS}/hierarchical-data`
   };
   console.log('[DAILY_ACTIONS_SERVICE] Using TypeScript structure:', DAILY_ACTIONS_ENDPOINTS);
 } else {
@@ -83,7 +91,8 @@ if ((API_ENDPOINTS as any).DAILY_ACTIONS) {
     EXPORT: '/api/reports/daily-actions/export',
     SAVE_CONFIG: '/api/reports/daily-actions/config/save',
     GET_CONFIGS: '/api/reports/daily-actions/config/list',
-    DRILL_DOWN: '/api/reports/daily-actions/drill-down'
+    DRILL_DOWN: '/api/reports/daily-actions/drill-down',
+    HIERARCHICAL_DATA: '/api/reports/daily-actions/hierarchical-data'
   };
   console.log('[DAILY_ACTIONS_SERVICE] Using fallback structure:', DAILY_ACTIONS_ENDPOINTS);
 }
@@ -119,6 +128,37 @@ class DailyActionsService extends ApiService {
 
       const result = await this.post(endpoint, backendFilters);
       console.log('[DAILY_ACTIONS_SERVICE] filtered-data result:', result);
+
+      // Check if the result has the expected structure
+      if (result) {
+        // If result is an array, return it directly
+        if (Array.isArray(result)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result is an array with length:', result.length);
+          return result;
+        }
+
+        // If result has a data property that is an array, return the result object
+        if (result.data && Array.isArray(result.data)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result has data array with length:', result.data.length);
+          return result;
+        }
+
+        // If result has a data.items property that is an array, return the result object
+        if (result.data && result.data.items && Array.isArray(result.data.items)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result has data.items array with length:', result.data.items.length);
+          return result;
+        }
+
+        // If result has an items property that is an array, return the result object
+        if (result.items && Array.isArray(result.items)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result has items array with length:', result.items.length);
+          return result;
+        }
+
+        // If we couldn't find any array data, log a warning and return the result as is
+        console.warn('[DAILY_ACTIONS_SERVICE] Could not find array data in result. Result structure:', Object.keys(result));
+      }
+
       return result;
     } catch (error) {
       console.error('[DAILY_ACTIONS_SERVICE] getData error:', error);
@@ -317,9 +357,104 @@ class DailyActionsService extends ApiService {
       console.log('[DAILY_ACTIONS_SERVICE] Using POST method for filtered-grouped endpoint');
       const result = await this.post(endpoint, backendFilters);
       console.log('[DAILY_ACTIONS_SERVICE] filtered-grouped result:', result);
+
+      // Check if the result has the expected structure
+      if (result) {
+        // If result is an array, return it directly
+        if (Array.isArray(result)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result is an array with length:', result.length);
+          return result;
+        }
+
+        // If result has a data property that is an array, return the result object
+        if (result.data && Array.isArray(result.data)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result has data array with length:', result.data.length);
+          return result;
+        }
+
+        // If result has a data.items property that is an array, return the result object
+        if (result.data && result.data.items && Array.isArray(result.data.items)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result has data.items array with length:', result.data.items.length);
+          return result;
+        }
+
+        // If result has an items property that is an array, return the result object
+        if (result.items && Array.isArray(result.items)) {
+          console.log('[DAILY_ACTIONS_SERVICE] Result has items array with length:', result.items.length);
+          return result;
+        }
+
+        // If we couldn't find any array data, log a warning and return the result as is
+        console.warn('[DAILY_ACTIONS_SERVICE] Could not find array data in result. Result structure:', Object.keys(result));
+      }
+
       return result;
     } catch (error) {
       console.error('[DAILY_ACTIONS_SERVICE] getGroupedData error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get hierarchical data for a specific parent node and child level
+   * @param {HierarchicalDataRequest} request - The hierarchical data request
+   * @returns {Promise<any>} - Hierarchical data
+   */
+  async getHierarchicalData(request: HierarchicalDataRequest): Promise<any> {
+    console.log('[DAILY_ACTIONS_SERVICE] getHierarchicalData called with request:', request);
+    try {
+      // Add hierarchical-data endpoint to DAILY_ACTIONS_ENDPOINTS if it doesn't exist
+      if (!DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA) {
+        DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA = '/api/reports/daily-actions/hierarchical-data';
+      }
+
+      const endpoint = DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA;
+      console.log('[DAILY_ACTIONS_SERVICE] Using hierarchical-data endpoint:', endpoint);
+
+      // Create a new filters object with the converted groupBy value
+      const backendRequest = {
+        ...request,
+        filters: {
+          ...request.filters,
+          groupBy: typeof request.filters.groupBy === 'string'
+            ? GROUP_BY_MAPPING[request.filters.groupBy] || 0
+            : request.filters.groupBy
+        }
+      };
+
+      try {
+        const result = await this.post(endpoint, backendRequest);
+        console.log('[DAILY_ACTIONS_SERVICE] hierarchical-data result:', result);
+        return result;
+      } catch (error) {
+        console.error('[DAILY_ACTIONS_SERVICE] getHierarchicalData API error:', error);
+
+        // For now, simulate hierarchical data if the endpoint doesn't exist
+        console.log('[DAILY_ACTIONS_SERVICE] Simulating hierarchical data response');
+
+        // Get regular data with the filters
+        const regularData = await this.getData(request.filters);
+
+        // Process the data to simulate hierarchical structure
+        if (regularData && regularData.data && Array.isArray(regularData.data)) {
+          // Add a hierarchical path to each item based on the parent path
+          const hierarchicalData = regularData.data.map((item: any) => ({
+            ...item,
+            hierarchicalPath: request.parentPath ? `${request.parentPath}/${item.groupValue}` : item.groupValue,
+            level: request.childLevel,
+            hasChildren: request.childLevel < 2 // Allow up to 3 levels of hierarchy
+          }));
+
+          return {
+            ...regularData,
+            data: hierarchicalData
+          };
+        }
+
+        return regularData;
+      }
+    } catch (error) {
+      console.error('[DAILY_ACTIONS_SERVICE] getHierarchicalData error:', error);
       throw error;
     }
   }

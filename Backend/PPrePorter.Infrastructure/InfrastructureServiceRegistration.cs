@@ -26,7 +26,7 @@ namespace PPrePorter.Infrastructure
             {
                 var connectionStringResolver = serviceProvider.GetRequiredService<IConnectionStringResolverService>();
                 var connectionStringTemplate = configuration.GetConnectionString("PPRePorterDB");
-                
+
                 options.UseSqlServer(connectionStringTemplate);
             });
 

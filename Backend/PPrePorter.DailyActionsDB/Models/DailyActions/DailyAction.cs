@@ -24,13 +24,13 @@ namespace PPrePorter.DailyActionsDB.Models.DailyActions
         public long? PlayerID { get; set; }
 
         [Column("Registration")]
-        public byte? Registration { get; set; }
+        public int? Registration { get; set; }
 
         [Column("FTD")]
-        public byte? FTD { get; set; }
+        public int? FTD { get; set; }
 
         [Column("FTDA")]
-        public byte? FTDA { get; set; }
+        public int? FTDA { get; set; }
 
         [Column("Deposits", TypeName = "money")]
         public decimal? Deposits { get; set; }

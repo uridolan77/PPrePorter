@@ -1,0 +1,22 @@
+/* Report Charts styles */
+.chart-container {
+  width: 100%;
+}
+
+.chart-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-empty-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

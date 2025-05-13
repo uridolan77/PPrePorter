@@ -840,57 +840,16 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
   // Render loading state
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+      <div style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
-  // Debug component
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== 'development') return null;
 
-    return (
-      <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        <Typography variant="subtitle2" gutterBottom>EnhancedTable Debug Info:</Typography>
-        <Typography variant="body2">Data type: {typeof data}</Typography>
-        <Typography variant="body2">Is Array: {Array.isArray(data) ? 'Yes' : 'No'}</Typography>
-        <Typography variant="body2">Data length: {Array.isArray(data) ? data.length : 'N/A'}</Typography>
-        <Typography variant="body2">ProcessedData length: {processedData.length}</Typography>
-        <Typography variant="body2">DisplayData length: {displayData.length}</Typography>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={debugData}
-          sx={{ mt: 1 }}
-        >
-          Log Data
-        </Button>
-      </Box>
-    );
-  };
 
   return (
     <Paper elevation={0} variant="outlined" sx={{ width: '100%', mb: 2, ...sx }}>
-      {/* Debug Panel */}
-      {process.env.NODE_ENV === 'development' && (
-        <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-          <Typography variant="subtitle2" gutterBottom>EnhancedTable Debug Info:</Typography>
-          <Typography variant="body2">Data type: {typeof data}</Typography>
-          <Typography variant="body2">Is Array: {Array.isArray(data) ? 'Yes' : 'No'}</Typography>
-          <Typography variant="body2">Data length: {Array.isArray(data) ? data.length : 'N/A'}</Typography>
-          <Typography variant="body2">ProcessedData length: {processedData.length}</Typography>
-          <Typography variant="body2">DisplayData length: {displayData.length}</Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={debugData}
-            sx={{ mt: 1 }}
-          >
-            Log Data
-          </Button>
-        </Box>
-      )}
 
       {/* Table header with title, search, and actions */}
       <Toolbar
@@ -905,7 +864,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
           {title}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Filtering */}
           {filteringConfig.enabled && (
             <Filtering
@@ -1001,22 +960,22 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
               </IconButton>
             </Tooltip>
           )}
-        </Box>
+        </div>
       </Toolbar>
 
       {/* Table content */}
-      <Box
-        sx={{
+      <div
+        style={{
           width: '100%',
           overflowX: responsiveConfig.enabled ? 'auto' : undefined
         }}
       >
         {displayData.length === 0 && !groupingConfig.hierarchical ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <div style={{ padding: 24, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">
               {emptyMessage}
             </Typography>
-          </Box>
+          </div>
         ) : groupingConfig.hierarchical && tableState.grouping.groupByLevels.length > 0 ? (
           <HierarchicalTableContent
             columns={columns}
@@ -1052,7 +1011,7 @@ const EnhancedTable: React.FC<EnhancedTableProps> = ({
             onSetSelectedRow={setSelectedRow}
           />
         )}
-      </Box>
+      </div>
 
       {/* Aggregation Row */}
       {aggregationConfig.enabled && aggregationConfig.showInFooter && tableState.aggregation.enabled.length > 0 && (

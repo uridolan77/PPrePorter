@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using PPrePorter.DailyActionsDB.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +75,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
 
             try
             {
-                var query = _dbSet.AsNoTracking().TagWith("WITH (NOLOCK)");
+                var query = _dbSet.AsNoTracking().WithForceNoLock();
 
                 // Apply inactive filter if needed
                 if (!includeInactive)
@@ -82,7 +83,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
                     query = ApplyActiveFilter(query);
                 }
 
-                var result = await query.ToListAsync();
+                var result = await query.ToListWithNoLockAsync();
 
                 // Cache the result
                 if (_enableCaching)
@@ -110,9 +111,9 @@ namespace PPrePorter.DailyActionsDB.Repositories
                 // No caching for filtered queries as they can be too varied
                 return await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(filter)
-                    .ToListAsync();
+                    .ToListWithNoLockAsync();
             }
             catch (Exception ex)
             {
@@ -140,7 +141,11 @@ namespace PPrePorter.DailyActionsDB.Repositories
 
             try
             {
-                var entity = await _dbSet.FindAsync(id);
+                // Use FirstOrDefaultWithNoLockAsync instead of FindAsync to ensure NOLOCK hint is applied
+                var entity = await _dbSet
+                    .AsNoTracking()
+                    .Where(e => EF.Property<int>(e, "Id") == id)
+                    .FirstOrDefaultWithNoLockAsync();
 
                 // Cache the result if found
                 if (entity != null && _enableCaching)
@@ -209,7 +214,12 @@ namespace PPrePorter.DailyActionsDB.Repositories
         {
             try
             {
-                var entity = await _dbSet.FindAsync(id);
+                // Use FirstOrDefaultWithNoLockAsync instead of FindAsync to ensure NOLOCK hint is applied
+                var entity = await _dbSet
+                    .AsNoTracking()
+                    .Where(e => EF.Property<int>(e, "Id") == id)
+                    .FirstOrDefaultWithNoLockAsync();
+
                 if (entity == null)
                 {
                     return false;
@@ -239,8 +249,9 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 return await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .AnyAsync(filter);
+                    .WithForceNoLock()
+                    .Where(filter)
+                    .AnyWithNoLockAsync();
             }
             catch (Exception ex)
             {
@@ -320,8 +331,9 @@ namespace PPrePorter.DailyActionsDB.Repositories
 
                 var entity = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
-                    .FirstOrDefaultAsync(lambda);
+                    .WithForceNoLock()
+                    .Where(lambda)
+                    .FirstOrDefaultWithNoLockAsync();
 
                 // Cache the result if found
                 if (entity != null && _enableCaching)
@@ -384,9 +396,9 @@ namespace PPrePorter.DailyActionsDB.Repositories
 
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(lambda)
-                    .ToListAsync();
+                    .ToListWithNoLockAsync();
 
                 // Cache the result
                 if (_enableCaching)

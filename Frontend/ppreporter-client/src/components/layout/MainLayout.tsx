@@ -124,6 +124,7 @@ const MainLayout: React.FC = () => {
       subItems: [
         { text: 'Integrated Reports', icon: <AssessmentIcon />, path: '/reports/integrated' },
         { text: 'Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions' },
+        { text: 'Daily Actions (New)', icon: <TableChartIcon />, path: '/reports/daily-actions/new' },
         { text: 'Advanced Daily Actions', icon: <TableChartIcon />, path: '/reports/daily-actions/advanced' },
         { text: 'Players Report', icon: <PersonIcon />, path: '/reports/players' },
         { text: 'Games Report', icon: <VideogameAssetIcon />, path: '/reports/games' },
@@ -136,6 +137,7 @@ const MainLayout: React.FC = () => {
     { text: 'Analytics', icon: <AutoGraphIcon />, path: '/analytics',
       subItems: [
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/analytics' },
+        { text: 'Advanced Analytics', icon: <TimelineIcon />, path: '/analytics/advanced' },
         { text: 'Performance', icon: <TimelineIcon />, path: '/analytics/performance' },
         { text: 'Player Analysis', icon: <PersonIcon />, path: '/analytics/players' },
         { text: 'Game Analysis', icon: <VideogameAssetIcon />, path: '/analytics/games' }

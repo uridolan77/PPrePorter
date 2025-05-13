@@ -32,19 +32,16 @@ namespace PPrePorter.API.Services
         /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("InMemoryCacheInitializerService is starting");
+            _logger.LogInformation("InMemoryCacheInitializerService is starting - will initialize static collections for in-memory daily actions cache");
 
             // Wait a short delay to allow other services to initialize
             await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
             try
             {
-                // Create a scope to resolve the service
-                using var scope = _serviceProvider.CreateScope();
-                var inMemoryDailyActionsService = scope.ServiceProvider.GetRequiredService<IInMemoryDailyActionsService>();
-
+                // Create a scope to resolve the service for initialization
                 _logger.LogInformation("Initializing in-memory daily actions cache");
-                await inMemoryDailyActionsService.InitializeAsync();
+                await InitializeInMemoryServiceAsync();
                 _logger.LogInformation("In-memory daily actions cache initialized successfully");
 
                 // Schedule periodic refresh of today's data
@@ -55,9 +52,7 @@ namespace PPrePorter.API.Services
                         // Refresh data every minute
                         // This will refresh today's data and handle day transitions automatically
                         _logger.LogInformation("Performing scheduled refresh of in-memory daily actions cache");
-                        using var refreshScope = _serviceProvider.CreateScope();
-                        var refreshService = refreshScope.ServiceProvider.GetRequiredService<IInMemoryDailyActionsService>();
-                        await refreshService.RefreshAsync();
+                        await RefreshInMemoryServiceAsync();
                         _logger.LogInformation("Scheduled refresh of in-memory daily actions cache completed successfully");
                     }
                     catch (Exception ex)
@@ -82,6 +77,28 @@ namespace PPrePorter.API.Services
         {
             _logger.LogInformation("InMemoryCacheInitializerService is stopping");
             return base.StopAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Helper method to initialize the in-memory service with a new scope
+        /// </summary>
+        private async Task InitializeInMemoryServiceAsync()
+        {
+            // Create a new scope for each operation since the service is now scoped
+            using var scope = _serviceProvider.CreateScope();
+            var service = scope.ServiceProvider.GetRequiredService<IInMemoryDailyActionsService>();
+            await service.InitializeAsync();
+        }
+
+        /// <summary>
+        /// Helper method to refresh the in-memory service with a new scope
+        /// </summary>
+        private async Task RefreshInMemoryServiceAsync()
+        {
+            // Create a new scope for each operation since the service is now scoped
+            using var scope = _serviceProvider.CreateScope();
+            var service = scope.ServiceProvider.GetRequiredService<IInMemoryDailyActionsService>();
+            await service.RefreshAsync();
         }
     }
 }

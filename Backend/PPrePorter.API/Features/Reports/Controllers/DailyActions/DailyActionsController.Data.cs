@@ -62,7 +62,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
 
                 // Get white labels for mapping names
                 var whiteLabels = await _whiteLabelService.GetAllWhiteLabelsAsync(true);
-                var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Id, wl => wl.Name);
+                var whiteLabelDict = whiteLabels.ToDictionary(wl => wl.Code, wl => wl.Name);
 
                 // Create a dynamic object with all properties from DailyAction
                 var result = limitedDailyActions.Select(da =>
@@ -74,7 +74,9 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                     obj["id"] = da.Id;
                     obj["date"] = da.Date;
                     obj["whiteLabelId"] = da.WhiteLabelID.HasValue ? (int)da.WhiteLabelID.Value : 0;
-                    obj["whiteLabelName"] = da.WhiteLabelID.HasValue && whiteLabelDict.TryGetValue((int)da.WhiteLabelID.Value, out var name) ? name : "Unknown";
+                    // The WhiteLabelID in DailyAction is actually the Code field, not the Id field
+                    string whiteLabelCode = da.WhiteLabelID.HasValue ? da.WhiteLabelID.Value.ToString() : "";
+                    obj["whiteLabelName"] = !string.IsNullOrEmpty(whiteLabelCode) && whiteLabelDict.TryGetValue(whiteLabelCode, out var name) ? name : "Unknown";
 
                     // Add all other properties from DailyAction
                     obj["playerId"] = da.PlayerID;
@@ -265,7 +267,10 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
 
                 // Get white label name
                 var whiteLabelId = dailyAction.WhiteLabelID.HasValue ? (int)dailyAction.WhiteLabelID.Value : 0;
-                var whiteLabel = whiteLabelId > 0 ? await _whiteLabelService.GetWhiteLabelByIdAsync(whiteLabelId) : null;
+                // The WhiteLabelID in DailyAction is actually the Code field, not the Id field
+                string whiteLabelCode = whiteLabelId.ToString();
+                var whiteLabel = !string.IsNullOrEmpty(whiteLabelCode) ?
+                    await _whiteLabelService.GetWhiteLabelByCodeAsync(whiteLabelCode) : null;
                 var whiteLabelName = whiteLabel?.Name ?? "Unknown";
 
                 // Create a dynamic object with all properties from DailyAction

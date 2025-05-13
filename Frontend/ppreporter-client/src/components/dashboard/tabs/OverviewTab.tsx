@@ -29,21 +29,21 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   // Handle error state
   if (error) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <ErrorOutlineIcon style={{ fontSize: 48, color: '#f44336', marginBottom: 16 }} />
         <Typography variant="h6" color="error" gutterBottom>
           Error Loading Dashboard Data
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {error.message || "An unexpected error occurred. Please try again later."}
         </Typography>
-      </Box>
+      </div>
     );
   }
 
   return (
     <ErrorBoundary fallback={<EmptyState message="Something went wrong loading the dashboard" icon={<ErrorOutlineIcon />} />}>
-      <Box>
+      <div>
         {/* Stats Summary Section */}
         <StatsSummary
           stats={dashboardData?.stats}
@@ -65,7 +65,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           onDownload={() => console.log('Download transactions report')}
           onSettings={() => console.log('Open transactions settings')}
         />
-      </Box>
+      </div>
     </ErrorBoundary>
   );
 };

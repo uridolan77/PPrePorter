@@ -27,14 +27,13 @@ interface TopGamesChartProps {
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <Box
-        sx={{
-          bgcolor: 'background.paper',
-          p: 1.5,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1,
-          boxShadow: 1,
+      <div
+        style={{
+          backgroundColor: '#fff',
+          padding: '12px',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         }}
       >
         <Typography variant="subtitle2" gutterBottom>
@@ -46,7 +45,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
         <Typography variant="body2" color="text.secondary">
           Players: {payload[0].payload.players.toLocaleString()}
         </Typography>
-      </Box>
+      </div>
     );
   }
 
@@ -126,9 +125,9 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height, width: '100%' }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
@@ -137,41 +136,41 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
       return errorFallback(error);
     }
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height, width: '100%' }}>
         <Typography variant="body1" color="error">
           Error loading games data: {error.message}
           {onRetry && (
-            <Box component="span" sx={{ ml: 2, cursor: 'pointer', textDecoration: 'underline' }} onClick={onRetry}>
+            <span style={{ marginLeft: 16, cursor: 'pointer', textDecoration: 'underline' }} onClick={onRetry}>
               Retry
-            </Box>
+            </span>
           )}
         </Typography>
-      </Box>
+      </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height, width: '100%' }}>
         <Typography variant="body1" color="text.secondary">
           {emptyStateMessage}
         </Typography>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', ...sx }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+    <div style={{ width: '100%' }}>
+      <div style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.12)', marginBottom: 16 }}>
         <Tabs value={viewMode} onChange={handleViewModeChange} aria-label="view mode tabs">
           <Tab label="Chart" value="chart" />
           <Tab label="Table" value="table" />
         </Tabs>
-      </Box>
+      </div>
 
       {viewMode === 'chart' ? (
         // Chart view
-        <Box sx={{ width: '100%', height }}>
+        <div style={{ width: '100%', height: height }}>
           <ResponsiveContainer>
             <BarChart
               data={chartData}
@@ -198,7 +197,7 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </Box>
+        </div>
       ) : (
         // Table view with virtualization
         <VirtualizedTable
@@ -210,7 +209,7 @@ const TopGamesChart: React.FC<TopGamesChartProps> = ({
           emptyMessage="No games data available"
         />
       )}
-    </Box>
+    </div>
   );
 };
 

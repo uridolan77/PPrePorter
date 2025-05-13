@@ -37,12 +37,12 @@ const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps> = ({
   }, [data]);
 
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Typography variant="h5">
           Recent Transactions
         </Typography>
-        <Box>
+        <div>
           <Tooltip title="Download report">
             <IconButton
               size="small"
@@ -62,13 +62,13 @@ const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps> = ({
               <SettingsIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-        </Box>
-      </Box>
+        </div>
+      </div>
       <Card>
         {isLoading && transactionsData.length === 0 ? (
-          <Box sx={{ p: 3 }}>
+          <div style={{ padding: 24 }}>
             <Skeleton variant="rectangular" height={300} />
-          </Box>
+          </div>
         ) : !transactionsData.length ? (
           <EmptyState
             message="No recent transactions available"
@@ -87,7 +87,7 @@ const RecentTransactionsSection: React.FC<RecentTransactionsSectionProps> = ({
           />
         )}
       </Card>
-    </Box>
+    </div>
   );
 };
 

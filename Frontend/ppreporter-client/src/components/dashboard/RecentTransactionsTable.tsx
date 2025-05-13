@@ -121,11 +121,11 @@ const RecentTransactionsTable: React.FC<RecentTransactionsTableProps> = ({
   // No data state
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
         <Typography variant="body1" color="text.secondary">
           No transaction data available
         </Typography>
-      </Box>
+      </div>
     );
   }
 

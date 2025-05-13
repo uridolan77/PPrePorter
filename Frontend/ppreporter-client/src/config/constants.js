@@ -7,7 +7,7 @@
  * API configuration
  */
 export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7075/api';
-export const API_TIMEOUT = 30000; // 30 seconds
+export const API_TIMEOUT = 60000; // 60 seconds
 
 /**
  * API endpoints

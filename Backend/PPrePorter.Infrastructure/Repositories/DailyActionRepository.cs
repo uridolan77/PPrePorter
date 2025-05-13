@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Repositories;
 using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Infrastructure.Data;
+using PPrePorter.Infrastructure.Extensions;
 
 namespace PPrePorter.Infrastructure.Repositories
 {
@@ -30,12 +31,12 @@ namespace PPrePorter.Infrastructure.Repositories
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
                     .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting daily actions for date range {StartDate} to {EndDate}", 
+                _logger.LogError(ex, "Error getting daily actions for date range {StartDate} to {EndDate}",
                     startDate, endDate);
                 throw;
             }
@@ -52,7 +53,7 @@ namespace PPrePorter.Infrastructure.Repositories
                     .Where(da => da.WhiteLabelID == whiteLabelId)
                     .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -73,12 +74,12 @@ namespace PPrePorter.Infrastructure.Repositories
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
                     .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting daily actions for date range {StartDate} to {EndDate} and white label ID {WhiteLabelId}", 
+                _logger.LogError(ex, "Error getting daily actions for date range {StartDate} to {EndDate} and white label ID {WhiteLabelId}",
                     startDate, endDate, whiteLabelId);
                 throw;
             }
@@ -95,12 +96,12 @@ namespace PPrePorter.Infrastructure.Repositories
                     .Where(da => da.Date >= startDate && da.Date <= endDate && whiteLabelIds.Contains(da.WhiteLabelID))
                     .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting daily actions for date range {StartDate} to {EndDate} and white label IDs {WhiteLabelIds}", 
+                _logger.LogError(ex, "Error getting daily actions for date range {StartDate} to {EndDate} and white label IDs {WhiteLabelIds}",
                     startDate, endDate, string.Join(", ", whiteLabelIds));
                 throw;
             }
@@ -116,14 +117,14 @@ namespace PPrePorter.Infrastructure.Repositories
                 var dailyActions = await _ppReporterDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .ToListAsync();
 
                 return AggregateResults(dailyActions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting aggregated daily actions for date range {StartDate} to {EndDate}", 
+                _logger.LogError(ex, "Error getting aggregated daily actions for date range {StartDate} to {EndDate}",
                     startDate, endDate);
                 throw;
             }
@@ -139,14 +140,14 @@ namespace PPrePorter.Infrastructure.Repositories
                 var dailyActions = await _ppReporterDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .ToListAsync();
 
                 return AggregateResults(dailyActions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting aggregated daily actions for date range {StartDate} to {EndDate} and white label ID {WhiteLabelId}", 
+                _logger.LogError(ex, "Error getting aggregated daily actions for date range {StartDate} to {EndDate} and white label ID {WhiteLabelId}",
                     startDate, endDate, whiteLabelId);
                 throw;
             }

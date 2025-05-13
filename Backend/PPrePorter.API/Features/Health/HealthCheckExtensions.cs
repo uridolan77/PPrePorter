@@ -71,8 +71,11 @@ namespace PPrePorter.API.Extensions
                 }
             }
 
-            // Add health checks
-            services.AddHealthChecks()
+            // Check if Redis is enabled in settings
+            var useRedis = configuration.GetSection("AppSettings").GetValue<bool>("UseRedis", false);
+
+            // Start building health checks
+            var healthChecksBuilder = services.AddHealthChecks()
                 // Add SQL Server health checks
                 .AddSqlServer(
                     name: "PPRePorterDB",
@@ -86,16 +89,44 @@ namespace PPrePorter.API.Extensions
                     connectionString: dailyActionsConnectionString,
                     healthQuery: "SELECT 1;",
                     failureStatus: HealthStatus.Degraded,
-                    tags: new[] { "database", "sql", "dailyactions" })
+                    tags: new[] { "database", "sql", "dailyactions" });
 
-                // Add custom Redis health check with timeout if configured
-                .AddCustomRedis(
+            // Add Redis health check only if Redis is enabled
+            if (useRedis && !string.IsNullOrEmpty(redisConnectionString))
+            {
+                healthChecksBuilder.AddCustomRedis(
                     redisConnectionString: redisConnectionString,
                     name: "Redis",
                     failureStatus: HealthStatus.Degraded,
                     timeout: TimeSpan.FromSeconds(3), // Set a 3-second timeout
-                    tags: new[] { "cache", "redis" })
+                    tags: new[] { "cache", "redis" });
 
+                // Log that Redis health check is enabled
+                using (var serviceProvider = services.BuildServiceProvider())
+                {
+                    var logger = serviceProvider.GetService<ILogger<HealthChecks>>();
+                    logger?.LogInformation("Redis health check is enabled");
+                }
+            }
+            else
+            {
+                // Log that Redis health check is disabled
+                using (var serviceProvider = services.BuildServiceProvider())
+                {
+                    var logger = serviceProvider.GetService<ILogger<HealthChecks>>();
+                    if (!useRedis)
+                    {
+                        logger?.LogInformation("Redis health check is disabled in settings");
+                    }
+                    else
+                    {
+                        logger?.LogInformation("Redis health check is disabled due to missing connection string");
+                    }
+                }
+            }
+
+            // Add remaining health checks
+            healthChecksBuilder
                 // Add custom health check
                 .AddCheck<CustomHealthCheck>(
                     name: "ApplicationServices",
@@ -119,8 +150,8 @@ namespace PPrePorter.API.Extensions
             services
                 .AddHealthChecksUI(options =>
                 {
-                    options.SetEvaluationTimeInSeconds(60); // Evaluate health every 60 seconds
-                    options.MaximumHistoryEntriesPerEndpoint(50); // Keep 50 history entries
+                    options.SetEvaluationTimeInSeconds(300); // Evaluate health every 5 minutes (increased from 60 seconds)
+                    options.MaximumHistoryEntriesPerEndpoint(20); // Keep 20 history entries (reduced from 50)
                     options.SetApiMaxActiveRequests(1); // Only allow 1 concurrent request
 
                     // Add health check endpoint

@@ -435,12 +435,12 @@ const ApiDashboard: React.FC = () => {
   if (isLoading && !dashboardData) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '64px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '64px' }}>
           <CircularProgress size={60} />
           <Typography variant="h6" sx={{ mt: 2 }}>
             Loading dashboard...
           </Typography>
-        </Box>
+        </div>
       </Container>
     );
   }
@@ -493,7 +493,7 @@ const ApiDashboard: React.FC = () => {
       )}
 
       {/* Date Range Picker */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <DateRangePicker
           startDate={dateRange.start}
           endDate={dateRange.end}
@@ -503,7 +503,7 @@ const ApiDashboard: React.FC = () => {
         <Typography variant="body2" color="text.secondary">
           Showing data from {dateRange.start ? format(dateRange.start, 'MMM d, yyyy') : 'all time'} to {dateRange.end ? format(dateRange.end, 'MMM d, yyyy') : 'present'}
         </Typography>
-      </Box>
+      </div>
 
       {/* Filter Panel */}
       {showFilters && (

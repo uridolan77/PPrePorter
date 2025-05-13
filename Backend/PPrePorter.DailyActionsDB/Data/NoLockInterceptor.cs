@@ -44,8 +44,11 @@ namespace PPrePorter.DailyActionsDB.Data
             {
                 string originalSql = command.CommandText;
 
-                // Skip if the query already contains NOLOCK hint
-                if (command.CommandText.Contains("NOLOCK", System.StringComparison.OrdinalIgnoreCase))
+                // Check if this is a query that should have NOLOCK hints forced on all tables
+                bool forceNoLock = command.CommandText.Contains("FORCE_NOLOCK_ON_ALL_TABLES", System.StringComparison.OrdinalIgnoreCase);
+
+                // If force is not enabled and the query already contains NOLOCK hint, skip modification
+                if (!forceNoLock && command.CommandText.Contains("NOLOCK", System.StringComparison.OrdinalIgnoreCase))
                 {
                     _logger?.LogDebug("SQL query already contains NOLOCK hint, skipping modification");
                     return;
@@ -53,9 +56,20 @@ namespace PPrePorter.DailyActionsDB.Data
 
                 try
                 {
+                    // Remove the FORCE_NOLOCK_ON_ALL_TABLES tag if present
+                    if (forceNoLock)
+                    {
+                        command.CommandText = command.CommandText.Replace("FORCE_NOLOCK_ON_ALL_TABLES", "");
+                        _logger?.LogDebug("Forcing NOLOCK hints on all tables in query");
+                    }
+
                     // Use a more robust approach with regular expressions
-                    // Match FROM clause with table name in brackets
-                    var regex = new System.Text.RegularExpressions.Regex(@"FROM\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    // Match FROM clause with schema and table name in brackets
+                    var regex = new System.Text.RegularExpressions.Regex(@"FROM\s+\[([^\]]+)\]\.\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "FROM [$1].[$2] WITH (NOLOCK)");
+
+                    // Match FROM clause with table name in brackets (no schema)
+                    regex = new System.Text.RegularExpressions.Regex(@"FROM\s+\[([^\]\.]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "FROM [$1] WITH (NOLOCK)");
 
                     // Match FROM clause with table name without brackets (for derived tables)
@@ -63,17 +77,24 @@ namespace PPrePorter.DailyActionsDB.Data
                     regex = new System.Text.RegularExpressions.Regex(@"FROM\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
                     command.CommandText = regex.Replace(command.CommandText, "FROM $1 WITH (NOLOCK)");
 
-                    // Handle JOIN clauses with table name in brackets
-                    regex = new System.Text.RegularExpressions.Regex(@"JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    // Match JOIN clause with schema and table name in brackets
+                    regex = new System.Text.RegularExpressions.Regex(@"JOIN\s+\[([^\]]+)\]\.\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "JOIN [$1].[$2] WITH (NOLOCK)");
+
+                    // Match JOIN clause with table name in brackets (no schema)
+                    regex = new System.Text.RegularExpressions.Regex(@"JOIN\s+\[([^\]\.]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "JOIN [$1] WITH (NOLOCK)");
 
-                    // Handle JOIN clauses with table name without brackets
-                    // Exclude function calls like OPENJSON, OPENXML, etc.
+                    // Match JOIN clause with table name without brackets
                     regex = new System.Text.RegularExpressions.Regex(@"JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
                     command.CommandText = regex.Replace(command.CommandText, "JOIN $1 WITH (NOLOCK)");
 
-                    // Handle INNER JOIN clauses with table name in brackets
-                    regex = new System.Text.RegularExpressions.Regex(@"INNER\s+JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    // Handle INNER JOIN clauses with schema and table name in brackets
+                    regex = new System.Text.RegularExpressions.Regex(@"INNER\s+JOIN\s+\[([^\]]+)\]\.\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "INNER JOIN [$1].[$2] WITH (NOLOCK)");
+
+                    // Handle INNER JOIN clauses with table name in brackets (no schema)
+                    regex = new System.Text.RegularExpressions.Regex(@"INNER\s+JOIN\s+\[([^\]\.]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "INNER JOIN [$1] WITH (NOLOCK)");
 
                     // Handle INNER JOIN clauses with table name without brackets
@@ -81,8 +102,12 @@ namespace PPrePorter.DailyActionsDB.Data
                     regex = new System.Text.RegularExpressions.Regex(@"INNER\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
                     command.CommandText = regex.Replace(command.CommandText, "INNER JOIN $1 WITH (NOLOCK)");
 
-                    // Handle LEFT JOIN clauses with table name in brackets
-                    regex = new System.Text.RegularExpressions.Regex(@"LEFT\s+JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    // Handle LEFT JOIN clauses with schema and table name in brackets
+                    regex = new System.Text.RegularExpressions.Regex(@"LEFT\s+JOIN\s+\[([^\]]+)\]\.\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "LEFT JOIN [$1].[$2] WITH (NOLOCK)");
+
+                    // Handle LEFT JOIN clauses with table name in brackets (no schema)
+                    regex = new System.Text.RegularExpressions.Regex(@"LEFT\s+JOIN\s+\[([^\]\.]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "LEFT JOIN [$1] WITH (NOLOCK)");
 
                     // Handle LEFT JOIN clauses with table name without brackets
@@ -90,14 +115,30 @@ namespace PPrePorter.DailyActionsDB.Data
                     regex = new System.Text.RegularExpressions.Regex(@"LEFT\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
                     command.CommandText = regex.Replace(command.CommandText, "LEFT JOIN $1 WITH (NOLOCK)");
 
-                    // Handle RIGHT JOIN clauses with table name in brackets
-                    regex = new System.Text.RegularExpressions.Regex(@"RIGHT\s+JOIN\s+\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    // Handle RIGHT JOIN clauses with schema and table name in brackets
+                    regex = new System.Text.RegularExpressions.Regex(@"RIGHT\s+JOIN\s+\[([^\]]+)\]\.\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "RIGHT JOIN [$1].[$2] WITH (NOLOCK)");
+
+                    // Handle RIGHT JOIN clauses with table name in brackets (no schema)
+                    regex = new System.Text.RegularExpressions.Regex(@"RIGHT\s+JOIN\s+\[([^\]\.]+)\](?!\s+WITH\s*\(NOLOCK\))");
                     command.CommandText = regex.Replace(command.CommandText, "RIGHT JOIN [$1] WITH (NOLOCK)");
 
                     // Handle RIGHT JOIN clauses with table name without brackets
                     // Exclude function calls like OPENJSON, OPENXML, etc.
                     regex = new System.Text.RegularExpressions.Regex(@"RIGHT\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
                     command.CommandText = regex.Replace(command.CommandText, "RIGHT JOIN $1 WITH (NOLOCK)");
+
+                    // Handle CROSS JOIN clauses with schema and table name in brackets
+                    regex = new System.Text.RegularExpressions.Regex(@"CROSS\s+JOIN\s+\[([^\]]+)\]\.\[([^\]]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "CROSS JOIN [$1].[$2] WITH (NOLOCK)");
+
+                    // Handle CROSS JOIN clauses with table name in brackets (no schema)
+                    regex = new System.Text.RegularExpressions.Regex(@"CROSS\s+JOIN\s+\[([^\]\.]+)\](?!\s+WITH\s*\(NOLOCK\))");
+                    command.CommandText = regex.Replace(command.CommandText, "CROSS JOIN [$1] WITH (NOLOCK)");
+
+                    // Handle CROSS JOIN clauses with table name without brackets
+                    regex = new System.Text.RegularExpressions.Regex(@"CROSS\s+JOIN\s+(?!OPENJSON|OPENXML|OPENROWSET|OPENQUERY|FREETEXTTABLE|CONTAINSTABLE)([a-zA-Z0-9_]+)(?!\s+WITH\s*\(NOLOCK\))(?!\s+AS\s+)");
+                    command.CommandText = regex.Replace(command.CommandText, "CROSS JOIN $1 WITH (NOLOCK)");
 
                     // Special case for SQL functions with WITH clause - remove any NOLOCK hints that might have been added
                     string[] sqlFunctions = { "OPENJSON", "OPENXML", "OPENROWSET", "OPENQUERY", "FREETEXTTABLE", "CONTAINSTABLE" };

@@ -49,8 +49,8 @@ const AnalyticsPage: React.FC = () => {
 
   const {
     activeTab,
-    handleTabChange,
-    tabs
+    handleTabChange
+    // tabs variable is not used but is available from useTabs if needed
   } = useTabs({
     tabs: ANALYTICS_TABS,
     initialTab: 0

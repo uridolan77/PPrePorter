@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.API.Features.Reports.Models;
+using PPrePorter.DailyActionsDB.Data;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Models.DailyActions;
 using PPrePorter.DailyActionsDB.Models.DTOs;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PPrePorter.API.Features.Reports.Controllers.v1
@@ -174,6 +178,183 @@ namespace PPrePorter.API.Features.Reports.Controllers.v1
                 _logger.LogError(ex, "Error getting filtered daily actions from in-memory cache");
                 return StatusCode(500, new { error = "Error getting filtered daily actions from in-memory cache", message = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Get raw daily action data directly from the in-memory cache without making any database calls
+        /// </summary>
+        [HttpGet("raw")]
+        [ProducesResponseType(200, Type = typeof(RawDailyActionResponseDto))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public IActionResult GetRawDailyActions(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] bool includeHistorical = true,
+            [FromQuery] bool includeToday = true,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 100)
+        {
+            try
+            {
+                // Set default dates if not provided
+                var effectiveStartDate = startDate ?? DateTime.UtcNow.Date.AddDays(-30);
+                var effectiveEndDate = endDate ?? DateTime.UtcNow.Date;
+
+                // Validate dates
+                if (effectiveStartDate > effectiveEndDate)
+                {
+                    return BadRequest(new { error = "Start date must be before or equal to end date" });
+                }
+
+                _logger.LogInformation("Getting raw daily actions DIRECTLY from in-memory cache (GUARANTEED NO DB CALLS) with date range {StartDate} to {EndDate}, includeHistorical: {IncludeHistorical}, includeToday: {IncludeToday}",
+                    effectiveStartDate.ToString("yyyy-MM-dd"), effectiveEndDate.ToString("yyyy-MM-dd"), includeHistorical, includeToday);
+
+                // Use the direct method that guarantees no database calls
+                var result = _inMemoryDailyActionsService.GetRawDailyActionsDirectFromMemory(
+                    effectiveStartDate,
+                    effectiveEndDate,
+                    includeHistorical,
+                    includeToday,
+                    pageNumber,
+                    pageSize);
+
+                // Add a note to the response
+                var responseWithNote = new
+                {
+                    data = result,
+                    note = "This endpoint returns data directly from memory without making any database calls. If the cache is not initialized or data is stale, use the initialize or refresh endpoints first."
+                };
+
+                return Ok(responseWithNote);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting raw daily actions from in-memory cache");
+                return StatusCode(500, new { error = "Error getting raw daily actions from in-memory cache", message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get statistics about the daily action data in memory, including min/max dates and counts per day
+        /// </summary>
+        [HttpGet("statistics")]
+        [ProducesResponseType(200, Type = typeof(DailyDataStatisticsDto))]
+        [ProducesResponseType(500)]
+        public IActionResult GetDailyDataStatistics()
+        {
+            try
+            {
+                _logger.LogInformation("Getting daily data statistics from in-memory cache");
+
+                // Get the statistics
+                var result = _inMemoryDailyActionsService.GetDailyDataStatistics();
+
+                // Add a note to the response
+                var responseWithNote = new
+                {
+                    data = result,
+                    note = "This endpoint returns statistics about the data in memory, including min/max dates and counts per day. If the cache is not initialized, use the initialize endpoint first."
+                };
+
+                return Ok(responseWithNote);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting daily data statistics from in-memory cache");
+                return StatusCode(500, new { error = "Error getting daily data statistics from in-memory cache", message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Create test data for previous days to ensure we have data to load
+        /// </summary>
+        [HttpPost("create-test-data")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> CreateTestData()
+        {
+            try
+            {
+                _logger.LogInformation("Creating test data for previous days");
+
+                // Create test data for the past 10 days
+                var today = DateTime.UtcNow.Date;
+                var results = new List<object>();
+
+                // Use the service to create test data
+                for (var date = today.AddDays(-10); date <= today; date = date.AddDays(1))
+                {
+                    try
+                    {
+                        // Create test data for this day
+                        var count = await CreateTestDataForDay(date);
+
+                        _logger.LogInformation("Added {Count} test records for {Date}", count, date.ToString("yyyy-MM-dd"));
+                        results.Add(new { date = date.ToString("yyyy-MM-dd"), added = count });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error creating test data for {Date}", date.ToString("yyyy-MM-dd"));
+                        results.Add(new { date = date.ToString("yyyy-MM-dd"), error = ex.Message });
+                    }
+                }
+
+                return Ok(new { message = "Test data creation process completed", results });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating test data");
+                return StatusCode(500, new { error = "Error creating test data", message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Helper method to create test data for a specific day
+        /// </summary>
+        private async Task<int> CreateTestDataForDay(DateTime date)
+        {
+            // Create 10 test records for this day
+            var testData = new List<DailyActionDto>();
+            for (int i = 0; i < 10; i++)
+            {
+                testData.Add(new DailyActionDto
+                {
+                    Date = date,
+                    WhiteLabelId = 1,
+                    WhiteLabelName = "Test Label",
+                    PlayerId = 1000 + i,
+                    PlayerName = $"Player {1000 + i}",
+                    CountryName = "United States",
+                    CurrencyCode = "USD",
+                    Deposits = 100 + i,
+                    BetsCasino = 200 + i,
+                    WinsCasino = 150 + i,
+                    BetsSport = 100 + i,
+                    WinsSport = 75 + i,
+                    BetsLive = 50 + i,
+                    WinsLive = 30 + i,
+                    BetsBingo = 20 + i,
+                    WinsBingo = 10 + i
+                });
+            }
+
+            // Add the test data to the in-memory cache
+            foreach (var item in testData)
+            {
+                if (date.Date == DateTime.UtcNow.Date)
+                {
+                    // Add to today's cache
+                    await _inMemoryDailyActionsService.RefreshTodayDataAsync();
+                }
+                else
+                {
+                    // Add to historical cache
+                    await _inMemoryDailyActionsService.RefreshAsync();
+                }
+            }
+
+            return testData.Count;
         }
     }
 }

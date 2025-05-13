@@ -101,12 +101,26 @@ const ZoomableTimeSeriesChart: React.FC<ZoomableTimeSeriesChartProps> = ({
   // Format date for display
   const formatDateDisplay = (dateStr: string) => {
     try {
-      if (typeof dateStr === 'string' && dateStr.includes('T')) {
-        return formatDate(parseISO(dateStr), 'MMM dd, yyyy');
+      // Check if dateStr is a valid string
+      if (!dateStr || typeof dateStr !== 'string') {
+        return String(dateStr || '');
       }
+
+      // Check if it's an ISO date string
+      if (dateStr.includes('T')) {
+        const date = parseISO(dateStr);
+        // Validate the date is valid before formatting
+        if (isNaN(date.getTime())) {
+          return String(dateStr);
+        }
+        return formatDate(date, 'MMM dd, yyyy');
+      }
+
+      // For non-ISO date strings, just return as is
       return dateStr;
     } catch (error) {
-      return dateStr;
+      console.warn('Error formatting date:', error);
+      return String(dateStr || '');
     }
   };
 
@@ -323,7 +337,13 @@ const ZoomableTimeSeriesChart: React.FC<ZoomableTimeSeriesChartProps> = ({
     const xAxisProps = {
       dataKey: xKey,
       tick: { fill: theme.palette.text.secondary, fontSize: 12 },
-      tickFormatter: formatDateDisplay,
+      tickFormatter: (value: any) => {
+        // Ensure we're passing a valid value to formatDateDisplay
+        if (value === undefined || value === null) {
+          return '';
+        }
+        return formatDateDisplay(String(value));
+      },
       domain: xDomain as [string | number, string | number] | undefined,
       allowDataOverflow: true
     };
@@ -364,7 +384,12 @@ const ZoomableTimeSeriesChart: React.FC<ZoomableTimeSeriesChartProps> = ({
                 dataKey={xKey}
                 height={30}
                 stroke={theme.palette.primary.main}
-                tickFormatter={formatDateDisplay}
+                tickFormatter={(value: any) => {
+                  if (value === undefined || value === null) {
+                    return '';
+                  }
+                  return formatDateDisplay(String(value));
+                }}
               />
             )}
             {zoomState.refAreaLeft && zoomState.refAreaRight && (
@@ -402,7 +427,12 @@ const ZoomableTimeSeriesChart: React.FC<ZoomableTimeSeriesChartProps> = ({
                 dataKey={xKey}
                 height={30}
                 stroke={theme.palette.primary.main}
-                tickFormatter={formatDateDisplay}
+                tickFormatter={(value: any) => {
+                  if (value === undefined || value === null) {
+                    return '';
+                  }
+                  return formatDateDisplay(String(value));
+                }}
               />
             )}
             {zoomState.refAreaLeft && zoomState.refAreaRight && (
@@ -439,7 +469,12 @@ const ZoomableTimeSeriesChart: React.FC<ZoomableTimeSeriesChartProps> = ({
                 dataKey={xKey}
                 height={30}
                 stroke={theme.palette.primary.main}
-                tickFormatter={formatDateDisplay}
+                tickFormatter={(value: any) => {
+                  if (value === undefined || value === null) {
+                    return '';
+                  }
+                  return formatDateDisplay(String(value));
+                }}
               />
             )}
             {zoomState.refAreaLeft && zoomState.refAreaRight && (

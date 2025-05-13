@@ -16,7 +16,8 @@ import {
   Chip,
   Stack,
   Divider,
-  TextareaAutosize
+  TextareaAutosize,
+  Collapse
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -25,6 +26,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FilterPanel, { FilterConfig, FilterValues } from './FilterPanel';
 
 // Define specific filter types for DailyActions
@@ -61,14 +64,23 @@ export interface DailyActionsFilterPanelProps {
   onApplyFilters?: (filters: DailyActionsFilters) => void;
   onResetFilters?: () => void;
   initialValues?: DailyActionsFilters;
+  defaultExpanded?: boolean;
 }
 
 const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
   onFilterChange,
   onApplyFilters,
   onResetFilters,
-  initialValues = {}
+  initialValues = {},
+  defaultExpanded = true
 }) => {
+  // State for panel expansion
+  const [expanded, setExpanded] = useState<boolean>(defaultExpanded);
+
+  // Toggle panel expansion
+  const toggleExpanded = () => {
+    setExpanded(!expanded);
+  };
   // Define filter configurations
   const filterConfigs: FilterConfig[] = [
     {
@@ -305,15 +317,15 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
     };
 
     return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+      <div style={{ marginTop: 16 }}>
+        <Typography variant="body2" color="text.secondary" style={{ marginBottom: 8 }}>
           Players
         </Typography>
         <TextareaAutosize
           minRows={3}
           placeholder="Enter player IDs or usernames (one per line)"
-          style={{ 
-            width: '100%', 
+          style={{
+            width: '100%',
             padding: '8px',
             fontFamily: 'inherit',
             fontSize: 'inherit',
@@ -323,12 +335,12 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
           value={players}
           onChange={handleChange}
         />
-      </Box>
+      </div>
     );
   };
 
   return (
-    <Box>
+    <div>
       <FilterPanel
         filters={filterConfigs}
         onFilterChange={handleFilterChange}
@@ -337,10 +349,10 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
         initialValues={initialValues as unknown as FilterValues}
         title="Daily Actions Filters"
       />
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Paper style={{ padding: 16, marginBottom: 24 }}>
         <PlayersInput />
       </Paper>
-    </Box>
+    </div>
   );
 };
 

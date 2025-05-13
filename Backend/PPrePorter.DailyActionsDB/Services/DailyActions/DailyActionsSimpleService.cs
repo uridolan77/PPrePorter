@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Data;
+using PPrePorter.DailyActionsDB.Extensions;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Models.DailyActions;
 using System;
@@ -35,8 +36,10 @@ namespace PPrePorter.DailyActionsDB.Services
                 var start = startDate.Date;
                 var end = endDate.Date.AddDays(1).AddTicks(-1);
 
-                // Build query
+                // Build query with NOLOCK hint
                 var query = _dbContext.DailyActions
+                    .AsNoTracking()
+                    .WithForceNoLock()
                     .Where(da => da.Date >= start && da.Date <= end);
 
                 // Apply white label filter if specified
@@ -45,8 +48,8 @@ namespace PPrePorter.DailyActionsDB.Services
                     query = query.Where(da => da.WhiteLabelID == whiteLabelId.Value);
                 }
 
-                // Execute query
-                return await query.ToListAsync();
+                // Execute query with NOLOCK hint
+                return await query.ToListWithNoLockAsync();
             }
             catch (Exception ex)
             {
@@ -61,7 +64,10 @@ namespace PPrePorter.DailyActionsDB.Services
             try
             {
                 return await _dbContext.DailyActions
-                    .FirstOrDefaultAsync(da => da.Id == id);
+                    .AsNoTracking()
+                    .WithForceNoLock()
+                    .Where(da => da.Id == id)
+                    .FirstOrDefaultWithNoLockAsync();
             }
             catch (Exception ex)
             {

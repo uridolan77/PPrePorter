@@ -106,9 +106,9 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   ), []);
 
   return (
-    <Box sx={sx}>
+    <div className="dashboard-tabs-container">
       {/* Dashboard Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <div style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.12)', marginBottom: 24 }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -125,7 +125,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
             />
           ))}
         </Tabs>
-      </Box>
+      </div>
 
       {/* Tab Content */}
       {tabComponents.map((tab) => (
@@ -137,7 +137,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           </ErrorBoundary>
         </TabPanel>
       ))}
-    </Box>
+    </div>
   );
 };
 

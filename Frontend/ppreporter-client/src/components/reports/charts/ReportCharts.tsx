@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
-import { ResponsiveContainer, AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { CircularProgress, Typography, useTheme } from '@mui/material';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { format as formatDate } from 'date-fns';
+import './ReportCharts.css';
 
 // Chart colors
 const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', '#5DADE2', '#48C9B0', '#F4D03F'];
@@ -21,45 +22,41 @@ const formatNumber = (value: number): string => {
   return new Intl.NumberFormat('en-US').format(value);
 };
 
-// Format percentage
-const formatPercentage = (value: number): string => {
-  return `${value.toFixed(2)}%`;
-};
+// Format percentage (used in tooltips - keeping for future use)
+// const formatPercentage = (value: number): string => {
+//   return `${value.toFixed(2)}%`;
+// };
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <Box
-        sx={{
-          backgroundColor: 'background.paper',
-          p: 1.5,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1,
-          boxShadow: 1
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+      <div className="custom-tooltip" style={{
+        backgroundColor: '#fff',
+        padding: '12px',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        <Typography variant="subtitle2" style={{ marginBottom: '8px' }}>
           {label}
         </Typography>
         {payload.map((entry: any, index: number) => (
-          <Box key={`item-${index}`} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-            <Box
-              sx={{
-                width: 12,
-                height: 12,
-                backgroundColor: entry.color,
-                mr: 1,
-                borderRadius: '50%'
-              }}
-            />
+          <div key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: entry.color,
+              marginRight: '8px',
+              borderRadius: '50%',
+              display: 'inline-block'
+            }} />
             <Typography variant="body2" color="text.secondary">
               {entry.name}: {entry.value >= 1000 ? formatCurrency(entry.value) : formatNumber(entry.value)}
             </Typography>
-          </Box>
+          </div>
         ))}
-      </Box>
+      </div>
     );
   }
   return null;
@@ -93,30 +90,30 @@ export const ReportAreaChart: React.FC<AreaChartProps> = ({
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-loading-container" style={{ height }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-error-container" style={{ height }}>
         <Typography color="error">{error}</Typography>
-      </Box>
+      </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-empty-container" style={{ height }}>
         <Typography color="text.secondary">No data available</Typography>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height }}>
+    <div className="chart-container" style={{ width: '100%', height }}>
       {title && (
         <Typography variant="subtitle1" gutterBottom>
           {title}
@@ -128,8 +125,8 @@ export const ReportAreaChart: React.FC<AreaChartProps> = ({
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-          <XAxis 
-            dataKey={xKey} 
+          <XAxis
+            dataKey={xKey}
             tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
             tickFormatter={(value) => {
               if (typeof value === 'string' && value.includes('T')) {
@@ -138,7 +135,7 @@ export const ReportAreaChart: React.FC<AreaChartProps> = ({
               return value;
             }}
           />
-          <YAxis 
+          <YAxis
             tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
             tickFormatter={(value) => {
               if (value >= 1000) {
@@ -162,7 +159,7 @@ export const ReportAreaChart: React.FC<AreaChartProps> = ({
           ))}
         </AreaChart>
       </ResponsiveContainer>
-    </Box>
+    </div>
   );
 };
 
@@ -196,30 +193,30 @@ export const ReportBarChart: React.FC<BarChartProps> = ({
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-loading-container" style={{ height }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-error-container" style={{ height }}>
         <Typography color="error">{error}</Typography>
-      </Box>
+      </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-empty-container" style={{ height }}>
         <Typography color="text.secondary">No data available</Typography>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height }}>
+    <div className="chart-container" style={{ width: '100%', height }}>
       {title && (
         <Typography variant="subtitle1" gutterBottom>
           {title}
@@ -231,8 +228,8 @@ export const ReportBarChart: React.FC<BarChartProps> = ({
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-          <XAxis 
-            dataKey={xKey} 
+          <XAxis
+            dataKey={xKey}
             tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
             tickFormatter={(value) => {
               if (typeof value === 'string' && value.includes('T')) {
@@ -241,7 +238,7 @@ export const ReportBarChart: React.FC<BarChartProps> = ({
               return value;
             }}
           />
-          <YAxis 
+          <YAxis
             tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
             tickFormatter={(value) => {
               if (value >= 1000) {
@@ -263,7 +260,7 @@ export const ReportBarChart: React.FC<BarChartProps> = ({
           ))}
         </BarChart>
       </ResponsiveContainer>
-    </Box>
+    </div>
   );
 };
 
@@ -289,34 +286,35 @@ export const ReportPieChart: React.FC<PieChartProps> = ({
   title,
   showLegend = true
 }) => {
-  const theme = useTheme();
+  // Theme is not currently used in this component but might be needed for future styling
+  // const theme = useTheme();
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-loading-container" style={{ height }}>
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-error-container" style={{ height }}>
         <Typography color="error">{error}</Typography>
-      </Box>
+      </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <div className="chart-empty-container" style={{ height }}>
         <Typography color="text.secondary">No data available</Typography>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height }}>
+    <div className="chart-container" style={{ width: '100%', height }}>
       {title && (
         <Typography variant="subtitle1" gutterBottom>
           {title}
@@ -335,7 +333,7 @@ export const ReportPieChart: React.FC<PieChartProps> = ({
             nameKey={nameKey}
             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
           >
-            {data.map((entry, index) => (
+            {data.map((_entry, index) => (
               <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
             ))}
           </Pie>
@@ -343,6 +341,6 @@ export const ReportPieChart: React.FC<PieChartProps> = ({
           <RechartsTooltip />
         </PieChart>
       </ResponsiveContainer>
-    </Box>
+    </div>
   );
 };

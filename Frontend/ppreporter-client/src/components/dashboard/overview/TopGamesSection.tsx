@@ -36,12 +36,12 @@ const TopGamesSection: React.FC<TopGamesSectionProps> = ({
   }, [data]);
 
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Typography variant="h5">
           Top Performing Games
         </Typography>
-        <Box>
+        <div>
           <Tooltip title="Download report">
             <IconButton
               size="small"
@@ -61,13 +61,13 @@ const TopGamesSection: React.FC<TopGamesSectionProps> = ({
               <SettingsIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-        </Box>
-      </Box>
+        </div>
+      </div>
       <Card>
         {isLoading && gamesData.length === 0 ? (
-          <Box sx={{ p: 3 }}>
+          <div style={{ padding: 24 }}>
             <Skeleton variant="rectangular" height={300} />
-          </Box>
+          </div>
         ) : (
           <TopGamesChart
             data={gamesData as any}
@@ -82,7 +82,7 @@ const TopGamesSection: React.FC<TopGamesSectionProps> = ({
           />
         )}
       </Card>
-    </Box>
+    </div>
   );
 };
 

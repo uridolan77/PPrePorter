@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using PPrePorter.DailyActionsDB.Data;
+using PPrePorter.DailyActionsDB.Extensions;
 using PPrePorter.DailyActionsDB.Models.DailyActions;
 using System;
 using System.Collections.Generic;
@@ -52,7 +53,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
                     .ToListAsync();
 
@@ -93,7 +94,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(da => da.WhiteLabelID == whiteLabelId)
                     .ToListAsync();
 
@@ -134,7 +135,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
                     .ToListAsync();
 
@@ -178,7 +179,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID.HasValue && whiteLabelIds.Contains(da.WhiteLabelID.Value))
                     .ToListAsync();
 
@@ -220,7 +221,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(da => da.PlayerID == playerId)
                     .ToListAsync();
 
@@ -261,7 +262,7 @@ namespace PPrePorter.DailyActionsDB.Repositories
             {
                 var result = await _dbSet
                     .AsNoTracking()
-                    .TagWith("WITH (NOLOCK)")
+                    .WithForceNoLock()
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.PlayerID == playerId)
                     .ToListAsync();
 

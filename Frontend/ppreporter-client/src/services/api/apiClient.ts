@@ -71,7 +71,7 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json; v=1.0', // Add API version to match Swagger
   },
-  timeout: 10000, // 10 seconds - reduced from 30 seconds to fail faster if API is unreachable
+  timeout: 60000, // 60 seconds
   withCredentials: false, // Set to false to avoid CORS preflight issues
 });
 

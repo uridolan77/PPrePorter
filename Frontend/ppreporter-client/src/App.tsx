@@ -45,9 +45,11 @@ const TestContextualExplanation = lazy(() => import('./components/dashboard/Test
 
 // Analytics pages
 const AnalyticsPage = lazy(() => import('./pages/analytics/AnalyticsPage'));
+const AdvancedAnalyticsPage = lazy(() => import('./pages/analytics/AdvancedAnalyticsPage'));
 
 // Report pages
 const DailyActionsPage = lazy(() => import('./pages/showcase/reports/DailyActionsPage'));
+const DailyActionsPageNew = lazy(() => import('./pages/showcase/reports/DailyActionsPageNew'));
 const DailyActionsAdvancedPage = lazy(() => import('./pages/showcase/reports/DailyActionsAdvancedPage'));
 const PlayersPage = lazy(() => import('./pages/showcase/reports/PlayersPage'));
 const GamesPage = lazy(() => import('./pages/showcase/reports/GamesPage'));
@@ -138,6 +140,11 @@ const App: React.FC = () => {
                       <DailyActionsPage />
                     </Suspense>
                   } />
+                  <Route path="/reports/daily-actions/new" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DailyActionsPageNew />
+                    </Suspense>
+                  } />
                   <Route path="/reports/daily-actions/advanced" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <DailyActionsAdvancedPage />
@@ -183,6 +190,11 @@ const App: React.FC = () => {
                   <Route path="/analytics" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <AnalyticsPage />
+                    </Suspense>
+                  } />
+                  <Route path="/analytics/advanced" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AdvancedAnalyticsPage />
                     </Suspense>
                   } />
                   <Route path="/analytics/*" element={

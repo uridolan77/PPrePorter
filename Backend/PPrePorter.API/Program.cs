@@ -239,9 +239,13 @@ builder.Services.AddScoped<IDashboardService, PPrePorter.Core.Services.Dashboard
 builder.Services.AddScoped<IDataFilterService, DataFilterService>();
 
 // Register caching service
-// Configure Redis for distributed caching
+// Get app settings to check if Redis is enabled
+var appSettingsSection = builder.Configuration.GetSection("AppSettings");
+var useRedis = appSettingsSection.GetValue<bool>("UseRedis", false);
+
+// Configure Redis for distributed caching if enabled
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
-if (!string.IsNullOrEmpty(redisConnectionString))
+if (useRedis && !string.IsNullOrEmpty(redisConnectionString))
 {
     // Use Redis for distributed caching in production
     builder.Services.AddStackExchangeRedisCache(options =>
@@ -253,9 +257,16 @@ if (!string.IsNullOrEmpty(redisConnectionString))
 }
 else
 {
-    // Fallback to in-memory cache for development
+    // Use in-memory cache if Redis is disabled or not configured
     builder.Services.AddDistributedMemoryCache();
-    Console.WriteLine("Using in-memory distributed cache (Redis not configured)");
+    if (!useRedis)
+    {
+        Console.WriteLine("Redis is disabled in settings, using in-memory distributed cache");
+    }
+    else
+    {
+        Console.WriteLine("Redis connection string not configured, using in-memory distributed cache");
+    }
 }
 
 // Register the real caching service implementation
@@ -357,10 +368,15 @@ builder.Services.AddHostedService<PPrePorter.API.Services.SimpleCachePrewarmingS
 // Also register it as a singleton so it can be injected into controllers
 builder.Services.AddSingleton<PPrePorter.API.Services.SimpleCachePrewarmingService>();
 
-// Register the InMemoryCacheInitializerService as a hosted service
-builder.Services.AddHostedService<PPrePorter.API.Services.InMemoryCacheInitializerService>();
+// REMOVED: InMemoryCacheInitializerService registration
+// We're now using the normal DailyActionsService instead of the in-memory version
 
 builder.Services.AddDailyActionsServices(builder.Configuration);
+
+// REMOVED: InMemoryDailyActionsService registration
+// We're now using the normal DailyActionsService instead of the in-memory version
+// The InMemoryDailyActionsController will still be available but will return errors
+// if someone tries to use it without the service being registered
 
 // Log which database we're using
 Console.WriteLine($"Using {(useLocalDatabase ? "local" : "real")} DailyActionsDB");

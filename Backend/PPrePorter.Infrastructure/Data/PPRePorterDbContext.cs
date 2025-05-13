@@ -159,6 +159,24 @@ namespace PPrePorter.Infrastructure.Data
                 entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
             });
 
+            modelBuilder.Entity<Transaction>(entity =>
+            {
+                entity.ToTable("Transactions");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.TransactionAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.TransactionType).HasMaxLength(50);
+                entity.Property(e => e.CurrencyCode).HasMaxLength(10);
+                entity.Property(e => e.Status).HasMaxLength(50);
+                entity.Property(e => e.Platform).HasMaxLength(50);
+                entity.Property(e => e.PaymentMethod).HasMaxLength(50);
+
+                // Relationship with Player
+                entity.HasOne(t => t.Player)
+                      .WithMany(p => p.Transactions)
+                      .HasForeignKey(t => t.PlayerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<MetadataItem>(entity =>
             {
                 entity.ToTable("DailyActionsMetadata", "dbo");
@@ -172,6 +190,33 @@ namespace PPrePorter.Infrastructure.Data
 
                 // Create an index on ParentId for hierarchical lookups
                 entity.HasIndex(e => e.ParentId);
+            });
+
+            // Configure DailyActionGame entity
+            modelBuilder.Entity<DailyActionGame>(entity =>
+            {
+                entity.ToTable("DailyActionGames");
+                entity.HasKey(e => e.Id);
+
+                // Configure decimal properties with proper precision and scale
+                entity.Property(e => e.RealBetAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.RealWinAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.BonusBetAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.BonusWinAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.Revenue).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.Bets).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.Wins).HasColumnType("decimal(18, 2)");
+
+                // Relationships
+                entity.HasOne(d => d.Game)
+                      .WithMany(g => g.DailyActions)
+                      .HasForeignKey(d => d.GameId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.Player)
+                      .WithMany(p => p.DailyActionGames)
+                      .HasForeignKey(d => d.PlayerID)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

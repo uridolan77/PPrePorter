@@ -111,13 +111,32 @@ namespace PPrePorter.DailyActionsDB.Data
 
             try
             {
-                // We're now using a comment-based approach instead of trying to modify the SQL directly
-                // This is more reliable and less likely to cause syntax errors
+                // Add NOLOCK hints to FROM clauses
+                sql = TablePattern.Replace(sql, "FROM [$1].[$2]$3 WITH (NOLOCK)");
 
-                // Add a comment at the beginning of the query to indicate NOLOCK should be used
-                if (!sql.Contains("-- WITH (NOLOCK)"))
+                // Add NOLOCK hints to JOIN clauses
+                sql = JoinPattern.Replace(sql, "$1 JOIN [$2].[$3]$4 WITH (NOLOCK)");
+
+                // Add NOLOCK hints to subquery table references
+                sql = SubqueryTablePattern.Replace(sql, "FROM [$1].[$2] AS [$3] WITH (NOLOCK)");
+
+                // Process nested SELECT statements
+                sql = ProcessNestedSelects(sql);
+
+                // Process derived tables
+                sql = ProcessDerivedTables(sql);
+
+                // Process LEFT JOIN with CASE expressions
+                sql = ProcessLeftJoinWithCase(sql);
+
+                // Log the modified SQL for debugging (truncate if too long)
+                if (sql.Length > 500)
                 {
-                    sql = "-- WITH (NOLOCK)\r\n" + sql;
+                    _logger?.LogDebug("Modified SQL with NOLOCK (truncated): {CommandText}...", sql.Substring(0, 500));
+                }
+                else
+                {
+                    _logger?.LogDebug("Modified SQL with NOLOCK: {CommandText}", sql);
                 }
             }
             catch (Exception ex)
@@ -134,13 +153,32 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string ProcessNestedSelects(string sql)
         {
-            // We're now using a comment-based approach instead of trying to modify the SQL directly
-            // This is more reliable and less likely to cause syntax errors
+            // Define a regex pattern to match nested SELECT statements
+            var nestedSelectPattern = new Regex(
+                @"(\(SELECT\s+.*?FROM\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\)))",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-            // Add a comment at the beginning of the query to indicate NOLOCK should be used
-            if (!sql.Contains("-- WITH (NOLOCK)"))
+            // Find all nested SELECT statements
+            var matches = nestedSelectPattern.Matches(sql);
+
+            // Process each nested SELECT
+            foreach (Match match in matches)
             {
-                sql = "-- WITH (NOLOCK)\r\n" + sql;
+                if (match.Success)
+                {
+                    string nestedSelect = match.Groups[1].Value;
+                    string schema = match.Groups[2].Value;
+                    string table = match.Groups[3].Value;
+                    string alias = match.Groups[4].Value;
+
+                    // Add NOLOCK hint to the table in the nested SELECT
+                    string modifiedNestedSelect = nestedSelect.Replace(
+                        $"FROM [{schema}].[{table}]{(string.IsNullOrEmpty(alias) ? "" : $" AS [{alias}]")}",
+                        $"FROM [{schema}].[{table}]{(string.IsNullOrEmpty(alias) ? "" : $" AS [{alias}]")} WITH (NOLOCK)");
+
+                    // Replace the original nested SELECT with the modified one
+                    sql = sql.Replace(nestedSelect, modifiedNestedSelect);
+                }
             }
 
             return sql;
@@ -151,13 +189,34 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string ProcessDerivedTables(string sql)
         {
-            // We're now using a comment-based approach instead of trying to modify the SQL directly
-            // This is more reliable and less likely to cause syntax errors
+            // For derived tables, we need to add NOLOCK hints to the tables inside the derived table
 
-            // Add a comment at the beginning of the query to indicate NOLOCK should be used
-            if (!sql.Contains("-- WITH (NOLOCK)"))
+            // Define a regex pattern to match derived tables
+            var derivedTablePattern = new Regex(
+                @"FROM\s+\(\s*SELECT\s+.*?FROM\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\))",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            // Find all derived tables
+            var matches = derivedTablePattern.Matches(sql);
+
+            // Process each derived table
+            foreach (Match match in matches)
             {
-                sql = "-- WITH (NOLOCK)\r\n" + sql;
+                if (match.Success)
+                {
+                    string derivedTable = match.Value;
+                    string schema = match.Groups[1].Value;
+                    string table = match.Groups[2].Value;
+                    string alias = match.Groups[3].Value;
+
+                    // Add NOLOCK hint to the table in the derived table
+                    string modifiedDerivedTable = derivedTable.Replace(
+                        $"FROM [{schema}].[{table}]{(string.IsNullOrEmpty(alias) ? "" : $" AS [{alias}]")}",
+                        $"FROM [{schema}].[{table}]{(string.IsNullOrEmpty(alias) ? "" : $" AS [{alias}]")} WITH (NOLOCK)");
+
+                    // Replace the original derived table with the modified one
+                    sql = sql.Replace(derivedTable, modifiedDerivedTable);
+                }
             }
 
             return sql;
@@ -168,14 +227,15 @@ namespace PPrePorter.DailyActionsDB.Data
         /// </summary>
         private string ProcessLeftJoinWithCase(string sql)
         {
-            // We're now using a comment-based approach instead of trying to modify the SQL directly
-            // This is more reliable and less likely to cause syntax errors
+            // For LEFT JOIN with CASE expressions, we need to add NOLOCK hints to the tables
 
-            // Add a comment at the beginning of the query to indicate NOLOCK should be used
-            if (!sql.Contains("-- WITH (NOLOCK)"))
-            {
-                sql = "-- WITH (NOLOCK)\r\n" + sql;
-            }
+            // Define a regex pattern to match LEFT JOIN with CASE expressions
+            var leftJoinCasePattern = new Regex(
+                @"LEFT JOIN\s+\[(\w+)\]\.\[(\w+)\](?:\s+(?:AS\s+)?\[(\w+)\])?(?!\s+WITH\s*\(NOLOCK\))\s+ON\s+CASE\s+WHEN",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            // Add NOLOCK hints to these JOIN clauses
+            sql = leftJoinCasePattern.Replace(sql, "LEFT JOIN [$1].[$2]$3 WITH (NOLOCK) ON CASE WHEN");
 
             return sql;
         }

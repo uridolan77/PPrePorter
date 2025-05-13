@@ -67,8 +67,9 @@ namespace PPrePorter.DailyActionsDB.Interfaces
         /// <param name="startDate">Start date</param>
         /// <param name="endDate">End date</param>
         /// <param name="whiteLabelId">Optional white label ID filter</param>
+        /// <param name="preloadedData">Optional pre-loaded data to use instead of loading from database</param>
         /// <returns>Summary metrics</returns>
-        Task<DailyActionsSummary> GetSummaryMetricsAsync(DateTime startDate, DateTime endDate, int? whiteLabelId = null);
+        Task<DailyActionsSummary> GetSummaryMetricsAsync(DateTime startDate, DateTime endDate, int? whiteLabelId = null, IEnumerable<DailyAction>? preloadedData = null);
 
         /// <summary>
         /// Prewarms the cache with commonly accessed data

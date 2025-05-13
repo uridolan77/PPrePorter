@@ -1,0 +1,73 @@
+/* Dashboard styles */
+.dashboard-container {
+  padding: 24px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dashboard-grid {
+  margin-bottom: 32px;
+}
+
+.dashboard-paper {
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.metric-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.metric-icon-container {
+  border-radius: 50%;
+  padding: 8px;
+}
+
+.metric-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60px;
+}
+
+.metric-error-container {
+  display: flex;
+  align-items: center;
+  height: 60px;
+}
+
+.metric-trend-container {
+  display: flex;
+  align-items: center;
+}
+
+.metric-trend-icon {
+  margin-right: 4px;
+}
+
+.metric-trend-text-up {
+  color: #4caf50;
+}
+
+.metric-trend-text-down {
+  color: #f44336;
+}
+
+.metric-trend-vs {
+  margin-left: 4px;
+  color: rgba(0, 0, 0, 0.6);
+}
