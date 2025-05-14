@@ -9,15 +9,11 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  IconButton,
-  Tooltip,
   Divider,
   Switch,
   FormControlLabel
 } from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
 
 // Import components
 import SimpleBox from '../../../components/common/SimpleBox';
@@ -116,7 +112,7 @@ interface ThreeDDataPoint {
  * Advanced visualizations tab content props
  */
 interface AdvancedVisualizationsTabContentProps {
-  /** Dashboard data */
+  /** Dashboard data - not used directly in this component but kept for consistency with other tabs */
   dashboardData: any;
   /** Loading state indicator */
   isLoading: boolean;
@@ -136,10 +132,9 @@ interface AdvancedVisualizationsTabContentProps {
  * @param props - Component props
  * @returns React component
  */
-const AdvancedVisualizationsTabContent: React.FC<AdvancedVisualizationsTabContentProps> = ({
-  dashboardData,
-  isLoading
-}) => {
+const AdvancedVisualizationsTabContent: React.FC<AdvancedVisualizationsTabContentProps> = (props) => {
+  // We only use isLoading from props, dashboardData is not used in this component
+  const { isLoading } = props;
   // Visualization state
   const [interactiveMode, setInteractiveMode] = useState<boolean>(true);
   const [selectedVisualization, setSelectedVisualization] = useState<string>('timeSeries');
@@ -192,7 +187,7 @@ const AdvancedVisualizationsTabContent: React.FC<AdvancedVisualizationsTabConten
         value: Math.random() * 100,
         group: ['Players', 'Games', 'Transactions', 'Promotions'][Math.floor(Math.random() * 4)]
       })),
-      links: Array.from({ length: 30 }, (_, i): NetworkLink => ({
+      links: Array.from({ length: 30 }, (_): NetworkLink => ({
         source: `node-${Math.floor(Math.random() * 20)}`,
         target: `node-${Math.floor(Math.random() * 20)}`,
         value: Math.random() * 10
@@ -485,32 +480,7 @@ const AdvancedVisualizationsTabContent: React.FC<AdvancedVisualizationsTabConten
                 label="Interactive Mode"
               />
 
-              <SimpleBox>
-                <Tooltip title="Download visualization">
-                  <span>
-                    <IconButton
-                      size="small"
-                      disabled={isLoading}
-                      aria-label="Download visualization"
-                      sx={{ mr: 1 }}
-                    >
-                      <DownloadIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-
-                <Tooltip title="View in fullscreen">
-                  <span>
-                    <IconButton
-                      size="small"
-                      disabled={isLoading}
-                      aria-label="View in fullscreen"
-                    >
-                      <FullscreenIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </SimpleBox>
+              {/* Note: Download and fullscreen functionality is handled by the AdvancedInteractiveChart component */}
             </SimpleBox>
           </SimpleBox>
 

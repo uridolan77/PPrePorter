@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, IconButton, Menu, MenuItem, Divider, useTheme } from '@mui/material';
+import { Paper, Typography, IconButton, Menu, MenuItem, Divider, useTheme } from '@mui/material';
+import SimpleBox from '../../common/SimpleBox';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -152,9 +153,9 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
   const renderWidgetContent = () => {
     if (!data || (Array.isArray(data) && data.length === 0)) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <Typography color="text.secondary">No data available</Typography>
-        </Box>
+        </SimpleBox>
       );
     }
 
@@ -1051,7 +1052,7 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
         }
       case 'table':
         return (
-          <Box sx={{ height: getWidgetSizeStyles().height - 60, overflow: 'auto' }}>
+          <SimpleBox sx={{ height: getWidgetSizeStyles().height - 60, overflow: 'auto' }}>
             <EnhancedTable
               columns={columns}
               data={Array.isArray(data) ? data.slice(0, 5) : []}
@@ -1067,103 +1068,103 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
                 }
               }}
             />
-          </Box>
+          </SimpleBox>
         );
       case 'summary':
         // Create summary cards
         return (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, p: 2 }}>
+          <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, p: 2 }}>
             {widget.dataSource === 'dailyActions' && (
               <>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Players</Typography>
                   <Typography variant="h5">
                     {Array.isArray(data) ? data.reduce((sum, item) => sum + (item.uniquePlayers || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Deposits</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.deposits || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Bets</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.bets || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total GGR</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.ggr || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </>
             )}
             {widget.dataSource === 'players' && (
               <>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Players</Typography>
                   <Typography variant="h5">
                     {Array.isArray(data) ? data.length.toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Active Players</Typography>
                   <Typography variant="h5">
                     {Array.isArray(data) ? data.filter(player => player.status === 'Active').length.toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Deposits</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.totalDeposits || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total NGR</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.netGamingRevenue || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </>
             )}
             {widget.dataSource === 'games' && (
               <>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Games</Typography>
                   <Typography variant="h5">
                     {Array.isArray(data) ? data.length.toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Bets</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.totalBets || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total Wins</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.totalWins || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                </SimpleBox>
+                <SimpleBox sx={{ flex: '1 1 calc(50% - 8px)', p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">Total NGR</Typography>
                   <Typography variant="h5">
                     ${Array.isArray(data) ? data.reduce((sum, item) => sum + (item.netGamingRevenue || 0), 0).toLocaleString() : 0}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </>
             )}
-          </Box>
+          </SimpleBox>
         );
       default:
         return (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <Typography color="text.secondary">Unknown widget type</Typography>
-          </Box>
+          </SimpleBox>
         );
     }
   };
@@ -1181,7 +1182,7 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
         }}
         elevation={customizeMode ? 0 : 1}
       >
-        <Box
+        <SimpleBox
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -1201,10 +1202,10 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
               <MoreVertIcon />
             </IconButton>
           )}
-        </Box>
-        <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
+        </SimpleBox>
+        <SimpleBox sx={{ flex: 1, overflow: 'auto', p: 1 }}>
           {renderWidgetContent()}
-        </Box>
+        </SimpleBox>
       </Paper>
 
       {/* Drilldown Modal */}

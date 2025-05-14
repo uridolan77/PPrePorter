@@ -1,4 +1,4 @@
-import React, { memo, lazy, Suspense } from 'react';
+import React, { memo, lazy, Suspense, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
   Container,
@@ -56,10 +56,13 @@ const AnalyticsPage: React.FC = () => {
     initialTab: 0
   });
 
-  // Handle refresh button click
-  const handleRefresh = () => {
+  /**
+   * Handle refresh button click
+   * Refreshes dashboard data
+   */
+  const handleRefresh = useCallback((): void => {
     refreshData();
-  };
+  }, [refreshData]);
 
   return (
     <>
@@ -134,26 +137,30 @@ const AnalyticsPage: React.FC = () => {
                 <CircularProgress size={40} />
               </div>
             }>
-              <TabPanel value={activeTab} index={0} id={ANALYTICS_TABS[0].id} lazyLoad>
-                <OverviewTab
-                  summaryStats={summaryStats}
-                  recentTransactions={recentTransactions}
-                  isLoading={isLoading}
-                  error={error}
-                />
-              </TabPanel>
+              {useMemo(() => (
+                <>
+                  <TabPanel value={activeTab} index={0} id={ANALYTICS_TABS[0].id} lazyLoad>
+                    <OverviewTab
+                      summaryStats={summaryStats}
+                      recentTransactions={recentTransactions}
+                      isLoading={isLoading}
+                      error={error}
+                    />
+                  </TabPanel>
 
-              <TabPanel value={activeTab} index={1} id={ANALYTICS_TABS[1].id} lazyLoad>
-                <PerformanceTab />
-              </TabPanel>
+                  <TabPanel value={activeTab} index={1} id={ANALYTICS_TABS[1].id} lazyLoad>
+                    <PerformanceTab />
+                  </TabPanel>
 
-              <TabPanel value={activeTab} index={2} id={ANALYTICS_TABS[2].id} lazyLoad>
-                <PlayerAnalysisTab />
-              </TabPanel>
+                  <TabPanel value={activeTab} index={2} id={ANALYTICS_TABS[2].id} lazyLoad>
+                    <PlayerAnalysisTab />
+                  </TabPanel>
 
-              <TabPanel value={activeTab} index={3} id={ANALYTICS_TABS[3].id} lazyLoad>
-                <GameAnalysisTab />
-              </TabPanel>
+                  <TabPanel value={activeTab} index={3} id={ANALYTICS_TABS[3].id} lazyLoad>
+                    <GameAnalysisTab />
+                  </TabPanel>
+                </>
+              ), [activeTab, summaryStats, recentTransactions, isLoading, error])}
             </Suspense>
           </ErrorBoundary>
         </main>

@@ -1,18 +1,17 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  Box,
   Typography,
   CircularProgress,
+  Chip,
+  useTheme,
   Paper,
   IconButton,
-  Tooltip as MuiTooltip,
-  Chip,
-  useTheme
+  Tooltip as MuiTooltip
 } from '@mui/material';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { format as formatDate } from 'date-fns';
 import {
   ResponsiveContainer,
@@ -37,33 +36,66 @@ import EnhancedTooltip, { TooltipData } from './EnhancedTooltip';
 import DrilldownModal, { DrilldownData } from './DrilldownModal';
 import { useFilterContext, Filter } from './FilterContext';
 
-// Chart types
+/**
+ * Chart data point interface
+ */
+export interface ChartDataPoint {
+  [key: string]: any;
+}
+
+/**
+ * Chart types
+ */
 export type ChartType = 'area' | 'bar' | 'line' | 'pie';
 
-// Interactive chart props
+/**
+ * Interactive chart props
+ */
 interface InteractiveChartProps {
+  /** Unique identifier for the chart */
   id: string;
+  /** Chart title */
   title: string;
+  /** Optional chart description */
   description?: string;
+  /** Chart type */
   type: ChartType;
-  data: any[];
+  /** Chart data array */
+  data: ChartDataPoint[];
+  /** Key for X-axis values */
   xKey: string;
+  /** Keys for Y-axis values */
   yKeys?: string[];
+  /** Key for name/label values (used in pie charts) */
   nameKey?: string;
+  /** Key for value data (used in pie charts) */
   valueKey?: string;
+  /** Chart height in pixels */
   height?: number;
+  /** Loading state indicator */
   loading?: boolean;
+  /** Error message if any */
   error?: string | null;
+  /** Chart colors array */
   colors?: string[];
+  /** Whether to show legend */
   showLegend?: boolean;
+  /** Whether to show grid */
   showGrid?: boolean;
+  /** Whether to enable drill-down functionality */
   enableDrilldown?: boolean;
+  /** Whether to enable tooltips */
   enableTooltip?: boolean;
+  /** Whether to enable cross-filtering */
   enableCrossFiltering?: boolean;
+  /** Custom tooltip formatter function */
   tooltipFormatter?: (value: any, name: string, props: any) => string;
-  onClick?: (data: any, index: number) => void;
+  /** Function to handle click events */
+  onClick?: (data: ChartDataPoint, index: number) => void;
+  /** Function to get tooltip data */
   getTooltipData?: (payload: any[], label: string) => TooltipData;
-  getDrilldownData?: (data: any, index: number) => DrilldownData;
+  /** Function to get drill-down data */
+  getDrilldownData?: (data: ChartDataPoint, index: number) => DrilldownData;
 }
 
 /**
@@ -102,6 +134,8 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
   const [drilldownOpen, setDrilldownOpen] = useState<boolean>(false);
   const [drilldownData, setDrilldownData] = useState<DrilldownData | null>(null);
 
+
+
   // Get active filters for this chart
   const activeFilters = useMemo(() => {
     return getFiltersForSource(id);
@@ -112,20 +146,64 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
     return applyFilters(data, id);
   }, [applyFilters, data, id]);
 
-  // Format currency
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+  /**
+   * Format currency value
+   * @param amount - The amount to format
+   * @returns Formatted currency string
+   */
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount);
-  };
+    });
 
-  // Format number
-  const formatNumber = (value: number): string => {
-    return new Intl.NumberFormat('en-US').format(value);
-  };
+    return (amount: number): string => {
+      return formatter.format(amount);
+    };
+  }, []);
+
+  /**
+   * Format number value
+   * @param value - The number to format
+   * @returns Formatted number string
+   */
+  const formatNumber = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US');
+
+    return (value: number): string => {
+      return formatter.format(value);
+    };
+  }, []);
+
+  /**
+   * Format date for display
+   * @param value - The date string to format
+   * @returns Formatted date string
+   */
+  const formatDateValue = useCallback((value: string | number | undefined | null): string => {
+    try {
+      if (value === undefined || value === null) return '';
+
+      const strValue = String(value);
+
+      // Check if it's a date string with ISO format
+      if (typeof strValue === 'string' && strValue.includes('T')) {
+        const date = new Date(strValue);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          return strValue;
+        }
+        return formatDate(date, 'MMM dd');
+      }
+
+      return strValue;
+    } catch (error) {
+      console.warn('Error formatting date:', error);
+      return String(value || '');
+    }
+  }, []);
 
   // Handle chart element click
   const handleClick = useCallback((data: any, index: number) => {
@@ -332,66 +410,86 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
     removeFilter(filterId);
   };
 
-  // Render loading state
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
-        <CircularProgress />
-      </div>
-    );
-  }
+  /**
+   * Format a key into a readable label
+   * @param key - The key to format
+   * @returns Formatted label
+   */
+  const formatKeyToLabel = useCallback((key: string): string => {
+    return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+  }, []);
 
-  // Render error state
-  if (error) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
-        <Typography color="error">{error}</Typography>
-      </div>
-    );
-  }
+  /**
+   * Format date for X-axis ticks
+   * @param value - The value to format
+   * @returns Formatted date string
+   */
+  const formatXAxisTick = useCallback((value: any): string => {
+    try {
+      if (!value) return '';
 
-  // Render empty state
-  if (!filteredData || filteredData.length === 0) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
-        <Typography color="text.secondary">No data available</Typography>
-      </div>
-    );
-  }
+      if (typeof value === 'string' && value.includes('T')) {
+        const date = new Date(value);
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          return String(value);
+        }
+        return formatDate(date, 'MMM dd');
+      }
+      return String(value);
+    } catch (error) {
+      console.warn('Error formatting date:', error);
+      return String(value || '');
+    }
+  }, []);
 
-  // Render chart based on type
-  const renderChart = () => {
+  /**
+   * Format number for Y-axis ticks
+   * @param value - The value to format
+   * @returns Formatted number string
+   */
+  const formatYAxisTick = useCallback((value: any): string => {
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}k`;
+    }
+    return String(value);
+  }, []);
+
+  // Render chart based on type - memoized to prevent unnecessary re-renders
+  const renderChart = useMemo(() => {
+    // If data is not available, return null (we'll handle this in the render method)
+    if (!filteredData || filteredData.length === 0) {
+      return null;
+    }
+    // Common chart props
+    const commonChartProps = {
+      data: filteredData,
+      margin: { top: 10, right: 30, left: 0, bottom: 0 }
+    };
+
+    // Common axis props
+    const xAxisProps = {
+      dataKey: xKey,
+      tick: { fill: theme.palette.text.secondary, fontSize: 12 },
+      tickFormatter: formatXAxisTick
+    };
+
+    const yAxisProps = {
+      tick: { fill: theme.palette.text.secondary, fontSize: 12 },
+      tickFormatter: formatYAxisTick
+    };
+
     switch (type) {
       case 'area':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={filteredData}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            >
+            <AreaChart {...commonChartProps}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-              <XAxis
-                dataKey={xKey}
-                tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (typeof value === 'string' && value.includes('T')) {
-                    return formatDate(new Date(value), 'MMM dd');
-                  }
-                  return value;
-                }}
-              />
-              <YAxis
-                tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (value >= 1000) {
-                    return `${(value / 1000).toFixed(0)}k`;
-                  }
-                  return value;
-                }}
-              />
+              <XAxis {...xAxisProps} />
+              <YAxis {...yAxisProps} />
               <RechartsTooltip content={<CustomTooltipContent />} />
               {showLegend && <Legend />}
-              {yKeys.map((key, index) => (
+              {yKeys?.map((key, index) => (
                 <Area
                   key={key}
                   type="monotone"
@@ -399,7 +497,7 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
                   stroke={colors[index % colors.length]}
                   fill={colors[index % colors.length]}
                   fillOpacity={0.3}
-                  name={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                  name={formatKeyToLabel(key)}
                   activeDot={{ onClick: (e: any, i: number) => handleClick(e.payload, i) }}
                 />
               ))}
@@ -410,38 +508,18 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={filteredData}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            >
+            <BarChart {...commonChartProps}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-              <XAxis
-                dataKey={xKey}
-                tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (typeof value === 'string' && value.includes('T')) {
-                    return formatDate(new Date(value), 'MMM dd');
-                  }
-                  return value;
-                }}
-              />
-              <YAxis
-                tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (value >= 1000) {
-                    return `${(value / 1000).toFixed(0)}k`;
-                  }
-                  return value;
-                }}
-              />
+              <XAxis {...xAxisProps} />
+              <YAxis {...yAxisProps} />
               <RechartsTooltip content={<CustomTooltipContent />} />
               {showLegend && <Legend />}
-              {yKeys.map((key, index) => (
+              {yKeys?.map((key, index) => (
                 <Bar
                   key={key}
                   dataKey={key}
                   fill={colors[index % colors.length]}
-                  name={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                  name={formatKeyToLabel(key)}
                   onClick={(data: any, index: number) => handleClick(data, index)}
                 />
               ))}
@@ -452,39 +530,19 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
       case 'line':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={filteredData}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            >
+            <LineChart {...commonChartProps}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-              <XAxis
-                dataKey={xKey}
-                tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (typeof value === 'string' && value.includes('T')) {
-                    return formatDate(new Date(value), 'MMM dd');
-                  }
-                  return value;
-                }}
-              />
-              <YAxis
-                tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-                tickFormatter={(value) => {
-                  if (value >= 1000) {
-                    return `${(value / 1000).toFixed(0)}k`;
-                  }
-                  return value;
-                }}
-              />
+              <XAxis {...xAxisProps} />
+              <YAxis {...yAxisProps} />
               <RechartsTooltip content={<CustomTooltipContent />} />
               {showLegend && <Legend />}
-              {yKeys.map((key, index) => (
+              {yKeys?.map((key, index) => (
                 <Line
                   key={key}
                   type="monotone"
                   dataKey={key}
                   stroke={colors[index % colors.length]}
-                  name={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                  name={formatKeyToLabel(key)}
                   activeDot={{ onClick: (e: any, i: number) => handleClick(e.payload, i) }}
                 />
               ))}
@@ -528,7 +586,39 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
           </div>
         );
     }
-  };
+  }, [
+    filteredData, type, showGrid, xKey, theme, showLegend, yKeys, colors,
+    valueKey, nameKey, activeIndex, renderActiveShape, handlePieEnter,
+    handlePieLeave, handleClick, formatKeyToLabel, formatXAxisTick,
+    formatYAxisTick, CustomTooltipContent
+  ]);
+
+  // Render loading state
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+        <Typography color="error">{error}</Typography>
+      </div>
+    );
+  }
+
+  // Render empty state
+  if (!filteredData || filteredData.length === 0) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+        <Typography color="text.secondary">No data available</Typography>
+      </div>
+    );
+  }
 
   return (
     <Paper sx={{ height, display: 'flex', flexDirection: 'column' }}>
@@ -579,7 +669,7 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
 
       {/* Chart */}
       <div style={{ flex: 1, padding: 8 }}>
-        {renderChart()}
+        {renderChart}
       </div>
 
       {/* Drilldown Modal */}

@@ -235,8 +235,13 @@ builder.Services.AddResponseCaching(options =>
 });
 
 // Register dashboard services
-builder.Services.AddScoped<IDashboardService, PPrePorter.Core.Services.DashboardService>();
 builder.Services.AddScoped<IDataFilterService, DataFilterService>();
+
+// Add infrastructure services (including DashboardService)
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Log which dashboard service implementation is being used
+Console.WriteLine("Using DashboardService for dashboard data");
 
 // Register caching service
 // Get app settings to check if Redis is enabled
@@ -368,15 +373,8 @@ builder.Services.AddHostedService<PPrePorter.API.Services.SimpleCachePrewarmingS
 // Also register it as a singleton so it can be injected into controllers
 builder.Services.AddSingleton<PPrePorter.API.Services.SimpleCachePrewarmingService>();
 
-// REMOVED: InMemoryCacheInitializerService registration
-// We're now using the normal DailyActionsService instead of the in-memory version
-
+// Register DailyActionsDB services
 builder.Services.AddDailyActionsServices(builder.Configuration);
-
-// REMOVED: InMemoryDailyActionsService registration
-// We're now using the normal DailyActionsService instead of the in-memory version
-// The InMemoryDailyActionsController will still be available but will return errors
-// if someone tries to use it without the service being registered
 
 // Log which database we're using
 Console.WriteLine($"Using {(useLocalDatabase ? "local" : "real")} DailyActionsDB");

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, MouseEvent } from 'react';
 import {
-  Box,
   Typography,
   Paper,
   Divider,
@@ -23,8 +22,11 @@ import {
   Popover,
   Theme
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 // @ts-ignore
 import { DragDropContext, Droppable, Draggable, DropResult, DraggableProvided, DroppableProvided } from 'react-beautiful-dnd';
+import DragDropWrapper from '../common/DragDropWrapper';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -463,7 +465,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <SimpleBox sx={createSx({ width: '100%' })}>
       <DragDropContext onDragEnd={handleDragEnd}>
         <Grid container spacing={2}>
           {/* Left panel - Available fields */}
@@ -477,15 +479,15 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
               </Typography>
               <Droppable droppableId="availableFields" isDropDisabled={true}>
                 {(provided: DroppableProvided) => (
-                  <Box
+                  <DragDropWrapper
                     {...provided.droppableProps}
                     ref={provided.innerRef}
                     sx={{ mt: 2 }}
                   >
                     {Object.entries(fieldsByGroup).map(([group, fields], groupIndex) => (
-                      <Box key={group} sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
+                      <SimpleBox key={group} sx={createSx({ mb: 2 })}>
+                        <SimpleBox
+                          sx={createSx({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
@@ -493,7 +495,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                             '&:hover': {
                               color: theme.palette.primary.main
                             }
-                          }}
+                          })}
                           onClick={() => toggleGroupExpanded(group)}
                         >
                           <Typography variant="subtitle2" color="text.secondary">
@@ -502,10 +504,10 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                           <IconButton size="small">
                             {expandedGroups[group] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                           </IconButton>
-                        </Box>
+                        </SimpleBox>
 
                         <Collapse in={expandedGroups[group]} timeout="auto" unmountOnExit>
-                          <Box sx={{ pl: 1 }}>
+                          <SimpleBox sx={createSx({ pl: 1 })}>
                             {fields.map((field, fieldIndex) => (
                               <Draggable
                                 key={field.id}
@@ -514,7 +516,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                 isDragDisabled={!dragEnabled}
                               >
                                 {(provided: DraggableProvided) => (
-                                  <Box
+                                  <DragDropWrapper
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
@@ -523,16 +525,16 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                     onMouseLeave={handleFieldMouseLeave}
                                   >
                                     {renderFieldChip(field)}
-                                  </Box>
+                                  </DragDropWrapper>
                                 )}
                               </Draggable>
                             ))}
-                          </Box>
+                          </SimpleBox>
                         </Collapse>
-                      </Box>
+                      </SimpleBox>
                     ))}
                     {provided.placeholder}
-                  </Box>
+                  </DragDropWrapper>
                 )}
               </Droppable>
 
@@ -557,16 +559,16 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                       {hoveredField.name}
                     </Typography>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                       <Typography variant="caption" sx={{ mr: 1, fontWeight: 'bold' }}>
                         ID:
                       </Typography>
                       <Typography variant="caption">
                         {hoveredField.id}
                       </Typography>
-                    </Box>
+                    </SimpleBox>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                       <Typography variant="caption" sx={{ mr: 1, fontWeight: 'bold' }}>
                         Type:
                       </Typography>
@@ -581,16 +583,16 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                         }
                         variant="outlined"
                       />
-                    </Box>
+                    </SimpleBox>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
                       <Typography variant="caption" sx={{ mr: 1, fontWeight: 'bold' }}>
                         Group:
                       </Typography>
                       <Typography variant="caption">
                         {hoveredField.group}
                       </Typography>
-                    </Box>
+                    </SimpleBox>
 
                     <Divider sx={{ my: 1 }} />
 
@@ -605,12 +607,12 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
 
           {/* Right panel - Query builder and preview */}
           <Grid item xs={12} md={9}>
-            <Box sx={{ mb: 2 }}>
+            <SimpleBox sx={createSx({ mb: 2 })}>
               <Card>
                 <CardHeader
                   title="Visual Query Builder"
                   action={
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <SimpleBox sx={createSx({ display: 'flex', gap: 1 })}>
                       <Button
                         variant={previewMode ? "contained" : "outlined"}
                         color="primary"
@@ -627,7 +629,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                       >
                         Save Query
                       </Button>
-                    </Box>
+                    </SimpleBox>
                   }
                 />
                 <CardContent>
@@ -635,13 +637,13 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                     {/* Columns Section */}
                     <Grid item xs={12}>
                       <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                           <ViewColumnIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
                           <Typography variant="subtitle1">Columns</Typography>
-                        </Box>
+                        </SimpleBox>
                         <Droppable droppableId="columns" direction="horizontal">
                           {(provided: DroppableProvided) => (
-                            <Box
+                            <DragDropWrapper
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               sx={{
@@ -663,29 +665,29 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                   isDragDisabled={!dragEnabled}
                                 >
                                   {(provided: DraggableProvided) => (
-                                    <Box
+                                    <DragDropWrapper
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                     >
-                                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Box
+                                      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
+                                        <SimpleBox
                                           {...provided.dragHandleProps}
-                                          sx={{ cursor: 'move', display: 'flex', mr: 0.5 }}
+                                          sx={createSx({ cursor: 'move', display: 'flex', mr: 0.5 })}
                                         >
                                           <DragIndicatorIcon fontSize="small" />
-                                        </Box>
+                                        </SimpleBox>
                                         {renderFieldChip(
                                           column,
                                           true,
                                           () => handleRemoveItem('columns', index)
                                         )}
-                                      </Box>
-                                    </Box>
+                                      </SimpleBox>
+                                    </DragDropWrapper>
                                   )}
                                 </Draggable>
                               ))}
                               {provided.placeholder}
-                            </Box>
+                            </DragDropWrapper>
                           )}
                         </Droppable>
                       </Paper>
@@ -694,13 +696,13 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                     {/* Filters Section */}
                     <Grid item xs={12}>
                       <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                           <FilterListIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
                           <Typography variant="subtitle1">Filters</Typography>
-                        </Box>
+                        </SimpleBox>
                         <Droppable droppableId="filters">
                           {(provided: DroppableProvided) => (
-                            <Box
+                            <DragDropWrapper
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               sx={{
@@ -722,7 +724,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                   isDragDisabled={!dragEnabled}
                                 >
                                   {(provided: DraggableProvided) => (
-                                    <Box
+                                    <DragDropWrapper
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       sx={{
@@ -733,13 +735,13 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                         bgcolor: 'background.paper'
                                       }}
                                     >
-                                      <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                                        <Box
+                                      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'flex-start' })}>
+                                        <SimpleBox
                                           {...provided.dragHandleProps}
-                                          sx={{ cursor: 'move', display: 'flex', mr: 1, mt: 1 }}
+                                          sx={createSx({ cursor: 'move', display: 'flex', mr: 1, mt: 1 })}
                                         >
                                           <DragIndicatorIcon fontSize="small" />
-                                        </Box>
+                                        </SimpleBox>
 
                                         <Grid container spacing={1} alignItems="center">
                                           <Grid item xs={12} sm={3}>
@@ -789,13 +791,13 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                             </IconButton>
                                           </Grid>
                                         </Grid>
-                                      </Box>
-                                    </Box>
+                                      </SimpleBox>
+                                    </DragDropWrapper>
                                   )}
                                 </Draggable>
                               ))}
                               {provided.placeholder}
-                            </Box>
+                            </DragDropWrapper>
                           )}
                         </Droppable>
                       </Paper>
@@ -804,13 +806,13 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                     {/* Sort Section */}
                     <Grid item xs={12} md={6}>
                       <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                           <SortIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
                           <Typography variant="subtitle1">Sort</Typography>
-                        </Box>
+                        </SimpleBox>
                         <Droppable droppableId="sort">
                           {(provided: DroppableProvided) => (
-                            <Box
+                            <DragDropWrapper
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               sx={{
@@ -832,7 +834,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                   isDragDisabled={!dragEnabled}
                                 >
                                   {(provided: DraggableProvided) => (
-                                    <Box
+                                    <DragDropWrapper
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       sx={{
@@ -843,15 +845,15 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                         bgcolor: 'background.paper'
                                       }}
                                     >
-                                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Box
+                                      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
+                                        <SimpleBox
                                           {...provided.dragHandleProps}
-                                          sx={{ cursor: 'move', display: 'flex', mr: 1 }}
+                                          sx={createSx({ cursor: 'move', display: 'flex', mr: 1 })}
                                         >
                                           <DragIndicatorIcon fontSize="small" />
-                                        </Box>
+                                        </SimpleBox>
 
-                                        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                                        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', flexGrow: 1 })}>
                                           {renderFieldChip(sort.field)}
 
                                           <TextField
@@ -876,14 +878,14 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                           >
                                             <DeleteIcon fontSize="small" />
                                           </IconButton>
-                                        </Box>
-                                      </Box>
-                                    </Box>
+                                        </SimpleBox>
+                                      </SimpleBox>
+                                    </DragDropWrapper>
                                   )}
                                 </Draggable>
                               ))}
                               {provided.placeholder}
-                            </Box>
+                            </DragDropWrapper>
                           )}
                         </Droppable>
                       </Paper>
@@ -892,13 +894,13 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                     {/* Group By Section */}
                     <Grid item xs={12} md={6}>
                       <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                           <ViewColumnIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
                           <Typography variant="subtitle1">Group By</Typography>
-                        </Box>
+                        </SimpleBox>
                         <Droppable droppableId="groupBy" direction="horizontal">
                           {(provided: DroppableProvided) => (
-                            <Box
+                            <DragDropWrapper
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               sx={{
@@ -920,29 +922,29 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                                   isDragDisabled={!dragEnabled}
                                 >
                                   {(provided: DraggableProvided) => (
-                                    <Box
+                                    <DragDropWrapper
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                     >
-                                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Box
+                                      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
+                                        <SimpleBox
                                           {...provided.dragHandleProps}
-                                          sx={{ cursor: 'move', display: 'flex', mr: 0.5 }}
+                                          sx={createSx({ cursor: 'move', display: 'flex', mr: 0.5 })}
                                         >
                                           <DragIndicatorIcon fontSize="small" />
-                                        </Box>
+                                        </SimpleBox>
                                         {renderFieldChip(
                                           group,
                                           true,
                                           () => handleRemoveItem('groupBy', index)
                                         )}
-                                      </Box>
-                                    </Box>
+                                      </SimpleBox>
+                                    </DragDropWrapper>
                                   )}
                                 </Draggable>
                               ))}
                               {provided.placeholder}
-                            </Box>
+                            </DragDropWrapper>
                           )}
                         </Droppable>
                       </Paper>
@@ -950,7 +952,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                   </Grid>
 
                   {/* Execute Query Button */}
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                  <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'flex-end', mt: 2 })}>
                     <Button
                       variant="contained"
                       color="primary"
@@ -964,10 +966,10 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                         "Execute Query"
                       )}
                     </Button>
-                  </Box>
+                  </SimpleBox>
                 </CardContent>
               </Card>
-            </Box>
+            </SimpleBox>
 
             {/* Data Preview */}
             {previewMode && (
@@ -987,11 +989,11 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                     )}
 
                     {isLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', py: 4 })}>
                         <CircularProgress />
-                      </Box>
+                      </SimpleBox>
                     ) : dataPreview && dataPreview.length > 0 ? (
-                      <Box sx={{ overflowX: 'auto' }}>
+                      <SimpleBox sx={createSx({ overflowX: 'auto' })}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                           <thead>
                             <tr>
@@ -1035,7 +1037,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
                             ))}
                           </tbody>
                         </table>
-                      </Box>
+                      </SimpleBox>
                     ) : (
                       <Typography variant="body1" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
                         No data available. Execute a query to see results.
@@ -1048,7 +1050,7 @@ const VisualQueryBuilder: React.FC<VisualQueryBuilderProps> = ({
           </Grid>
         </Grid>
       </DragDropContext>
-    </Box>
+    </SimpleBox>
   );
 };
 

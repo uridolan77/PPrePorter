@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Exceptions;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Core.Interfaces.DailyActions;
+using PPrePorter.Core.Models.Entities;
 using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.Domain.Extensions;
@@ -40,23 +42,26 @@ namespace PPrePorter.Infrastructure.Services
         }
     }
 
-    public class DashboardService : IDashboardService
+    public partial class DashboardService : IDashboardService
     {
         private readonly IPPRePorterDbContext _dbContext;
         private readonly IDataFilterService _dataFilterService;
         private readonly ICachingService _cachingService;
         private readonly ILogger<DashboardService> _logger;
+        private readonly IDailyActionsService _dailyActionsService;
 
         public DashboardService(
             IPPRePorterDbContext dbContext,
             IDataFilterService dataFilterService,
             ICachingService cachingService,
-            ILogger<DashboardService> logger)
+            ILogger<DashboardService> logger,
+            IDailyActionsService dailyActionsService)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _dataFilterService = dataFilterService ?? throw new ArgumentNullException(nameof(dataFilterService));
             _cachingService = cachingService ?? throw new ArgumentNullException(nameof(cachingService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _dailyActionsService = dailyActionsService ?? throw new ArgumentNullException(nameof(dailyActionsService));
         }
 
         public async Task<DashboardSummary> GetDashboardSummaryAsync(DashboardRequest request)
@@ -73,7 +78,7 @@ namespace PPrePorter.Infrastructure.Services
             {
                 return await _cachingService.GetOrCreateAsync(
                     cacheKey,
-                    async () => await FetchDashboardSummaryAsync(request),
+                    async () => await FetchDashboardSummaryRealAsync(request),
                     slidingExpiration: TimeSpan.FromMinutes(15),
                     absoluteExpiration: TimeSpan.FromHours(1));
             }
@@ -104,7 +109,7 @@ namespace PPrePorter.Infrastructure.Services
 
                 // Build query
                 var query = _dbContext.DailyActions
-                    .Where(da => whiteLabelIds.Contains(da.WhiteLabelID))
+                    .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains((int)da.WhiteLabelID.Value))
                     .AsNoTracking();
 
                 // Apply play mode filter if specified
@@ -234,7 +239,7 @@ namespace PPrePorter.Infrastructure.Services
                 // Build query
                 var query = _dbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date < endDate.AddDays(1))
-                    .Where(da => whiteLabelIds.Contains(da.WhiteLabelID))
+                    .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains((int)da.WhiteLabelID.Value))
                     .AsNoTracking();
 
                 // Apply play mode filter if specified
@@ -310,7 +315,7 @@ namespace PPrePorter.Infrastructure.Services
                 // Build query
                 var query = _dbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date < endDate.AddDays(1))
-                    .Where(da => whiteLabelIds.Contains(da.WhiteLabelID))
+                    .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains((int)da.WhiteLabelID.Value))
                     .AsNoTracking();
 
                 // Apply play mode filter if specified
@@ -325,8 +330,8 @@ namespace PPrePorter.Infrastructure.Services
                     .Select(g => new PlayerRegistrationItem
                     {
                         Date = g.Key,
-                        Registrations = g.Sum(da => da.Registration),
-                        FirstTimeDepositors = g.Sum(da => da.FTD)
+                        Registrations = g.Sum(da => da.Registration ?? 0),
+                        FirstTimeDepositors = g.Sum(da => da.FTD ?? 0)
                     })
                     .OrderBy(item => item.Date)
                     .ToListAsync();
@@ -385,7 +390,7 @@ namespace PPrePorter.Infrastructure.Services
                 }                // Build query
                 var query = from game in _dbContext.Games
                             join gameAct in _dbContext.DailyActionsGames on game.GameId equals gameAct.GameId
-                            join player in _dbContext.Players on gameAct.PlayerID equals player.PlayerID
+                            join player in _dbContext.Players on gameAct.PlayerID equals player.PlayerID_Int
                             where gameAct.GameDate.Date == today
                             && whiteLabelIds.Contains(player.CasinoID)
                             select new { game, gameAct, player };
@@ -469,7 +474,7 @@ namespace PPrePorter.Infrastructure.Services
 
                 // Build query
                 var query = from t in _dbContext.Transactions
-                            join p in _dbContext.Players on t.PlayerID equals p.PlayerID
+                            join p in _dbContext.Players on int.Parse(t.PlayerId) equals p.Id
                             join wl in _dbContext.WhiteLabels on p.CasinoID equals wl.LabelID
                             where whiteLabelIds.Contains(p.CasinoID)
                             select new { t, p, wl };
@@ -480,16 +485,16 @@ namespace PPrePorter.Infrastructure.Services
                     switch (request.PlayMode.ToLower())
                     {
                         case "casino":
-                            query = query.Where(x => x.t.TransactionSubDetails.Contains("Casino"));
+                            query = query.Where(x => (x.t.SubDetails ?? "").Contains("Casino"));
                             break;
                         case "live":
-                            query = query.Where(x => x.t.TransactionSubDetails.Contains("Live"));
+                            query = query.Where(x => (x.t.SubDetails ?? "").Contains("Live"));
                             break;
                         case "sport":
-                            query = query.Where(x => x.t.TransactionSubDetails.Contains("Sport"));
+                            query = query.Where(x => (x.t.SubDetails ?? "").Contains("Sport"));
                             break;
                         case "bingo":
-                            query = query.Where(x => x.t.TransactionSubDetails.Contains("Bingo"));
+                            query = query.Where(x => (x.t.SubDetails ?? "").Contains("Bingo"));
                             break;
                     }
                 }
@@ -499,17 +504,17 @@ namespace PPrePorter.Infrastructure.Services
                     .Take(20)
                     .Select(x => new RecentTransactionItem
                     {
-                        TransactionID = x.t.TransactionID,
-                        PlayerID = x.t.PlayerID,
-                        PlayerAlias = x.p.Alias,
+                        TransactionID = x.t.Id,
+                        PlayerID = int.Parse(x.t.PlayerId),
+                        PlayerAlias = x.p.Username,
                         WhiteLabel = x.wl.LabelName,
                         TransactionDate = x.t.TransactionDate,
                         TransactionType = x.t.TransactionType,
-                        Amount = x.t.TransactionAmount,
-                        CurrencyCode = x.t.CurrencyCode,
-                        Status = x.t.Status,
-                        Platform = x.t.Platform,
-                        PaymentMethod = x.t.PaymentMethod
+                        Amount = x.t.Amount,
+                        CurrencyCode = x.t.Currency,
+                        Status = x.t.Status ?? "Unknown",
+                        Platform = x.t.Platform ?? "Unknown",
+                        PaymentMethod = x.t.PaymentMethod ?? "Unknown"
                     })
                     .ToListAsync();
 
@@ -587,12 +592,12 @@ namespace PPrePorter.Infrastructure.Services
 
                 // Get registration to first deposit flow
                 var registrationToDeposit = await _dbContext.Players
-                    .Where(p => whiteLabelIds.Contains(p.CasinoID) && p.CreatedAt >= startDate)
+                    .Where(p => whiteLabelIds.Contains(p.CasinoID) && p.RegistrationDate >= startDate)
                     .GroupBy(p => 1)
                     .Select(g => new
                     {
                         TotalRegistrations = g.Count(),
-                        WithFirstDeposit = g.Count(p => p.FirstDeposit != null)
+                        WithFirstDeposit = g.Count(p => p.TotalDeposits > 0)
                     })
                     .FirstOrDefaultAsync();
 
@@ -617,12 +622,13 @@ namespace PPrePorter.Infrastructure.Services
 
                 // Get first deposit to first game flow
                 var depositToGame = await _dbContext.Players
-                    .Where(p => whiteLabelIds.Contains(p.CasinoID) && p.FirstDeposit != null && p.FirstDeposit >= startDate)
+                    .Where(p => whiteLabelIds.Contains(p.CasinoID) && p.TotalDeposits > 0 && p.RegistrationDate >= startDate)
                     .GroupBy(p => 1)
                     .Select(g => new
                     {
                         TotalFirstDeposits = g.Count(),
-                        WithFirstGame = g.Count(p => p.FirstGame != null)
+                        // Assuming players with transactions have played at least one game
+                        WithFirstGame = g.Count(p => p.Transactions.Any())
                     })
                     .FirstOrDefaultAsync();
 
@@ -810,8 +816,8 @@ namespace PPrePorter.Infrastructure.Services
         {
             // Get current period data by white label
             var currentPeriodData = await _dbContext.DailyActions
-                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= startDate && da.Date <= endDate)
-                .GroupBy(da => da.WhiteLabelID)
+                .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains(da.WhiteLabelID.Value) && da.Date >= startDate && da.Date <= endDate)
+                .GroupBy(da => (int)da.WhiteLabelID.Value)
                 .Select(g => new
                 {
                     WhiteLabelId = g.Key,
@@ -821,8 +827,8 @@ namespace PPrePorter.Infrastructure.Services
 
             // Get previous period data by white label
             var previousPeriodData = await _dbContext.DailyActions
-                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= previousStartDate && da.Date < startDate)
-                .GroupBy(da => da.WhiteLabelID)
+                .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains(da.WhiteLabelID.Value) && da.Date >= previousStartDate && da.Date < startDate)
+                .GroupBy(da => (int)da.WhiteLabelID.Value)
                 .Select(g => new
                 {
                     WhiteLabelId = g.Key,
@@ -869,9 +875,9 @@ namespace PPrePorter.Infrastructure.Services
                 case "cashouts":
                     return group.Sum(da => da.PaidCashouts ?? 0);
                 case "registrations":
-                    return group.Sum(da => da.Registration);
+                    return group.Sum(da => da.Registration ?? 0);
                 case "ftd":
-                    return group.Sum(da => da.FTD);
+                    return group.Sum(da => da.FTD ?? 0);
                 default:
                     return 0;
             }
@@ -932,7 +938,7 @@ namespace PPrePorter.Infrastructure.Services
 
                 // Build base query
                 var query = _dbContext.DailyActions
-                    .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= startDate && da.Date <= today)
+                    .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains(da.WhiteLabelID.Value) && da.Date >= startDate && da.Date <= today)
                     .AsNoTracking();
 
                 // Apply play mode filter if specified
@@ -947,7 +953,7 @@ namespace PPrePorter.Infrastructure.Services
                     .Select(g => new
                     {
                         Date = g.Key,
-                        Registrations = g.Sum(da => da.Registration),
+                        Registrations = g.Sum(da => da.Registration ?? 0),
                         Deposits = g.Sum(da => da.Deposits ?? 0),
                         Revenue = GetTotalRevenue(g, request.PlayMode)
                     })
@@ -1277,7 +1283,7 @@ namespace PPrePorter.Infrastructure.Services
         {
             // Get revenue data
             var revenueData = await _dbContext.DailyActions
-                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID) && da.Date >= startDate && da.Date <= endDate)
+                .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains(da.WhiteLabelID.Value) && da.Date >= startDate && da.Date <= endDate)
                 .GroupBy(da => da.Date)
                 .Select(g => new
                 {
@@ -1482,7 +1488,7 @@ namespace PPrePorter.Infrastructure.Services
             // Query daily actions for revenue data
             var query = _dbContext.DailyActions
                 .Where(da => da.Date >= startDate && da.Date <= endDate)
-                .Where(da => whiteLabelIds.Contains(da.WhiteLabelID))
+                .Where(da => da.WhiteLabelID.HasValue && whiteLabelIds.Contains(da.WhiteLabelID.Value))
                 .AsNoTracking();
 
             // Apply play mode filter if specified
@@ -2437,17 +2443,40 @@ namespace PPrePorter.Infrastructure.Services
             switch (playMode.ToLower())
             {
                 case "casino":
-                    return query.Where(da => da.BetsCasino > 0 || da.WinsCasino > 0);
+                    return query.Where(da => (da.BetsCasino ?? 0) > 0 || (da.WinsCasino ?? 0) > 0);
                 case "sport":
-                    return query.Where(da => da.BetsSport > 0 || da.WinsSport > 0);
+                    return query.Where(da => (da.BetsSport ?? 0) > 0 || (da.WinsSport ?? 0) > 0);
                 case "live":
-                    return query.Where(da => da.BetsLive > 0 || da.WinsLive > 0);
+                    return query.Where(da => (da.BetsLive ?? 0) > 0 || (da.WinsLive ?? 0) > 0);
                 case "bingo":
-                    return query.Where(da => da.BetsBingo > 0 || da.WinsBingo > 0);
+                    return query.Where(da => (da.BetsBingo ?? 0) > 0 || (da.WinsBingo ?? 0) > 0);
                 default:
                     return query;
             }
         }
+
+        // This interface defines the properties required for entities that can be filtered by play mode
+        private interface IPlayModeFilterable
+        {
+            decimal? BetsCasino { get; }
+            decimal? BetsSport { get; }
+            decimal? BetsLive { get; }
+            decimal? BetsBingo { get; }
+            decimal? WinsCasino { get; }
+            decimal? WinsSport { get; }
+            decimal? WinsLive { get; }
+            decimal? WinsBingo { get; }
+        }
+
+        // This interface defines the properties required for entities that have a date
+        private interface IDateEntity
+        {
+            DateTime Date { get; }
+        }
+
+        // Interface definitions moved to a single location in the class
+
+        // ApplyPlayModeFilter method is defined elsewhere in the class
 
         private static decimal CalculateChangePercentage(decimal current, decimal previous)
         {
@@ -2542,6 +2571,11 @@ namespace PPrePorter.Infrastructure.Services
                         ((da.BetsBingo ?? 0) - (da.WinsBingo ?? 0)));
             }
         }
+
+        // No generic versions needed - we'll use the specific DailyAction versions
+
+        // Fallback methods for non-IPlayModeFilterable entities are not needed
+        // The generic methods with constraints will be used when applicable
 
         // Helper method to detect database connection errors
         private bool IsDbConnectionException(Exception ex)

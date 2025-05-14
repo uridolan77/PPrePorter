@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Core.Interfaces.Games;
+using PPrePorter.Core.Interfaces.Players;
 using PPrePorter.DailyActionsDB.Interfaces;
 using System.Text.Json;
 
@@ -17,10 +19,10 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
     [ApiExplorerSettings(GroupName = SwaggerGroups.DailyActionGames)]
     public partial class DailyActionGameController : ControllerBase
     {
-        private readonly IDailyActionGameService _dailyActionGameService;
+        private readonly Core.Interfaces.Games.IDailyActionGameService _dailyActionGameService;
         private readonly IWhiteLabelService _whiteLabelService;
-        private readonly IGameService _gameService;
-        private readonly IPlayerService _playerService;
+        private readonly Core.Interfaces.Games.IGameService _gameService;
+        private readonly Core.Interfaces.Players.IPlayerService _playerService;
         private readonly ILogger<DailyActionGameController> _logger;
         private readonly IMemoryCache _memoryCache;
         private readonly IGlobalCacheService _cacheService;
@@ -32,10 +34,10 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
         /// Constructor for DailyActionGameController
         /// </summary>
         public DailyActionGameController(
-            IDailyActionGameService dailyActionGameService,
+            Core.Interfaces.Games.IDailyActionGameService dailyActionGameService,
             IWhiteLabelService whiteLabelService,
-            IGameService gameService,
-            IPlayerService playerService,
+            Core.Interfaces.Games.IGameService gameService,
+            Core.Interfaces.Players.IPlayerService playerService,
             ILogger<DailyActionGameController> logger,
             IMemoryCache memoryCache,
             IGlobalCacheService cacheService)

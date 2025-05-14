@@ -1,13 +1,23 @@
-import React, { memo, Suspense, lazy, useState, useEffect } from 'react';
+import React, { memo, Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { CircularProgress, styled } from '@mui/material';
 import { SPACING } from './styles';
 
+/**
+ * TabPanel component props
+ */
 interface TabPanelProps {
+  /** Content to display when the tab is active */
   children?: React.ReactNode;
+  /** The index of this tab panel */
   index: number;
+  /** The current active tab value */
   value: number;
+  /** The unique identifier for this tab panel */
   id: string;
+  /** Whether to lazy load the tab content (default: false) */
   lazyLoad?: boolean;
+  /** Additional props */
+  [key: string]: any;
 }
 
 // Styled components to avoid complex style objects
@@ -55,7 +65,8 @@ const TabPanel: React.FC<TabPanelProps> = ({
   }, [isActive, hasBeenActive]);
 
   // If lazy loading is enabled, only render the content if the tab has been active
-  const shouldRenderContent = !lazyLoad || hasBeenActive;
+  // Memoized to prevent unnecessary recalculations
+  const shouldRenderContent = useMemo(() => !lazyLoad || hasBeenActive, [lazyLoad, hasBeenActive]);
 
   if (!isActive) {
     return (

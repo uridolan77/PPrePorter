@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate, useLocation, Location } from 'react-router-dom';
 import {
   Container,
-  Box,
   Typography,
-  Paper,
-  Alert,
-  Collapse
+  Alert
 } from '@mui/material';
 import LoginForm from '../../components/auth/LoginForm';
 import MockDataToggle from '../../components/common/MockDataToggle';
@@ -38,13 +35,11 @@ const LoginPage: React.FC = () => {
    * Handle login form submission
    * @param formData - Login form data
    */
-  const handleLogin = async (formData: LoginCredentials): Promise<void> => {
+  const handleLogin = useCallback(async (formData: LoginCredentials): Promise<void> => {
     setLoading(true);
     setError('');
 
     try {
-      console.log('Attempting login with credentials:', { username: formData.username, rememberMe: formData.rememberMe });
-
       // Call the login function from useAuth hook
       const result = await login({
         username: formData.username,
@@ -52,23 +47,20 @@ const LoginPage: React.FC = () => {
         rememberMe: formData.rememberMe
       });
 
-      console.log('Login successful, user:', result);
-
       // Navigate to the page user tried to visit or dashboard
       navigate(from, { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
       const error = err as Error;
       setError(error.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [login, navigate, from]);
 
   /**
    * Handle Google OAuth login
    */
-  const handleGoogleLogin = async (): Promise<void> => {
+  const handleGoogleLogin = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError('');
     try {
@@ -76,18 +68,17 @@ const LoginPage: React.FC = () => {
       // Navigate to the page user tried to visit or dashboard
       navigate(from, { replace: true });
     } catch (err) {
-      console.error('Google login error:', err);
       const error = err as Error;
       setError(error.message || 'Google login failed. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [loginWithGoogle, navigate, from]);
 
   /**
    * Handle Microsoft OAuth login
    */
-  const handleMicrosoftLogin = async (): Promise<void> => {
+  const handleMicrosoftLogin = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError('');
     try {
@@ -95,16 +86,23 @@ const LoginPage: React.FC = () => {
       // Navigate to the page user tried to visit or dashboard
       navigate(from, { replace: true });
     } catch (err) {
-      console.error('Microsoft login error:', err);
       const error = err as Error;
       setError(error.message || 'Microsoft login failed. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [loginWithMicrosoft, navigate, from]);
 
   // Check if mock data is enabled
   const mockEnabled = isMockDataEnabled();
+
+  /**
+   * Handle logo loading error
+   * @param e - The error event
+   */
+  const handleLogoError = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    (e.target as HTMLImageElement).src = '/logo.png'; // Fallback to default logo
+  }, []);
 
   return (
     <Container
@@ -115,7 +113,7 @@ const LoginPage: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        py: 2 // Reduced padding from 4 to 2
+        py: 2
       }}
     >
       <div
@@ -129,25 +127,22 @@ const LoginPage: React.FC = () => {
         <div
           style={{
             width: '100%',
-            marginBottom: 16, // Reduced from 6 to 2 to bring form closer to logo
+            marginBottom: 16,
             display: 'flex',
             justifyContent: 'center',
-            userSelect: 'none', // Make unselectable
+            userSelect: 'none',
           }}
         >
           <img
             src="/assets/preplogo.png"
             alt="PPrePorter Logo"
             style={{
-              height: 500, // Increased from 400 to 500
+              height: 500,
               width: 'auto',
-              pointerEvents: 'none', // Prevent cursor changes on click
+              pointerEvents: 'none',
             }}
-            onError={(e) => {
-              console.error('Failed to load logo from /assets/preplogo.png');
-              (e.target as HTMLImageElement).src = '/logo.png'; // Fallback to default logo
-            }}
-            draggable="false" // Prevent dragging
+            onError={handleLogoError}
+            draggable="false"
           />
         </div>
 
@@ -191,8 +186,8 @@ const LoginPage: React.FC = () => {
         {/* Terms & Support Section */}
         <div
           style={{
-            marginTop: 16, // Reduced from 4 to 2
-            padding: 8, // Reduced from 2 to 1
+            marginTop: 16,
+            padding: 8,
             textAlign: 'center',
           }}
         >

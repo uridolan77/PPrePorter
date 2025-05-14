@@ -157,6 +157,8 @@ const DailyActionsTableNew: React.FC<DailyActionsTableProps> = ({
               widths: {}
             }
           }}
+          // Key prop to force re-initialization when hierarchical grouping changes
+          key={`table-${hierarchicalGrouping.enabled}-${hierarchicalGrouping.groupByLevels.join('-')}`}
         />
       )}
     </Paper>

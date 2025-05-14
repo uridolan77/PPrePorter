@@ -33,6 +33,11 @@ namespace PPrePorter.Domain.Entities.PPReporter.Dashboard
         public int TotalWithdrawals { get; set; }
 
         /// <summary>
+        /// Withdrawals change percentage
+        /// </summary>
+        public decimal WithdrawalsChange { get; set; }
+
+        /// <summary>
         /// Average deposit amount
         /// </summary>
         public decimal AverageDepositAmount { get; set; }

@@ -1,23 +1,28 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Repositories;
-using PPrePorter.Domain.Entities.PPReporter;
+using PPrePorter.Core.Models.Entities;
+using PPrePorter.DailyActionsDB.Data;
+using PPrePorter.DailyActionsDB.Extensions;
+using PPrePorter.Infrastructure.Adapters;
 using PPrePorter.Infrastructure.Data;
 using PPrePorter.Infrastructure.Extensions;
+using DbDailyAction = PPrePorter.DailyActionsDB.Models.DailyActions.DailyAction;
 
 namespace PPrePorter.Infrastructure.Repositories
 {
     /// <summary>
     /// Repository implementation for DailyAction entities
     /// </summary>
-    public class DailyActionRepository : Repository<DailyAction>, IDailyActionRepository
+    public class DailyActionRepository : IDailyActionRepository
     {
-        private readonly PPRePorterDbContext _ppReporterDbContext;
+        private readonly DailyActionsDbContext _dailyActionsDbContext;
+        private readonly ILogger<DailyActionRepository> _logger;
 
-        public DailyActionRepository(PPRePorterDbContext dbContext, ILogger<DailyActionRepository> logger)
-            : base(dbContext, logger)
+        public DailyActionRepository(DailyActionsDbContext dbContext, ILogger<DailyActionRepository> logger)
         {
-            _ppReporterDbContext = dbContext;
+            _dailyActionsDbContext = dbContext;
+            _logger = logger;
         }
 
         /// <summary>
@@ -27,12 +32,14 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                return await _ppReporterDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
-                    .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .WithForceNoLock()
+                    .WithSqlNoLock()
                     .ToListAsync();
+
+                // Convert to Core DailyAction entities
+                return dbDailyActions.Select(da => da.ToCore());
             }
             catch (Exception ex)
             {
@@ -49,12 +56,14 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                return await _ppReporterDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.WhiteLabelID == whiteLabelId)
-                    .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .WithForceNoLock()
+                    .WithSqlNoLock()
                     .ToListAsync();
+
+                // Convert to Core DailyAction entities
+                return dbDailyActions.Select(da => da.ToCore());
             }
             catch (Exception ex)
             {
@@ -70,12 +79,14 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                return await _ppReporterDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
-                    .Include(da => da.WhiteLabel)
                     .AsNoTracking()
-                    .WithForceNoLock()
+                    .WithSqlNoLock()
                     .ToListAsync();
+
+                // Convert to Core DailyAction entities
+                return dbDailyActions.Select(da => da.ToCore());
             }
             catch (Exception ex)
             {
@@ -92,12 +103,14 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                return await _ppReporterDbContext.DailyActions
-                    .Where(da => da.Date >= startDate && da.Date <= endDate && whiteLabelIds.Contains(da.WhiteLabelID))
-                    .Include(da => da.WhiteLabel)
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
+                    .Where(da => da.Date >= startDate && da.Date <= endDate && whiteLabelIds.Contains((int)da.WhiteLabelID))
                     .AsNoTracking()
-                    .WithForceNoLock()
+                    .WithSqlNoLock()
                     .ToListAsync();
+
+                // Convert to Core DailyAction entities
+                return dbDailyActions.Select(da => da.ToCore());
             }
             catch (Exception ex)
             {
@@ -114,11 +127,14 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                var dailyActions = await _ppReporterDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
                     .AsNoTracking()
-                    .WithForceNoLock()
+                    .WithSqlNoLock()
                     .ToListAsync();
+
+                // Convert to Core DailyAction entities
+                var dailyActions = dbDailyActions.Select(da => da.ToCore()).ToList();
 
                 return AggregateResults(dailyActions);
             }
@@ -137,11 +153,14 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                var dailyActions = await _ppReporterDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
                     .AsNoTracking()
-                    .WithForceNoLock()
+                    .WithSqlNoLock()
                     .ToListAsync();
+
+                // Convert to Core DailyAction entities
+                var dailyActions = dbDailyActions.Select(da => da.ToCore()).ToList();
 
                 return AggregateResults(dailyActions);
             }
@@ -160,8 +179,8 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             return new DailyActionAggregateResult
             {
-                TotalRegistrations = dailyActions.Sum(da => da.Registration),
-                TotalFTD = dailyActions.Sum(da => da.FTD),
+                TotalRegistrations = dailyActions.Sum(da => da.Registration ?? 0),
+                TotalFTD = dailyActions.Sum(da => da.FTD ?? 0),
                 TotalDeposits = dailyActions.Sum(da => da.Deposits ?? 0),
                 TotalPaidCashouts = dailyActions.Sum(da => da.PaidCashouts ?? 0),
                 TotalBetsCasino = dailyActions.Sum(da => da.BetsCasino ?? 0),

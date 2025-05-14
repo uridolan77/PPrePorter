@@ -41,10 +41,10 @@ export interface CardProps extends CommonProps {
 export interface KPICardProps extends CommonProps {
   id?: string;
   title: string;
-  value: string | number;
+  value: string | number | undefined | null;
   subtitle?: string;
   description?: string;
-  trend?: number | null;
+  trend?: number | null | undefined;
   trendLabel?: string;
   icon?: ReactNode;
   loading?: boolean;

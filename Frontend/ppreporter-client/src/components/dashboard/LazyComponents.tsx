@@ -1,11 +1,13 @@
 import React, { lazy, Suspense } from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import { CircularProgress } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 
 // Loading component for suspense fallback
 export const LoadingFallback: React.FC = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, width: '100%' }}>
+  <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, width: '100%' })}>
     <CircularProgress />
-  </Box>
+  </SimpleBox>
 );
 
 // Lazy load tab components

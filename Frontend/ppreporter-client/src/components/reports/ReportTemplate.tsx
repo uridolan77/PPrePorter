@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Paper,
   Typography,
   Button,
@@ -24,6 +23,8 @@ import {
   Grid,
   SelectChangeEvent
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -33,6 +34,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ViewListIcon from '@mui/icons-material/ViewList';
 // @ts-ignore
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import DragDropWrapper from '../common/DragDropWrapper';
 import {
   ReportTemplateProps,
   Template,
@@ -204,7 +206,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
   };
 
   return (
-    <Box>
+    <SimpleBox>
       <Paper elevation={0} variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Typography variant="h5" gutterBottom>
           {currentTemplate.id ? 'Edit Report Template' : 'Create New Report Template'}
@@ -269,7 +271,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
       </Paper>
 
       <Paper elevation={0} variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 })}>
           <Typography variant="h6">
             Report Sections
           </Typography>
@@ -281,28 +283,29 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
           >
             Add Section
           </Button>
-        </Box>
+        </SimpleBox>
 
         <Divider sx={{ mb: 2 }} />
 
         {currentTemplate.sections.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
+          <SimpleBox sx={createSx({ textAlign: 'center', py: 4 })}>
             <ViewListIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
             <Typography color="text.secondary">
               No sections added yet. Add a section to start building your report.
             </Typography>
-          </Box>
+          </SimpleBox>
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="sections">
               {(provided: any) => (
-                <List {...provided.droppableProps} ref={provided.innerRef}>
+                <DragDropWrapper {...provided.droppableProps} ref={provided.innerRef} component={List}>
                   {currentTemplate.sections.map((section, index) => (
                     <Draggable key={section.id} draggableId={section.id} index={index}>
                       {(provided: any) => (
-                        <ListItem
+                        <DragDropWrapper
                           ref={provided.innerRef}
                           {...provided.draggableProps}
+                          component={ListItem}
                           divider
                           sx={{
                             bgcolor: 'background.paper',
@@ -312,9 +315,9 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
                             borderColor: 'divider'
                           }}
                         >
-                          <Box {...provided.dragHandleProps} sx={{ mr: 1 }}>
+                          <SimpleBox {...provided.dragHandleProps} sx={createSx({ mr: 1 })}>
                             <DragIndicatorIcon color="action" />
-                          </Box>
+                          </SimpleBox>
 
                           <ListItemText
                             primary={section.title}
@@ -340,19 +343,19 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
                               <DeleteIcon />
                             </IconButton>
                           </ListItemSecondaryAction>
-                        </ListItem>
+                        </DragDropWrapper>
                       )}
                     </Draggable>
                   ))}
                   {provided.placeholder}
-                </List>
+                </DragDropWrapper>
               )}
             </Droppable>
           </DragDropContext>
         )}
       </Paper>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 })}>
         <Button variant="outlined" onClick={onCancel}>
           Cancel
         </Button>
@@ -364,7 +367,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
         >
           Save Template
         </Button>
-      </Box>
+      </SimpleBox>
 
       {/* Section Dialog */}
       <Dialog
@@ -397,7 +400,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
             margin="normal"
           />
 
-          <Box sx={{ mt: 3, mb: 2 }}>
+          <SimpleBox sx={createSx({ mt: 3, mb: 2 })}>
             <Typography variant="subtitle1" gutterBottom>
               Visualizations
             </Typography>
@@ -430,7 +433,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
             >
               Add Visualization
             </Button>
-          </Box>
+          </SimpleBox>
         </DialogContent>
 
         <DialogActions>
@@ -473,9 +476,9 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
                   }}
                   onClick={() => handleAddVisualization(viz)}
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                  <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', mb: 2 })}>
                     {viz.icon}
-                  </Box>
+                  </SimpleBox>
                   <Typography variant="subtitle1" align="center" gutterBottom>
                     {viz.title}
                   </Typography>
@@ -492,7 +495,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
           <Button onClick={handleCloseVisualizationDialog}>Cancel</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SimpleBox>
   );
 };
 

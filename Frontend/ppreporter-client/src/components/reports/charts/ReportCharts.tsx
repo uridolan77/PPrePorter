@@ -129,10 +129,22 @@ export const ReportAreaChart: React.FC<AreaChartProps> = ({
             dataKey={xKey}
             tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
             tickFormatter={(value) => {
-              if (typeof value === 'string' && value.includes('T')) {
-                return formatDate(new Date(value), 'MMM dd');
+              try {
+                if (!value) return '';
+
+                if (typeof value === 'string' && value.includes('T')) {
+                  const date = new Date(value);
+                  // Check if date is valid
+                  if (isNaN(date.getTime())) {
+                    return String(value);
+                  }
+                  return formatDate(date, 'MMM dd');
+                }
+                return String(value);
+              } catch (error) {
+                console.warn('Error formatting date:', error);
+                return String(value || '');
               }
-              return value;
             }}
           />
           <YAxis
@@ -232,10 +244,22 @@ export const ReportBarChart: React.FC<BarChartProps> = ({
             dataKey={xKey}
             tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
             tickFormatter={(value) => {
-              if (typeof value === 'string' && value.includes('T')) {
-                return formatDate(new Date(value), 'MMM dd');
+              try {
+                if (!value) return '';
+
+                if (typeof value === 'string' && value.includes('T')) {
+                  const date = new Date(value);
+                  // Check if date is valid
+                  if (isNaN(date.getTime())) {
+                    return String(value);
+                  }
+                  return formatDate(date, 'MMM dd');
+                }
+                return String(value);
+              } catch (error) {
+                console.warn('Error formatting date:', error);
+                return String(value || '');
               }
-              return value;
             }}
           />
           <YAxis

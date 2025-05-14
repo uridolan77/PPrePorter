@@ -10,17 +10,17 @@ export interface ApiResponse<T> {
    * Response data
    */
   data: T;
-  
+
   /**
    * Response status
    */
   status: number;
-  
+
   /**
    * Response message
    */
   message?: string;
-  
+
   /**
    * Response metadata
    */
@@ -29,28 +29,33 @@ export interface ApiResponse<T> {
      * Total count of items
      */
     totalCount?: number;
-    
+
     /**
      * Page number
      */
     page?: number;
-    
+
     /**
      * Page size
      */
     pageSize?: number;
-    
+
     /**
      * Total pages
      */
     totalPages?: number;
-    
+
     /**
      * Additional metadata
      */
     [key: string]: any;
   };
-  
+
+  /**
+   * Response summary data
+   */
+  summary?: any;
+
   /**
    * Response errors
    */
@@ -65,17 +70,17 @@ export interface ApiError {
    * Error code
    */
   code: string;
-  
+
   /**
    * Error message
    */
   message: string;
-  
+
   /**
    * Error field
    */
   field?: string;
-  
+
   /**
    * Error details
    */
@@ -90,17 +95,17 @@ export interface PaginationParams {
    * Page number
    */
   page?: number;
-  
+
   /**
    * Page size
    */
   pageSize?: number;
-  
+
   /**
    * Sort field
    */
   sortBy?: string;
-  
+
   /**
    * Sort direction
    */
@@ -115,7 +120,7 @@ export interface FilterParams {
    * Search query
    */
   search?: string;
-  
+
   /**
    * Filter by field
    */
@@ -130,32 +135,32 @@ export interface ApiRequestOptions {
    * Request headers
    */
   headers?: Record<string, string>;
-  
+
   /**
    * Request parameters
    */
   params?: Record<string, any>;
-  
+
   /**
    * Request body
    */
   body?: any;
-  
+
   /**
    * Request timeout in milliseconds
    */
   timeout?: number;
-  
+
   /**
    * Whether to include credentials
    */
   withCredentials?: boolean;
-  
+
   /**
    * Response type
    */
   responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
-  
+
   /**
    * Whether to handle errors automatically
    */
@@ -170,22 +175,22 @@ export interface AuthToken {
    * Access token
    */
   accessToken: string;
-  
+
   /**
    * Refresh token
    */
   refreshToken?: string;
-  
+
   /**
    * Token type
    */
   tokenType: string;
-  
+
   /**
    * Expiration time in seconds
    */
   expiresIn: number;
-  
+
   /**
    * Expiration date
    */

@@ -4,6 +4,9 @@ import contextualService from './contextualService';
 import playersService from './playersService';
 import gamesService from './gamesService';
 import dailyActionGamesService from './dailyActionGamesService';
+import financialService from './financialService';
+import performanceService from './performanceService';
+import geographicService from './geographicService';
 
 /**
  * API services index
@@ -15,5 +18,8 @@ export default {
   contextual: contextualService,
   players: playersService,
   games: gamesService,
-  dailyActionGames: dailyActionGamesService
+  dailyActionGames: dailyActionGamesService,
+  financial: financialService,
+  performance: performanceService,
+  geographic: geographicService
 };

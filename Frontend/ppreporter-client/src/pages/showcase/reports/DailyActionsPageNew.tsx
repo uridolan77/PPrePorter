@@ -580,8 +580,14 @@ const DailyActionsPageNew: React.FC = () => {
   const handleTableStateChange = (state: TableState): void => {
     console.log('[DAILY ACTIONS PAGE] Table state changed:', state);
 
-    // Update hierarchical groupings if they've changed in the table
-    if (state.grouping && state.grouping.groupByLevels) {
+    // Only update hierarchical groupings if they've changed in the table
+    // AND we're in hierarchical mode AND the groupings aren't empty
+    if (enableHierarchicalGrouping &&
+        state.grouping &&
+        state.grouping.groupByLevels &&
+        state.grouping.groupByLevels.length > 0 &&
+        JSON.stringify(state.grouping.groupByLevels) !== JSON.stringify(hierarchicalGroupings)) {
+      console.log('[DAILY ACTIONS PAGE] Updating hierarchical groupings from table state:', state.grouping.groupByLevels);
       setHierarchicalGroupings(state.grouping.groupByLevels);
     }
   };

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, Paper, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Grid, Paper, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
+import SimpleBox from '../../common/SimpleBox';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import DragDropWrapper from '../../common/DragDropWrapper';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ShareIcon from '@mui/icons-material/Share';
@@ -95,11 +97,11 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <SimpleBox sx={{ width: '100%' }}>
       {/* Dashboard Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">{dashboardConfig.name}</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <SimpleBox sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title={customizeMode ? "Exit Customize Mode" : "Customize Dashboard"}>
             <Button
               variant={customizeMode ? "contained" : "outlined"}
@@ -148,8 +150,8 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
               </Tooltip>
             </>
           )}
-        </Box>
-      </Box>
+        </SimpleBox>
+      </SimpleBox>
 
       {/* Dashboard Description */}
       {dashboardConfig.description && (
@@ -162,7 +164,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="dashboard-widgets" type="widget" direction="horizontal">
           {(provided) => (
-            <Box
+            <DragDropWrapper
               {...provided.droppableProps}
               ref={provided.innerRef}
               sx={{
@@ -181,7 +183,7 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
                     isDragDisabled={!customizeMode}
                   >
                     {(provided) => (
-                      <Box
+                      <DragDropWrapper
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
@@ -201,16 +203,16 @@ const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
                           columns={getWidgetColumns(widget.dataSource)}
                           enableInteractivity={!customizeMode}
                         />
-                      </Box>
+                      </DragDropWrapper>
                     )}
                   </Draggable>
                 ))}
               {provided.placeholder}
-            </Box>
+            </DragDropWrapper>
           )}
         </Droppable>
       </DragDropContext>
-    </Box>
+    </SimpleBox>
   );
 };
 

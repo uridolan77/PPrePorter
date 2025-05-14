@@ -8,12 +8,19 @@ namespace PPrePorter.Core.Services
 {
     /// <summary>
     /// Helper methods for the DashboardService
+    ///
+    /// NOTE: This class is now obsolete. Use PPrePorter.Infrastructure.Services.DashboardService instead,
+    /// which provides real data implementation using the DailyActionsService, GameService, and PlayerService.
     /// </summary>
     public partial class DashboardService
     {
-        private async Task<DashboardSummary> FetchDashboardSummaryAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchDashboardSummaryAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<DashboardSummary> FetchDashboardSummaryMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new DashboardSummary
             {
                 TotalRevenue = 0,
@@ -27,33 +34,53 @@ namespace PPrePorter.Core.Services
             };
         }
 
-        private async Task<List<CasinoRevenueItem>> FetchCasinoRevenueChartDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchCasinoRevenueChartDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<List<CasinoRevenueItem>> FetchCasinoRevenueChartDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new List<CasinoRevenueItem>();
         }
 
-        private async Task<List<PlayerRegistrationItem>> FetchPlayerRegistrationsChartDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchPlayerRegistrationsChartDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<List<PlayerRegistrationItem>> FetchPlayerRegistrationsChartDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new List<PlayerRegistrationItem>();
         }
 
-        private async Task<List<TopGameItem>> FetchTopGamesDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchTopGamesDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<List<TopGameItem>> FetchTopGamesDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new List<TopGameItem>();
         }
 
-        private async Task<List<RecentTransactionItem>> FetchRecentTransactionsAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchRecentTransactionsAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<List<RecentTransactionItem>> FetchRecentTransactionsMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new List<RecentTransactionItem>();
         }
 
-        private async Task<ContextualDataExplorerResult> FetchContextualDataExplorerResultAsync(ContextualDataExplorerRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchContextualDataExplorerResultAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<ContextualDataExplorerResult> FetchContextualDataExplorerResultMockAsync(ContextualDataExplorerRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new ContextualDataExplorerResult
             {
                 Context = request.Context,
@@ -65,28 +92,40 @@ namespace PPrePorter.Core.Services
             };
         }
 
-        private async Task<DashboardData> FetchDashboardDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchDashboardDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<DashboardData> FetchDashboardDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use Infrastructure.Services.DashboardService instead.
             return new DashboardData
             {
-                Summary = await FetchDashboardSummaryAsync(request),
-                RevenueData = await FetchCasinoRevenueChartDataAsync(request),
-                RegistrationsData = await FetchPlayerRegistrationsChartDataAsync(request),
-                TopGames = await FetchTopGamesDataAsync(request),
-                RecentTransactions = await FetchRecentTransactionsAsync(request)
+                Summary = await FetchDashboardSummaryMockAsync(request),
+                RevenueData = await FetchCasinoRevenueChartDataMockAsync(request),
+                RegistrationsData = await FetchPlayerRegistrationsChartDataMockAsync(request),
+                TopGames = await FetchTopGamesDataMockAsync(request),
+                RecentTransactions = await FetchRecentTransactionsMockAsync(request)
             };
         }
 
-        private async Task<List<PlayerJourneySankeyData>> FetchPlayerJourneySankeyDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchPlayerJourneySankeyDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<List<PlayerJourneySankeyData>> FetchPlayerJourneySankeyDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new List<PlayerJourneySankeyData>();
         }
 
-        private async Task<HeatmapData> FetchHeatmapDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchHeatmapDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<HeatmapData> FetchHeatmapDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new HeatmapData
             {
                 Title = "Activity Heatmap",
@@ -96,9 +135,13 @@ namespace PPrePorter.Core.Services
             };
         }
 
-        private async Task<SegmentComparisonData> FetchSegmentComparisonDataAsync(SegmentComparisonRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchSegmentComparisonDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<SegmentComparisonData> FetchSegmentComparisonDataMockAsync(SegmentComparisonRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new SegmentComparisonData
             {
                 SegmentType = request.SegmentType,
@@ -108,15 +151,23 @@ namespace PPrePorter.Core.Services
             };
         }
 
-        private async Task<List<MicroChartData>> FetchMicroChartDataAsync(DashboardRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchMicroChartDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<List<MicroChartData>> FetchMicroChartDataMockAsync(DashboardRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new List<MicroChartData>();
         }
 
-        private async Task<DashboardPreferences> FetchUserDashboardPreferencesAsync(string userId)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchUserDashboardPreferencesAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<DashboardPreferences> FetchUserDashboardPreferencesMockAsync(string userId)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new DashboardPreferences
             {
                 UserId = userId,
@@ -142,14 +193,22 @@ namespace PPrePorter.Core.Services
             };
         }
 
-        private async Task SaveUserDashboardPreferencesToDatabaseAsync(string userId, DashboardPreferences preferences)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.SaveUserDashboardPreferencesToDatabaseAsync instead.
+        /// This method does nothing.
+        /// </summary>
+        private async Task SaveUserDashboardPreferencesToDatabaseMockAsync(string userId, DashboardPreferences preferences)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
         }
 
-        private async Task<AccessibilityOptimizedData> FetchAccessibilityOptimizedDataAsync(AccessibilityDataRequest request)
+        /// <summary>
+        /// OBSOLETE: Use Infrastructure.Services.DashboardService.FetchAccessibilityOptimizedDataAsync instead.
+        /// This method returns mock data.
+        /// </summary>
+        private async Task<AccessibilityOptimizedData> FetchAccessibilityOptimizedDataMockAsync(AccessibilityDataRequest request)
         {
-            // Implementation will be added later
+            // This implementation is obsolete. Use DashboardServiceWithRealData instead.
             return new AccessibilityOptimizedData
             {
                 MetricKey = request.MetricKey,

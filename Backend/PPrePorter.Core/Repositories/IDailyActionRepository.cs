@@ -1,11 +1,14 @@
-using PPrePorter.Domain.Entities.PPReporter;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using PPrePorter.Core.Models.Entities;
 
 namespace PPrePorter.Core.Repositories
 {
     /// <summary>
     /// Repository interface for DailyAction entities
     /// </summary>
-    public interface IDailyActionRepository : IRepository<DailyAction>
+    public interface IDailyActionRepository
     {
         /// <summary>
         /// Gets daily actions for a specific date range

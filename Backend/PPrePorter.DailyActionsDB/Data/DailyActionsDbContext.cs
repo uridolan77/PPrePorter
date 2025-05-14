@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,7 @@ using PPrePorter.DailyActionsDB.Models.Players;
 using PPrePorter.DailyActionsDB.Models.Sports;
 using PPrePorter.DailyActionsDB.Models.Transactions;
 using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +24,15 @@ namespace PPrePorter.DailyActionsDB.Data
     public class DailyActionsDbContext : DbContext
     {
         private readonly ILogger<DailyActionsDbContext>? _logger;
+
+        /// <summary>
+        /// Static constructor to register global interceptors
+        /// </summary>
+        static DailyActionsDbContext()
+        {
+            // Register the IsolationLevelInterceptor globally to apply READ UNCOMMITTED isolation level to all queries
+            DbInterception.Add(new IsolationLevelInterceptor(IsolationLevel.ReadUncommitted));
+        }
 
         public DailyActionsDbContext(DbContextOptions<DailyActionsDbContext> options)
             : base(options)
@@ -298,6 +309,13 @@ namespace PPrePorter.DailyActionsDB.Data
             {
                 entity.ToTable("tbl_Daily_actions_transactions", schema: "common");
                 entity.HasKey(e => e.Id);
+
+                // Configure the relationship with Player
+                entity.HasOne<Player>()
+                      .WithMany()
+                      .HasForeignKey(t => t.PlayerID)
+                      .HasPrincipalKey(p => p.PlayerID)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Configure WithdrawalRequest entity

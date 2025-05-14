@@ -49,6 +49,8 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import { motion, AnimatePresence } from 'framer-motion';
+import SimpleBox from '../components/common/SimpleBox';
+import { createSx } from '../utils/styleUtils';
 
 // Import smaller components directly as they're used immediately
 import ErrorDisplay from '../components/common/ErrorDisplay';
@@ -335,31 +337,31 @@ const Dashboard: React.FC = () => {
 
   if (isLoading && !summaryStats) {
     return (
-      <Box sx={{
+      <SimpleBox sx={createSx({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         height: '50vh'
-      }}>
+      })}>
         <CircularProgress />
-      </Box>
+      </SimpleBox>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', px: 2 }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', px: 2 })}>
         <ErrorDisplay
           error={error}
           title="Failed to load dashboard"
           onRetry={handleRefresh}
         />
-      </Box>
+      </SimpleBox>
     );
   }
 
   return (
-    <Box ref={dashboardRef}>
+    <SimpleBox ref={dashboardRef} sx={createSx({})}>
       <AdvancedDashboardHeader
         lastUpdated={lastRefreshed}
         onRefresh={handleRefresh}
@@ -369,7 +371,7 @@ const Dashboard: React.FC = () => {
 
       {!advancedViewMode ? (
         <>
-          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><CircularProgress /></Box>}>
+          <Suspense fallback={<SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' })}><CircularProgress /></SimpleBox>}>
             <Tabs
               value={tabValue}
               onChange={handleTabChange}
@@ -387,13 +389,13 @@ const Dashboard: React.FC = () => {
             </Tabs>
 
             {componentErrors.summary ? (
-              <Box sx={{ mb: 3 }}>
+              <SimpleBox sx={createSx({ mb: 3 })}>
                 <ErrorDisplay
                   error={componentErrors.summary}
                   title="Failed to load summary data"
                   onRetry={() => loadDashboardSummary()}
                 />
-              </Box>
+              </SimpleBox>
             ) : (
               <DashboardMetrics
                 stats={summaryStats}
@@ -418,8 +420,8 @@ const Dashboard: React.FC = () => {
 
           {/* Expanded view modal */}
           <Fade in={expandedView}>
-            <Box
-              sx={{
+            <SimpleBox
+              sx={createSx({
                 display: expandedView ? 'flex' : 'none',
                 position: 'fixed',
                 top: 0,
@@ -430,12 +432,12 @@ const Dashboard: React.FC = () => {
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
                 alignItems: 'center',
                 justifyContent: 'center'
-              }}
+              })}
               onClick={() => setExpandedView(false)}
             >
               <Zoom in={expandedView}>
-                <Box
-                  sx={{
+                <SimpleBox
+                  sx={createSx({
                     width: '90%',
                     height: '90%',
                     backgroundColor: theme.palette.background.paper,
@@ -443,12 +445,12 @@ const Dashboard: React.FC = () => {
                     boxShadow: 24,
                     p: 4,
                     overflow: 'auto'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
+                  })}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                   {expandedSection && (
                     <>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 })}>
                         <Typography variant="h5">
                           {{
                             revenue: 'Revenue (Last 7 days)',
@@ -460,38 +462,38 @@ const Dashboard: React.FC = () => {
                         <IconButton onClick={() => setExpandedView(false)}>
                           <FullscreenExitIcon />
                         </IconButton>
-                      </Box>
-                      <Box sx={{ height: 'calc(100% - 60px)' }}>
+                      </SimpleBox>
+                      <SimpleBox sx={createSx({ height: 'calc(100% - 60px)' })}>
                         <Suspense fallback={<ChartSkeleton />}>
                           {expandedSection === 'revenue' && <CasinoRevenueChart data={casinoRevenue} isLoading={!visibleComponents.revenue} height={600} />}
                           {expandedSection === 'registrations' && <PlayerRegistrationsChart data={playerRegistrations} isLoading={!visibleComponents.registrations} height={600} />}
                           {expandedSection === 'topGames' && <TopGamesChart data={topGames} isLoading={!visibleComponents.topGames} height={600} />}
                           {expandedSection === 'transactions' && <RecentTransactionsTable data={recentTransactions} isLoading={!visibleComponents.transactions} />}
                         </Suspense>
-                      </Box>
+                      </SimpleBox>
                     </>
                   )}
-                </Box>
+                </SimpleBox>
               </Zoom>
-            </Box>
+            </SimpleBox>
           </Fade>
         </>
       ) : (
         // Advanced view with ContextualDataExplorer
-        <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><CircularProgress /></Box>}>
-          <Box sx={{ width: '100%', typography: 'body1' }}>
+        <Suspense fallback={<SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' })}><CircularProgress /></SimpleBox>}>
+          <SimpleBox sx={createSx({ width: '100%', typography: 'body1' })}>
             <TabContext value={activeTab}>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <SimpleBox sx={createSx({ borderBottom: 1, borderColor: 'divider' })}>
                 <TabList onChange={handleAdvancedViewTabChange} variant="scrollable" scrollButtons="auto">
                   <Tab icon={<BubbleChartIcon />} iconPosition="start" label="Data Explorer" value="1" />
                   <Tab icon={<InsightsIcon />} iconPosition="start" label="Trend Analysis" value="2" />
                   <Tab icon={<CompareArrowsIcon />} iconPosition="start" label="What-If Scenarios" value="3" />
                   <Tab icon={<DashboardCustomizeIcon />} iconPosition="start" label="Custom Views" value="4" />
                 </TabList>
-              </Box>
+              </SimpleBox>
 
               <Fade in={!focusTransition}>
-                <Box>
+                <SimpleBox sx={createSx({})}>
                   <TabPanel value="1" sx={{ p: 0, pt: 2 }}>
                     <Paper elevation={0} sx={{ height: '80vh', borderRadius: 2, overflow: 'hidden' }}>
                       <Suspense fallback={<ChartSkeleton />}>
@@ -565,13 +567,13 @@ const Dashboard: React.FC = () => {
                       </Grid>
                     </Paper>
                   </TabPanel>
-                </Box>
+                </SimpleBox>
               </Fade>
             </TabContext>
-          </Box>
+          </SimpleBox>
         </Suspense>
       )}
-    </Box>
+    </SimpleBox>
   );
 };
 

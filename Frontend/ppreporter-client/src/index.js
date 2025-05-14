@@ -7,6 +7,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { FEATURES } from './config/constants';
+import { preloadCriticalComponents } from './utils/preloadComponents';
 
 // Initialize mock data flag for UI testing
 // This ensures the flag is set when the application starts
@@ -24,6 +25,12 @@ if (FEATURES.USE_MOCK_DATA_FOR_UI_TESTING) {
     console.error('Failed to preload mock data service:', error);
   });
 }
+
+// Preload critical components to avoid chunk loading errors
+console.log('Preloading critical components...');
+preloadCriticalComponents().catch(error => {
+  console.error('Error preloading critical components:', error);
+});
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

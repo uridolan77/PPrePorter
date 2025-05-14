@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using static PPrePorter.DailyActionsDB.Extensions.SqlNoLockExtensions;
+
 
 namespace PPrePorter.DailyActionsDB.Services
 {
@@ -41,18 +41,141 @@ namespace PPrePorter.DailyActionsDB.Services
                     start.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
 
                 // Compute a hash of the filter for caching
+                // Only using date-related properties for the cache key since we filter by date in the database
+                // and perform other filtering/grouping operations in memory
                 var filterHash = ComputeFilterHash(filter);
-                var cacheKey = $"{CACHE_KEY_PREFIX}Filter_{filterHash}";
 
-                // Try to get from cache first
-                if (_cache.TryGetValue(cacheKey, out DailyActionResponseDto? cachedResponse) && cachedResponse != null)
+                // Create cache keys for both raw and grouped data
+                var rawDataCacheKey = $"{CACHE_KEY_PREFIX}RawData_{filterHash}";
+                var groupedDataCacheKey = $"{CACHE_KEY_PREFIX}GroupedData_{filterHash}_{filter.GroupBy}";
+
+                _logger.LogInformation("Checking cache for grouped data key: {GroupedDataCacheKey}", groupedDataCacheKey);
+
+                // First, try to get the grouped data for the specific GroupBy option
+                if (_cache.TryGetValue(groupedDataCacheKey, out DailyActionResponseDto? cachedGroupedResponse) && cachedGroupedResponse != null)
                 {
-                    _logger.LogInformation("CACHE HIT: Retrieved filtered daily actions from cache with hash {FilterHash}, cache key: {CacheKey}",
-                        filterHash, cacheKey);
-                    return cachedResponse;
+                    _logger.LogInformation("CACHE HIT: Retrieved grouped daily actions from cache with hash {FilterHash}, GroupBy: {GroupBy}, cache key: {GroupedDataCacheKey}",
+                        filterHash, filter.GroupBy, groupedDataCacheKey);
+
+                    // We found a cached response with the exact grouping we need
+                    var cachedGroupedData = cachedGroupedResponse.Data;
+
+                    // Create a new response with the grouped data and current filter settings
+                    var newResponse = new DailyActionResponseDto
+                    {
+                        Data = cachedGroupedData,
+                        Summary = cachedGroupedResponse.Summary,
+                        TotalCount = cachedGroupedResponse.TotalCount,
+                        TotalPages = (int)Math.Ceiling(cachedGroupedResponse.TotalCount / (double)filter.PageSize),
+                        CurrentPage = filter.PageNumber,
+                        PageSize = filter.PageSize,
+                        StartDate = startDate, // Use the already normalized date
+                        EndDate = endDate, // Use the already normalized date
+                        AppliedFilters = filter
+                    };
+
+                    _logger.LogInformation("Returning cached grouped data with {Count} records", cachedGroupedData.Count);
+                    return newResponse;
                 }
 
-                _logger.LogWarning("CACHE MISS: Getting filtered daily actions from database with hash {FilterHash}, cache key: {CacheKey}", filterHash, cacheKey);
+                // If we don't have the grouped data, try to get the raw data
+                _logger.LogInformation("No cached grouped data found. Checking cache for raw data key: {RawDataCacheKey}", rawDataCacheKey);
+
+                if (_cache.TryGetValue(rawDataCacheKey, out DailyActionResponseDto? cachedResponse) && cachedResponse != null)
+                {
+                    _logger.LogInformation("CACHE HIT: Retrieved raw daily actions from cache with hash {FilterHash}, cache key: {RawDataCacheKey}",
+                        filterHash, rawDataCacheKey);
+
+                    _logger.LogInformation("Applying current filter (GroupBy={RequestedGroupBy}) to cached raw data", filter.GroupBy);
+
+                    // Get the raw data from the cached response
+                    var rawData = cachedResponse.Data;
+
+                    // Log the GroupBy option being used for cached data
+                    _logger.LogInformation("Applying grouping to cached data with GroupBy={GroupBy} (enum value: {GroupByValue})",
+                        filter.GroupBy, (int)filter.GroupBy);
+
+                    // Apply the requested grouping to the raw data
+                    List<DailyActionDto> regroupedData;
+
+                    switch (filter.GroupBy)
+                    {
+                        case GroupByOption.Day:
+                            _logger.LogInformation("Grouping cached data by Day");
+                            regroupedData = GroupByDay(rawData);
+                            break;
+                        case GroupByOption.Month:
+                            _logger.LogInformation("Grouping cached data by Month");
+                            regroupedData = GroupByMonth(rawData);
+                            break;
+                        case GroupByOption.Year:
+                            _logger.LogInformation("Grouping cached data by Year");
+                            regroupedData = GroupByYear(rawData);
+                            break;
+                        case GroupByOption.Label:
+                            _logger.LogInformation("Grouping cached data by Label (White Label)");
+                            regroupedData = GroupByWhiteLabel(rawData);
+                            break;
+                        case GroupByOption.Country:
+                            _logger.LogInformation("Grouping cached data by Country");
+                            regroupedData = GroupByCountry(rawData);
+                            break;
+                        case GroupByOption.Tracker:
+                            _logger.LogInformation("Grouping cached data by Tracker");
+                            regroupedData = GroupByTracker(rawData);
+                            break;
+                        case GroupByOption.Currency:
+                            _logger.LogInformation("Grouping cached data by Currency");
+                            regroupedData = GroupByCurrency(rawData);
+                            break;
+                        case GroupByOption.Gender:
+                            _logger.LogInformation("Grouping cached data by Gender");
+                            regroupedData = GroupByGender(rawData);
+                            break;
+                        case GroupByOption.Platform:
+                            _logger.LogInformation("Grouping cached data by Platform");
+                            regroupedData = GroupByPlatform(rawData);
+                            break;
+                        case GroupByOption.Ranking:
+                            _logger.LogInformation("Grouping cached data by Ranking");
+                            regroupedData = GroupByRanking(rawData);
+                            break;
+                        case GroupByOption.Player:
+                            _logger.LogInformation("Grouping cached data by Player");
+                            regroupedData = GroupByPlayer(rawData);
+                            break;
+                        default:
+                            _logger.LogWarning("Unknown GroupBy option for cached data: {GroupBy}. Using raw data without grouping.", filter.GroupBy);
+                            regroupedData = rawData;
+                            break;
+                    }
+
+                    // Log the result after grouping cached data
+                    _logger.LogInformation("After grouping cached data: {Count} records returned", regroupedData.Count);
+
+                    // Create a new response with the grouped data and current filter settings
+                    var newResponse = new DailyActionResponseDto
+                    {
+                        Data = regroupedData,
+                        Summary = cachedResponse.Summary,
+                        TotalCount = cachedResponse.TotalCount,
+                        TotalPages = (int)Math.Ceiling(cachedResponse.TotalCount / (double)filter.PageSize),
+                        CurrentPage = filter.PageNumber,
+                        PageSize = filter.PageSize,
+                        StartDate = cachedResponse.StartDate,
+                        EndDate = cachedResponse.EndDate,
+                        AppliedFilters = filter,
+                        LastHistoricalRefreshTime = cachedResponse.LastHistoricalRefreshTime,
+                        LastTodayRefreshTime = cachedResponse.LastTodayRefreshTime
+                    };
+
+                    _logger.LogInformation("Applied grouping to cached data: GroupBy={RequestedGroupBy}, resulting in {RegroupedCount} records",
+                        filter.GroupBy, regroupedData.Count);
+
+                    return newResponse;
+                }
+
+                _logger.LogWarning("CACHE MISS: Getting filtered daily actions from database with hash {FilterHash}", filterHash);
 
                 // Calculate date range span in days
                 var daySpan = (end.Date - start.Date).Days + 1;
@@ -176,10 +299,11 @@ namespace PPrePorter.DailyActionsDB.Services
                             .GroupBy(da => da.WhiteLabelID)
                             .Select(g => new DailyAction
                             {
-                                WhiteLabelID = g.Key,
-                                Registration = (byte?)(short?)g.Sum(da => da.Registration ?? 0),
-                                FTD = (byte?)(short?)g.Sum(da => da.FTD ?? 0),
-                                FTDA = (byte?)(short?)g.Sum(da => da.FTDA ?? 0),
+                                // Convert the key to short? to match the WhiteLabelID property type
+                                WhiteLabelID = g.Key != null ? (short?)Convert.ToInt16(g.Key) : null,
+                                Registration = g.Sum(da => da.Registration ?? 0),
+                                FTD = g.Sum(da => da.FTD ?? 0),
+                                FTDA = g.Sum(da => da.FTDA ?? 0),
                                 Deposits = g.Sum(da => da.Deposits ?? 0),
                                 PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
                                 BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
@@ -277,133 +401,170 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Apply white label filter if specified
                 if (filter.WhiteLabelIds != null && filter.WhiteLabelIds.Count > 0)
                 {
-                    dailyActionsQuery = dailyActionsQuery.Where(da => filter.WhiteLabelIds.Contains((int)(da.WhiteLabelID ?? 0)));
+                    // Convert the int WhiteLabelIds to short for proper comparison
+                    var shortWhiteLabelIds = filter.WhiteLabelIds.Select(id => (short)id).ToList();
+
+                    // Use the converted IDs for the filter
+                    dailyActionsQuery = dailyActionsQuery.Where(da => da.WhiteLabelID.HasValue && shortWhiteLabelIds.Contains(da.WhiteLabelID.Value));
+
+                    _logger.LogInformation("Applied white label filter: WhiteLabelIDs = {WhiteLabelIds}",
+                        string.Join(", ", filter.WhiteLabelIds));
                 }
 
-                // Apply grouping based on the selected option
-                IQueryable<DailyAction> groupedQuery;
+                // IMPORTANT: We're not applying any grouping at the database level anymore
+                // Instead, we'll get all the raw data and then apply grouping in memory
+                // This allows us to cache the raw data and apply different groupings without going back to the database
 
-                switch (filter.GroupBy)
+                _logger.LogInformation("Getting raw data from database without any grouping");
+
+                // Use a projection to explicitly handle type conversions
+                var rawQuery = dailyActionsQuery.Select(da => new DailyAction
                 {
-                    case GroupByOption.Day:
-                        groupedQuery = dailyActionsQuery
-                            .GroupBy(da => da.Date.Date)
-                            .Select(g => new DailyAction
-                            {
-                                Date = g.Key,
-                                Registration = g.Sum(da => da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0),
-                                FTD = g.Sum(da => da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0),
-                                FTDA = g.Sum(da => da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : 0),
-                                Deposits = g.Sum(da => da.Deposits ?? 0),
-                                PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
-                                BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
-                                WinsCasino = g.Sum(da => da.WinsCasino ?? 0),
-                                BetsSport = g.Sum(da => da.BetsSport ?? 0),
-                                WinsSport = g.Sum(da => da.WinsSport ?? 0),
-                                BetsLive = g.Sum(da => da.BetsLive ?? 0),
-                                WinsLive = g.Sum(da => da.WinsLive ?? 0),
-                                BetsBingo = g.Sum(da => da.BetsBingo ?? 0),
-                                WinsBingo = g.Sum(da => da.WinsBingo ?? 0)
-                            });
-                        break;
-
-                    case GroupByOption.Month:
-                        groupedQuery = dailyActionsQuery
-                            .GroupBy(da => new { Year = da.Date.Year, Month = da.Date.Month })
-                            .Select(g => new DailyAction
-                            {
-                                Date = new DateTime(g.Key.Year, g.Key.Month, 1, 0, 0, 0, DateTimeKind.Utc),
-                                Registration = g.Sum(da => da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0),
-                                FTD = g.Sum(da => da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0),
-                                FTDA = g.Sum(da => da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : 0),
-                                Deposits = g.Sum(da => da.Deposits ?? 0),
-                                PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
-                                BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
-                                WinsCasino = g.Sum(da => da.WinsCasino ?? 0),
-                                BetsSport = g.Sum(da => da.BetsSport ?? 0),
-                                WinsSport = g.Sum(da => da.WinsSport ?? 0),
-                                BetsLive = g.Sum(da => da.BetsLive ?? 0),
-                                WinsLive = g.Sum(da => da.WinsLive ?? 0),
-                                BetsBingo = g.Sum(da => da.BetsBingo ?? 0),
-                                WinsBingo = g.Sum(da => da.WinsBingo ?? 0)
-                            });
-                        break;
-
-                    case GroupByOption.Year:
-                        groupedQuery = dailyActionsQuery
-                            .GroupBy(da => da.Date.Year)
-                            .Select(g => new DailyAction
-                            {
-                                Date = new DateTime(g.Key, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                                Registration = g.Sum(da => da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0),
-                                FTD = g.Sum(da => da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0),
-                                FTDA = g.Sum(da => da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : 0),
-                                Deposits = g.Sum(da => da.Deposits ?? 0),
-                                PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
-                                BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
-                                WinsCasino = g.Sum(da => da.WinsCasino ?? 0),
-                                BetsSport = g.Sum(da => da.BetsSport ?? 0),
-                                WinsSport = g.Sum(da => da.WinsSport ?? 0),
-                                BetsLive = g.Sum(da => da.BetsLive ?? 0),
-                                WinsLive = g.Sum(da => da.WinsLive ?? 0),
-                                BetsBingo = g.Sum(da => da.BetsBingo ?? 0),
-                                WinsBingo = g.Sum(da => da.WinsBingo ?? 0)
-                            });
-                        break;
-
-                    case GroupByOption.Label:
-                        groupedQuery = dailyActionsQuery
-                            .GroupBy(da => da.WhiteLabelID)
-                            .Select(g => new DailyAction
-                            {
-                                WhiteLabelID = g.Key,
-                                Registration = g.Sum(da => da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0),
-                                FTD = g.Sum(da => da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0),
-                                FTDA = g.Sum(da => da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : 0),
-                                Deposits = g.Sum(da => da.Deposits ?? 0),
-                                PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
-                                BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
-                                WinsCasino = g.Sum(da => da.WinsCasino ?? 0),
-                                BetsSport = g.Sum(da => da.BetsSport ?? 0),
-                                WinsSport = g.Sum(da => da.WinsSport ?? 0),
-                                BetsLive = g.Sum(da => da.BetsLive ?? 0),
-                                WinsLive = g.Sum(da => da.WinsLive ?? 0),
-                                BetsBingo = g.Sum(da => da.BetsBingo ?? 0),
-                                WinsBingo = g.Sum(da => da.WinsBingo ?? 0)
-                            });
-                        break;
-
-                    case GroupByOption.Player:
-                        groupedQuery = dailyActionsQuery
-                            .GroupBy(da => da.PlayerID)
-                            .Select(g => new DailyAction
-                            {
-                                PlayerID = g.Key,
-                                Registration = g.Sum(da => da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0),
-                                FTD = g.Sum(da => da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0),
-                                FTDA = g.Sum(da => da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : 0),
-                                Deposits = g.Sum(da => da.Deposits ?? 0),
-                                PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
-                                BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
-                                WinsCasino = g.Sum(da => da.WinsCasino ?? 0),
-                                BetsSport = g.Sum(da => da.BetsSport ?? 0),
-                                WinsSport = g.Sum(da => da.WinsSport ?? 0),
-                                BetsLive = g.Sum(da => da.BetsLive ?? 0),
-                                WinsLive = g.Sum(da => da.WinsLive ?? 0),
-                                BetsBingo = g.Sum(da => da.BetsBingo ?? 0),
-                                WinsBingo = g.Sum(da => da.WinsBingo ?? 0)
-                            });
-                        break;
-
-                    default:
-                        // Default to no grouping
-                        groupedQuery = dailyActionsQuery;
-                        break;
-                }
+                    Id = da.Id,
+                    Date = da.Date,
+                    // Explicitly convert byte to short for WhiteLabelID
+                    WhiteLabelID = da.WhiteLabelID,
+                    PlayerID = da.PlayerID,
+                    // Explicitly convert byte to int for these fields
+                    Registration = da.Registration,
+                    FTD = da.FTD,
+                    FTDA = da.FTDA,
+                    // Include all other fields
+                    Deposits = da.Deposits,
+                    DepositsCreditCard = da.DepositsCreditCard,
+                    DepositsNeteller = da.DepositsNeteller,
+                    DepositsMoneyBookers = da.DepositsMoneyBookers,
+                    DepositsOther = da.DepositsOther,
+                    DepositsFee = da.DepositsFee,
+                    DepositsSport = da.DepositsSport,
+                    DepositsLive = da.DepositsLive,
+                    DepositsBingo = da.DepositsBingo,
+                    CashoutRequests = da.CashoutRequests,
+                    PaidCashouts = da.PaidCashouts,
+                    Chargebacks = da.Chargebacks,
+                    Voids = da.Voids,
+                    ReverseChargebacks = da.ReverseChargebacks,
+                    Bonuses = da.Bonuses,
+                    BonusesSport = da.BonusesSport,
+                    BonusesLive = da.BonusesLive,
+                    BonusesBingo = da.BonusesBingo,
+                    CollectedBonuses = da.CollectedBonuses,
+                    ExpiredBonuses = da.ExpiredBonuses,
+                    BonusConverted = da.BonusConverted,
+                    BetsCasino = da.BetsCasino,
+                    BetsCasinoReal = da.BetsCasinoReal,
+                    BetsCasinoBonus = da.BetsCasinoBonus,
+                    RefundsCasino = da.RefundsCasino,
+                    RefundsCasinoReal = da.RefundsCasinoReal,
+                    RefundsCasinoBonus = da.RefundsCasinoBonus,
+                    WinsCasino = da.WinsCasino,
+                    WinsCasinoReal = da.WinsCasinoReal,
+                    WinsCasinoBonus = da.WinsCasinoBonus,
+                    BetsSport = da.BetsSport,
+                    BetsSportReal = da.BetsSportReal,
+                    BetsSportBonus = da.BetsSportBonus,
+                    RefundsSport = da.RefundsSport,
+                    RefundsSportReal = da.RefundsSportReal,
+                    RefundsSportBonus = da.RefundsSportBonus,
+                    WinsSport = da.WinsSport,
+                    WinsSportReal = da.WinsSportReal,
+                    WinsSportBonus = da.WinsSportBonus,
+                    BetsLive = da.BetsLive,
+                    BetsLiveReal = da.BetsLiveReal,
+                    BetsLiveBonus = da.BetsLiveBonus,
+                    RefundsLive = da.RefundsLive,
+                    RefundsLiveReal = da.RefundsLiveReal,
+                    RefundsLiveBonus = da.RefundsLiveBonus,
+                    WinsLive = da.WinsLive,
+                    WinsLiveReal = da.WinsLiveReal,
+                    WinsLiveBonus = da.WinsLiveBonus,
+                    BetsBingo = da.BetsBingo,
+                    BetsBingoReal = da.BetsBingoReal,
+                    BetsBingoBonus = da.BetsBingoBonus,
+                    RefundsBingo = da.RefundsBingo,
+                    RefundsBingoReal = da.RefundsBingoReal,
+                    RefundsBingoBonus = da.RefundsBingoBonus,
+                    WinsBingo = da.WinsBingo,
+                    WinsBingoReal = da.WinsBingoReal,
+                    WinsBingoBonus = da.WinsBingoBonus
+                });
 
                 // Execute the query with NOLOCK hint
                 _logger.LogInformation("Executing query with NOLOCK hint");
-                results = await groupedQuery.ToListWithSqlNoLock();
+
+                try
+                {
+                    // Log the SQL query for debugging
+                    var rawQueryString = rawQuery.ToString();
+                    _logger.LogInformation("SQL Query: {SqlQuery}", rawQueryString);
+
+                    // Add more detailed logging about the query
+                    _logger.LogInformation("Query type: {QueryType}, Provider: {Provider}",
+                        rawQuery.GetType().Name,
+                        rawQuery.Provider.GetType().Name);
+
+                    // Execute the query with NOLOCK hint and detailed error handling
+                    try
+                    {
+                        results = await rawQuery.ToListWithSqlNoLock();
+                        _logger.LogInformation("Query executed successfully, retrieved {Count} results", results.Count);
+
+                        // Log the first few results to help diagnose issues
+                        if (results.Count > 0)
+                        {
+                            var firstResult = results.First();
+                            _logger.LogInformation("First result - Id: {Id}, Date: {Date}, WhiteLabelID: {WhiteLabelID} (Type: {WhiteLabelIDType}), " +
+                                "PlayerID: {PlayerID}, Registration: {Registration} (Type: {RegistrationType}), FTD: {FTD} (Type: {FTDType})",
+                                firstResult.Id,
+                                firstResult.Date,
+                                firstResult.WhiteLabelID,
+                                firstResult.WhiteLabelID?.GetType().Name ?? "null",
+                                firstResult.PlayerID,
+                                firstResult.Registration,
+                                firstResult.Registration?.GetType().Name ?? "null",
+                                firstResult.FTD,
+                                firstResult.FTD?.GetType().Name ?? "null");
+                        }
+                    }
+                    catch (InvalidCastException castEx)
+                    {
+                        _logger.LogError(castEx, "Type casting error executing query. This might be due to a mismatch between the database schema and the entity model.");
+
+                        // Try a simpler query as a fallback
+                        _logger.LogWarning("Attempting fallback query with minimal fields...");
+
+                        var fallbackQuery = dailyActionsQuery.Select(da => new DailyAction
+                        {
+                            Id = da.Id,
+                            Date = da.Date,
+                            // Convert problematic fields explicitly
+                            WhiteLabelID = da.WhiteLabelID != null ? (short?)Convert.ToInt16(da.WhiteLabelID) : null,
+                            PlayerID = da.PlayerID,
+                            Registration = da.Registration != null ? (byte?)Convert.ToByte(da.Registration) : null,
+                            FTD = da.FTD != null ? (byte?)Convert.ToByte(da.FTD) : null,
+                            FTDA = da.FTDA != null ? (byte?)Convert.ToByte(da.FTDA) : null,
+                            // Include only essential numeric fields
+                            Deposits = da.Deposits,
+                            PaidCashouts = da.PaidCashouts,
+                            BetsCasino = da.BetsCasino,
+                            WinsCasino = da.WinsCasino,
+                            BetsSport = da.BetsSport,
+                            WinsSport = da.WinsSport,
+                            BetsLive = da.BetsLive,
+                            WinsLive = da.WinsLive,
+                            BetsBingo = da.BetsBingo,
+                            WinsBingo = da.WinsBingo
+                        });
+
+                        results = await fallbackQuery.ToListWithSqlNoLock();
+                        _logger.LogInformation("Fallback query executed successfully, retrieved {Count} results", results.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error executing query with NOLOCK hint");
+                    throw;
+                }
 
                 // Get total count from the results (no need for a separate query)
                 int resultCount = results.Count;
@@ -417,6 +578,12 @@ namespace PPrePorter.DailyActionsDB.Services
                     (Country?)null, // We're not using the full Country object anymore
                     (Currency?)null // We're not using the full Currency object anymore
                 )).ToList();
+
+                _logger.LogInformation("Retrieved {Count} records from database", joinedResults.Count);
+
+                // For now, we'll skip the additional metadata enrichment
+                // We'll implement a more comprehensive solution in a separate method
+                _logger.LogInformation("Skipping additional metadata enrichment for now");
 
                 // Get white labels for mapping names - use caching to avoid repeated database calls
                 string whiteLabelCacheKey = "AllWhiteLabels_True";
@@ -432,7 +599,9 @@ namespace PPrePorter.DailyActionsDB.Services
                     _logger.LogInformation("Retrieved {Count} white labels from cache", cachedWhiteLabels.Count);
                 }
 
-                var whiteLabelDict = cachedWhiteLabels.ToDictionary(wl => wl.Code, wl => wl.Name);
+                var whiteLabelDict = cachedWhiteLabels
+                    .Where(wl => !string.IsNullOrEmpty(wl.Code))
+                    .ToDictionary(wl => wl.Code!, wl => wl.Name);
 
                 // Map to DTOs
                 var mappedDailyActions = joinedResults.Select(result =>
@@ -460,12 +629,43 @@ namespace PPrePorter.DailyActionsDB.Services
 
                     // Get player information from our projection
                     string playerName = da.PlayerID.HasValue ? $"Player {da.PlayerID}" : "Unknown";
+                    _logger.LogDebug("Player ID: {PlayerId}, Player Name: {PlayerName}", da.PlayerID, playerName);
 
                     // Get country information from our projection
-                    string countryName = "Unknown";
+                    string countryName = result.Country?.CountryName ?? "Unknown";
+                    _logger.LogDebug("Country Name: {CountryName}", countryName);
 
                     // Get currency information from our projection
-                    string currencyCode = "Unknown";
+                    string currencyCode = result.Currency?.CurrencyCode ?? "Unknown";
+                    _logger.LogDebug("Currency Code: {CurrencyCode}", currencyCode);
+
+                    // Get tracker information (for GroupByOption.Tracker)
+                    string trackerName = "Unknown";
+                    if (da.PlayerID.HasValue)
+                    {
+                        // Try to get tracker information from the player
+                        // This is a placeholder - implement actual tracker retrieval logic
+                        trackerName = "Default Tracker";
+                    }
+                    _logger.LogDebug("Tracker Name: {TrackerName}", trackerName);
+
+                    // Get gender information (for GroupByOption.Gender)
+                    string genderName = "Unknown";
+                    if (result.Player != null)
+                    {
+                        // Try to get gender information from the player
+                        genderName = result.Player.Gender ?? "Unknown";
+                    }
+                    _logger.LogDebug("Gender Name: {GenderName}", genderName);
+
+                    // Get platform information (for GroupByOption.Platform)
+                    string platformName = "Unknown";
+                    if (result.Player != null)
+                    {
+                        // Try to get platform information from the player
+                        platformName = result.Player.RegisteredPlatform ?? result.Player.PlatformString ?? "Unknown";
+                    }
+                    _logger.LogDebug("Platform Name: {PlatformName}", platformName);
 
                     return new DailyActionDto
                     {
@@ -477,6 +677,14 @@ namespace PPrePorter.DailyActionsDB.Services
                         PlayerName = playerName,
                         CountryName = countryName,
                         CurrencyCode = currencyCode,
+                        // Additional fields for grouping
+                        GroupKey = null, // Will be set during grouping
+                        GroupValue = null, // Will be set during grouping
+
+                        // Add explicit fields for each grouping dimension to ensure they're available
+                        // These will be used by the GroupBy methods
+
+                        // Add all the necessary fields for calculations
                         Registrations = da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0,
                         FTD = da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0,
                         FTDA = da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : null,
@@ -532,25 +740,11 @@ namespace PPrePorter.DailyActionsDB.Services
 
                         // Live-related properties
                         BetsLive = da.BetsLive ?? 0,
-                        BetsLiveReal = da.BetsLiveReal,
-                        BetsLiveBonus = da.BetsLiveBonus,
-                        RefundsLive = da.RefundsLive,
-                        RefundsLiveReal = da.RefundsLiveReal,
-                        RefundsLiveBonus = da.RefundsLiveBonus,
                         WinsLive = da.WinsLive ?? 0,
-                        WinsLiveReal = da.WinsLiveReal,
-                        WinsLiveBonus = da.WinsLiveBonus,
 
                         // Bingo-related properties
                         BetsBingo = da.BetsBingo ?? 0,
-                        BetsBingoReal = da.BetsBingoReal,
-                        BetsBingoBonus = da.BetsBingoBonus,
-                        RefundsBingo = da.RefundsBingo,
-                        RefundsBingoReal = da.RefundsBingoReal,
-                        RefundsBingoBonus = da.RefundsBingoBonus,
                         WinsBingo = da.WinsBingo ?? 0,
-                        WinsBingoReal = da.WinsBingoReal,
-                        WinsBingoBonus = da.WinsBingoBonus,
 
                         // Calculate GGR values
                         GGRCasino = (da.BetsCasino ?? 0) - (da.WinsCasino ?? 0),
@@ -560,7 +754,21 @@ namespace PPrePorter.DailyActionsDB.Services
                         TotalGGR = (da.BetsCasino ?? 0) - (da.WinsCasino ?? 0) +
                                   (da.BetsSport ?? 0) - (da.WinsSport ?? 0) +
                                   (da.BetsLive ?? 0) - (da.WinsLive ?? 0) +
-                                  (da.BetsBingo ?? 0) - (da.WinsBingo ?? 0)
+                                  (da.BetsBingo ?? 0) - (da.WinsBingo ?? 0),
+
+                        // Add a dictionary for additional grouping metadata
+                        GroupData = new Dictionary<string, object>
+                        {
+                            { "TrackerName", trackerName },
+                            { "GenderName", genderName },
+                            { "PlatformName", platformName },
+                            { "PlayerId", da.PlayerID ?? 0 },
+                            { "PlayerName", playerName },
+                            { "CountryName", countryName },
+                            { "CurrencyCode", currencyCode },
+                            { "WhiteLabelId", whiteLabelId },
+                            { "WhiteLabelName", whiteLabelName }
+                        }
                     };
                 }).ToList();
 
@@ -584,22 +792,64 @@ namespace PPrePorter.DailyActionsDB.Services
                     mappedDailyActions.Select(da => da.Date.Date).Distinct().Count(),
                     mappedDailyActions.Select(da => da.WhiteLabelId).Distinct().Count());
 
+                // Log the GroupBy option being used
+                _logger.LogInformation("Applying grouping with GroupBy={GroupBy} (enum value: {GroupByValue})",
+                    filter.GroupBy, (int)filter.GroupBy);
+
                 // Group the data based on the selected option
-                var groupedData = filter.GroupBy switch
+                List<DailyActionDto> groupedData;
+
+                switch (filter.GroupBy)
                 {
-                    GroupByOption.Day => GroupByDay(mappedDailyActions),
-                    GroupByOption.Month => GroupByMonth(mappedDailyActions),
-                    GroupByOption.Year => GroupByYear(mappedDailyActions),
-                    GroupByOption.Label => GroupByWhiteLabel(mappedDailyActions),
-                    GroupByOption.Country => GroupByCountry(mappedDailyActions),
-                    GroupByOption.Tracker => GroupByTracker(mappedDailyActions),
-                    GroupByOption.Currency => GroupByCurrency(mappedDailyActions),
-                    GroupByOption.Gender => GroupByGender(mappedDailyActions),
-                    GroupByOption.Platform => GroupByPlatform(mappedDailyActions),
-                    GroupByOption.Ranking => GroupByRanking(mappedDailyActions),
-                    GroupByOption.Player => GroupByPlayer(mappedDailyActions),
-                    _ => mappedDailyActions // Default to no grouping
-                };
+                    case GroupByOption.Day:
+                        _logger.LogInformation("Grouping by Day");
+                        groupedData = GroupByDay(mappedDailyActions);
+                        break;
+                    case GroupByOption.Month:
+                        _logger.LogInformation("Grouping by Month");
+                        groupedData = GroupByMonth(mappedDailyActions);
+                        break;
+                    case GroupByOption.Year:
+                        _logger.LogInformation("Grouping by Year");
+                        groupedData = GroupByYear(mappedDailyActions);
+                        break;
+                    case GroupByOption.Label:
+                        _logger.LogInformation("Grouping by Label (White Label)");
+                        groupedData = GroupByWhiteLabel(mappedDailyActions);
+                        break;
+                    case GroupByOption.Country:
+                        _logger.LogInformation("Grouping by Country");
+                        groupedData = GroupByCountry(mappedDailyActions);
+                        break;
+                    case GroupByOption.Tracker:
+                        _logger.LogInformation("Grouping by Tracker");
+                        groupedData = GroupByTracker(mappedDailyActions);
+                        break;
+                    case GroupByOption.Currency:
+                        _logger.LogInformation("Grouping by Currency");
+                        groupedData = GroupByCurrency(mappedDailyActions);
+                        break;
+                    case GroupByOption.Gender:
+                        _logger.LogInformation("Grouping by Gender");
+                        groupedData = GroupByGender(mappedDailyActions);
+                        break;
+                    case GroupByOption.Platform:
+                        _logger.LogInformation("Grouping by Platform");
+                        groupedData = GroupByPlatform(mappedDailyActions);
+                        break;
+                    case GroupByOption.Ranking:
+                        _logger.LogInformation("Grouping by Ranking");
+                        groupedData = GroupByRanking(mappedDailyActions);
+                        break;
+                    case GroupByOption.Player:
+                        _logger.LogInformation("Grouping by Player");
+                        groupedData = GroupByPlayer(mappedDailyActions);
+                        break;
+                    default:
+                        _logger.LogWarning("Unknown GroupBy option: {GroupBy}. Using raw data without grouping.", filter.GroupBy);
+                        groupedData = mappedDailyActions; // Default to no grouping
+                        break;
+                }
 
                 // Log the result after grouping
                 _logger.LogInformation("After grouping: {Count} records returned", groupedData.Count);
@@ -658,21 +908,77 @@ namespace PPrePorter.DailyActionsDB.Services
                     AppliedFilters = filter
                 };
 
-                // Estimate the size of the response object for cache entry
-                long estimatedSize = result.Count * 1000 + 2000; // More accurate estimate: 1000 bytes per DailyActionDto + 2000 bytes for summary and metadata
+                // Store both the raw data and the grouped data in the cache
+                // The raw data allows us to apply different groupings without going back to the database
+                // The grouped data improves performance for common grouping options
 
-                // Cache the result with more aggressive caching options
-                var cacheOptions = new MemoryCacheEntryOptions()
+                // We're using the same cache keys as defined earlier
+                // rawDataCacheKey = $"{CACHE_KEY_PREFIX}RawData_{filterHash}"
+                // groupedDataCacheKey = $"{CACHE_KEY_PREFIX}GroupedData_{filterHash}_{filter.GroupBy}"
+
+                _logger.LogInformation("Creating cache entries for raw data (key: {RawDataCacheKey}) and grouped data (key: {GroupedDataCacheKey})",
+                    rawDataCacheKey, groupedDataCacheKey);
+
+                // Create cache response with raw data
+                var rawDataCacheResponse = new DailyActionResponseDto
+                {
+                    // Store the raw data from the database before any grouping
+                    Data = mappedDailyActions,
+                    Summary = summary,
+                    TotalCount = resultCount,
+                    TotalPages = (int)Math.Ceiling(resultCount / (double)filter.PageSize),
+                    CurrentPage = filter.PageNumber,
+                    PageSize = filter.PageSize,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    AppliedFilters = filter
+                };
+
+                // Create cache response with grouped data
+                var groupedDataCacheResponse = new DailyActionResponseDto
+                {
+                    // Store the grouped data
+                    Data = result,
+                    Summary = summary,
+                    TotalCount = resultCount,
+                    TotalPages = (int)Math.Ceiling(resultCount / (double)filter.PageSize),
+                    CurrentPage = filter.PageNumber,
+                    PageSize = filter.PageSize,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    AppliedFilters = filter
+                };
+
+                // Estimate the size of the response objects for cache entries
+                long rawDataSize = mappedDailyActions.Count * 1000 + 2000; // More accurate estimate: 1000 bytes per DailyActionDto + 2000 bytes for summary and metadata
+                long groupedDataSize = result.Count * 1000 + 2000; // Similar estimate for grouped data
+
+                // Cache options for raw data
+                var rawDataCacheOptions = new MemoryCacheEntryOptions()
                 {
                     Priority = CacheItemPriority.High,
                     SlidingExpiration = TimeSpan.FromMinutes(30),
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(CACHE_EXPIRATION_MINUTES),
-                    Size = estimatedSize // Explicitly set the size for the cache entry
+                    Size = rawDataSize // Explicitly set the size for the cache entry
                 };
 
-                _cache.Set(cacheKey, response, cacheOptions);
-                _logger.LogInformation("Cached filtered daily actions with hash {FilterHash}, cache key: {CacheKey}, estimated size: {EstimatedSize} bytes",
-                    filterHash, cacheKey, estimatedSize);
+                // Cache options for grouped data
+                var groupedDataCacheOptions = new MemoryCacheEntryOptions()
+                {
+                    Priority = CacheItemPriority.Normal, // Lower priority than raw data
+                    SlidingExpiration = TimeSpan.FromMinutes(30),
+                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(CACHE_EXPIRATION_MINUTES),
+                    Size = groupedDataSize // Explicitly set the size for the cache entry
+                };
+
+                // Cache both raw and grouped data
+                _cache.Set(rawDataCacheKey, rawDataCacheResponse, rawDataCacheOptions);
+                _cache.Set(groupedDataCacheKey, groupedDataCacheResponse, groupedDataCacheOptions);
+
+                _logger.LogInformation("Cached raw daily actions data with hash {FilterHash}, cache key: {RawDataCacheKey}, estimated size: {RawDataSize} bytes",
+                    filterHash, rawDataCacheKey, rawDataSize);
+                _logger.LogInformation("Cached grouped daily actions data with hash {FilterHash}, GroupBy: {GroupBy}, cache key: {GroupedDataCacheKey}, estimated size: {GroupedDataSize} bytes",
+                    filterHash, filter.GroupBy, groupedDataCacheKey, groupedDataSize);
 
                 return response;
             }
@@ -685,11 +991,23 @@ namespace PPrePorter.DailyActionsDB.Services
 
         /// <summary>
         /// Computes a hash for the filter to use as a cache key
+        /// Only considers date-related properties since we filter by date in the database
+        /// and perform other filtering/grouping operations in memory
         /// </summary>
         private string ComputeFilterHash(DailyActionFilterDto filter)
         {
-            // Create a string representation of the filter
-            var filterString = JsonSerializer.Serialize(filter);
+            // Create a simplified filter object with only date-related properties
+            var dateOnlyFilter = new
+            {
+                StartDate = filter.StartDate,
+                EndDate = filter.EndDate,
+                WhiteLabelIds = filter.WhiteLabelIds // Keep WhiteLabelIds as it affects database query
+            };
+
+            // Create a string representation of the simplified filter
+            var filterString = JsonSerializer.Serialize(dateOnlyFilter);
+
+            _logger.LogInformation("Computing cache key using date-only filter: {FilterString}", filterString);
 
             // Compute hash
             using (var sha256 = System.Security.Cryptography.SHA256.Create())

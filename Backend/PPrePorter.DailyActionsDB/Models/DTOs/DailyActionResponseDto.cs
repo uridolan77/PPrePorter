@@ -215,6 +215,11 @@ namespace PPrePorter.DailyActionsDB.Models.DTOs
         public string? GroupKey { get; set; }
         public string? GroupValue { get; set; }
         public DateTime? UpdatedDate { get; set; }
+
+        /// <summary>
+        /// Additional data for grouping and other purposes
+        /// </summary>
+        public Dictionary<string, object>? GroupData { get; set; }
     }
 
     /// <summary>

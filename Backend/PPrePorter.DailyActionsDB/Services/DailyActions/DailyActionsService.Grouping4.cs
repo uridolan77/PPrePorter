@@ -31,34 +31,34 @@ namespace PPrePorter.DailyActionsDB.Services
                     WhiteLabelName = "All White Labels",
                     GroupKey = "Platform",
                     GroupValue = "Unknown",
-                    
+
                     // Aggregate metrics
                     Registrations = dailyActions.Sum(da => da.Registrations),
                     FTD = dailyActions.Sum(da => da.FTD),
                     FTDA = dailyActions.Sum(da => da.FTDA),
-                    
+
                     // Deposit metrics
                     Deposits = dailyActions.Sum(da => da.Deposits),
-                    
+
                     // Cashout metrics
                     PaidCashouts = dailyActions.Sum(da => da.PaidCashouts),
-                    
+
                     // Casino metrics
                     BetsCasino = dailyActions.Sum(da => da.BetsCasino),
                     WinsCasino = dailyActions.Sum(da => da.WinsCasino),
-                    
+
                     // Sport metrics
                     BetsSport = dailyActions.Sum(da => da.BetsSport),
                     WinsSport = dailyActions.Sum(da => da.WinsSport),
-                    
+
                     // Live metrics
                     BetsLive = dailyActions.Sum(da => da.BetsLive),
                     WinsLive = dailyActions.Sum(da => da.WinsLive),
-                    
+
                     // Bingo metrics
                     BetsBingo = dailyActions.Sum(da => da.BetsBingo),
                     WinsBingo = dailyActions.Sum(da => da.WinsBingo),
-                    
+
                     // Calculate GGR values
                     GGRCasino = dailyActions.Sum(da => da.BetsCasino) - dailyActions.Sum(da => da.WinsCasino),
                     GGRSport = dailyActions.Sum(da => da.BetsSport) - dailyActions.Sum(da => da.WinsSport),
@@ -83,7 +83,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 .Select((da, index) =>
                 {
                     var rankValue = (index + 1).ToString();
-                    
+
                     return new DailyActionDto
                     {
                         Id = da.Id,
@@ -96,7 +96,7 @@ namespace PPrePorter.DailyActionsDB.Services
                         CurrencyCode = da.CurrencyCode,
                         GroupKey = "Ranking",
                         GroupValue = rankValue,
-                        
+
                         // Copy all metrics from the original DTO
                         Registrations = da.Registrations,
                         FTD = da.FTD,
@@ -134,14 +134,27 @@ namespace PPrePorter.DailyActionsDB.Services
             // Group by player ID if available
             var playerGroups = new List<DailyActionDto>();
 
+            // Log the first few records to help diagnose issues
+            _logger.LogInformation("First few records in dailyActions:");
+            foreach (var da in dailyActions.Take(5))
+            {
+                _logger.LogInformation("Record: PlayerId={PlayerId}, PlayerName={PlayerName}, Date={Date}, WhiteLabelId={WhiteLabelId}, WhiteLabelName={WhiteLabelName}",
+                    da.PlayerId, da.PlayerName, da.Date, da.WhiteLabelId, da.WhiteLabelName);
+            }
+
             // Get all daily actions with player IDs
             var actionsWithPlayerIds = dailyActions.Where(da => da.PlayerId.HasValue).ToList();
+            _logger.LogInformation("Found {Count} records with player IDs out of {TotalCount} total records",
+                actionsWithPlayerIds.Count, dailyActions.Count);
 
+            // Group by player ID
             if (actionsWithPlayerIds.Count > 0)
             {
-                _logger.LogInformation("Found {Count} records with player IDs", actionsWithPlayerIds.Count);
+                // Log the player IDs to help diagnose issues
+                var playerIds = actionsWithPlayerIds.Select(da => da.PlayerId).Distinct().ToList();
+                _logger.LogInformation("Found {Count} distinct player IDs: {PlayerIds}",
+                    playerIds.Count, string.Join(", ", playerIds.Take(10)));
 
-                // Group by player ID
                 var playerIdGroups = actionsWithPlayerIds
                     .GroupBy(da => da.PlayerId!.Value)
                     .ToList();
@@ -164,41 +177,41 @@ namespace PPrePorter.DailyActionsDB.Services
                     playerGroups.Add(new DailyActionDto
                     {
                         Id = 0, // Not applicable for grouped data
-                        Date = DateTime.MinValue, // Set to MinValue to avoid displaying date
+                        Date = DateTime.UtcNow, // Use current date instead of MinValue
                         WhiteLabelId = 0, // Not applicable for grouped data
                         WhiteLabelName = "All White Labels",
                         PlayerId = playerId,
                         PlayerName = playerName,
                         GroupKey = "Player",
                         GroupValue = playerName,
-                        
+
                         // Aggregate metrics
                         Registrations = group.Sum(da => da.Registrations),
                         FTD = group.Sum(da => da.FTD),
                         FTDA = group.Sum(da => da.FTDA),
-                        
+
                         // Deposit metrics
                         Deposits = group.Sum(da => da.Deposits),
-                        
+
                         // Cashout metrics
                         PaidCashouts = group.Sum(da => da.PaidCashouts),
-                        
+
                         // Casino metrics
                         BetsCasino = group.Sum(da => da.BetsCasino),
                         WinsCasino = group.Sum(da => da.WinsCasino),
-                        
+
                         // Sport metrics
                         BetsSport = group.Sum(da => da.BetsSport),
                         WinsSport = group.Sum(da => da.WinsSport),
-                        
+
                         // Live metrics
                         BetsLive = group.Sum(da => da.BetsLive),
                         WinsLive = group.Sum(da => da.WinsLive),
-                        
+
                         // Bingo metrics
                         BetsBingo = group.Sum(da => da.BetsBingo),
                         WinsBingo = group.Sum(da => da.WinsBingo),
-                        
+
                         // Calculate GGR values
                         GGRCasino = group.Sum(da => da.BetsCasino) - group.Sum(da => da.WinsCasino),
                         GGRSport = group.Sum(da => da.BetsSport) - group.Sum(da => da.WinsSport),
@@ -207,15 +220,63 @@ namespace PPrePorter.DailyActionsDB.Services
                         TotalGGR = group.Sum(da => da.TotalGGR)
                     });
                 }
+            }
 
-                _logger.LogInformation("Grouped by player: returning {Count} groups", playerGroups.Count);
-                return playerGroups;
-            }
-            else
+            // If no player groups were created or no records with player IDs were found,
+            // create a default "Unknown Player" group with aggregated data
+            if (playerGroups.Count == 0)
             {
-                _logger.LogWarning("No records with player IDs found. Returning empty list.");
-                return new List<DailyActionDto>();
+                _logger.LogWarning("No player groups created. Creating a default 'Unknown Player' group with all data.");
+
+                playerGroups.Add(new DailyActionDto
+                {
+                    Id = 0,
+                    Date = DateTime.UtcNow,
+                    WhiteLabelId = 0,
+                    WhiteLabelName = "All White Labels",
+                    PlayerId = null,
+                    PlayerName = "Unknown Player",
+                    GroupKey = "Player",
+                    GroupValue = "Unknown Player",
+
+                    // Aggregate metrics from all records
+                    Registrations = dailyActions.Sum(da => da.Registrations),
+                    FTD = dailyActions.Sum(da => da.FTD),
+                    FTDA = dailyActions.Sum(da => da.FTDA),
+
+                    // Deposit metrics
+                    Deposits = dailyActions.Sum(da => da.Deposits),
+
+                    // Cashout metrics
+                    PaidCashouts = dailyActions.Sum(da => da.PaidCashouts),
+
+                    // Casino metrics
+                    BetsCasino = dailyActions.Sum(da => da.BetsCasino),
+                    WinsCasino = dailyActions.Sum(da => da.WinsCasino),
+
+                    // Sport metrics
+                    BetsSport = dailyActions.Sum(da => da.BetsSport),
+                    WinsSport = dailyActions.Sum(da => da.WinsSport),
+
+                    // Live metrics
+                    BetsLive = dailyActions.Sum(da => da.BetsLive),
+                    WinsLive = dailyActions.Sum(da => da.WinsLive),
+
+                    // Bingo metrics
+                    BetsBingo = dailyActions.Sum(da => da.BetsBingo),
+                    WinsBingo = dailyActions.Sum(da => da.WinsBingo),
+
+                    // Calculate GGR values
+                    GGRCasino = dailyActions.Sum(da => da.BetsCasino) - dailyActions.Sum(da => da.WinsCasino),
+                    GGRSport = dailyActions.Sum(da => da.BetsSport) - dailyActions.Sum(da => da.WinsSport),
+                    GGRLive = dailyActions.Sum(da => da.BetsLive) - dailyActions.Sum(da => da.WinsLive),
+                    GGRBingo = dailyActions.Sum(da => da.BetsBingo) - dailyActions.Sum(da => da.WinsBingo),
+                    TotalGGR = dailyActions.Sum(da => da.TotalGGR)
+                });
             }
+
+            _logger.LogInformation("Grouped by player: returning {Count} groups", playerGroups.Count);
+            return playerGroups;
         }
     }
 }

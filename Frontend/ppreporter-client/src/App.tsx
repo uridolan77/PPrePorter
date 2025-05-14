@@ -21,6 +21,11 @@ import MainLayout from './components/layout/MainLayout';
 // Import custom loading container
 import LoadingContainer from './components/loading/LoadingContainer';
 
+// Import directly (not lazy loaded)
+import DirectGridTestPage from './pages/test/DirectGridTestPage';
+import CustomGridTestPage from './pages/test/CustomGridTestPage';
+import SafeGridTestPage from './pages/test/SafeGridTestPage';
+
 // Loading component for suspense fallback
 const LoadingFallback: React.FC = () => {
   return (
@@ -55,9 +60,13 @@ const PlayersPage = lazy(() => import('./pages/showcase/reports/PlayersPage'));
 const GamesPage = lazy(() => import('./pages/showcase/reports/GamesPage'));
 const DailyActionGamesPage = lazy(() => import('./pages/reports/DailyActionGamesPage'));
 const IntegratedReportsPage = lazy(() => import('./pages/reports/IntegratedReportsPage'));
+const FinancialPage = lazy(() => import('./pages/reports/FinancialPage'));
+const PerformancePage = lazy(() => import('./pages/reports/PerformancePage'));
+const GeographicPage = lazy(() => import('./pages/reports/GeographicPage'));
 
 // Test pages
 const ApiTestPage = lazy(() => import('./pages/ApiTestPage'));
+const GridTestPage = lazy(() => import('./pages/test/GridTestPage'));
 
 // Showcase pages
 const ComponentShowcase = lazy(() => import('./pages/ComponentShowcase'));
@@ -180,6 +189,21 @@ const App: React.FC = () => {
                       <IntegratedReportsPage />
                     </Suspense>
                   } />
+                  <Route path="/reports/financial" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <FinancialPage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/performance" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <PerformancePage />
+                    </Suspense>
+                  } />
+                  <Route path="/reports/geographic" element={
+                    <Suspense fallback={<LoadingFallback />}>
+                      <GeographicPage />
+                    </Suspense>
+                  } />
                   <Route path="/reports/*" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <SimpleDashboard />
@@ -223,6 +247,14 @@ const App: React.FC = () => {
                   <ApiTestPage />
                 </Suspense>
               } />
+              <Route path="/grid-test" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <GridTestPage />
+                </Suspense>
+              } />
+              <Route path="/direct-grid-test" element={<DirectGridTestPage />} />
+              <Route path="/custom-grid-test" element={<CustomGridTestPage />} />
+              <Route path="/safe-grid-test" element={<SafeGridTestPage />} />
 
               {/* Component Showcase */}
               <Route path="/showcase" element={

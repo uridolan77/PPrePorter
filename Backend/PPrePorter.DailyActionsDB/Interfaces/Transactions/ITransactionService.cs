@@ -91,6 +91,15 @@ namespace PPrePorter.DailyActionsDB.Interfaces
         Task<IEnumerable<Transaction>> GetTransactionsByCurrencyAsync(string currency);
 
         /// <summary>
+        /// Get transactions by transaction type and date range
+        /// </summary>
+        /// <param name="transactionType">Transaction type</param>
+        /// <param name="startDate">Start date</param>
+        /// <param name="endDate">End date</param>
+        /// <returns>List of transactions</returns>
+        Task<IEnumerable<Transaction>> GetTransactionsByTypeAndDateRangeAsync(string transactionType, DateTime startDate, DateTime endDate);
+
+        /// <summary>
         /// Add a new transaction
         /// </summary>
         /// <param name="transaction">Transaction to add</param>

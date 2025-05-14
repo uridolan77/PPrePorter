@@ -9,12 +9,15 @@ const API_DATE_FORMAT = 'yyyy-MM-dd';
 
 /**
  * Format date for API requests
- * @param date Date to format
+ * @param date Date to format (can be Date object or ISO string)
  * @returns Formatted date string
  */
-const formatDateForApi = (date: Date | null): string => {
+const formatDateForApi = (date: Date | string | null): string => {
   if (!date) return '';
-  return format(date, API_DATE_FORMAT);
+
+  // If date is already a string (ISO format), convert it to Date first
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, API_DATE_FORMAT);
 };
 
 /**
@@ -30,8 +33,8 @@ const integratedReportsService = {
    * @returns Promise with daily actions data
    */
   getDailyActionsData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     filters: Record<string, any> = {}
   ) => {
     try {
@@ -57,8 +60,8 @@ const integratedReportsService = {
    * @returns Promise with player data
    */
   getPlayerData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     filters: Record<string, any> = {}
   ) => {
     try {
@@ -84,8 +87,8 @@ const integratedReportsService = {
    * @returns Promise with game data
    */
   getGameData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     filters: Record<string, any> = {}
   ) => {
     try {
@@ -110,8 +113,8 @@ const integratedReportsService = {
    * @returns Promise with dashboard summary data
    */
   getDashboardSummary: async (
-    startDate: Date | null,
-    endDate: Date | null
+    startDate: Date | string | null,
+    endDate: Date | string | null
   ) => {
     try {
       const response = await axios.get(`${API_URL}/Dashboard/summary`, {
@@ -135,8 +138,8 @@ const integratedReportsService = {
    * @returns Promise with revenue chart data
    */
   getRevenueChartData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     interval: 'daily' | 'weekly' | 'monthly' = 'daily'
   ) => {
     try {
@@ -162,8 +165,8 @@ const integratedReportsService = {
    * @returns Promise with registrations chart data
    */
   getRegistrationsChartData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     interval: 'daily' | 'weekly' | 'monthly' = 'daily'
   ) => {
     try {
@@ -189,8 +192,8 @@ const integratedReportsService = {
    * @returns Promise with top games data
    */
   getTopGamesData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     limit: number = 10
   ) => {
     try {
@@ -216,8 +219,8 @@ const integratedReportsService = {
    * @returns Promise with recent transactions data
    */
   getRecentTransactionsData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     limit: number = 10
   ) => {
     try {
@@ -243,8 +246,8 @@ const integratedReportsService = {
    * @returns Promise with heatmap data
    */
   getHeatmapData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     metric: string = 'bets'
   ) => {
     try {
@@ -270,8 +273,8 @@ const integratedReportsService = {
    * @returns Promise with segment comparison data
    */
   getSegmentComparisonData: async (
-    startDate: Date | null,
-    endDate: Date | null,
+    startDate: Date | string | null,
+    endDate: Date | string | null,
     segments: string[] = []
   ) => {
     try {

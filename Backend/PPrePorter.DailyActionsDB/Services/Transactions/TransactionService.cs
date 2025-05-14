@@ -286,6 +286,53 @@ namespace PPrePorter.DailyActionsDB.Services
         }
 
         /// <inheritdoc/>
+        public async Task<IEnumerable<Transaction>> GetTransactionsByTypeAndDateRangeAsync(string transactionType, DateTime startDate, DateTime endDate)
+        {
+            if (string.IsNullOrWhiteSpace(transactionType))
+            {
+                throw new ArgumentException("Transaction type cannot be null or empty", nameof(transactionType));
+            }
+
+            try
+            {
+                // Validate date range
+                if (startDate > endDate)
+                {
+                    _logger.LogWarning("Invalid date range: start date {StartDate} is after end date {EndDate}. Swapping dates.", startDate, endDate);
+                    var temp = startDate;
+                    startDate = endDate;
+                    endDate = temp;
+                }
+
+                // Check if date range is too large (more than 90 days)
+                var daysDifference = (endDate - startDate).TotalDays;
+                if (daysDifference > 90)
+                {
+                    _logger.LogWarning("Date range too large: {Days} days. Limiting to 90 days.", daysDifference);
+                    endDate = startDate.AddDays(90);
+                }
+
+                _logger.LogInformation("Getting transactions by transaction type {TransactionType} and date range {StartDate} to {EndDate}",
+                    transactionType, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
+
+                // Get all transactions in the date range
+                var transactions = await _transactionRepository.GetByDateRangeAsync(startDate, endDate);
+
+                // Filter by transaction type
+                return transactions.Where(t => t.TransactionType == transactionType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting transactions by transaction type {TransactionType} and date range {StartDate} to {EndDate}",
+                    transactionType, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
+
+                // Return empty list instead of throwing to prevent 500 errors
+                _logger.LogWarning("Returning empty list of transactions due to error");
+                return new List<Transaction>();
+            }
+        }
+
+        /// <inheritdoc/>
         public async Task<Transaction> AddTransactionAsync(Transaction transaction)
         {
             if (transaction == null)

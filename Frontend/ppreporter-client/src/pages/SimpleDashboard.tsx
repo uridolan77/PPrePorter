@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Container,
   Grid,
   Paper,
@@ -12,6 +11,8 @@ import {
   Divider,
   useTheme
 } from '@mui/material';
+import SimpleBox from '../components/common/SimpleBox';
+import { createSx } from '../utils/styleUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -160,9 +161,9 @@ const SimpleDashboard: React.FC = () => {
   if (loading && !data) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' })}>
           <CircularProgress size={60} />
-        </Box>
+        </SimpleBox>
       </Container>
     );
   }
@@ -170,7 +171,7 @@ const SimpleDashboard: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       {/* Dashboard Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 })}>
         <Typography variant="h4" component="h1">
           Dashboard
         </Typography>
@@ -182,7 +183,7 @@ const SimpleDashboard: React.FC = () => {
         >
           Refresh
         </Button>
-      </Box>
+      </SimpleBox>
 
       {/* Error Message */}
       {error && (
@@ -198,16 +199,16 @@ const SimpleDashboard: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                   <AttachMoneyIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6" component="div">
                     Revenue
                   </Typography>
-                </Box>
+                </SimpleBox>
                 <Typography variant="h4" component="div">
                   {formatCurrency(data.stats.revenue.value)}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mt: 1 })}>
                   {data.stats.revenue.change >= 0 ? (
                     <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} fontSize="small" />
                   ) : (
@@ -222,7 +223,7 @@ const SimpleDashboard: React.FC = () => {
                     {data.stats.revenue.change >= 0 ? '+' : ''}
                     {data.stats.revenue.change.toFixed(1)}% {data.stats.revenue.period}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </CardContent>
             </Card>
           </Grid>
@@ -231,16 +232,16 @@ const SimpleDashboard: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                   <PeopleIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6" component="div">
                     Players
                   </Typography>
-                </Box>
+                </SimpleBox>
                 <Typography variant="h4" component="div">
                   {formatNumber(data.stats.players.value)}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mt: 1 })}>
                   {data.stats.players.change >= 0 ? (
                     <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} fontSize="small" />
                   ) : (
@@ -255,7 +256,7 @@ const SimpleDashboard: React.FC = () => {
                     {data.stats.players.change >= 0 ? '+' : ''}
                     {data.stats.players.change.toFixed(1)}% {data.stats.players.period}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </CardContent>
             </Card>
           </Grid>
@@ -264,16 +265,16 @@ const SimpleDashboard: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                   <PersonAddIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6" component="div">
                     New Players
                   </Typography>
-                </Box>
+                </SimpleBox>
                 <Typography variant="h4" component="div">
                   {formatNumber(data.stats.newPlayers.value)}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mt: 1 })}>
                   {data.stats.newPlayers.change >= 0 ? (
                     <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} fontSize="small" />
                   ) : (
@@ -288,7 +289,7 @@ const SimpleDashboard: React.FC = () => {
                     {data.stats.newPlayers.change >= 0 ? '+' : ''}
                     {data.stats.newPlayers.change.toFixed(1)}% {data.stats.newPlayers.period}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </CardContent>
             </Card>
           </Grid>
@@ -297,16 +298,16 @@ const SimpleDashboard: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
                   <SportsEsportsIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6" component="div">
                     Games Played
                   </Typography>
-                </Box>
+                </SimpleBox>
                 <Typography variant="h4" component="div">
                   {formatNumber(data.stats.gamesPlayed.value)}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mt: 1 })}>
                   {data.stats.gamesPlayed.change >= 0 ? (
                     <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} fontSize="small" />
                   ) : (
@@ -321,7 +322,7 @@ const SimpleDashboard: React.FC = () => {
                     {data.stats.gamesPlayed.change >= 0 ? '+' : ''}
                     {data.stats.gamesPlayed.change.toFixed(1)}% {data.stats.gamesPlayed.period}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </CardContent>
             </Card>
           </Grid>
@@ -340,23 +341,23 @@ const SimpleDashboard: React.FC = () => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 {data.topGames.map((game: any, index: number) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <SimpleBox key={index} sx={createSx({ mb: 2 })}>
+                    <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between' })}>
                       <Typography variant="body1">{game.name}</Typography>
                       <Typography variant="body1" fontWeight="bold">
                         {formatCurrency(game.revenue)}
                       </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    </SimpleBox>
+                    <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between' })}>
                       <Typography variant="body2" color="text.secondary">
                         {formatNumber(game.players)} players
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {formatCurrency(game.revenue / game.players)} per player
                       </Typography>
-                    </Box>
+                    </SimpleBox>
                     {index < data.topGames.length - 1 && <Divider sx={{ my: 1 }} />}
-                  </Box>
+                  </SimpleBox>
                 ))}
               </CardContent>
             </Card>
@@ -371,8 +372,8 @@ const SimpleDashboard: React.FC = () => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 {data.recentTransactions.map((transaction: any, index: number) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <SimpleBox key={index} sx={createSx({ mb: 2 })}>
+                    <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between' })}>
                       <Typography variant="body1">{transaction.playerName}</Typography>
                       <Typography
                         variant="body1"
@@ -390,8 +391,8 @@ const SimpleDashboard: React.FC = () => {
                         {transaction.type === 'withdrawal' || transaction.type === 'bet' ? '-' : ''}
                         {formatCurrency(transaction.amount)}
                       </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    </SimpleBox>
+                    <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between' })}>
                       <Typography
                         variant="body2"
                         sx={{
@@ -404,9 +405,9 @@ const SimpleDashboard: React.FC = () => {
                       <Typography variant="body2" color="text.secondary">
                         {formatDate(transaction.timestamp)}
                       </Typography>
-                    </Box>
+                    </SimpleBox>
                     {index < data.recentTransactions.length - 1 && <Divider sx={{ my: 1 }} />}
-                  </Box>
+                  </SimpleBox>
                 ))}
               </CardContent>
             </Card>

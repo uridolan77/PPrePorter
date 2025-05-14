@@ -1,5 +1,7 @@
 import React, { memo, useMemo } from 'react';
-import { Grid, Typography, Box, FormControl, InputLabel, Select, MenuItem, Skeleton, SelectChangeEvent } from '@mui/material';
+import { Grid, Typography, FormControl, InputLabel, Select, MenuItem, Skeleton, SelectChangeEvent } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 import ErrorBoundary from '../common/ErrorBoundary';
 import EmptyState from '../common/EmptyState';
 import Card from '../common/Card';
@@ -76,7 +78,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
 
   return (
     <ErrorBoundary fallback={<EmptyState message="Error displaying charts" />}>
-      <Box sx={{ mb: 4, ...sx }}>
+      <SimpleBox sx={createSx({ mb: 4, ...sx })}>
         <Typography variant="h5" sx={{ mb: 2 }}>
           {title}
         </Typography>
@@ -85,7 +87,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
             <Card
               title="Revenue Trends"
               action={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
                   <FormControl size="small" sx={{ minWidth: 120 }}>
                     <InputLabel id="time-period-label">Period</InputLabel>
                     <Select
@@ -101,13 +103,13 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
                       <MenuItem value="quarter">Quarter</MenuItem>
                     </Select>
                   </FormControl>
-                </Box>
+                </SimpleBox>
               }
             >
               {loading ? (
-                <Box sx={{ p: 3 }}>
+                <SimpleBox sx={createSx({ p: 3 })}>
                   <Skeleton variant="rectangular" height={300} />
-                </Box>
+                </SimpleBox>
               ) : (
                 <CasinoRevenueChart
                   data={preparedRevenueData}
@@ -119,9 +121,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
           <Grid item xs={12} md={6}>
             <Card title="Player Distribution by Game">
               {loading ? (
-                <Box sx={{ p: 3 }}>
+                <SimpleBox sx={createSx({ p: 3 })}>
                   <Skeleton variant="rectangular" height={300} />
-                </Box>
+                </SimpleBox>
               ) : (
                 <TopGamesChart
                   data={preparedGamesData}
@@ -131,7 +133,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
             </Card>
           </Grid>
         </Grid>
-      </Box>
+      </SimpleBox>
     </ErrorBoundary>
   );
 };

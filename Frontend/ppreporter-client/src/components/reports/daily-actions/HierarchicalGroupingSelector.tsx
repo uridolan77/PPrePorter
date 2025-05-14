@@ -66,7 +66,16 @@ const HierarchicalGroupingSelector: React.FC<HierarchicalGroupingSelectorProps> 
     if (!selectedGroupings.includes(groupId)) {
       const newGroupings = [...selectedGroupings, groupId];
       console.log('New groupings:', newGroupings);
-      onGroupingChange(newGroupings);
+
+      // Make sure hierarchical grouping is enabled when adding a grouping
+      if (!enableHierarchical) {
+        onEnableHierarchicalChange(true);
+      }
+
+      // Use setTimeout to ensure the enableHierarchical state is updated first
+      setTimeout(() => {
+        onGroupingChange(newGroupings);
+      }, 0);
     } else {
       console.log('Grouping already included:', groupId);
     }

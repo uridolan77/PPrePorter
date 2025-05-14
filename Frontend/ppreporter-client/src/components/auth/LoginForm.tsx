@@ -174,8 +174,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
         }}
       >
         {/* Logo and Title */}
-        <Box sx={{ textAlign: 'center', mb: 1 }}>
-          {/* Reduced margin from 2 to 1 */}
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          {/* Using div instead of Box to avoid TS2590 error */}
           {logoUrl && logoUrl.trim() !== '' && (
             <img
               src={logoUrl}
@@ -192,7 +192,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <Typography variant="body2" color="text.secondary">
             Enter your credentials to access your account
           </Typography>
-        </Box>
+        </div>
 
         {/* Error Message */}
         {error && (
@@ -254,7 +254,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         />
 
         {/* Remember Me and Forgot Password */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FormControlLabel
             control={
               <Checkbox
@@ -279,7 +279,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               Forgot password?
             </Link>
           )}
-        </Box>
+        </div>
 
         {/* Submit Button */}
         <Button
@@ -296,7 +296,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Register Link */}
         {showRegister && (
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
             <Typography variant="body2" color="text.secondary">
               Don't have an account?{' '}
               <Link
@@ -308,21 +308,21 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 Sign up
               </Link>
             </Typography>
-          </Box>
+          </div>
         )}
 
         {/* Social Login Options */}
         {showSocialLogin && (
           <>
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '16px' }}>
               <Divider sx={{ flex: 1 }} />
               <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
                 or continue with
               </Typography>
               <Divider sx={{ flex: 1 }} />
-            </Box>
+            </div>
 
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
               <Button
                 variant="outlined"
                 fullWidth
@@ -343,7 +343,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               >
                 Microsoft
               </Button>
-            </Box>
+            </div>
           </>
         )}
       </Box>

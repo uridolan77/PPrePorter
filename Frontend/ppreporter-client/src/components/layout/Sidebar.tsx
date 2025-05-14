@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Box,
   Drawer,
   List,
   ListItem,
@@ -13,6 +12,8 @@ import {
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CommonProps } from '../../types/common';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 
 // Icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -55,7 +56,7 @@ export interface SidebarProps extends CommonProps {
    * Whether the sidebar is open
    */
   open: boolean;
-  
+
   /**
    * Function to close the sidebar
    */
@@ -70,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<ExpandedItems>({
-    reports: false,
+    reports: true,
     players: false,
     games: false
   });
@@ -114,9 +115,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
       icon: <BarChartIcon />,
       children: [
         { label: 'Financial', path: '/reports/financial', active: isActive('/reports/financial') },
-        { label: 'Player Activity', path: '/reports/player-activity', active: isActive('/reports/player-activity') },
-        { label: 'Game Performance', path: '/reports/game-performance', active: isActive('/reports/game-performance') },
-        { label: 'Promotions', path: '/reports/promotions', active: isActive('/reports/promotions') },
+        { label: 'Performance', path: '/reports/performance', active: isActive('/reports/performance') },
+        { label: 'Geographic', path: '/reports/geographic', active: isActive('/reports/geographic') },
+        { label: 'Daily Actions', path: '/reports/daily-action-games', active: isActive('/reports/daily-action-games') },
+        { label: 'Integrated', path: '/reports/integrated', active: isActive('/reports/integrated') },
       ],
       expanded: expandedItems.reports
     },
@@ -167,18 +169,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
   ];
 
   const drawer = (
-    <Box>
-      <Box sx={{ p: 2, height: 64, display: 'flex', alignItems: 'center' }}>
+    <SimpleBox>
+      <SimpleBox sx={createSx({ p: 2, height: 64, display: 'flex', alignItems: 'center' })}>
         <img
           src="/logo.png"
           alt="ProgressPlay Logo"
           style={{ height: 40, width: 'auto' }}
-          onError={(e) => { 
+          onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = '/fallback-logo.png'; 
+            target.src = '/fallback-logo.png';
           }}
         />
-      </Box>
+      </SimpleBox>
       <Divider />
       <List>
         {navItems.map((item) => (
@@ -221,7 +223,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
           )
         ))}
       </List>
-    </Box>
+    </SimpleBox>
   );
 
   return (
@@ -229,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
       variant="persistent"
       open={open}
       onClose={onClose}
-      sx={{
+      sx={createSx({
         width: drawerWidth,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
@@ -237,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose, sx }) => {
           boxSizing: 'border-box',
         },
         ...sx
-      }}
+      })}
     >
       {drawer}
     </Drawer>

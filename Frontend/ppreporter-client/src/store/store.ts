@@ -30,7 +30,11 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these field paths in action payloads
-        ignoredActionPaths: ['payload.timestamp'],
+        ignoredActionPaths: [
+          'payload.timestamp',
+          'meta.arg.startDate',
+          'meta.arg.endDate'
+        ],
         // Ignore these paths in the state
         ignoredPaths: [
           'reports.scheduledReports',

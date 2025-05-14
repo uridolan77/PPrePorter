@@ -192,7 +192,7 @@ const initialState: IntegratedReportsState = {
 // Create async thunks for API calls
 export const fetchDailyActionsData = createAsyncThunk(
   'integratedReports/fetchDailyActionsData',
-  async ({ startDate, endDate, filters }: { startDate: Date | null; endDate: Date | null; filters?: Record<string, any> }, { rejectWithValue }) => {
+  async ({ startDate, endDate, filters }: { startDate: Date | string | null; endDate: Date | string | null; filters?: Record<string, any> }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getDailyActionsData(startDate, endDate, filters);
       return data;
@@ -204,7 +204,7 @@ export const fetchDailyActionsData = createAsyncThunk(
 
 export const fetchPlayerData = createAsyncThunk(
   'integratedReports/fetchPlayerData',
-  async ({ startDate, endDate, filters }: { startDate: Date | null; endDate: Date | null; filters?: Record<string, any> }, { rejectWithValue }) => {
+  async ({ startDate, endDate, filters }: { startDate: Date | string | null; endDate: Date | string | null; filters?: Record<string, any> }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getPlayerData(startDate, endDate, filters);
       return data;
@@ -216,7 +216,7 @@ export const fetchPlayerData = createAsyncThunk(
 
 export const fetchGameData = createAsyncThunk(
   'integratedReports/fetchGameData',
-  async ({ startDate, endDate, filters }: { startDate: Date | null; endDate: Date | null; filters?: Record<string, any> }, { rejectWithValue }) => {
+  async ({ startDate, endDate, filters }: { startDate: Date | string | null; endDate: Date | string | null; filters?: Record<string, any> }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getGameData(startDate, endDate, filters);
       return data;
@@ -228,7 +228,7 @@ export const fetchGameData = createAsyncThunk(
 
 export const fetchDashboardSummary = createAsyncThunk(
   'integratedReports/fetchDashboardSummary',
-  async ({ startDate, endDate }: { startDate: Date | null; endDate: Date | null }, { rejectWithValue }) => {
+  async ({ startDate, endDate }: { startDate: Date | string | null; endDate: Date | string | null }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getDashboardSummary(startDate, endDate);
       return data;
@@ -240,7 +240,7 @@ export const fetchDashboardSummary = createAsyncThunk(
 
 export const fetchRevenueChartData = createAsyncThunk(
   'integratedReports/fetchRevenueChartData',
-  async ({ startDate, endDate, interval }: { startDate: Date | null; endDate: Date | null; interval?: 'daily' | 'weekly' | 'monthly' }, { rejectWithValue }) => {
+  async ({ startDate, endDate, interval }: { startDate: Date | string | null; endDate: Date | string | null; interval?: 'daily' | 'weekly' | 'monthly' }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getRevenueChartData(startDate, endDate, interval);
       return data;
@@ -252,7 +252,7 @@ export const fetchRevenueChartData = createAsyncThunk(
 
 export const fetchRegistrationsChartData = createAsyncThunk(
   'integratedReports/fetchRegistrationsChartData',
-  async ({ startDate, endDate, interval }: { startDate: Date | null; endDate: Date | null; interval?: 'daily' | 'weekly' | 'monthly' }, { rejectWithValue }) => {
+  async ({ startDate, endDate, interval }: { startDate: Date | string | null; endDate: Date | string | null; interval?: 'daily' | 'weekly' | 'monthly' }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getRegistrationsChartData(startDate, endDate, interval);
       return data;
@@ -264,7 +264,7 @@ export const fetchRegistrationsChartData = createAsyncThunk(
 
 export const fetchTopGamesData = createAsyncThunk(
   'integratedReports/fetchTopGamesData',
-  async ({ startDate, endDate, limit }: { startDate: Date | null; endDate: Date | null; limit?: number }, { rejectWithValue }) => {
+  async ({ startDate, endDate, limit }: { startDate: Date | string | null; endDate: Date | string | null; limit?: number }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getTopGamesData(startDate, endDate, limit);
       return data;
@@ -276,7 +276,7 @@ export const fetchTopGamesData = createAsyncThunk(
 
 export const fetchRecentTransactionsData = createAsyncThunk(
   'integratedReports/fetchRecentTransactionsData',
-  async ({ startDate, endDate, limit }: { startDate: Date | null; endDate: Date | null; limit?: number }, { rejectWithValue }) => {
+  async ({ startDate, endDate, limit }: { startDate: Date | string | null; endDate: Date | string | null; limit?: number }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getRecentTransactionsData(startDate, endDate, limit);
       return data;
@@ -288,7 +288,7 @@ export const fetchRecentTransactionsData = createAsyncThunk(
 
 export const fetchHeatmapData = createAsyncThunk(
   'integratedReports/fetchHeatmapData',
-  async ({ startDate, endDate, metric }: { startDate: Date | null; endDate: Date | null; metric?: string }, { rejectWithValue }) => {
+  async ({ startDate, endDate, metric }: { startDate: Date | string | null; endDate: Date | string | null; metric?: string }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getHeatmapData(startDate, endDate, metric);
       return data;
@@ -300,7 +300,7 @@ export const fetchHeatmapData = createAsyncThunk(
 
 export const fetchSegmentComparisonData = createAsyncThunk(
   'integratedReports/fetchSegmentComparisonData',
-  async ({ startDate, endDate, segments }: { startDate: Date | null; endDate: Date | null; segments?: string[] }, { rejectWithValue }) => {
+  async ({ startDate, endDate, segments }: { startDate: Date | string | null; endDate: Date | string | null; segments?: string[] }, { rejectWithValue }) => {
     try {
       const data = await integratedReportsService.getSegmentComparisonData(startDate, endDate, segments);
       return data;

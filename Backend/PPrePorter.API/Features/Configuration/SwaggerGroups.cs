@@ -20,10 +20,7 @@ namespace PPrePorter.API.Features.Configuration
         /// </summary>
         public const string DailyActionGames = "DailyActionGames";
 
-        /// <summary>
-        /// Simplified daily actions data
-        /// </summary>
-        public const string DailyActionsSimple = "DailyActionsSimple";
+        // DailyActionsSimple group removed as part of code cleanup
 
         /// <summary>
         /// Dashboard data

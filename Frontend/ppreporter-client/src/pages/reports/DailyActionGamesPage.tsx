@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link as RouterLink } from 'react-router-dom';
 import {
-  Box,
   Container,
   Typography,
   Paper,
@@ -11,11 +9,9 @@ import {
   Alert,
   Card,
   CardContent,
-  Divider,
-  TextField,
-  CircularProgress,
-  Tooltip
+  TextField
 } from '@mui/material';
+import SimpleBox from '../../components/common/SimpleBox';
 import { EnhancedTable } from '../../components/tables/enhanced';
 import { ColumnDef, ExportFormat } from '../../components/tables/enhanced/types';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -26,13 +22,7 @@ import { format as formatDate, parseISO } from 'date-fns';
 // Import icons
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import DownloadIcon from '@mui/icons-material/Download';
 import TableChartIcon from '@mui/icons-material/TableChart';
-import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
-import PeopleIcon from '@mui/icons-material/People';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import CasinoIcon from '@mui/icons-material/Casino';
 
 // Import Redux actions and selectors
 import {
@@ -73,8 +63,10 @@ const DailyActionGamesPage: React.FC = () => {
   const [mockDataEnabled, setMockDataEnabled] = useState<boolean>(false);
   const [localGamesData, setLocalGamesData] = useState<DailyActionGame[]>([]);
 
-  // Define table columns
-  const columns: ColumnDef[] = [
+  /**
+   * Define table columns - memoized to prevent unnecessary re-renders
+   */
+  const columns = useMemo<ColumnDef[]>(() => [
     {
       id: 'gameDate',
       label: 'Date',
@@ -170,54 +162,56 @@ const DailyActionGamesPage: React.FC = () => {
       sortable: true,
       width: 100,
     }
-  ];
+  ], []);
 
-  // Helper function to format currency
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+  /**
+   * Helper function to format currency
+   */
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount);
-  };
+    });
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchData();
-  }, [dispatch]);
+    return (amount: number): string => formatter.format(amount);
+  }, []);
 
-  // Fetch data with current filters
-  const fetchData = () => {
-    const queryParams = {
-      startDate: startDate ? formatDate(startDate, 'yyyy-MM-dd') : undefined,
-      endDate: endDate ? formatDate(endDate, 'yyyy-MM-dd') : undefined,
-      playerId: playerId && playerId.trim() !== '' ? parseInt(playerId, 10) : undefined,
-      gameId: gameId && gameId.trim() !== '' ? parseInt(gameId, 10) : undefined
-    };
+  /**
+   * Prepare query parameters for API calls
+   */
+  const getQueryParams = useCallback(() => ({
+    startDate: startDate ? formatDate(startDate, 'yyyy-MM-dd') : undefined,
+    endDate: endDate ? formatDate(endDate, 'yyyy-MM-dd') : undefined,
+    playerId: playerId && playerId.trim() !== '' ? parseInt(playerId, 10) : undefined,
+    gameId: gameId && gameId.trim() !== '' ? parseInt(gameId, 10) : undefined
+  }), [startDate, endDate, playerId, gameId]);
 
+  /**
+   * Fetch data with current filters
+   */
+  const fetchData = useCallback(() => {
+    const queryParams = getQueryParams();
     dispatch(setFilters(queryParams));
     dispatch(fetchDailyActionGames(queryParams));
-  };
+  }, [dispatch, getQueryParams]);
 
-  // Handle apply filters
-  const handleApplyFilters = () => {
+  /**
+   * Handle apply filters
+   */
+  const handleApplyFilters = useCallback(() => {
     fetchData();
-  };
+  }, [fetchData]);
 
-  // Handle export
-  const handleExport = async (format: ExportFormat, exportData: any[]): Promise<void> => {
+  /**
+   * Handle export
+   */
+  const handleExport = useCallback(async (format: ExportFormat, exportData: any[]): Promise<void> => {
     try {
       // Convert format to service format
       const serviceFormat = format.toLowerCase() as 'csv' | 'excel' | 'pdf';
-
-      // Get current filters
-      const queryParams = {
-        startDate: startDate ? formatDate(startDate, 'yyyy-MM-dd') : undefined,
-        endDate: endDate ? formatDate(endDate, 'yyyy-MM-dd') : undefined,
-        playerId: playerId && playerId.trim() !== '' ? parseInt(playerId, 10) : undefined,
-        gameId: gameId && gameId.trim() !== '' ? parseInt(gameId, 10) : undefined
-      };
+      const queryParams = getQueryParams();
 
       // Import the service
       const dailyActionGamesService = (await import('../../services/api/dailyActionGamesService')).default;
@@ -238,45 +232,44 @@ const DailyActionGamesPage: React.FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error exporting data:', error);
-      // You could add a snackbar or alert here to notify the user
     }
-  };
+  }, [getQueryParams]);
 
-  // Log the games data
-  console.log('Games data in component:', games);
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  // Ensure games is an array before calculating summary
-  let gamesArray: DailyActionGame[] = [];
+  /**
+   * Process games data to ensure it's in the correct format
+   */
+  const processGamesData = useCallback((rawGames: any): DailyActionGame[] => {
+    // Ensure games is an array
+    let gamesArray: DailyActionGame[] = [];
 
-  // If mock data is enabled, use local games data
-  if (mockDataEnabled && localGamesData.length > 0) {
-    gamesArray = localGamesData;
-    console.log('Using mock data with length:', localGamesData.length);
-  } else if (Array.isArray(games)) {
-    // If games is already an array, use it directly
-    gamesArray = games as DailyActionGame[];
-    console.log('Games is already an array with length:', games.length);
-  } else if (games && typeof games === 'object') {
-    // If games is an object, try to extract an array from it
-    const gamesObj = games as Record<string, any>;
-    if (gamesObj.data && Array.isArray(gamesObj.data)) {
-      // If games has a data property that is an array
-      gamesArray = gamesObj.data as DailyActionGame[];
-      console.log('Extracted games array from games.data with length:', gamesObj.data.length);
-    } else {
-      // Try to convert the object to an array
-      const extractedArray = Object.values(gamesObj).filter(item => item && typeof item === 'object');
-      if (extractedArray.length > 0) {
-        gamesArray = extractedArray as DailyActionGame[];
-        console.log('Extracted games array from object values with length:', extractedArray.length);
+    // If mock data is enabled, use local games data
+    if (mockDataEnabled && localGamesData.length > 0) {
+      gamesArray = localGamesData;
+    } else if (Array.isArray(rawGames)) {
+      // If games is already an array, use it directly
+      gamesArray = rawGames as DailyActionGame[];
+    } else if (rawGames && typeof rawGames === 'object') {
+      // If games is an object, try to extract an array from it
+      const gamesObj = rawGames as Record<string, any>;
+      if (gamesObj.data && Array.isArray(gamesObj.data)) {
+        // If games has a data property that is an array
+        gamesArray = gamesObj.data as DailyActionGame[];
+      } else {
+        // Try to convert the object to an array
+        const extractedArray = Object.values(gamesObj).filter(item => item && typeof item === 'object');
+        if (extractedArray.length > 0) {
+          gamesArray = extractedArray as DailyActionGame[];
+        }
       }
     }
-  }
 
-  // Transform the data to ensure it matches the expected format
-  gamesArray = gamesArray.map((game: any, index: number) => {
-    // Create a properly formatted game object
-    const formattedGame: DailyActionGame = {
+    // Transform the data to ensure it matches the expected format
+    return gamesArray.map((game: any, index: number) => ({
       id: game.id || index + 1,
       gameDate: game.gameDate || new Date().toISOString(),
       playerId: typeof game.playerId === 'number' ? game.playerId : 0,
@@ -298,42 +291,46 @@ const DailyActionGamesPage: React.FC = () => {
       bonusWinAmountOriginal: typeof game.bonusWinAmountOriginal === 'number' ? game.bonusWinAmountOriginal : 0,
       netGamingRevenueOriginal: typeof game.netGamingRevenueOriginal === 'number' ? game.netGamingRevenueOriginal : 0,
       updateDate: game.updateDate || new Date().toISOString()
-    };
+    }));
+  }, [mockDataEnabled, localGamesData]);
 
-    return formattedGame;
-  });
+  /**
+   * Calculate summary statistics from games data
+   */
+  const calculateSummary = useCallback((gamesData: DailyActionGame[]) => ({
+    totalRealBets: gamesData.reduce((sum, g) => sum + (g.numberOfRealBets || 0), 0),
+    totalBonusBets: gamesData.reduce((sum, g) => sum + (g.numberOfBonusBets || 0), 0),
+    totalRealBetAmount: gamesData.reduce((sum, g) => sum + (g.realBetAmount || 0), 0),
+    totalBonusBetAmount: gamesData.reduce((sum, g) => sum + (g.bonusBetAmount || 0), 0),
+    totalNetGamingRevenue: gamesData.reduce((sum, g) => sum + (g.netGamingRevenue || 0), 0),
+    totalSessions: gamesData.reduce((sum, g) => sum + (g.numberOfSessions || 0), 0)
+  }), []);
 
-  console.log('Final transformed games array:', gamesArray);
+  // Process games data
+  const gamesArray = useMemo(() => processGamesData(games), [games, processGamesData]);
 
-  // Calculate summary statistics
-  const summary = {
-    totalRealBets: gamesArray.reduce((sum: number, g: DailyActionGame) => sum + (g.numberOfRealBets || 0), 0),
-    totalBonusBets: gamesArray.reduce((sum: number, g: DailyActionGame) => sum + (g.numberOfBonusBets || 0), 0),
-    totalRealBetAmount: gamesArray.reduce((sum: number, g: DailyActionGame) => sum + (g.realBetAmount || 0), 0),
-    totalBonusBetAmount: gamesArray.reduce((sum: number, g: DailyActionGame) => sum + (g.bonusBetAmount || 0), 0),
-    totalNetGamingRevenue: gamesArray.reduce((sum: number, g: DailyActionGame) => sum + (g.netGamingRevenue || 0), 0),
-    totalSessions: gamesArray.reduce((sum: number, g: DailyActionGame) => sum + (g.numberOfSessions || 0), 0)
-  };
+  // Calculate summary
+  const summary = useMemo(() => calculateSummary(gamesArray), [gamesArray, calculateSummary]);
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box>
+      <SimpleBox sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <SimpleBox>
           <Typography variant="h4" gutterBottom>
             Games Report
           </Typography>
           <Typography variant="body1" color="text.secondary">
             View and analyze daily game activity, bets, and revenue metrics
           </Typography>
-        </Box>
-      </Box>
+        </SimpleBox>
+      </SimpleBox>
 
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <FilterListIcon sx={{ mr: 1 }} />
           <Typography variant="h6">Filters</Typography>
-        </Box>
+        </SimpleBox>
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
@@ -382,7 +379,7 @@ const DailyActionGamesPage: React.FC = () => {
         </Grid>
 
         {/* Action Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
           <Button
             variant="contained"
             color="primary"
@@ -392,7 +389,7 @@ const DailyActionGamesPage: React.FC = () => {
           >
             Apply Filters
           </Button>
-        </Box>
+        </SimpleBox>
       </Paper>
 
       {/* Summary Cards */}
@@ -478,10 +475,10 @@ const DailyActionGamesPage: React.FC = () => {
 
       {/* Data Table */}
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <TableChartIcon sx={{ mr: 1 }} />
           <Typography variant="h6">Games Data</Typography>
-        </Box>
+        </SimpleBox>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -489,19 +486,18 @@ const DailyActionGamesPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Debug information */}
+        {/* Debug information - only shown in development */}
         {process.env.NODE_ENV === 'development' && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+          <SimpleBox sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, display: 'none' }}>
             <Typography variant="subtitle2" gutterBottom>Debug Info:</Typography>
             <Typography variant="body2">Data type: {typeof games}</Typography>
             <Typography variant="body2">Is Array: {Array.isArray(games) ? 'Yes' : 'No'}</Typography>
             <Typography variant="body2">Length: {Array.isArray(games) ? games.length : 'N/A'}</Typography>
-            <Typography variant="body2">First item type: {Array.isArray(games) && games.length > 0 ? typeof games[0] : 'N/A'}</Typography>
             <Typography variant="body2">Games Array Length: {gamesArray.length}</Typography>
             <Typography variant="body2" color="error" sx={{ mt: 1 }}>
               {error ? `Error: ${error}` : 'No error'}
             </Typography>
-            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <SimpleBox sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Button
                 size="small"
                 variant="outlined"
@@ -572,8 +568,8 @@ const DailyActionGamesPage: React.FC = () => {
                   Disable Mock Data
                 </Button>
               )}
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
         )}
 
         <EnhancedTable

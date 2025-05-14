@@ -24,9 +24,12 @@ namespace PPrePorter.DailyActionsDB.Models.Transactions
         public DateTime TransactionDate { get; set; }
 
         [Required]
-        [MaxLength(50)]
         [Column("PlayerID")]
-        public string PlayerId { get; set; } = string.Empty;
+        public long PlayerID { get; set; }
+
+        // This property is needed for backward compatibility with existing code
+        [NotMapped]
+        public string PlayerId { get => PlayerID.ToString(); set => PlayerID = long.Parse(value); }
 
         // This property is needed for backward compatibility with existing code
         [NotMapped]

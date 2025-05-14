@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Box,
   Grid,
   Paper,
   Typography,
@@ -20,6 +19,8 @@ import {
   useTheme,
   alpha
 } from '@mui/material';
+import SimpleBox from '../../common/SimpleBox';
+import { createSx } from '../../../utils/styleUtils';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -122,7 +123,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     >
       <CardAccent position="left" variant="blue" />
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 })}>
         <Typography variant="h6" component="h2">
           Filters
         </Typography>
@@ -133,7 +134,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         >
           {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
         </Button>
-      </Box>
+      </SimpleBox>
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={4}>
@@ -205,8 +206,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       </Grid>
 
       <Collapse in={showAdvancedFilters}>
-        <Box sx={{ mt: 3 }}>
-          <Divider sx={{ mb: 2 }} />
+        <SimpleBox sx={createSx({ mt: 3 })}>
+          <Divider sx={createSx({ mb: 2 })} />
           <Typography variant="subtitle1" gutterBottom>
             Advanced Filters
           </Typography>
@@ -289,7 +290,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
           {/* Active filters */}
           {Object.keys(advancedFilters).length > 0 && (
-            <Box sx={{ mt: 2 }}>
+            <SimpleBox sx={createSx({ mt: 2 })}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Active Filters:
               </Typography>
@@ -329,12 +330,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                   );
                 })}
               </Stack>
-            </Box>
+            </SimpleBox>
           )}
-        </Box>
+        </SimpleBox>
       </Collapse>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1 }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1 })}>
         <Button
           variant="outlined"
           onClick={onResetFilters}
@@ -350,7 +351,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         >
           Apply Filters
         </Button>
-      </Box>
+      </SimpleBox>
     </Paper>
   );
 };

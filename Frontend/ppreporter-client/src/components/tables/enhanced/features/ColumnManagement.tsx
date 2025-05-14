@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Box,
   Checkbox,
   Divider,
   FormControlLabel,
@@ -10,11 +9,14 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
+import SimpleBox from '../../../common/SimpleBox';
+import { createSx } from '../../../../utils/styleUtils';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { ColumnDef, ColumnManagementConfig } from '../types';
+import DragDropWrapper from '../../../common/DragDropWrapper';
 
 interface ColumnManagementProps {
   columns: ColumnDef[];
@@ -101,7 +103,7 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="column-manager">
               {(provided) => (
-                <div
+                <DragDropWrapper
                   {...provided.droppableProps}
                   ref={provided.innerRef}
                 >
@@ -116,7 +118,7 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
                         index={index}
                       >
                         {(provided) => (
-                          <div
+                          <DragDropWrapper
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
@@ -129,7 +131,7 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
                                 justifyContent: 'space-between'
                               }}
                             >
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
                                 <DragIndicatorIcon
                                   fontSize="small"
                                   sx={{ mr: 1, color: 'text.secondary' }}
@@ -146,7 +148,7 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
                                   label={column.label}
                                   sx={{ m: 0 }}
                                 />
-                              </Box>
+                              </SimpleBox>
                               {config.allowPinning && (
                                 <Tooltip title={stickyColumns.includes(column.id) ? "Unpin column" : "Pin column"}>
                                   <IconButton
@@ -162,13 +164,13 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
                                 </Tooltip>
                               )}
                             </MenuItem>
-                          </div>
+                          </DragDropWrapper>
                         )}
                       </Draggable>
                     );
                   })}
                   {provided.placeholder}
-                </div>
+                </DragDropWrapper>
               )}
             </Droppable>
           </DragDropContext>

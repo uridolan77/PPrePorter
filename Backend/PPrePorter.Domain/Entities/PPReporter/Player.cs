@@ -22,7 +22,7 @@ namespace PPrePorter.Domain.Entities.PPReporter
         public DateTime? FirstDeposit { get => FirstDepositDate; set => FirstDepositDate = value; }
         public DateTime? FirstGame { get => FirstGameDate; set => FirstGameDate = value; }
 
-        public virtual ICollection<Transaction> Transactions { get; set; }
+        // Removed Transaction reference as part of code cleanup
         public virtual ICollection<DailyActionGame> DailyActionGames { get; set; }
     }
 }

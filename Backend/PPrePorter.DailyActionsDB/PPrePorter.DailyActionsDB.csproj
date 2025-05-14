@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PPrePorter.Core\PPrePorter.Core.csproj" />
-    <ProjectReference Include="..\PPrePorter.Infrastructure\PPrePorter.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

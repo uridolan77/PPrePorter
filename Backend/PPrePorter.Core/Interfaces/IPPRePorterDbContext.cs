@@ -1,6 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using PPrePorter.Core.Models.Entities;
+using PPrePorter.Core.Models.Metadata;
 using PPrePorter.Domain.Entities.PPReporter;
 using PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using PPrePorter.Core.Models.Reports;
@@ -19,12 +21,13 @@ namespace PPrePorter.Core.Interfaces
         DbSet<UserWhiteLabel> UserWhiteLabels { get; set; }
         DbSet<Game> Games { get; set; }
         DbSet<DailyActionGame> DailyActionsGames { get; set; }
-        DbSet<Player> Players { get; set; }
+        DbSet<Core.Models.Entities.Player> Players { get; set; }
         DbSet<Transaction> Transactions { get; set; }
         DbSet<ReportTemplate> ReportTemplates { get; set; }
         DbSet<GeneratedReport> GeneratedReports { get; set; }
         DbSet<ReportExport> ReportExports { get; set; }
         DbSet<object> Metadata { get; set; }
+        DbSet<DailyActionsMetadataItem> DailyActionsMetadata { get; set; }
         DbSet<DataAnnotation> Annotations { get; set; }
         DbSet<SharedAnnotation> AnnotationShares { get; set; }
         DbSet<Dashboard.UserInteraction> UserInteractions { get; set; }

@@ -1,5 +1,5 @@
 import React, { memo, useEffect } from 'react';
-import { Grid, Typography, Box, Button } from '@mui/material';
+import { Grid, Typography, Button } from '@mui/material';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PeopleIcon from '@mui/icons-material/People';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
@@ -13,6 +13,8 @@ import { CommonProps } from '../../types/common';
 import { DashboardStats } from '../../types/dashboard';
 import { useDispatch } from 'react-redux';
 import { fetchDashboardSummary } from '../../store/slices/dashboardSlice';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 
 interface DashboardMetricsProps extends CommonProps {
   stats?: DashboardStats | null;
@@ -64,8 +66,8 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
 
   return (
     <ErrorBoundary fallback={<EmptyState message="Error displaying metrics" />}>
-      <Box sx={{ mb: 4, ...sx }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
+      <SimpleBox sx={createSx({ mb: 4, ...sx })}>
+        <Typography variant="h5" sx={createSx({ mb: 2 })}>
           {title}
         </Typography>
         <Grid container spacing={3}>
@@ -110,7 +112,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
             />
           </Grid>
         </Grid>
-      </Box>
+      </SimpleBox>
     </ErrorBoundary>
   );
 };

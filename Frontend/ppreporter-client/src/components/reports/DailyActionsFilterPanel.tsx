@@ -1,72 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-  Box,
-  Grid,
   Typography,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
   Paper,
-  IconButton,
-  SelectChangeEvent,
-  Autocomplete,
-  Chip,
-  Stack,
-  Divider,
-  TextareaAutosize,
-  Collapse
+  TextareaAutosize
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ClearIcon from '@mui/icons-material/Clear';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FilterPanel, { FilterConfig, FilterValues } from './FilterPanel';
 
-// Define specific filter types for DailyActions
+/**
+ * Daily actions filter options
+ */
 export interface DailyActionsFilters {
+  /** Date range for filtering */
   dateRange?: Date | null;
+  /** Registration date */
   registration?: Date | null;
+  /** First time deposit date */
   firstTimeDeposit?: Date | null;
+  /** Last deposit date */
   lastDepositDate?: Date | null;
+  /** Last login date */
   lastLogin?: Date | null;
+  /** Block date */
   blockDate?: Date | null;
+  /** Unblock date */
   unblockDate?: Date | null;
+  /** Last updated date */
   lastUpdated?: Date | null;
+  /** Tracker information */
   trackers?: string;
+  /** Promotion code */
   promotionCode?: string;
+  /** Registration play modes */
   regPlayMode?: string[];
+  /** Languages */
   languages?: string[];
+  /** Countries */
   countries?: string[];
+  /** Currencies */
   currency?: string[];
+  /** Gender options */
   gender?: string[];
+  /** Status options */
   status?: string[];
+  /** Platform options */
   platform?: string[];
+  /** Player type options */
   playersType?: string[];
+  /** SMS enabled flag */
   smsEnabled?: string;
+  /** Mail enabled flag */
   mailEnabled?: string;
+  /** Phone enabled flag */
   phoneEnabled?: string;
+  /** Post enabled flag */
   postEnabled?: string;
+  /** Bonus enabled flag */
   bonusEnabled?: string;
+  /** Player IDs or usernames */
   players?: string;
+  /** Page size for results */
   pageSize?: number;
 }
 
+/**
+ * Props for the DailyActionsFilterPanel component
+ */
 export interface DailyActionsFilterPanelProps {
+  /** Callback for filter changes */
   onFilterChange?: (filters: DailyActionsFilters) => void;
+  /** Callback for applying filters */
   onApplyFilters?: (filters: DailyActionsFilters) => void;
+  /** Callback for resetting filters */
   onResetFilters?: () => void;
+  /** Initial filter values */
   initialValues?: DailyActionsFilters;
+  /** Whether the panel is expanded by default */
   defaultExpanded?: boolean;
 }
 
+/**
+ * Filter panel for daily actions report
+ */
 const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
   onFilterChange,
   onApplyFilters,
@@ -74,15 +88,13 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
   initialValues = {},
   defaultExpanded = true
 }) => {
-  // State for panel expansion
-  const [expanded, setExpanded] = useState<boolean>(defaultExpanded);
-
-  // Toggle panel expansion
-  const toggleExpanded = () => {
-    setExpanded(!expanded);
-  };
-  // Define filter configurations
-  const filterConfigs: FilterConfig[] = [
+  // State for players input
+  const [players, setPlayers] = useState<string>(initialValues.players || '');
+  /**
+   * Define filter configurations - memoized to prevent unnecessary re-renders
+   */
+  const filterConfigs = React.useMemo<FilterConfig[]>(() => [
+    // Text filters
     {
       id: 'trackers',
       label: 'Trackers',
@@ -93,6 +105,8 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       label: 'Promotion Code',
       type: 'text',
     },
+
+    // Multi-select filters
     {
       id: 'regPlayMode',
       label: 'Reg Play Mode',
@@ -112,8 +126,7 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       options: [
         { value: 'Arabic', label: 'Arabic' },
         { value: 'EN-Canada', label: 'EN-Canada' },
-        { value: 'EN-CL', label: 'EN-CL' },
-        // Add more languages as needed
+        { value: 'EN-CL', label: 'EN-CL' }
       ],
       defaultValue: []
     },
@@ -124,8 +137,7 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       options: [
         { value: 'Afghanistan', label: 'Afghanistan' },
         { value: 'Albania', label: 'Albania' },
-        { value: 'Algeria', label: 'Algeria' },
-        // Add more countries as needed
+        { value: 'Algeria', label: 'Algeria' }
       ],
       defaultValue: []
     },
@@ -138,8 +150,7 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
         { value: 'CAD', label: 'CAD' },
         { value: 'EUR', label: 'EUR' },
         { value: 'GBP', label: 'GBP' },
-        { value: 'NZD', label: 'NZD' },
-        // Add more currencies as needed
+        { value: 'NZD', label: 'NZD' }
       ],
       defaultValue: []
     },
@@ -184,6 +195,8 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       ],
       defaultValue: []
     },
+
+    // Yes/No select filters
     {
       id: 'smsEnabled',
       label: 'SMS Enabled',
@@ -234,6 +247,8 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       ],
       defaultValue: ''
     },
+
+    // Date filters
     {
       id: 'dateRange',
       label: 'Date Range',
@@ -274,6 +289,8 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       label: 'Last Updated',
       type: 'date',
     },
+
+    // Page size filter
     {
       id: 'pageSize',
       label: 'Page Size',
@@ -286,58 +303,66 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
       ],
       defaultValue: '50'
     },
-  ];
+  ], []);
 
-  // Handle filter changes
-  const handleFilterChange = (values: FilterValues) => {
+  /**
+   * Handle filter changes
+   * @param values - The updated filter values
+   */
+  const handleFilterChange = useCallback((values: FilterValues) => {
     if (onFilterChange) {
       onFilterChange(values as unknown as DailyActionsFilters);
     }
-  };
+  }, [onFilterChange]);
 
-  // Handle apply filters
-  const handleApplyFilters = (values: FilterValues) => {
+  /**
+   * Handle apply filters
+   * @param values - The filter values to apply
+   */
+  const handleApplyFilters = useCallback((values: FilterValues) => {
     if (onApplyFilters) {
       onApplyFilters(values as unknown as DailyActionsFilters);
     }
-  };
+  }, [onApplyFilters]);
 
-  // Custom players input component
-  const PlayersInput = () => {
-    const [players, setPlayers] = useState(initialValues.players || '');
+  /**
+   * Handle players input change
+   * @param e - The change event
+   */
+  const handlePlayersChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPlayers(e.target.value);
+    if (onFilterChange) {
+      onFilterChange({
+        ...initialValues,
+        players: e.target.value
+      });
+    }
+  }, [initialValues, onFilterChange]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setPlayers(e.target.value);
-      if (onFilterChange) {
-        onFilterChange({
-          ...initialValues,
-          players: e.target.value
-        });
-      }
-    };
-
-    return (
-      <div style={{ marginTop: 16 }}>
-        <Typography variant="body2" color="text.secondary" style={{ marginBottom: 8 }}>
-          Players
-        </Typography>
-        <TextareaAutosize
-          minRows={3}
-          placeholder="Enter player IDs or usernames (one per line)"
-          style={{
-            width: '100%',
-            padding: '8px',
-            fontFamily: 'inherit',
-            fontSize: 'inherit',
-            borderRadius: '4px',
-            borderColor: '#ccc'
-          }}
-          value={players}
-          onChange={handleChange}
-        />
-      </div>
-    );
-  };
+  /**
+   * Players input component
+   */
+  const PlayersInput = useMemo(() => (
+    <div style={{ marginTop: 16 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Players
+      </Typography>
+      <TextareaAutosize
+        minRows={3}
+        placeholder="Enter player IDs or usernames (one per line)"
+        style={{
+          width: '100%',
+          padding: '8px',
+          fontFamily: 'inherit',
+          fontSize: 'inherit',
+          borderRadius: '4px',
+          borderColor: '#ccc'
+        }}
+        value={players}
+        onChange={handlePlayersChange}
+      />
+    </div>
+  ), [players, handlePlayersChange]);
 
   return (
     <div>
@@ -349,8 +374,8 @@ const DailyActionsFilterPanel: React.FC<DailyActionsFilterPanelProps> = ({
         initialValues={initialValues as unknown as FilterValues}
         title="Daily Actions Filters"
       />
-      <Paper style={{ padding: 16, marginBottom: 24 }}>
-        <PlayersInput />
+      <Paper sx={{ p: 2, mb: 3 }}>
+        {PlayersInput}
       </Paper>
     </div>
   );

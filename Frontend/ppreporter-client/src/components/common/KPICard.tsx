@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Box,
   Card,
   CardContent,
   Typography,
@@ -10,6 +9,8 @@ import {
   IconButton,
   alpha
 } from '@mui/material';
+import SimpleBox from './SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
@@ -66,17 +67,25 @@ const KPICard: React.FC<KPICardProps> = ({
 
   // Format the trend percentage
   const formatTrend = (value: number | null): string => {
-    if (value === null) return '';
+    if (value === null || value === undefined) return '';
+    // Ensure value is a valid number
+    if (isNaN(Number(value))) return '';
     // Ensure value is rounded to 2 decimal places
-    const roundedValue = parseFloat(value.toFixed(2));
+    const roundedValue = parseFloat(Number(value).toFixed(2));
     const prefix = roundedValue > 0 ? '+' : '';
     return `${prefix}${roundedValue.toFixed(2)}%`;
   };
 
   // Format the main value
-  const formatValue = (value: string | number): string => {
+  const formatValue = (value: string | number | undefined | null): string => {
+    // If value is undefined or null, return a default value
+    if (value === undefined || value === null) return '0';
+
     // If value is already a string, return it as is
     if (typeof value === 'string') return value;
+
+    // Ensure value is a valid number
+    if (isNaN(Number(value))) return '0';
 
     // If we have format options, use them with Intl.NumberFormat
     if (valueFormatOptions) {
@@ -124,8 +133,8 @@ const KPICard: React.FC<KPICardProps> = ({
       />
       <CardContent sx={{ flex: 1, position: 'relative', p: 3 }}>
         {/* Card header with title and actions */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 })}>
+          <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
             <Typography variant="subtitle2" color="text.secondary">
               {title}
             </Typography>
@@ -137,7 +146,7 @@ const KPICard: React.FC<KPICardProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-          </Box>
+          </SimpleBox>
 
           {onMoreClick && (
             <IconButton
@@ -148,18 +157,18 @@ const KPICard: React.FC<KPICardProps> = ({
               <MoreVertIcon fontSize="small" />
             </IconButton>
           )}
-        </Box>
+        </SimpleBox>
 
         {/* Main content with value and icon */}
-        <Box
-          sx={{
+        <SimpleBox
+          sx={createSx({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             mt: 1
-          }}
+          })}
         >
-          <Box>
+          <SimpleBox>
             {loading ? (
               <CircularProgress size={24} />
             ) : (
@@ -175,39 +184,39 @@ const KPICard: React.FC<KPICardProps> = ({
                 )}
               </>
             )}
-          </Box>
+          </SimpleBox>
 
           {icon && (
-            <Box
-              sx={{
+            <SimpleBox
+              sx={createSx({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.1),
                 color: 'primary.main',
                 borderRadius: '50%',
                 width: 48,
                 height: 48
-              }}
+              })}
             >
               {icon}
-            </Box>
+            </SimpleBox>
           )}
-        </Box>
+        </SimpleBox>
 
         {/* Trend indicator */}
         {trend !== null && (
           <>
             <Divider sx={{ my: 1.5, borderColor: 'divider' }} />
 
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box
-                sx={{
+            <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
+              <SimpleBox
+                sx={createSx({
                   display: 'flex',
                   alignItems: 'center',
                   color: trendInfo.color,
                   mr: 1
-                }}
+                })}
               >
                 {trendInfo.icon}
                 <Typography
@@ -218,12 +227,12 @@ const KPICard: React.FC<KPICardProps> = ({
                 >
                   {formatTrend(trend)}
                 </Typography>
-              </Box>
+              </SimpleBox>
 
               <Typography variant="caption" color="text.secondary">
                 {trendLabel}
               </Typography>
-            </Box>
+            </SimpleBox>
           </>
         )}
       </CardContent>

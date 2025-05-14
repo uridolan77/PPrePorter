@@ -125,6 +125,11 @@ export interface MultiSelectProps extends CommonProps {
    * Whether the component is in a loading state
    */
   loading?: boolean;
+
+  /**
+   * Whether the component should take up the full width of its container
+   */
+  fullWidth?: boolean;
 }
 
 /**
@@ -154,7 +159,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   sx,
   className,
   style,
-  loading = false
+  loading = false,
+  fullWidth = true
 }) => {
   // State for search term
   const [searchTerm, setSearchTerm] = useState<string>('');

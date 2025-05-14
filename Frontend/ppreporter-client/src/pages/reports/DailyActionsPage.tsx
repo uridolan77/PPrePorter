@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
-  Box,
   Container,
   Typography,
   Paper,
@@ -37,94 +36,133 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 // Import custom components
 import DailyActionsFilterPanel from '../../components/reports/DailyActionsFilterPanel';
 
-// Types
+/**
+ * Represents a daily action record with player activity data
+ */
 interface DailyAction {
+  /** Unique identifier for the record */
   id: string;
+  /** Date of the record in ISO format */
   date: string;
+  /** White label identifier */
   whiteLabelId: number;
+  /** White label name */
   whiteLabelName: string;
+  /** Number of registrations */
   registrations: number;
+  /** Number of first-time depositors */
   ftd: number;
+  /** Number of first-time depositor acquisitions (optional) */
   ftda?: number;
+  /** Total deposit amount */
   deposits: number;
+  /** Deposit amount via credit card (optional) */
   depositsCreditCard?: number;
+  /** Deposit amount via Neteller (optional) */
   depositsNeteller?: number;
+  /** Deposit amount via MoneyBookers (optional) */
   depositsMoneyBookers?: number;
+  /** Deposit amount via other methods (optional) */
   depositsOther?: number;
+  /** Number of cashout requests (optional) */
   cashoutRequests?: number;
+  /** Total amount of paid cashouts */
   paidCashouts: number;
+  /** Total amount of casino bets (optional) */
   betsCasino?: number;
+  /** Total amount of casino wins (optional) */
   winsCasino?: number;
+  /** Total amount of sports bets (optional) */
   betsSport?: number;
+  /** Total amount of sports wins (optional) */
   winsSport?: number;
+  /** Total amount of live bets (optional) */
   betsLive?: number;
+  /** Total amount of live wins (optional) */
   winsLive?: number;
+  /** Total amount of bingo bets (optional) */
   betsBingo?: number;
+  /** Total amount of bingo wins (optional) */
   winsBingo?: number;
+  /** Gross gaming revenue for casino */
   ggrCasino: number;
+  /** Gross gaming revenue for sports */
   ggrSport: number;
+  /** Gross gaming revenue for live games */
   ggrLive: number;
+  /** Gross gaming revenue for bingo (optional) */
   ggrBingo?: number;
+  /** Total gross gaming revenue across all products */
   totalGGR: number;
-  // Additional properties for grouped data
+  /** Key used for grouping data (optional) */
   groupKey?: string;
+  /** Value displayed for grouped data (optional) */
   groupValue?: string;
-  // Additional properties for other grouping dimensions
+  /** Country of the player (optional) */
   country?: string;
+  /** Tracker information (optional) */
   tracker?: string;
+  /** Currency used (optional) */
   currency?: string;
+  /** Player gender (optional) */
   gender?: string;
+  /** Platform used (optional) */
   platform?: string;
+  /** Player ranking (optional) */
   ranking?: string;
-  // Player properties
+  /** Player ID (optional) */
   playerId?: number;
+  /** Player name (optional) */
   playerName?: string;
 }
 
+/**
+ * Summary metrics for daily actions
+ */
 interface Summary {
+  /** Total number of registrations */
   totalRegistrations: number;
+  /** Total number of first-time depositors */
   totalFTD: number;
+  /** Total deposit amount */
   totalDeposits: number;
+  /** Total cashout amount */
   totalCashouts: number;
+  /** Total gross gaming revenue */
   totalGGR: number;
 }
 
+/**
+ * Filters for API requests
+ */
 interface Filters {
+  /** Start date in YYYY-MM-DD format */
   startDate: string;
+  /** End date in YYYY-MM-DD format */
   endDate: string;
-  whiteLabelIds?: number[]; // Changed to match backend's expectation of a list
-  groupBy?: number; // Changed to number to match backend's GroupByOption enum
-}
-
-// Define ReportFilters interface for export
-interface ReportFilters {
-  startDate: string;
-  endDate: string;
+  /** List of white label IDs to filter by */
   whiteLabelIds?: number[];
+  /** GroupByOption enum value (Day=0, Month=1, Year=2, etc.) */
   groupBy?: number;
 }
 
+/**
+ * Filters for report export
+ */
+interface ReportFilters extends Filters {
+  // Same as Filters interface, but defined separately for clarity
+}
+
+/**
+ * Daily Actions Page Component
+ * Displays daily player activities, deposits, and gaming revenue
+ */
 const DailyActionsPage: React.FC = () => {
   // State for filters - use yesterday and today as default date range
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 1));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [whiteLabelId, setWhiteLabelId] = useState<string>('');
   const [groupBy, setGroupBy] = useState<string>('Day');
-  // Group By options - when any option is selected,
-  // the table will show only the grouped field and sum all numerical values
-  const groupByOptions = [
-    { id: 'Day', name: 'Day' },
-    { id: 'Month', name: 'Month' },
-    { id: 'Year', name: 'Year' },
-    { id: 'Label', name: 'White Label' },
-    { id: 'Player', name: 'Player' },
-    { id: 'Country', name: 'Country' },
-    { id: 'Tracker', name: 'Tracker' },
-    { id: 'Currency', name: 'Currency' },
-    { id: 'Gender', name: 'Gender' },
-    { id: 'Platform', name: 'Platform' },
-    { id: 'Ranking', name: 'Ranking' }
-  ];
 
   // State for data
   const [dailyActions, setDailyActions] = useState<DailyAction[]>([]);
@@ -144,30 +182,140 @@ const DailyActionsPage: React.FC = () => {
     totalGGR: 0
   });
 
-  // Fetch initial data on component mount
-  useEffect(() => {
-    console.log('[DAILY ACTIONS PAGE] Component mounted');
-  }, []);
+  // Group By options - memoized to prevent unnecessary re-renders
+  const groupByOptions = useMemo(() => [
+    { id: 'Day', name: 'Day' },
+    { id: 'Month', name: 'Month' },
+    { id: 'Year', name: 'Year' },
+    { id: 'Label', name: 'White Label' },
+    { id: 'Player', name: 'Player' },
+    { id: 'Country', name: 'Country' },
+    { id: 'Tracker', name: 'Tracker' },
+    { id: 'Currency', name: 'Currency' },
+    { id: 'Gender', name: 'Gender' },
+    { id: 'Platform', name: 'Platform' },
+    { id: 'Ranking', name: 'Ranking' }
+  ], []);
 
-  // Fetch initial data on component mount
-  useEffect(() => {
-    // Define a function to fetch data on mount to avoid dependency issues
-    const fetchInitialData = async () => {
-      console.log('[DAILY ACTIONS PAGE] Fetching initial data');
-      await fetchDailyActions();
+  /**
+   * Convert frontend groupBy string to backend GroupByOption enum value
+   * @param groupByString - The group by option string
+   * @returns The corresponding backend enum value
+   */
+  const convertGroupByToBackendValue = useCallback((groupByString: string): number => {
+    // Day=0, Month=1, Year=2, Label=3, Country=4, Tracker=5, Currency=6, Gender=7, Platform=8, Ranking=9, Player=10
+    const groupByMapping: { [key: string]: number } = {
+      'Day': 0,
+      'Month': 1,
+      'Year': 2,
+      'Label': 3,
+      'Country': 4,
+      'Tracker': 5,
+      'Currency': 6,
+      'Gender': 7,
+      'Platform': 8,
+      'Ranking': 9,
+      'Player': 10
     };
 
-    // Set a small delay to ensure the component is fully mounted
-    const timer = setTimeout(() => {
-      fetchInitialData();
-    }, 100);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return groupByMapping[groupByString] || 0; // Default to Day (0) if not found
   }, []);
 
-  // Fetch daily actions data
-  const fetchDailyActions = async () => {
+  /**
+   * Calculate summary metrics from data
+   * @param data - The daily actions data
+   * @returns Summary metrics
+   */
+  const calculateSummary = useCallback((data: DailyAction[]): Summary => {
+    return {
+      totalRegistrations: data.reduce((sum, item) => sum + (item.registrations || 0), 0),
+      totalFTD: data.reduce((sum, item) => sum + (item.ftd || 0), 0),
+      totalDeposits: data.reduce((sum, item) => sum + (item.deposits || 0), 0),
+      totalCashouts: data.reduce((sum, item) => sum + (item.paidCashouts || 0), 0),
+      totalGGR: data.reduce((sum, item) => sum + (item.totalGGR || 0), 0)
+    };
+  }, []);
+
+  /**
+   * Format group value based on groupBy option
+   * @param item - The daily action item
+   * @param groupByOption - The group by option
+   * @returns Formatted group value
+   */
+  const formatGroupValue = useCallback((item: DailyAction, groupByOption: string): string => {
+    if (item.groupValue) return item.groupValue;
+
+    if (groupByOption === 'Day' && item.date) {
+      return format(new Date(item.date), 'MMM dd, yyyy');
+    } else if (groupByOption === 'Month' && item.date) {
+      return format(new Date(item.date), 'MMMM yyyy');
+    } else if (groupByOption === 'Year' && item.date) {
+      return format(new Date(item.date), 'yyyy');
+    } else if (groupByOption === 'Label') {
+      return item.whiteLabelName || '';
+    } else if (groupByOption === 'Country') {
+      return item.country || '';
+    } else if (groupByOption === 'Tracker') {
+      return item.tracker || '';
+    } else if (groupByOption === 'Currency') {
+      return item.currency || '';
+    } else if (groupByOption === 'Gender') {
+      return item.gender || '';
+    } else if (groupByOption === 'Platform') {
+      return item.platform || '';
+    } else if (groupByOption === 'Ranking') {
+      return item.ranking || '';
+    } else if (groupByOption === 'Player') {
+      return item.playerId ? `Player ${item.playerId}` : '';
+    }
+
+    return '';
+  }, []);
+
+  /**
+   * Process API response data
+   * @param response - The API response
+   * @returns Processed daily actions data
+   */
+  const processApiResponse = useCallback((response: any): DailyAction[] => {
+    let processedData: DailyAction[] = [];
+
+    // Extract data array from response based on its structure
+    if (response.data && Array.isArray(response.data)) {
+      processedData = response.data;
+    } else if (response.data?.items && Array.isArray(response.data.items)) {
+      processedData = response.data.items;
+    } else if (response.items && Array.isArray(response.items)) {
+      processedData = response.items;
+    } else if (Array.isArray(response)) {
+      processedData = response;
+    } else if (typeof response === 'object' && response !== null) {
+      const keys = Object.keys(response).filter(key => !isNaN(Number(key)));
+      if (keys.length > 0) {
+        processedData = keys.map(key => response[key]);
+      }
+    }
+
+    // Transform the data to ensure it has the required properties
+    return processedData.map(item => ({
+      ...item,
+      id: item.id || `row-${Math.random().toString(36).substr(2, 9)}`,
+      groupValue: formatGroupValue(item, groupBy),
+      registrations: item.registrations || 0,
+      ftd: item.ftd || 0,
+      deposits: item.deposits || 0,
+      paidCashouts: item.paidCashouts || 0,
+      ggrCasino: item.ggrCasino || 0,
+      ggrSport: item.ggrSport || 0,
+      ggrLive: item.ggrLive || 0,
+      totalGGR: item.totalGGR || 0
+    }));
+  }, [formatGroupValue, groupBy]);
+
+  /**
+   * Fetch daily actions data
+   */
+  const fetchDailyActions = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -180,47 +328,28 @@ const DailyActionsPage: React.FC = () => {
       const filters: Filters = {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
-        // Convert groupBy string to the numeric value expected by the backend
-        // The backend expects a GroupByOption enum value (Day=0, Month=1, Year=2, Label=3, etc.)
         groupBy: convertGroupByToBackendValue(groupBy)
       };
 
+      // Add white label ID filter if specified
       if (whiteLabelId && whiteLabelId !== '') {
-        console.log(`[DAILY ACTIONS PAGE] Filtering by white label ID: ${whiteLabelId}`);
-        // The backend expects a list of white label IDs
         filters.whiteLabelIds = [parseInt(whiteLabelId)];
-      } else {
-        console.log('[DAILY ACTIONS PAGE] No white label filter applied');
       }
 
-      console.log(`[DAILY ACTIONS PAGE] Grouping by: ${groupBy} (backend value: ${filters.groupBy})`);
+      // Try to get mock data if enabled
+      const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING ||
+                          localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
 
-      // Log a message about the grouping behavior
-      console.log(`[DAILY ACTIONS PAGE] Using grouped view by ${groupBy} - numerical values will be summed`);
-
-      console.log('[DAILY ACTIONS PAGE] Starting data fetch with filters:', filters);
-
-      // Try to get mock data directly first
-      try {
-        console.log('[DAILY ACTIONS PAGE] Checking if mock data is enabled');
-        // Check both the constant and localStorage
-        const useMockData = FEATURES.USE_MOCK_DATA_FOR_UI_TESTING || localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
-
-        if (useMockData) {
-          console.log('[DAILY ACTIONS PAGE] Mock data is enabled, trying to get mock data directly');
-
+      if (useMockData) {
+        try {
           // Import mock data dynamically
           const mockDataModule = await import('../../mockData');
           const mockDataService = mockDataModule.default;
 
           // Try to get summary data
-          console.log('[DAILY ACTIONS PAGE] Getting mock summary data directly with filters:', filters);
           const mockSummaryData = mockDataService.getMockData('/reports/daily-actions/summary', filters);
 
-          if (mockSummaryData && mockSummaryData.dailyActions) {
-            console.log('[DAILY ACTIONS PAGE] Got mock summary data directly:', mockSummaryData);
-            console.log('[DAILY ACTIONS PAGE] Daily actions from mock data:', mockSummaryData.dailyActions);
-
+          if (mockSummaryData?.dailyActions) {
             // Use the mock data
             setDailyActions(mockSummaryData.dailyActions || []);
 
@@ -236,237 +365,94 @@ const DailyActionsPage: React.FC = () => {
             setSummary(summaryData);
             setLoading(false);
             return;
-          } else {
-            console.log('[DAILY ACTIONS PAGE] No mock summary data found or no daily actions in the response, trying regular mock data');
-
-            // Try to get regular data
-            const mockRegularData = mockDataService.getMockData('/reports/daily-actions/data', filters);
-
-            if (mockRegularData) {
-              console.log('[DAILY ACTIONS PAGE] Got mock regular data directly:', mockRegularData);
-
-              // Check if we have dailyActions in the response
-              if (mockRegularData.dailyActions && mockRegularData.dailyActions.length > 0) {
-                console.log('[DAILY ACTIONS PAGE] Using dailyActions from mock data:', mockRegularData.dailyActions);
-                setDailyActions(mockRegularData.dailyActions);
-              } else if (mockRegularData.data && mockRegularData.data.length > 0) {
-                // Fall back to data field
-                console.log('[DAILY ACTIONS PAGE] Using data field from mock data:', mockRegularData.data);
-                setDailyActions(mockRegularData.data);
-              } else {
-                // No data found
-                console.log('[DAILY ACTIONS PAGE] No data found in mock response');
-                setDailyActions([]);
-              }
-
-              // Check if we have summary in the response
-              if (mockRegularData.summary) {
-                setSummary(mockRegularData.summary);
-              } else {
-                // Calculate summary metrics from the data
-                const data = mockRegularData.dailyActions || mockRegularData.data || [];
-                const summaryData: Summary = {
-                  totalRegistrations: mockRegularData.totalRegistrations || data.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
-                  totalFTD: mockRegularData.totalFTD || data.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
-                  totalDeposits: mockRegularData.totalDeposits || data.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
-                  totalCashouts: mockRegularData.totalCashouts || data.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
-                  totalGGR: mockRegularData.totalGGR || data.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
-                };
-
-                setSummary(summaryData);
-              }
-
-              setLoading(false);
-              return;
-            }
           }
+
+          // Try to get regular data if summary data not available
+          const mockRegularData = mockDataService.getMockData('/reports/daily-actions/data', filters);
+
+          if (mockRegularData) {
+            // Extract data from the response
+            let data: DailyAction[] = [];
+            if (mockRegularData.dailyActions?.length > 0) {
+              data = mockRegularData.dailyActions;
+            } else if (mockRegularData.data?.length > 0) {
+              data = mockRegularData.data;
+            }
+
+            setDailyActions(data);
+
+            // Set summary metrics
+            if (mockRegularData.summary) {
+              setSummary(mockRegularData.summary);
+            } else {
+              setSummary(calculateSummary(data));
+            }
+
+            setLoading(false);
+            return;
+          }
+        } catch (mockError) {
+          // Continue to real API if mock data fails
         }
-      } catch (mockError) {
-        console.error('[DAILY ACTIONS PAGE] Error getting mock data directly:', mockError);
       }
 
-      // Always use the filtered-grouped endpoint for consistent behavior
-      try {
-        console.log('[DAILY ACTIONS PAGE] Fetching data with filters:', filters);
+      // Make the API call
+      const response = await dailyActionsService.getGroupedData(filters);
 
-        // Always use the filtered-grouped endpoint for all groupBy options
-        console.log('[DAILY ACTIONS PAGE] Using getGroupedData for groupBy:', groupBy);
+      if (response) {
+        // Process the data
+        const transformedData = processApiResponse(response);
+        setDailyActions(transformedData);
 
-        // Add more detailed logging for debugging
-        console.log('[DAILY ACTIONS PAGE] Endpoint URL:', '/reports/daily-actions/filtered-grouped');
-        console.log('[DAILY ACTIONS PAGE] Request payload:', JSON.stringify(filters, null, 2));
-
-        // Make the API call
-        const response = await dailyActionsService.getGroupedData(filters);
-
-        // Log the full response for debugging
-        console.log('[DAILY ACTIONS PAGE] Raw response:', JSON.stringify(response, null, 2));
-
-        // Check if the response has the expected structure
-        if (response) {
-          console.log('[DAILY ACTIONS PAGE] Got data from service:', response);
-          console.log('[DAILY ACTIONS PAGE] Response type:', typeof response);
-          console.log('[DAILY ACTIONS PAGE] Response keys:', Object.keys(response));
-
-          // Process the data based on the response structure
-          let processedData: DailyAction[] = [];
-
-          // Check if response has a data property that is an array
-          if (response.data && Array.isArray(response.data)) {
-            console.log('[DAILY ACTIONS PAGE] Response has data array with length:', response.data.length);
-            processedData = response.data;
-          }
-          // Check if response has a data.items property that is an array
-          else if (response.data && response.data.items && Array.isArray(response.data.items)) {
-            console.log('[DAILY ACTIONS PAGE] Response has data.items array with length:', response.data.items.length);
-            processedData = response.data.items;
-          }
-          // Check if response has an items property that is an array
-          else if (response.items && Array.isArray(response.items)) {
-            console.log('[DAILY ACTIONS PAGE] Response has items array with length:', response.items.length);
-            processedData = response.items;
-          }
-          // Check if response itself is an array
-          else if (Array.isArray(response)) {
-            console.log('[DAILY ACTIONS PAGE] Response is an array with length:', response.length);
-            processedData = response;
-          }
-          // Check if response is an object with numeric keys (array-like object)
-          else if (typeof response === 'object' && response !== null) {
-            const keys = Object.keys(response).filter(key => !isNaN(Number(key)));
-            if (keys.length > 0) {
-              console.log('[DAILY ACTIONS PAGE] Response is an array-like object with length:', keys.length);
-              processedData = keys.map(key => response[key]);
-            }
-          }
-
-          // If processedData is still empty but we have data in the response, log a warning
-          if (processedData.length === 0) {
-            console.warn('[DAILY ACTIONS PAGE] No data extracted from response. Response structure:', Object.keys(response));
-
-            // Additional check for empty data array
-            if (response.data && Array.isArray(response.data) && response.data.length === 0) {
-              console.warn('[DAILY ACTIONS PAGE] Data array exists but is empty');
-            }
-          }
-
-          // Transform the data to ensure it has the required properties
-          const transformedData = processedData.map(item => {
-            // Add groupValue property based on groupBy if it doesn't exist
-            let groupValue = item.groupValue || '';
-
-            if (!groupValue) {
-              if (groupBy === 'Day' && item.date) {
-                groupValue = format(new Date(item.date), 'MMM dd, yyyy');
-              } else if (groupBy === 'Month' && item.date) {
-                groupValue = format(new Date(item.date), 'MMMM yyyy');
-              } else if (groupBy === 'Year' && item.date) {
-                groupValue = format(new Date(item.date), 'yyyy');
-              } else if (groupBy === 'Label') {
-                groupValue = item.whiteLabelName || '';
-              } else if (groupBy === 'Country') {
-                groupValue = item.country || '';
-              } else if (groupBy === 'Tracker') {
-                groupValue = item.tracker || '';
-              } else if (groupBy === 'Currency') {
-                groupValue = item.currency || '';
-              } else if (groupBy === 'Gender') {
-                groupValue = item.gender || '';
-              } else if (groupBy === 'Platform') {
-                groupValue = item.platform || '';
-              } else if (groupBy === 'Ranking') {
-                groupValue = item.ranking || '';
-              } else if (groupBy === 'Player') {
-                groupValue = item.playerId ? `Player ${item.playerId}` : '';
-              }
-            }
-
-            // Ensure all required numeric properties have default values
-            return {
-              ...item,
-              id: item.id || `row-${Math.random().toString(36).substr(2, 9)}`,
-              groupValue,
-              registrations: item.registrations || 0,
-              ftd: item.ftd || 0,
-              deposits: item.deposits || 0,
-              paidCashouts: item.paidCashouts || 0,
-              ggrCasino: item.ggrCasino || 0,
-              ggrSport: item.ggrSport || 0,
-              ggrLive: item.ggrLive || 0,
-              totalGGR: item.totalGGR || 0
-            };
-          });
-
-          // Log the first item for debugging
-          if (transformedData.length > 0) {
-            console.log('[DAILY ACTIONS PAGE] First transformed item:', transformedData[0]);
-          }
-
-          // Set the processed data to state
-          setDailyActions(transformedData);
-
-          // Process summary data
-          if (response.summary) {
-            console.log('[DAILY ACTIONS PAGE] Using summary from response:', response.summary);
-            setSummary(response.summary);
-          } else {
-            // Calculate summary metrics if not provided by the API
-            console.log('[DAILY ACTIONS PAGE] Calculating summary from data');
-            const summaryData: Summary = {
-              totalRegistrations: processedData.reduce((sum: number, item: DailyAction) => sum + (item.registrations || 0), 0),
-              totalFTD: processedData.reduce((sum: number, item: DailyAction) => sum + (item.ftd || 0), 0),
-              totalDeposits: processedData.reduce((sum: number, item: DailyAction) => sum + (item.deposits || 0), 0),
-              totalCashouts: processedData.reduce((sum: number, item: DailyAction) => sum + (item.paidCashouts || 0), 0),
-              totalGGR: processedData.reduce((sum: number, item: DailyAction) => sum + (item.totalGGR || 0), 0)
-            };
-
-            setSummary(summaryData);
-          }
+        // Process summary data
+        if (response.summary) {
+          setSummary(response.summary);
         } else {
-          console.error('[DAILY ACTIONS PAGE] Invalid response format:', response);
-          setError('Invalid response format from the server');
+          setSummary(calculateSummary(transformedData));
         }
-      } catch (innerErr) {
-        console.error('[DAILY ACTIONS PAGE] Error in inner try block:', innerErr);
-        throw innerErr; // Re-throw to be caught by the outer catch block
+      } else {
+        setError('Invalid response format from the server');
       }
     } catch (err) {
-      console.error('[DAILY ACTIONS PAGE] Error fetching daily actions:', err);
       setError('Failed to load daily actions data. Please try again later.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    startDate, endDate, whiteLabelId, groupBy,
+    convertGroupByToBackendValue, processApiResponse, calculateSummary
+  ]);
 
-  // Handle filter changes
-  const handleApplyFilters = (): void => {
-    console.log('[DAILY ACTIONS PAGE] Apply filters button clicked');
-    console.log('[DAILY ACTIONS PAGE] Current filters:', {
-      startDate: format(startDate, 'yyyy-MM-dd'),
-      endDate: format(endDate, 'yyyy-MM-dd'),
-      whiteLabelId
-    });
+  // Fetch initial data on component mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDailyActions();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [fetchDailyActions]);
+
+  /**
+   * Handle filter changes
+   */
+  const handleApplyFilters = useCallback((): void => {
     fetchDailyActions();
-  };
+  }, [fetchDailyActions]);
 
-
-
-  // Handle group by change
-  const handleGroupByChange = (event: SelectChangeEvent): void => {
-    console.log(`[DAILY ACTIONS PAGE] Group by changed to: ${event.target.value}`);
+  /**
+   * Handle group by change
+   * @param event - The select change event
+   */
+  const handleGroupByChange = useCallback((event: SelectChangeEvent): void => {
     setGroupBy(event.target.value);
-  };
+  }, []);
 
-  // Handle export button click
-  const handleExport = async (): Promise<void> => {
+  /**
+   * Handle export button click
+   */
+  const handleExport = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      console.log('[DAILY ACTIONS PAGE] Exporting data with filters:', {
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
-        whiteLabelId,
-        groupBy
-      });
 
       // Create filters object
       const filters: ReportFilters = {
@@ -491,31 +477,57 @@ const DailyActionsPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('[DAILY ACTIONS PAGE] Error exporting data:', error);
       setError('Failed to export data. Please try again later.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate, whiteLabelId, groupBy, convertGroupByToBackendValue]);
 
-  // Format currency values
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('en-US', {
+  /**
+   * Format currency values
+   * @param value - The value to format
+   * @returns Formatted currency string
+   */
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2
-    }).format(value);
-  };
+    });
 
-  // Handle sort request
-  const handleRequestSort = (property: keyof DailyAction) => {
+    return (value: number): string => formatter.format(value);
+  }, []);
+
+  /**
+   * Handle sort request
+   * @param property - The property to sort by
+   */
+  const handleRequestSort = useCallback((property: keyof DailyAction) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  };
+  }, [order, orderBy]);
 
-  // Get sorted data
-  const getSortedData = (data: DailyAction[]): DailyAction[] => {
+  /**
+   * Determine if a property should be sorted as string
+   * @param property - The property to check
+   * @returns True if the property should be sorted as string
+   */
+  const isStringProperty = useMemo(() => {
+    const stringProperties = new Set([
+      'groupValue', 'date', 'whiteLabelName', 'country',
+      'tracker', 'currency', 'gender', 'platform', 'ranking'
+    ]);
+
+    return (property: keyof DailyAction): boolean => stringProperties.has(property as string);
+  }, []);
+
+  /**
+   * Get sorted data
+   * @param data - The data to sort
+   * @returns Sorted data
+   */
+  const getSortedData = useCallback((data: DailyAction[]): DailyAction[] => {
     // Create a copy of the data to avoid mutating the original
     const stabilizedData = data.map((el, index) => [el, index] as [DailyAction, number]);
 
@@ -524,63 +536,25 @@ const DailyActionsPage: React.FC = () => {
       const aValue = a[0][orderBy];
       const bValue = b[0][orderBy];
 
-      // Handle special case for the first column (groupBy)
-      if (orderBy === 'groupValue' ||
-          orderBy === 'date' ||
-          orderBy === 'whiteLabelName' ||
-          orderBy === 'country' ||
-          orderBy === 'tracker' ||
-          orderBy === 'currency' ||
-          orderBy === 'gender' ||
-          orderBy === 'platform' ||
-          orderBy === 'ranking') {
-        // String comparison
+      // Handle string properties
+      if (isStringProperty(orderBy)) {
         const aString = String(aValue || '');
         const bString = String(bValue || '');
 
-        if (order === 'asc') {
-          return aString.localeCompare(bString);
-        } else {
-          return bString.localeCompare(aString);
-        }
+        return order === 'asc'
+          ? aString.localeCompare(bString)
+          : bString.localeCompare(aString);
       }
 
       // Numeric comparison for other columns
       const aNum = Number(aValue) || 0;
       const bNum = Number(bValue) || 0;
 
-      if (order === 'asc') {
-        return aNum - bNum;
-      } else {
-        return bNum - aNum;
-      }
+      return order === 'asc' ? aNum - bNum : bNum - aNum;
     });
 
     return stabilizedData.map((el) => el[0]);
-  };
-
-
-
-  // Convert frontend groupBy string to backend GroupByOption enum value
-  const convertGroupByToBackendValue = (groupByString: string): number => {
-    // Import the mapping from the service to ensure consistency
-    // Day=0, Month=1, Year=2, Label=3, Country=4, Tracker=5, Currency=6, Gender=7, Platform=8, Ranking=9, Player=10
-    const groupByMapping: { [key: string]: number } = {
-      'Day': 0,
-      'Month': 1,
-      'Year': 2,
-      'Label': 3,
-      'Country': 4,
-      'Tracker': 5,
-      'Currency': 6,
-      'Gender': 7,
-      'Platform': 8,
-      'Ranking': 9,
-      'Player': 10
-    };
-
-    return groupByMapping[groupByString] || 0; // Default to Day (0) if not found
-  };
+  }, [orderBy, order, isStringProperty]);
 
   return (
     <Container maxWidth="xl">

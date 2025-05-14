@@ -10,8 +10,9 @@ import { AnomalyDetectionOptions, AnomalyResult } from '../utils/anomalyDetectio
 import { PredictionModelOptions } from '../utils/predictiveSurfaceUtils';
 import workerManager from './workerManager';
 
-// Base API URL
-const API_URL = 'https://localhost:7075/api';
+// Base API URL - use the config
+import config from '../config/appConfig';
+const API_URL = config.api.baseUrl;
 
 // Cache TTL in milliseconds (5 minutes)
 const CACHE_TTL = 5 * 60 * 1000;

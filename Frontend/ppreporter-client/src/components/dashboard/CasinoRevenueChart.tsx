@@ -1,6 +1,8 @@
 import React, { memo, useMemo, useEffect } from 'react';
-import { Box, CircularProgress, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { CircularProgress, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
+import SimpleBox from '../common/SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { CommonProps } from '../../types/common';
 import { useDispatch } from 'react-redux';
@@ -71,43 +73,43 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
   // Handle loading state
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx })}>
         <CircularProgress />
-      </Box>
+      </SimpleBox>
     );
   }
 
   // Handle error state
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx })}>
         <Typography variant="body1" color="error">
           Error loading revenue data: {error.message}
           {onRetry && (
-            <Box component="span" sx={{ ml: 2, cursor: 'pointer', textDecoration: 'underline' }} onClick={onRetry}>
+            <SimpleBox component="span" sx={createSx({ ml: 2, cursor: 'pointer', textDecoration: 'underline' })} onClick={onRetry}>
               Retry
-            </Box>
+            </SimpleBox>
           )}
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
   // Handle empty data state
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx }}>
+      <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height, ...sx })}>
         <Typography variant="body1" color="text.secondary">
           No revenue data available
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
   // Mobile view - Line chart (simpler, less CPU intensive)
   if (isMobile) {
     return (
-      <Box sx={{ width: '100%', height, ...sx }}>
+      <SimpleBox sx={createSx({ width: '100%', height, ...sx })}>
         <ResponsiveContainer>
           <LineChart
             data={chartData}
@@ -142,13 +144,13 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
             />
           </LineChart>
         </ResponsiveContainer>
-      </Box>
+      </SimpleBox>
     );
   }
 
   // Desktop view - Area chart
   return (
-    <Box sx={{ width: '100%', height, ...sx }}>
+    <SimpleBox sx={createSx({ width: '100%', height, ...sx })}>
       <ResponsiveContainer>
         <AreaChart
           data={chartData}
@@ -173,7 +175,7 @@ const CasinoRevenueChart: React.FC<CasinoRevenueChartProps> = ({
           />
         </AreaChart>
       </ResponsiveContainer>
-    </Box>
+    </SimpleBox>
   );
 };
 

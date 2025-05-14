@@ -11,7 +11,6 @@ using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Repositories.Metadata;
 using PPrePorter.DailyActionsDB.Services;
 using PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching;
-using System;
 using System.Data;
 
 namespace PPrePorter.DailyActionsDB
@@ -79,33 +78,14 @@ namespace PPrePorter.DailyActionsDB
                 // Add our improved SQL command interceptor to add NOLOCK hints to all tables in SELECT queries
                 options.AddInterceptors(new SqlCommandInterceptor(
                     serviceProvider.GetService<ILogger<SqlCommandInterceptor>>()));
+
+                // Add the IsolationLevelInterceptor to apply READ UNCOMMITTED isolation level to all queries
+                options.AddInterceptors(new IsolationLevelInterceptor(
+                    IsolationLevel.ReadUncommitted,
+                    serviceProvider.GetService<ILogger<IsolationLevelInterceptor>>()));
             }, 32); // Set pool size to 32
 
-            // Register simplified DbContext with pooling using the same connection string
-            logger?.LogInformation("Connecting to DailyActionsSimpleDB with connection string: {ConnectionString}", sanitizedConnectionString);
-
-            services.AddDbContextPool<DailyActionsSimpleDbContext>(options =>
-            {
-                options.UseSqlServer(resolvedConnectionString, sqlServerOptions =>
-                {
-                    sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery); // Changed to SingleQuery
-                    sqlServerOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorNumbersToAdd: null);
-                    sqlServerOptions.CommandTimeout(60); // Increase command timeout
-                });
-
-                // Enable sensitive data logging in development
-                if (connectionStringName == "DailyActionsDB_Local")
-                {
-                    options.EnableSensitiveDataLogging();
-                }
-
-                // Add our improved SQL command interceptor to add NOLOCK hints to all tables in SELECT queries
-                options.AddInterceptors(new SqlCommandInterceptor(
-                    serviceProvider.GetService<ILogger<SqlCommandInterceptor>>()));
-            }, 32); // Set pool size to 32
+            // We've removed the simplified DbContext as part of code cleanup
 
             // We're now using the MemoryCacheAdapter from PPrePorter.Core
             // No need to register memory cache here
@@ -121,7 +101,7 @@ namespace PPrePorter.DailyActionsDB
             // Register the DailyActionsMetadata repository
             // Note: This repository uses PPRePorterDbContext which should be registered separately
             // in the Infrastructure services registration
-            services.AddScoped<Interfaces.Metadata.IDailyActionsMetadataRepository, Repositories.Metadata.DailyActionsMetadataRepository>();
+            services.AddScoped<IDailyActionsMetadataRepository, DailyActionsMetadataRepository>();
 
             // We'll implement the DailyActionRepository and DailyActionService later
             // services.AddScoped<IDailyActionRepository, DailyActionRepository>();
@@ -149,11 +129,6 @@ namespace PPrePorter.DailyActionsDB
 
             // We're now using the Infrastructure's MetadataService via the adapter
             // This is registered in Program.cs
-
-            // Register services
-            // The in-memory daily actions service is registered in Program.cs
-            // We don't register it here to avoid duplicate registrations and namespace issues
-            // services.AddScoped<IInMemoryDailyActionsService, InMemoryDailyActionsService>();
 
             // Register the smart cache service as a singleton
             services.AddSingleton<IDailyActionsSmartCacheService, DailyActionsSmartCacheService>();
@@ -203,8 +178,7 @@ namespace PPrePorter.DailyActionsDB
             services.AddScoped<ISportBetStateService, SportBetStateService>();
             services.AddScoped<ISportBetEnhancedService, SportBetEnhancedService>();
 
-            // Register simplified services
-            services.AddScoped<IDailyActionsSimpleService, DailyActionsSimpleService>();
+            // We've removed the simplified services as part of code cleanup
 
             // Register the NoLockDbContextFactory as a singleton
             services.AddSingleton<NoLockDbContextFactory>();

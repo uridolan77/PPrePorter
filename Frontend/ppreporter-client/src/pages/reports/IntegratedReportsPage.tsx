@@ -1,16 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Box,
   Container,
   Typography,
   Paper,
   Grid,
   Button,
   Alert,
-  Card,
-  CardContent,
-  Divider,
   Tabs,
   Tab,
   IconButton,
@@ -31,7 +27,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format as formatDate, parseISO, subDays } from 'date-fns';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { ResponsiveContainer, AreaChart, Area, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 // Import icons
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -226,11 +221,6 @@ const IntegratedReportsPage: React.FC = () => {
   const [gameData, setGameData] = useState<any[]>([]);
   const [dailyActionData, setDailyActionData] = useState<any[]>([]);
 
-  // Handle tab change
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
-
   // Get dispatch function
   const dispatch = useDispatch<AppDispatch>();
 
@@ -239,6 +229,15 @@ const IntegratedReportsPage: React.FC = () => {
   const playersState = useSelector(selectPlayerData);
   const gamesState = useSelector(selectGameData);
   const userPreferencesState = useSelector(selectUserPreferences);
+
+  /**
+   * Handle tab change
+   * @param event - React synthetic event
+   * @param newValue - New tab index
+   */
+  const handleTabChange = useCallback((event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  }, []);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -307,139 +306,170 @@ const IntegratedReportsPage: React.FC = () => {
     }
   }, [userPreferencesState]);
 
-  // Fetch data from API
-  const fetchData = () => {
+  /**
+   * Fetch data from API
+   * Memoized to prevent unnecessary re-renders
+   */
+  const fetchData = useCallback(() => {
     setLoading(true);
 
-    // Fetch daily actions data
-    dispatch(fetchDailyActionsData({
-      startDate,
-      endDate
-    }));
+    // Convert Date objects to ISO strings to make them serializable
+    const dateParams = {
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null
+    };
 
-    // Fetch player data
-    dispatch(fetchPlayerData({
-      startDate,
-      endDate
-    }));
+    // Fetch all data in parallel
+    Promise.all([
+      // Fetch daily actions data
+      dispatch(fetchDailyActionsData(dateParams)),
 
-    // Fetch game data
-    dispatch(fetchGameData({
-      startDate,
-      endDate
-    }));
+      // Fetch player data
+      dispatch(fetchPlayerData(dateParams)),
 
-    // Fetch dashboard summary
-    dispatch(fetchDashboardSummary({
-      startDate,
-      endDate
-    }));
+      // Fetch game data
+      dispatch(fetchGameData(dateParams)),
 
-    // Fetch revenue chart data
-    dispatch(fetchRevenueChartData({
-      startDate,
-      endDate,
-      interval: 'daily'
-    }));
+      // Fetch dashboard summary
+      dispatch(fetchDashboardSummary(dateParams)),
 
-    // Fetch registrations chart data
-    dispatch(fetchRegistrationsChartData({
-      startDate,
-      endDate,
-      interval: 'daily'
-    }));
+      // Fetch revenue chart data
+      dispatch(fetchRevenueChartData({
+        ...dateParams,
+        interval: 'daily'
+      })),
 
-    // Fetch top games data
-    dispatch(fetchTopGamesData({
-      startDate,
-      endDate,
-      limit: 10
-    }));
+      // Fetch registrations chart data
+      dispatch(fetchRegistrationsChartData({
+        ...dateParams,
+        interval: 'daily'
+      })),
 
-    // Fetch recent transactions data
-    dispatch(fetchRecentTransactionsData({
-      startDate,
-      endDate,
-      limit: 10
-    }));
-  };
+      // Fetch top games data
+      dispatch(fetchTopGamesData({
+        ...dateParams,
+        limit: 10
+      })),
 
-  // Format currency
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+      // Fetch recent transactions data
+      dispatch(fetchRecentTransactionsData({
+        ...dateParams,
+        limit: 10
+      }))
+    ]).catch(error => {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch data. Please try again.');
+    });
+  }, [dispatch, startDate, endDate]);
+
+  /**
+   * Format currency
+   * Memoized to prevent unnecessary re-renders
+   */
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount);
-  };
+    });
 
-  // Handle apply filters
-  const handleApplyFilters = () => {
+    return (amount: number): string => formatter.format(amount);
+  }, []);
+
+  /**
+   * Handle apply filters
+   */
+  const handleApplyFilters = useCallback(() => {
     setLoading(true);
     fetchData();
-  };
+  }, [fetchData]);
 
-  // Handle export
-  const handleExport = async (format: ExportFormat, exportData: any[]): Promise<void> => {
+  /**
+   * Handle export
+   * @param format - Export format
+   * @param exportData - Data to export
+   */
+  const handleExport = useCallback(async (format: ExportFormat, exportData: any[]): Promise<void> => {
     console.log(`Exporting data in ${format} format`, exportData);
     // Implementation would go here
-  };
+  }, []);
 
-  // Handle search query
-  const handleSearch = (query: string) => {
+  /**
+   * Handle search query
+   * @param query - Search query
+   */
+  const handleSearch = useCallback((query: string) => {
     console.log('Search query:', query);
     // Implementation would go here
-  };
+  }, []);
 
-  // Toggle customize mode
-  const toggleCustomizeMode = () => {
-    setCustomizeMode(!customizeMode);
-  };
+  /**
+   * Toggle customize mode
+   */
+  const toggleCustomizeMode = useCallback(() => {
+    setCustomizeMode(prevMode => !prevMode);
+  }, []);
 
-  // Handle widget menu open
-  const handleWidgetMenuOpen = (event: React.MouseEvent<HTMLElement>, widgetId: string) => {
+  /**
+   * Handle widget menu open
+   * @param event - Mouse event
+   * @param widgetId - Widget ID
+   */
+  const handleWidgetMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, widgetId: string) => {
     setWidgetMenuAnchorEl(event.currentTarget);
     setSelectedWidgetId(widgetId);
-  };
+  }, []);
 
-  // Handle widget menu close
-  const handleWidgetMenuClose = () => {
+  /**
+   * Handle widget menu close
+   */
+  const handleWidgetMenuClose = useCallback(() => {
     setWidgetMenuAnchorEl(null);
     setSelectedWidgetId(null);
-  };
+  }, []);
 
-  // Handle widget removal
-  const handleRemoveWidget = () => {
+  /**
+   * Handle widget removal
+   */
+  const handleRemoveWidget = useCallback(() => {
     if (selectedWidgetId) {
-      setDashboardConfig({
-        ...dashboardConfig,
-        widgets: dashboardConfig.widgets.filter(widget => widget.id !== selectedWidgetId)
-      });
+      setDashboardConfig(prevConfig => ({
+        ...prevConfig,
+        widgets: prevConfig.widgets.filter(widget => widget.id !== selectedWidgetId)
+      }));
       handleWidgetMenuClose();
     }
-  };
+  }, [selectedWidgetId, handleWidgetMenuClose]);
 
-  // Handle widget edit
-  const handleEditWidget = () => {
+  /**
+   * Handle widget edit
+   */
+  const handleEditWidget = useCallback(() => {
     // Implementation would go here
     handleWidgetMenuClose();
-  };
+  }, [handleWidgetMenuClose]);
 
-  // Handle save configuration dialog open
-  const handleSaveConfigDialogOpen = () => {
+  /**
+   * Handle save configuration dialog open
+   */
+  const handleSaveConfigDialogOpen = useCallback(() => {
     setConfigName(dashboardConfig.name);
     setConfigDescription(dashboardConfig.description || '');
     setSaveConfigDialogOpen(true);
-  };
+  }, [dashboardConfig]);
 
-  // Handle save configuration dialog close
-  const handleSaveConfigDialogClose = () => {
+  /**
+   * Handle save configuration dialog close
+   */
+  const handleSaveConfigDialogClose = useCallback(() => {
     setSaveConfigDialogOpen(false);
-  };
+  }, []);
 
-  // Handle save configuration
-  const handleSaveConfig = () => {
+  /**
+   * Handle save configuration
+   */
+  const handleSaveConfig = useCallback(() => {
     const updatedConfig = {
       ...dashboardConfig,
       name: configName,
@@ -467,33 +497,43 @@ const IntegratedReportsPage: React.FC = () => {
     localStorage.setItem('userReportPreferences', JSON.stringify(updatedPreferences));
 
     setSaveConfigDialogOpen(false);
+  }, [dashboardConfig, configName, configDescription, userPreferences, dispatch]);
 
-    // Show success message
-    console.log('Dashboard configuration saved successfully');
-  };
-
-  // Handle share dialog open
-  const handleShareDialogOpen = () => {
+  /**
+   * Handle share dialog open
+   */
+  const handleShareDialogOpen = useCallback(() => {
     setShareDialogOpen(true);
-  };
+  }, []);
 
-  // Handle share dialog close
-  const handleShareDialogClose = () => {
+  /**
+   * Handle share dialog close
+   */
+  const handleShareDialogClose = useCallback(() => {
     setShareDialogOpen(false);
-  };
+  }, []);
 
-  // Handle add widget dialog open
-  const handleAddWidgetDialogOpen = () => {
+  /**
+   * Handle add widget dialog open
+   */
+  const handleAddWidgetDialogOpen = useCallback(() => {
     setAddWidgetDialogOpen(true);
-  };
+  }, []);
 
-  // Handle add widget dialog close
-  const handleAddWidgetDialogClose = () => {
+  /**
+   * Handle add widget dialog close
+   */
+  const handleAddWidgetDialogClose = useCallback(() => {
     setAddWidgetDialogOpen(false);
-  };
+  }, []);
 
-  // Handle add widget
-  const handleAddWidget = (type: DashboardWidgetType, title: string, dataSource: string) => {
+  /**
+   * Handle add widget
+   * @param type - Widget type
+   * @param title - Widget title
+   * @param dataSource - Widget data source
+   */
+  const handleAddWidget = useCallback((type: DashboardWidgetType, title: string, dataSource: string) => {
     const newWidget: Widget = {
       id: `widget-${Date.now()}`,
       type: type as WidgetType, // Cast to local WidgetType
@@ -503,13 +543,13 @@ const IntegratedReportsPage: React.FC = () => {
       position: dashboardConfig.widgets.length
     };
 
-    setDashboardConfig({
-      ...dashboardConfig,
-      widgets: [...dashboardConfig.widgets, newWidget]
-    });
+    setDashboardConfig(prevConfig => ({
+      ...prevConfig,
+      widgets: [...prevConfig.widgets, newWidget]
+    }));
 
     setAddWidgetDialogOpen(false);
-  };
+  }, [dashboardConfig.widgets.length]);
 
   // Handle drag end for widgets
   const handleDragEnd = (result: any) => {

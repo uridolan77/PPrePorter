@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using PPrePorter.DailyActionsDB.Models.Transactions;
+using PPrePorter.Core.Models.DTOs;
 using System.Dynamic;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,7 +71,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
                 }
 
                 // Get transactions based on filters
-                IEnumerable<Transaction> transactions;
+                IEnumerable<TransactionDto> transactions;
 
                 if (!string.IsNullOrEmpty(playerId))
                 {
@@ -81,7 +81,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
                 else if (!string.IsNullOrEmpty(transactionType))
                 {
                     _logger.LogInformation("Filtering transactions by transaction type: {TransactionType}", transactionType);
-                    transactions = await _transactionService.GetTransactionsByTransactionTypeAsync(transactionType);
+                    transactions = await _transactionService.GetTransactionsByTypeAndDateRangeAsync(transactionType, start, end);
                 }
                 else if (!string.IsNullOrEmpty(whiteLabelId))
                 {
@@ -91,7 +91,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
                 else
                 {
                     _logger.LogInformation("Filtering transactions by date range: {StartDate} to {EndDate}", start, end);
-                    transactions = await _transactionService.GetByDateRangeAsync(start, end);
+                    transactions = await _transactionService.GetTransactionsByDateRangeAsync(start, end);
                 }
 
                 // Apply additional filters if needed
@@ -105,9 +105,9 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
                     transactions = transactions.Where(t => t.TransactionType == transactionType);
                 }
 
-                if (!string.IsNullOrEmpty(whiteLabelId) && transactions.Any(t => t.WhitelabelId != whiteLabelId))
+                if (!string.IsNullOrEmpty(whiteLabelId) && transactions.Any(t => t.WhiteLabelId != whiteLabelId))
                 {
-                    transactions = transactions.Where(t => t.WhitelabelId == whiteLabelId);
+                    transactions = transactions.Where(t => t.WhiteLabelId == whiteLabelId);
                 }
 
                 // Apply date range filter if not already applied
@@ -132,22 +132,22 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
 
                     // Add all properties from Transaction
                     obj["id"] = transaction.Id;
-                    obj["transactionDate"] = transaction.TransactionDate;
+                    obj["transactionId"] = transaction.TransactionId;
+                    obj["transactionInfoId"] = transaction.TransactionInfoId;
                     obj["playerId"] = transaction.PlayerId;
+                    obj["playerName"] = transaction.PlayerName;
+                    obj["whiteLabelId"] = transaction.WhiteLabelId;
+                    obj["whiteLabelName"] = transaction.WhiteLabelName;
+                    obj["transactionDate"] = transaction.TransactionDate;
                     obj["transactionType"] = transaction.TransactionType;
                     obj["amount"] = transaction.Amount;
-                    obj["originalAmount"] = transaction.OriginalAmount;
-                    obj["details"] = transaction.Details;
-                    obj["platform"] = transaction.Platform;
-                    obj["status"] = transaction.Status;
                     obj["currency"] = transaction.Currency;
-                    obj["lastUpdated"] = transaction.LastUpdated;
-                    obj["originalTransactionId"] = transaction.OriginalTransactionId;
-                    obj["subDetails"] = transaction.SubDetails;
-                    obj["comments"] = transaction.Comments;
+                    obj["status"] = transaction.Status;
                     obj["paymentMethod"] = transaction.PaymentMethod;
-                    obj["paymentProvider"] = transaction.PaymentProvider;
-                    obj["transactionInfoId"] = transaction.TransactionInfoId;
+                    obj["description"] = transaction.Description;
+                    obj["platform"] = transaction.Platform;
+                    obj["ipAddress"] = transaction.IpAddress;
+                    obj["country"] = transaction.Country;
 
                     return obj;
                 }).ToList();
@@ -220,22 +220,22 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
 
                 // Add all properties
                 obj["id"] = transaction.Id;
-                obj["transactionDate"] = transaction.TransactionDate;
+                obj["transactionId"] = transaction.TransactionId;
+                obj["transactionInfoId"] = transaction.TransactionInfoId;
                 obj["playerId"] = transaction.PlayerId;
+                obj["playerName"] = transaction.PlayerName;
+                obj["whiteLabelId"] = transaction.WhiteLabelId;
+                obj["whiteLabelName"] = transaction.WhiteLabelName;
+                obj["transactionDate"] = transaction.TransactionDate;
                 obj["transactionType"] = transaction.TransactionType;
                 obj["amount"] = transaction.Amount;
-                obj["originalAmount"] = transaction.OriginalAmount;
-                obj["details"] = transaction.Details;
-                obj["platform"] = transaction.Platform;
-                obj["status"] = transaction.Status;
                 obj["currency"] = transaction.Currency;
-                obj["lastUpdated"] = transaction.LastUpdated;
-                obj["originalTransactionId"] = transaction.OriginalTransactionId;
-                obj["subDetails"] = transaction.SubDetails;
-                obj["comments"] = transaction.Comments;
+                obj["status"] = transaction.Status;
                 obj["paymentMethod"] = transaction.PaymentMethod;
-                obj["paymentProvider"] = transaction.PaymentProvider;
-                obj["transactionInfoId"] = transaction.TransactionInfoId;
+                obj["description"] = transaction.Description;
+                obj["platform"] = transaction.Platform;
+                obj["ipAddress"] = transaction.IpAddress;
+                obj["country"] = transaction.Country;
 
                 return Ok(obj);
             }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using PPrePorter.API.Features.Configuration;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Core.Interfaces.Transactions;
 using PPrePorter.DailyActionsDB.Interfaces;
 using System.Text.Json;
 
@@ -17,7 +18,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
     [ApiExplorerSettings(GroupName = SwaggerGroups.Transactions)]
     public partial class TransactionController : ControllerBase
     {
-        private readonly ITransactionService _transactionService;
+        private readonly Core.Interfaces.Transactions.ITransactionService _transactionService;
         private readonly IWhiteLabelService _whiteLabelService;
         private readonly IPlayerService _playerService;
         private readonly ILogger<TransactionController> _logger;
@@ -31,7 +32,7 @@ namespace PPrePorter.API.Features.Reports.Controllers.Transactions
         /// Constructor for TransactionController
         /// </summary>
         public TransactionController(
-            ITransactionService transactionService,
+            Core.Interfaces.Transactions.ITransactionService transactionService,
             IWhiteLabelService whiteLabelService,
             IPlayerService playerService,
             ILogger<TransactionController> logger,

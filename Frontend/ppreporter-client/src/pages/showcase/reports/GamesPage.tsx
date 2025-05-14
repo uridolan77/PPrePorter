@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
-  Box,
   Container,
   Typography,
   Paper,
@@ -35,6 +34,8 @@ import { format as formatDate } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import SimpleBox from '../../../components/common/SimpleBox';
+import { createSx } from '../../../utils/styleUtils';
 
 // Import icons
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -142,19 +143,19 @@ const GamesPage: React.FC = () => {
       id: 'name',
       label: 'Game Name',
       format: (value, row: Game) => (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
           {row.thumbnailUrl && (
-            <Box
+            <SimpleBox
               component="img"
               src={row.thumbnailUrl}
               alt={row.name}
-              sx={{ width: 40, height: 40, mr: 2, borderRadius: 1 }}
+              sx={createSx({ width: 40, height: 40, mr: 2, borderRadius: 1 })}
             />
           )}
           <Typography variant="body2" fontWeight="medium">
             {row.name}
           </Typography>
-        </Box>
+        </SimpleBox>
       ),
       sortable: true,
       width: 200,
@@ -440,10 +441,49 @@ const GamesPage: React.FC = () => {
         endDate: formatDate(endDate, 'yyyy-MM-dd')
       });
 
-      setGamePerformance(performanceData);
+      // Ensure all required properties exist with default values if needed
+      const validatedData: GamePerformance = {
+        gameId: performanceData.gameId || game.id,
+        revenue: performanceData.revenue || 0,
+        uniquePlayers: performanceData.uniquePlayers || 0,
+        sessions: performanceData.sessions || 0,
+        avgSessionDuration: performanceData.avgSessionDuration || 0,
+        avgBet: performanceData.avgBet || 0,
+        avgWin: performanceData.avgWin || 0,
+        betsCount: performanceData.betsCount || 0,
+        winsCount: performanceData.winsCount || 0,
+        winRate: performanceData.winRate || 0,
+        holdPercentage: performanceData.holdPercentage || 0,
+        period: performanceData.period || {
+          startDate: formatDate(startDate, 'yyyy-MM-dd'),
+          endDate: formatDate(endDate, 'yyyy-MM-dd')
+        }
+      };
+
+      setGamePerformance(validatedData);
     } catch (err) {
       console.error('[GAMES PAGE] Error fetching game performance:', err);
-      setGamePerformance(null);
+
+      // Create default performance data when API call fails
+      const defaultPerformance: GamePerformance = {
+        gameId: game.id,
+        revenue: 0,
+        uniquePlayers: 0,
+        sessions: 0,
+        avgSessionDuration: 0,
+        avgBet: 0,
+        avgWin: 0,
+        betsCount: 0,
+        winsCount: 0,
+        winRate: 0,
+        holdPercentage: 0,
+        period: {
+          startDate: formatDate(startDate, 'yyyy-MM-dd'),
+          endDate: formatDate(endDate, 'yyyy-MM-dd')
+        }
+      };
+
+      setGamePerformance(defaultPerformance);
     }
   };
 
@@ -587,15 +627,15 @@ const GamesPage: React.FC = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box>
+      <SimpleBox sx={createSx({ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' })}>
+        <SimpleBox>
           <Typography variant="h4" gutterBottom>
             Games Report
           </Typography>
           <Typography variant="body1" color="text.secondary">
             View and analyze game performance, popularity, and revenue metrics
           </Typography>
-        </Box>
+        </SimpleBox>
         <Button
           variant="contained"
           color="primary"
@@ -605,15 +645,15 @@ const GamesPage: React.FC = () => {
         >
           Advanced Report
         </Button>
-      </Box>
+      </SimpleBox>
 
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <FilterListIcon sx={{ mr: 1 }} />
+        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 })}>
+          <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
+            <FilterListIcon sx={createSx({ mr: 1 })} />
             <Typography variant="h6">Filters</Typography>
-          </Box>
+          </SimpleBox>
           <Button
             color="primary"
             onClick={handleToggleAdvancedFilters}
@@ -621,7 +661,7 @@ const GamesPage: React.FC = () => {
           >
             {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
           </Button>
-        </Box>
+        </SimpleBox>
 
         {/* Basic Filters */}
         <Grid container spacing={3}>
@@ -700,8 +740,8 @@ const GamesPage: React.FC = () => {
 
         {/* Advanced Filters */}
         <Collapse in={showAdvancedFilters} timeout="auto" unmountOnExit>
-          <Box sx={{ mt: 3 }}>
-            <Divider sx={{ mb: 3 }} />
+          <SimpleBox sx={createSx({ mt: 3 })}>
+            <Divider sx={createSx({ mb: 3 })} />
             <Typography variant="subtitle1" gutterBottom>
               Advanced Filters
             </Typography>
@@ -733,11 +773,11 @@ const GamesPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('status', e.target.value)}
                     label="Status"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <SimpleBox sx={createSx({ display: 'flex', flexWrap: 'wrap', gap: 0.5 })}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </SimpleBox>
                     )}
                   >
                     {['active', 'inactive', 'maintenance'].map((status) => (
@@ -758,11 +798,11 @@ const GamesPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('volatility', e.target.value)}
                     label="Volatility"
                     renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <SimpleBox sx={createSx({ display: 'flex', flexWrap: 'wrap', gap: 0.5 })}>
                         {(selected as string[]).map((value) => (
                           <Chip key={value} label={value} size="small" />
                         ))}
-                      </Box>
+                      </SimpleBox>
                     )}
                   >
                     {['low', 'medium', 'high'].map((volatility) => (
@@ -790,7 +830,7 @@ const GamesPage: React.FC = () => {
                 <Typography variant="body2" gutterBottom>
                   RTP Range (%)
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', gap: 2 })}>
                   <TextField
                     label="Min"
                     type="number"
@@ -808,7 +848,7 @@ const GamesPage: React.FC = () => {
                     onChange={(e) => handleAdvancedFilterChange('maxRtp', e.target.value)}
                     InputProps={{ inputProps: { min: 0, max: 100 } }}
                   />
-                </Box>
+                </SimpleBox>
               </Grid>
 
               {/* Features */}
@@ -824,7 +864,7 @@ const GamesPage: React.FC = () => {
               </Grid>
             </Grid>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+            <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'flex-end', mt: 3 })}>
               <Button
                 variant="outlined"
                 onClick={handleResetAdvancedFilters}
@@ -832,12 +872,12 @@ const GamesPage: React.FC = () => {
               >
                 Reset Advanced Filters
               </Button>
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
         </Collapse>
 
         {/* Action Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 3 }}>
+        <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 3 })}>
           <Button
             variant="contained"
             color="primary"
@@ -846,7 +886,7 @@ const GamesPage: React.FC = () => {
           >
             Apply Filters
           </Button>
-        </Box>
+        </SimpleBox>
       </Paper>
 
       {/* Summary Cards */}
@@ -932,10 +972,10 @@ const GamesPage: React.FC = () => {
 
       {/* Data Table */}
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <TableChartIcon sx={{ mr: 1 }} />
+        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 2 })}>
+          <TableChartIcon sx={createSx({ mr: 1 })} />
           <Typography variant="h6">Games Data</Typography>
-        </Box>
+        </SimpleBox>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -992,30 +1032,30 @@ const GamesPage: React.FC = () => {
           {selectedGame && (
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
-                <Box sx={{ mb: 2 }}>
+                <SimpleBox sx={createSx({ mb: 2 })}>
                   <Typography variant="subtitle2" color="text.secondary">
                     Basic Information
                   </Typography>
-                  <Divider sx={{ my: 1 }} />
+                  <Divider sx={createSx({ my: 1 })} />
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 2 })}>
                     {selectedGame.thumbnailUrl && (
-                      <Box
+                      <SimpleBox
                         component="img"
                         src={selectedGame.thumbnailUrl}
                         alt={selectedGame.name}
-                        sx={{ width: 80, height: 80, mr: 2, borderRadius: 1 }}
+                        sx={createSx({ width: 80, height: 80, mr: 2, borderRadius: 1 })}
                       />
                     )}
-                    <Box>
+                    <SimpleBox>
                       <Typography variant="h6">
                         {selectedGame.name}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {selectedGame.provider} | {selectedGame.category}
                       </Typography>
-                    </Box>
-                  </Box>
+                    </SimpleBox>
+                  </SimpleBox>
 
                   {selectedGame.description && (
                     <Typography variant="body2" sx={{ mb: 2 }}>
@@ -1031,7 +1071,7 @@ const GamesPage: React.FC = () => {
                     <strong>Release Date:</strong> {selectedGame.releaseDate ? formatDate(new Date(selectedGame.releaseDate), 'MMM dd, yyyy') : 'N/A'}
                   </Typography>
 
-                  <Box sx={{ mb: 1 }}>
+                  <SimpleBox sx={createSx({ mb: 1 })}>
                     <Typography variant="body1" component="span">
                       <strong>RTP:</strong> {selectedGame.rtp ? `${selectedGame.rtp}%` : 'N/A'}
                     </Typography>
@@ -1040,106 +1080,106 @@ const GamesPage: React.FC = () => {
                         <LinearProgress
                           variant="determinate"
                           value={selectedGame.rtp}
-                          sx={{ mt: 1, height: 8, borderRadius: 4 }}
+                          sx={createSx({ mt: 1, height: 8, borderRadius: 4 })}
                         />
                       </Tooltip>
                     )}
-                  </Box>
+                  </SimpleBox>
 
                   <Typography variant="body1" sx={{ mb: 1 }}>
                     <strong>Volatility:</strong> {selectedGame.volatility ? selectedGame.volatility.charAt(0).toUpperCase() + selectedGame.volatility.slice(1) : 'N/A'}
                   </Typography>
 
                   {selectedGame.features && selectedGame.features.length > 0 && (
-                    <Box sx={{ mb: 1 }}>
+                    <SimpleBox sx={createSx({ mb: 1 })}>
                       <Typography variant="body1" sx={{ mb: 0.5 }}>
                         <strong>Features:</strong>
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <SimpleBox sx={createSx({ display: 'flex', flexWrap: 'wrap', gap: 0.5 })}>
                         {selectedGame.features.map((feature) => (
                           <Chip key={feature} label={feature} size="small" />
                         ))}
-                      </Box>
-                    </Box>
+                      </SimpleBox>
+                    </SimpleBox>
                   )}
 
                   {selectedGame.tags && selectedGame.tags.length > 0 && (
-                    <Box sx={{ mb: 1 }}>
+                    <SimpleBox sx={createSx({ mb: 1 })}>
                       <Typography variant="body1" sx={{ mb: 0.5 }}>
                         <strong>Tags:</strong>
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      <SimpleBox sx={createSx({ display: 'flex', flexWrap: 'wrap', gap: 0.5 })}>
                         {selectedGame.tags.map((tag) => (
                           <Chip key={tag} label={tag} size="small" variant="outlined" />
                         ))}
-                      </Box>
-                    </Box>
+                      </SimpleBox>
+                    </SimpleBox>
                   )}
-                </Box>
+                </SimpleBox>
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Box sx={{ mb: 2 }}>
+                <SimpleBox sx={createSx({ mb: 2 })}>
                   <Typography variant="subtitle2" color="text.secondary">
                     Performance Metrics
                   </Typography>
-                  <Divider sx={{ my: 1 }} />
+                  <Divider sx={createSx({ my: 1 })} />
 
                   {gamePerformance ? (
                     <>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <AttachMoneyIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
+                        <AttachMoneyIcon sx={createSx({ mr: 1, color: 'primary.main' })} />
                         <Typography variant="body1">
-                          <strong>Revenue:</strong> {formatCurrency(gamePerformance.revenue)}
+                          <strong>Revenue:</strong> {formatCurrency(gamePerformance.revenue || 0)}
                         </Typography>
-                      </Box>
+                      </SimpleBox>
 
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <PeopleIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', mb: 1 })}>
+                        <PeopleIcon sx={createSx({ mr: 1, color: 'primary.main' })} />
                         <Typography variant="body1">
-                          <strong>Unique Players:</strong> {gamePerformance.uniquePlayers.toLocaleString()}
+                          <strong>Unique Players:</strong> {gamePerformance.uniquePlayers !== undefined ? gamePerformance.uniquePlayers.toLocaleString() : '0'}
                         </Typography>
-                      </Box>
+                      </SimpleBox>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Sessions:</strong> {gamePerformance.sessions.toLocaleString()}
+                        <strong>Sessions:</strong> {gamePerformance.sessions !== undefined ? gamePerformance.sessions.toLocaleString() : '0'}
                       </Typography>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Average Session Duration:</strong> {gamePerformance.avgSessionDuration.toFixed(2)} minutes
+                        <strong>Average Session Duration:</strong> {gamePerformance.avgSessionDuration !== undefined ? gamePerformance.avgSessionDuration.toFixed(2) : '0.00'} minutes
                       </Typography>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Average Bet:</strong> {formatCurrency(gamePerformance.avgBet)}
+                        <strong>Average Bet:</strong> {formatCurrency(gamePerformance.avgBet || 0)}
                       </Typography>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Average Win:</strong> {formatCurrency(gamePerformance.avgWin)}
+                        <strong>Average Win:</strong> {formatCurrency(gamePerformance.avgWin || 0)}
                       </Typography>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Bets Count:</strong> {gamePerformance.betsCount.toLocaleString()}
+                        <strong>Bets Count:</strong> {gamePerformance.betsCount !== undefined ? gamePerformance.betsCount.toLocaleString() : '0'}
                       </Typography>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Wins Count:</strong> {gamePerformance.winsCount.toLocaleString()}
+                        <strong>Wins Count:</strong> {gamePerformance.winsCount !== undefined ? gamePerformance.winsCount.toLocaleString() : '0'}
                       </Typography>
 
-                      <Box sx={{ mb: 1 }}>
+                      <SimpleBox sx={createSx({ mb: 1 })}>
                         <Typography variant="body1" component="span">
-                          <strong>Win Rate:</strong> {gamePerformance.winRate.toFixed(2)}%
+                          <strong>Win Rate:</strong> {gamePerformance.winRate !== undefined ? gamePerformance.winRate.toFixed(2) : '0.00'}%
                         </Typography>
-                        <Tooltip title={`Win Rate: ${gamePerformance.winRate.toFixed(2)}%`}>
+                        <Tooltip title={`Win Rate: ${gamePerformance.winRate !== undefined ? gamePerformance.winRate.toFixed(2) : '0.00'}%`}>
                           <LinearProgress
                             variant="determinate"
-                            value={gamePerformance.winRate}
-                            sx={{ mt: 1, height: 8, borderRadius: 4 }}
+                            value={gamePerformance.winRate || 0}
+                            sx={createSx({ mt: 1, height: 8, borderRadius: 4 })}
                           />
                         </Tooltip>
-                      </Box>
+                      </SimpleBox>
 
                       <Typography variant="body1" sx={{ mb: 1 }}>
-                        <strong>Hold Percentage:</strong> {gamePerformance.holdPercentage.toFixed(2)}%
+                        <strong>Hold Percentage:</strong> {gamePerformance.holdPercentage !== undefined ? gamePerformance.holdPercentage.toFixed(2) : '0.00'}%
                       </Typography>
 
                       {gamePerformance.period && (
@@ -1149,7 +1189,7 @@ const GamesPage: React.FC = () => {
                       )}
                     </>
                   ) : (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                    <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 })}>
                       {loading ? (
                         <CircularProgress />
                       ) : (
@@ -1157,9 +1197,9 @@ const GamesPage: React.FC = () => {
                           No performance data available for the selected period.
                         </Typography>
                       )}
-                    </Box>
+                    </SimpleBox>
                   )}
-                </Box>
+                </SimpleBox>
               </Grid>
             </Grid>
           )}

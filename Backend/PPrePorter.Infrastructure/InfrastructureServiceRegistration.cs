@@ -2,9 +2,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PPrePorter.Core.Interfaces;
+using PPrePorter.Core.Interfaces.DailyActions;
+using PPrePorter.Core.Interfaces.Games;
+using PPrePorter.Core.Interfaces.Players;
+using PPrePorter.Core.Interfaces.Transactions;
 using PPrePorter.Infrastructure.Data;
 using PPrePorter.Infrastructure.Interfaces;
 using PPrePorter.Infrastructure.Services;
+using PPrePorter.Infrastructure.Services.DailyActions;
+using PPrePorter.Infrastructure.Services.Games;
+using PPrePorter.Infrastructure.Services.Players;
+using PPrePorter.Infrastructure.Services.Transactions;
 
 namespace PPrePorter.Infrastructure
 {
@@ -35,6 +43,19 @@ namespace PPrePorter.Infrastructure
 
             // Register the MetadataService
             services.AddScoped<IMetadataService, MetadataService>();
+
+            // Register the DailyActionsMetadataQueryProvider
+            services.AddScoped<DailyActionsMetadataQueryProvider>();
+
+            // Register adapter services
+            services.AddScoped<IDailyActionsService, DailyActionsServiceAdapter>();
+            services.AddScoped<IGameService, GameServiceAdapter>();
+            services.AddScoped<IDailyActionGameService, DailyActionGameServiceAdapter>();
+            services.AddScoped<IPlayerService, PlayerServiceAdapter>();
+            services.AddScoped<ITransactionService, TransactionServiceAdapter>();
+
+            // Register the DashboardService
+            services.AddScoped<IDashboardService, DashboardService>();
 
             return services;
         }

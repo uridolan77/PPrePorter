@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using PPrePorter.DailyActionsDB.Models.DailyActions;
+using PPrePorter.Core.Models.DTOs;
 using System.Dynamic;
 
 namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
@@ -50,21 +50,25 @@ namespace PPrePorter.API.Features.Reports.Controllers.DailyActions
                 var getDataStartTime = DateTime.UtcNow;
 
                 // Get data based on filters
-                IEnumerable<DailyActionGame> dailyActionGames;
+                IEnumerable<DailyActionGameDto> dailyActionGames;
 
                 if (playerId.HasValue)
                 {
-                    // Use the method that filters by player ID and date range at the database level
-                    dailyActionGames = await _dailyActionGameService.GetDailyActionGamesByPlayerIdAndDateRangeAsync(playerId.Value, start, end);
+                    // Use the method that filters by player ID
+                    var playerGames = await _dailyActionGameService.GetDailyActionGamesByPlayerIdAsync(playerId.Value);
+                    // Apply date range filter
+                    dailyActionGames = playerGames.Where(g => g.GameDate >= start && g.GameDate <= end);
                 }
                 else if (gameId.HasValue)
                 {
-                    // Use the method that filters by game ID and date range at the database level
-                    dailyActionGames = await _dailyActionGameService.GetDailyActionGamesByGameIdAndDateRangeAsync(gameId.Value, start, end);
+                    // Use the method that filters by game ID
+                    var gameGames = await _dailyActionGameService.GetDailyActionGamesByGameIdAsync(gameId.Value);
+                    // Apply date range filter
+                    dailyActionGames = gameGames.Where(g => g.GameDate >= start && g.GameDate <= end);
                 }
                 else
                 {
-                    // Use the method that filters by date range at the database level
+                    // Use the method that filters by date range
                     dailyActionGames = await _dailyActionGameService.GetDailyActionGamesByDateRangeAsync(start, end);
                 }
 

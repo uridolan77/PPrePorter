@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   FormControlLabel,
   Switch,
   Tooltip,
@@ -9,6 +8,8 @@ import {
   IconButton,
   Collapse
 } from '@mui/material';
+import SimpleBox from './SimpleBox';
+import { createSx } from '../../utils/styleUtils';
 import InfoIcon from '@mui/icons-material/Info';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -79,8 +80,8 @@ const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false, co
         bgcolor: mockEnabled ? 'warning.50' : 'background.paper'
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center', justifyContent: 'space-between' })}>
+        <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
           <FormControlLabel
             control={
               <Switch
@@ -100,19 +101,19 @@ const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false, co
               <InfoIcon fontSize="small" color="info" />
             </IconButton>
           </Tooltip>
-        </Box>
-        <Box>
+        </SimpleBox>
+        <SimpleBox sx={createSx({})}>
           <IconButton size="small" onClick={toggleDetails} sx={{ mr: 1 }}>
             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
           <IconButton size="small" onClick={toggleCollapsed} color="primary">
             <InfoIcon fontSize="small" />
           </IconButton>
-        </Box>
-      </Box>
+        </SimpleBox>
+      </SimpleBox>
 
       <Collapse in={expanded}>
-        <Box sx={{ mt: 2, p: 1, bgcolor: 'background.default', borderRadius: 1 }}>
+        <SimpleBox sx={createSx({ mt: 2, p: 1, bgcolor: 'background.default', borderRadius: 1 })}>
           <Typography variant="body2" gutterBottom>
             <strong>Current Mode:</strong> {mockEnabled ? 'Mock Data' : 'Real API'}
           </Typography>
@@ -126,7 +127,7 @@ const MockDataToggle: React.FC<MockDataToggleProps> = ({ showDetails = false, co
               Note: Mock data is for testing only and does not reflect real data.
             </Typography>
           )}
-        </Box>
+        </SimpleBox>
       </Collapse>
     </Paper>
   );

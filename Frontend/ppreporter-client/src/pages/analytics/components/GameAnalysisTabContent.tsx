@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Grid,
   Paper,
@@ -131,26 +131,26 @@ const GameAnalysisTabContent: React.FC<GameAnalysisTabContentProps> = ({
    * Handle game category change
    * @param event - Select change event
    */
-  const handleGameCategoryChange = (event: SelectChangeEvent): void => {
+  const handleGameCategoryChange = useCallback((event: SelectChangeEvent): void => {
     setGameCategory(event.target.value);
-  };
+  }, []);
 
   /**
    * Handle time range change
    * @param event - Select change event
    */
-  const handleTimeRangeChange = (event: SelectChangeEvent): void => {
+  const handleTimeRangeChange = useCallback((event: SelectChangeEvent): void => {
     setTimeRange(event.target.value);
-  };
+  }, []);
 
   /**
    * Handle game selection change
    * @param _event - React synthetic event
    * @param newValue - New selected game value
    */
-  const handleGameSelectionChange = (_event: React.SyntheticEvent, newValue: string | null): void => {
+  const handleGameSelectionChange = useCallback((_event: React.SyntheticEvent, newValue: string | null): void => {
     setSelectedGame(newValue);
-  };
+  }, []);
 
   // Extract top games data from props with fallback
   const topGamesData = dashboardData.topGames || [];
@@ -391,7 +391,7 @@ const GameAnalysisTabContent: React.FC<GameAnalysisTabContentProps> = ({
       </Grid>
 
       {/* Create a reusable chart component */}
-      {(() => {
+      {useMemo(() => {
         /**
          * Chart component props
          */
@@ -551,7 +551,7 @@ const GameAnalysisTabContent: React.FC<GameAnalysisTabContentProps> = ({
             </ChartComponent>
           </>
         );
-      })()}
+      }, [isLoading, topGamesData, chartData])}
     </Grid>
   );
 };

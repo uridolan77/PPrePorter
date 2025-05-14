@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  Box,
   Typography,
   Paper,
   IconButton,
@@ -11,22 +10,16 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Divider
+  Divider,
+  styled
 } from '@mui/material';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import PieChartIcon from '@mui/icons-material/PieChart';
-import ScatterPlotIcon from '@mui/icons-material/ScatterPlot';
 import CommentIcon from '@mui/icons-material/Comment';
 import ShareIcon from '@mui/icons-material/Share';
 import DownloadIcon from '@mui/icons-material/Download';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
-
 import InteractiveChart from './InteractiveChart';
 import ZoomableTimeSeriesChart from './ZoomableTimeSeriesChart';
 import LassoSelectionScatterChart from './LassoSelectionScatterChart';
@@ -35,42 +28,117 @@ import DrilldownModal, { DrilldownData } from './DrilldownModal';
 import { useFilterContext, Filter } from './FilterContext';
 import { TooltipData } from './EnhancedTooltip';
 
+// Styled components to avoid TypeScript Box sx prop issues
+const HeaderContainer = styled('div')(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: theme.spacing(2),
+  borderBottom: '1px solid',
+  borderColor: theme.palette.divider
+}));
+
+const TitleContainer = styled('div')({
+  display: 'flex',
+  alignItems: 'center'
+});
+
+const ActionsContainer = styled('div')({
+  display: 'flex',
+  gap: 4
+});
+
+const FiltersContainer = styled('div')(({ theme }) => ({
+  padding: `${theme.spacing(1)} ${theme.spacing(2)}`,
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: theme.spacing(1)
+}));
+
+const ChartContainer = styled('div')({
+  flex: 1,
+  position: 'relative'
+});
+
 // Chart types
 export type AdvancedChartType =
   'area' | 'bar' | 'line' | 'pie' | 'scatter' |
   'timeSeries' | 'zoomableTimeSeries' | 'lassoScatter';
 
-// Advanced interactive chart props
+/**
+ * Data point interface for chart data
+ */
+interface ChartDataPoint {
+  [key: string]: any;
+}
+
+/**
+ * Export format type
+ */
+type ExportFormat = 'csv' | 'excel' | 'pdf';
+
+/**
+ * Advanced interactive chart props
+ */
 interface AdvancedInteractiveChartProps {
+  /** Unique identifier for the chart */
   id: string;
+  /** Chart title */
   title: string;
+  /** Optional chart description */
   description?: string;
+  /** Chart type */
   type: AdvancedChartType;
-  data: any[];
+  /** Chart data array */
+  data: ChartDataPoint[];
+  /** Key for X-axis values */
   xKey: string;
+  /** Keys for Y-axis values */
   yKeys?: string[];
+  /** Key for name/label values */
   nameKey?: string;
+  /** Key for value data */
   valueKey?: string;
+  /** Chart height in pixels */
   height?: number;
+  /** Loading state indicator */
   loading?: boolean;
+  /** Error message if any */
   error?: string | null;
+  /** Chart colors array */
   colors?: string[];
+  /** Whether to show legend */
   showLegend?: boolean;
+  /** Whether to show grid */
   showGrid?: boolean;
+  /** Whether to enable drill-down functionality */
   enableDrilldown?: boolean;
+  /** Whether to enable tooltips */
   enableTooltip?: boolean;
+  /** Whether to enable cross-filtering */
   enableCrossFiltering?: boolean;
+  /** Whether to enable zoom functionality */
   enableZoom?: boolean;
+  /** Whether to enable lasso selection */
   enableLassoSelection?: boolean;
+  /** Whether to enable annotations */
   enableAnnotations?: boolean;
+  /** Whether to enable export functionality */
   enableExport?: boolean;
+  /** Whether to enable fullscreen mode */
   enableFullscreen?: boolean;
+  /** Custom tooltip formatter function */
   tooltipFormatter?: (value: any, name: string, props: any) => string;
+  /** Function to get tooltip data */
   getTooltipData?: (payload: any[], label: string) => TooltipData;
-  getDrilldownData?: (data: any, index: number) => DrilldownData;
-  onExport?: (format: 'csv' | 'excel' | 'pdf', data: any[]) => void;
+  /** Function to get drill-down data */
+  getDrilldownData?: (data: ChartDataPoint, index: number) => DrilldownData;
+  /** Function to handle export */
+  onExport?: (format: ExportFormat, data: ChartDataPoint[]) => void;
+  /** Function to handle sharing */
   onShare?: (chartId: string) => void;
-  onClick?: (data: any, index: number) => void;
+  /** Function to handle click events */
+  onClick?: (data: ChartDataPoint, index: number) => void;
 }
 
 /**
@@ -258,8 +326,11 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
     });
   };
 
-  // Render chart based on type
-  const renderChart = () => {
+  /**
+   * Render chart based on type
+   * Memoized to prevent unnecessary re-renders
+   */
+  const renderChart = useMemo(() => {
     // Common props for all chart types
     const commonProps = {
       id,
@@ -277,12 +348,7 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
     };
 
     // Time series chart types
-    const isTimeSeries = type === 'timeSeries' || type === 'zoomableTimeSeries';
-
-    // Scatter chart types
-    const isScatter = type === 'scatter' || type === 'lassoScatter';
-
-    if (isTimeSeries) {
+    if (type === 'timeSeries' || type === 'zoomableTimeSeries') {
       return (
         <ZoomableTimeSeriesChart
           {...commonProps}
@@ -294,12 +360,15 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
           onClick={handleDrillDown}
         />
       );
-    } else if (isScatter) {
+    }
+
+    // Scatter chart types
+    if (type === 'scatter' || type === 'lassoScatter') {
       return (
         <LassoSelectionScatterChart
           {...commonProps}
-          yKey={yKeys[0] || 'y'}
-          zKey={yKeys.length > 1 ? yKeys[1] : undefined}
+          yKey={yKeys?.[0] || 'y'}
+          zKey={yKeys && yKeys.length > 1 ? yKeys[1] : undefined}
           nameKey={nameKey}
           height={height}
           enableLassoSelection={enableLassoSelection}
@@ -307,23 +376,28 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
           onClick={handleDrillDown}
         />
       );
-    } else {
-      return (
-        <InteractiveChart
-          {...commonProps}
-          type={type as any}
-          yKeys={yKeys}
-          nameKey={nameKey}
-          valueKey={valueKey}
-          height={height}
-          enableDrilldown={enableDrilldown}
-          enableTooltip={enableTooltip}
-          enableCrossFiltering={enableCrossFiltering}
-          onClick={handleDrillDown}
-        />
-      );
     }
-  };
+
+    // Default chart types (bar, line, area, pie)
+    return (
+      <InteractiveChart
+        {...commonProps}
+        type={type}
+        yKeys={yKeys}
+        nameKey={nameKey}
+        valueKey={valueKey}
+        height={height}
+        enableDrilldown={enableDrilldown}
+        enableTooltip={enableTooltip}
+        enableCrossFiltering={enableCrossFiltering}
+        onClick={handleDrillDown}
+      />
+    );
+  }, [
+    id, title, description, data, xKey, loading, error, colors, showLegend, showGrid,
+    tooltipFormatter, getTooltipData, type, yKeys, height, enableZoom, enableLassoSelection,
+    enableCrossFiltering, nameKey, valueKey, enableDrilldown, enableTooltip, handleDrillDown
+  ]);
 
   return (
     <Paper
@@ -341,17 +415,8 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
       elevation={isFullscreen ? 24 : 1}
     >
       {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          p: 2,
-          borderBottom: '1px solid',
-          borderColor: 'divider'
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <HeaderContainer>
+        <TitleContainer>
           <Typography variant="subtitle1">{title}</Typography>
           {description && (
             <MuiTooltip title={description}>
@@ -360,8 +425,8 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
               </IconButton>
             </MuiTooltip>
           )}
-        </Box>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
+        </TitleContainer>
+        <ActionsContainer>
           {enableFullscreen && (
             <MuiTooltip title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
               <IconButton size="small" onClick={handleToggleFullscreen}>
@@ -376,7 +441,7 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
               </IconButton>
             </MuiTooltip>
           )}
-        </Box>
+        </ActionsContainer>
 
         {/* Options Menu */}
         <Menu
@@ -426,11 +491,11 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
             </MenuItem>
           )}
         </Menu>
-      </Box>
+      </HeaderContainer>
 
       {/* Active filters */}
       {activeFilters.length > 0 && (
-        <Box sx={{ px: 2, py: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <FiltersContainer>
           {activeFilters.map((filter) => (
             <Chip
               key={filter.id}
@@ -444,14 +509,14 @@ const AdvancedInteractiveChart: React.FC<AdvancedInteractiveChartProps> = ({
               deleteIcon={<HighlightOffIcon />}
             />
           ))}
-        </Box>
+        </FiltersContainer>
       )}
 
       {/* Chart */}
-      <Box sx={{ flex: 1, position: 'relative' }}>
-        {renderChart()}
+      <ChartContainer>
+        {renderChart}
         {getAnnotationMarkers()}
-      </Box>
+      </ChartContainer>
 
       {/* Drilldown Modal */}
       <DrilldownModal
