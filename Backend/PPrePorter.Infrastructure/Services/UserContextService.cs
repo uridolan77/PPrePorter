@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.Infrastructure.Extensions;
+using DomainEntities = PPrePorter.Domain.Entities.PPReporter;
 
 namespace PPrePorter.Infrastructure.Services
 {

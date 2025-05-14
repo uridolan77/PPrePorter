@@ -9,8 +9,8 @@ using PPrePorter.Infrastructure.Entities;
 using PPrePorter.Infrastructure.Extensions;
 using Dashboard = PPrePorter.Domain.Entities.PPReporter.Dashboard;
 using CoreDailyAction = PPrePorter.Core.Models.Entities.DailyAction;
-using CoreTransaction = PPrePorter.Core.Models.Entities.Transaction;
 using CorePlayer = PPrePorter.Core.Models.Entities.Player;
+using DomainTransaction = PPrePorter.Domain.Entities.PPReporter.Transaction;
 using InfraTransaction = PPrePorter.Infrastructure.Entities.Transaction;
 using InfraPlayer = PPrePorter.Infrastructure.Entities.Player;
 
@@ -36,7 +36,7 @@ namespace PPrePorter.Infrastructure.Data
 
         // Explicit interface implementation for Players and Transactions to match the interface types
         DbSet<CorePlayer> IPPRePorterDbContext.Players { get => Set<CorePlayer>("Players"); set { } }
-        DbSet<CoreTransaction> IPPRePorterDbContext.Transactions { get => Set<CoreTransaction>("Transactions"); set { } }
+        DbSet<DomainTransaction> IPPRePorterDbContext.Transactions { get => Set<DomainTransaction>("Transactions"); set { } }
 
         // Explicit interface implementation for DailyActionsMetadata to match the interface type
         // This is a view/proxy for the MetadataItem entity

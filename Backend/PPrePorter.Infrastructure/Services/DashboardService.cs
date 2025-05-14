@@ -474,7 +474,7 @@ namespace PPrePorter.Infrastructure.Services
 
                 // Build query
                 var query = from t in _dbContext.Transactions
-                            join p in _dbContext.Players on int.Parse(t.PlayerId) equals p.Id
+                            join p in _dbContext.Players on Convert.ToInt32(t.PlayerId) equals p.Id
                             join wl in _dbContext.WhiteLabels on p.CasinoID equals wl.LabelID
                             where whiteLabelIds.Contains(p.CasinoID)
                             select new { t, p, wl };
@@ -505,7 +505,7 @@ namespace PPrePorter.Infrastructure.Services
                     .Select(x => new RecentTransactionItem
                     {
                         TransactionID = x.t.Id,
-                        PlayerID = int.Parse(x.t.PlayerId),
+                        PlayerID = Convert.ToInt32(x.t.PlayerId),
                         PlayerAlias = x.p.Username,
                         WhiteLabel = x.wl.LabelName,
                         TransactionDate = x.t.TransactionDate,
@@ -1163,7 +1163,7 @@ namespace PPrePorter.Infrastructure.Services
                 if (userPreferences == null)
                 {
                     // Create new preferences
-                    userPreferences = new UserPreference
+                    userPreferences = new Domain.Entities.PPReporter.UserPreference
                     {
                         UserId = userIdInt,
                         CreatedAt = DateTime.UtcNow
