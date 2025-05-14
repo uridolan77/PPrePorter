@@ -25,14 +25,9 @@ namespace PPrePorter.DailyActionsDB.Data
     {
         private readonly ILogger<DailyActionsDbContext>? _logger;
 
-        /// <summary>
-        /// Static constructor to register global interceptors
-        /// </summary>
-        static DailyActionsDbContext()
-        {
-            // Register the IsolationLevelInterceptor globally to apply READ UNCOMMITTED isolation level to all queries
-            DbInterception.Add(new IsolationLevelInterceptor(IsolationLevel.ReadUncommitted));
-        }
+        // Note: Static constructor approach for registering interceptors doesn't work in EF Core
+        // Interceptors are registered in the DailyActionsServiceRegistration.cs file
+        // when configuring the DbContext options
 
         public DailyActionsDbContext(DbContextOptions<DailyActionsDbContext> options)
             : base(options)

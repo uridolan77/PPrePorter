@@ -9,6 +9,11 @@ import promotionalMockData from './promotional';
 import complianceMockData from './compliance';
 import exportMockData from './export';
 import scheduleMockData from './schedule';
+import financialMockData from './financial';
+import performanceMockData from './performance';
+import geographicMockData from './geographic';
+import networkGraphMockData from './networkGraph';
+import advancedAnalyticsMockData from './advancedAnalytics';
 
 /**
  * Get mock data for reports endpoints
