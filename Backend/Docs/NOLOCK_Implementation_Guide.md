@@ -72,21 +72,9 @@ public class IsolationLevelInterceptor : DbCommandInterceptor
 }
 ```
 
-### 2. Global Registration in DbContext
+### 2. Registration in Service Configuration
 
-The interceptor is registered globally in the static constructor of the `DailyActionsDbContext`:
-
-```csharp
-static DailyActionsDbContext()
-{
-    // Register the IsolationLevelInterceptor globally to apply READ UNCOMMITTED isolation level to all queries
-    DbInterception.Add(new IsolationLevelInterceptor(IsolationLevel.ReadUncommitted));
-}
-```
-
-### 3. Registration in Service Configuration
-
-The interceptor is also registered in the `DailyActionsServiceRegistration` class:
+The interceptor is registered in the `DailyActionsServiceRegistration` class when configuring the DbContext:
 
 ```csharp
 services.AddDbContextPool<DailyActionsDbContext>(options =>
@@ -100,7 +88,7 @@ services.AddDbContextPool<DailyActionsDbContext>(options =>
 });
 ```
 
-### 4. Extension Methods for Explicit Usage
+### 3. Extension Methods for Explicit Usage
 
 We also provide extension methods for explicit usage:
 
