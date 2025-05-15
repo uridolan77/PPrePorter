@@ -20,6 +20,9 @@ namespace PPrePorter.Core
             // Register the global cache service as a singleton
             services.AddSingleton<IGlobalCacheService, GlobalCacheService>();
 
+            // Register the asynchronous cache service as a singleton
+            services.AddSingleton<IAsyncCacheService, AsyncCacheService>();
+
             // Register the memory cache adapter that uses the global cache service
             services.AddSingleton<IMemoryCache, MemoryCacheAdapter>();
 

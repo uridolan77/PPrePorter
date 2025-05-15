@@ -42,20 +42,46 @@ namespace PPrePorter.Infrastructure.Services
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogWarning("User identifier claim not found in the current HttpContext");
-                throw new InvalidOperationException("User is not authenticated");
+                // Return a default user context for unauthenticated requests instead of throwing an exception
+                return new UserContext
+                {
+                    Id = "1", // Default user ID
+                    Username = "Anonymous",
+                    Email = "anonymous@example.com",
+                    Role = "Guest"
+                };
             }
 
             try
             {
+                if (!int.TryParse(userId, out int parsedUserId))
+                {
+                    _logger.LogWarning("Failed to parse user ID {UserId} to integer", userId);
+                    return new UserContext
+                    {
+                        Id = userId,
+                        Username = "Anonymous",
+                        Email = "anonymous@example.com",
+                        Role = "Guest"
+                    };
+                }
+
                 // Get user details from the database
                 var user = await _dbContext.Users
                     .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
+                    .FirstOrDefaultAsync(u => u.Id == parsedUserId);
 
                 if (user == null)
                 {
                     _logger.LogWarning("User with ID {UserId} not found in database", userId);
-                    throw new InvalidOperationException($"User with ID {userId} not found");
+                    // Return a default user context if the user is not found in the database
+                    return new UserContext
+                    {
+                        Id = userId,
+                        Username = "Anonymous",
+                        Email = "anonymous@example.com",
+                        Role = "Guest"
+                    };
                 }
 
                 return new UserContext
@@ -69,7 +95,14 @@ namespace PPrePorter.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user context for user {UserId}", userId);
-                throw;
+                // Return a default user context in case of any exception
+                return new UserContext
+                {
+                    Id = userId,
+                    Username = "Anonymous",
+                    Email = "anonymous@example.com",
+                    Role = "Guest"
+                };
             }
         }
     }

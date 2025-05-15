@@ -11,10 +11,16 @@ console.log('API URL configured as:', API_URL);
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
-// Initialize mock data flag in localStorage
+// Initialize mock data flag in localStorage if not already set
 // This ensures the flag is set when the application starts
-localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
-console.log('Mock data mode is enabled, using mock data for UI testing');
+if (localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === null) {
+  localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
+  console.log('Mock data mode initialized to enabled');
+}
+
+// Log current mock data setting
+const mockDataEnabled = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
+console.log(`Mock data mode is currently ${mockDataEnabled ? 'enabled' : 'disabled'}`);
 
 // Force disable mock data for all API calls
 const FORCE_REAL_API_CALLS = false; // Set to false to allow mock data toggle to work
@@ -176,6 +182,26 @@ apiClient.interceptors.response.use(
 
           // Override the response with mock data
           response.data = mockData;
+
+          // Special handling for daily action games endpoint
+          if (mockDataInfo.url.includes('reports/daily-action-games')) {
+            console.log('[API CLIENT RESPONSE] Special handling for daily action games endpoint');
+
+            // If the mock data doesn't have the expected structure, wrap it
+            if (mockData && !mockData.data && !Array.isArray(mockData)) {
+              console.log('[API CLIENT RESPONSE] Wrapping mock data in expected structure');
+              response.data = {
+                data: Array.isArray(mockData) ? mockData : [mockData],
+                totalCount: Array.isArray(mockData) ? mockData.length : 1
+              };
+            } else if (Array.isArray(mockData)) {
+              console.log('[API CLIENT RESPONSE] Wrapping array mock data in expected structure');
+              response.data = {
+                data: mockData,
+                totalCount: mockData.length
+              };
+            }
+          }
         } else {
           console.warn('[API CLIENT RESPONSE] No mock data returned for:', mockDataInfo.url);
         }

@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using MemoryCacheItemPriority = Microsoft.Extensions.Caching.Memory.CacheItemPriority;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -250,7 +251,7 @@ namespace PPrePorter.Core.Services
         public void Set<T>(string key, T value, TimeSpan slidingExpiration)
         {
             var options = new MemoryCacheEntryOptions()
-                .SetPriority(CacheItemPriority.High)
+                .SetPriority(MemoryCacheItemPriority.High)
                 .SetSlidingExpiration(slidingExpiration)
                 .SetSize(EstimateObjectSize(value)); // Set size for cache entry
 
@@ -265,7 +266,7 @@ namespace PPrePorter.Core.Services
         public void Set<T>(string key, T value, DateTimeOffset absoluteExpiration)
         {
             var options = new MemoryCacheEntryOptions()
-                .SetPriority(CacheItemPriority.High)
+                .SetPriority(MemoryCacheItemPriority.High)
                 .SetAbsoluteExpiration(absoluteExpiration)
                 .SetSize(EstimateObjectSize(value)); // Set size for cache entry
 

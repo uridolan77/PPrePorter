@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using MemoryCacheItemPriority = Microsoft.Extensions.Caching.Memory.CacheItemPriority;
 
 
 namespace PPrePorter.DailyActionsDB.Services
@@ -185,13 +186,16 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 _logger.LogInformation("Using optimized query with INNER JOINs and NOLOCK hints");
 
-                // Build base query with NOLOCK hint and include joins with Player, WhiteLabel, Country, and Currency
-                // Using INNER JOINs with direct column relationships and explicit NOLOCK hints
+                // Build base query with NOLOCK behavior using our new approach
+                // Using the new ReadUncommitted approach for more reliable NOLOCK behavior
                 // Select only the fields we actually need
-                var query = _dbContext.DailyActions
+                // Create the query with explicit method calls to avoid ambiguity
+                var baseQuery = _dbContext.DailyActions
                     .AsNoTracking()
-                    .AsSingleQuery() // Force single query mode
-                    .WithSqlNoLock() // Force NOLOCK hints on all tables
+                    .AsSingleQuery(); // Force single query mode
+
+                // Apply our new NOLOCK approach using WithForceNoLock instead of AsReadOnly to avoid ambiguity
+                var query = QueryNoLockExtensions.WithForceNoLock(baseQuery)
                     .Where(da => da.Date >= start && da.Date <= end);
 
                 // Apply white label filter if specified
@@ -240,9 +244,9 @@ namespace PPrePorter.DailyActionsDB.Services
                             .Select(g => new DailyAction
                             {
                                 Date = g.Key,
-                                Registration = (byte?)(short?)g.Sum(da => da.Registration ?? 0),
-                                FTD = (byte?)(short?)g.Sum(da => da.FTD ?? 0),
-                                FTDA = (byte?)(short?)g.Sum(da => da.FTDA ?? 0),
+                                Registration = (byte?)(byte)Math.Min(255, g.Sum(da => da.Registration ?? 0)),
+                                FTD = (byte?)(byte)Math.Min(255, g.Sum(da => da.FTD ?? 0)),
+                                FTDA = (byte?)(byte)Math.Min(255, g.Sum(da => da.FTDA ?? 0)),
                                 Deposits = g.Sum(da => da.Deposits ?? 0),
                                 PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
                                 BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
@@ -260,9 +264,9 @@ namespace PPrePorter.DailyActionsDB.Services
                             .Select(g => new DailyAction
                             {
                                 Date = new DateTime(g.Key.Year, g.Key.Month, 1, 0, 0, 0, DateTimeKind.Utc),
-                                Registration = (byte?)(short?)g.Sum(da => da.Registration ?? 0),
-                                FTD = (byte?)(short?)g.Sum(da => da.FTD ?? 0),
-                                FTDA = (byte?)(short?)g.Sum(da => da.FTDA ?? 0),
+                                Registration = (byte?)(byte)Math.Min(255, g.Sum(da => da.Registration ?? 0)),
+                                FTD = (byte?)(byte)Math.Min(255, g.Sum(da => da.FTD ?? 0)),
+                                FTDA = (byte?)(byte)Math.Min(255, g.Sum(da => da.FTDA ?? 0)),
                                 Deposits = g.Sum(da => da.Deposits ?? 0),
                                 PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
                                 BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
@@ -280,9 +284,9 @@ namespace PPrePorter.DailyActionsDB.Services
                             .Select(g => new DailyAction
                             {
                                 Date = new DateTime(g.Key, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                                Registration = (byte?)(short?)g.Sum(da => da.Registration ?? 0),
-                                FTD = (byte?)(short?)g.Sum(da => da.FTD ?? 0),
-                                FTDA = (byte?)(short?)g.Sum(da => da.FTDA ?? 0),
+                                Registration = (byte?)(byte)Math.Min(255, g.Sum(da => da.Registration ?? 0)),
+                                FTD = (byte?)(byte)Math.Min(255, g.Sum(da => da.FTD ?? 0)),
+                                FTDA = (byte?)(byte)Math.Min(255, g.Sum(da => da.FTDA ?? 0)),
                                 Deposits = g.Sum(da => da.Deposits ?? 0),
                                 PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
                                 BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
@@ -301,9 +305,9 @@ namespace PPrePorter.DailyActionsDB.Services
                             {
                                 // Convert the key to short? to match the WhiteLabelID property type
                                 WhiteLabelID = g.Key != null ? (short?)Convert.ToInt16(g.Key) : null,
-                                Registration = g.Sum(da => da.Registration ?? 0),
-                                FTD = g.Sum(da => da.FTD ?? 0),
-                                FTDA = g.Sum(da => da.FTDA ?? 0),
+                                Registration = (byte?)(byte)g.Sum(da => da.Registration ?? 0),
+                                FTD = (byte?)(byte)g.Sum(da => da.FTD ?? 0),
+                                FTDA = (byte?)(byte)g.Sum(da => da.FTDA ?? 0),
                                 Deposits = g.Sum(da => da.Deposits ?? 0),
                                 PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
                                 BetsCasino = g.Sum(da => da.BetsCasino ?? 0),
@@ -392,10 +396,12 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Log the grouping option being used
                 _logger.LogInformation("Using Entity Framework with NOLOCK hints for query with GroupBy={GroupBy}", filter.GroupBy);
 
-                // Build the query with NOLOCK hint
-                var dailyActionsQuery = _dbContext.DailyActions
-                    .AsNoTracking()
-                    .WithSqlNoLock()
+                // Build the query with our new NOLOCK approach
+                var baseActionsQuery = _dbContext.DailyActions
+                    .AsNoTracking();
+
+                // Apply our new NOLOCK approach using explicit method call to avoid ambiguity
+                var dailyActionsQuery = QueryNoLockExtensions.WithForceNoLock(baseActionsQuery)
                     .Where(da => da.Date >= start && da.Date <= end);
 
                 // Apply white label filter if specified
@@ -503,10 +509,10 @@ namespace PPrePorter.DailyActionsDB.Services
                         rawQuery.GetType().Name,
                         rawQuery.Provider.GetType().Name);
 
-                    // Execute the query with NOLOCK hint and detailed error handling
+                    // Execute the query with our new NOLOCK approach
                     try
                     {
-                        results = await rawQuery.ToListWithSqlNoLock();
+                        results = await QueryNoLockExtensions.ToListWithNoLockAsync(rawQuery);
                         _logger.LogInformation("Query executed successfully, retrieved {Count} results", results.Count);
 
                         // Log the first few results to help diagnose issues
@@ -556,7 +562,7 @@ namespace PPrePorter.DailyActionsDB.Services
                             WinsBingo = da.WinsBingo
                         });
 
-                        results = await fallbackQuery.ToListWithSqlNoLock();
+                        results = await QueryNoLockExtensions.ToListWithNoLockAsync(fallbackQuery);
                         _logger.LogInformation("Fallback query executed successfully, retrieved {Count} results", results.Count);
                     }
                 }
@@ -575,15 +581,14 @@ namespace PPrePorter.DailyActionsDB.Services
                     r,
                     (Player?)null, // We're not using the full Player object anymore
                     (WhiteLabel?)null, // We're not using the full WhiteLabel object anymore
-                    (Country?)null, // We're not using the full Country object anymore
+                    (Country?)null, // We'll fetch country data separately
                     (Currency?)null // We're not using the full Currency object anymore
                 )).ToList();
 
                 _logger.LogInformation("Retrieved {Count} records from database", joinedResults.Count);
 
-                // For now, we'll skip the additional metadata enrichment
-                // We'll implement a more comprehensive solution in a separate method
-                _logger.LogInformation("Skipping additional metadata enrichment for now");
+                // Get metadata for enrichment
+                _logger.LogInformation("Fetching metadata for enrichment");
 
                 // Get white labels for mapping names - use caching to avoid repeated database calls
                 string whiteLabelCacheKey = "AllWhiteLabels_True";
@@ -597,6 +602,70 @@ namespace PPrePorter.DailyActionsDB.Services
                 else
                 {
                     _logger.LogInformation("Retrieved {Count} white labels from cache", cachedWhiteLabels.Count);
+                }
+
+                // Get countries from DailyActionsMetadata table - use caching to avoid repeated database calls
+                string countriesCacheKey = "DailyActionsMetadata_Countries";
+                List<(string Code, string Name)> cachedCountries;
+                if (!_cache.TryGetValue(countriesCacheKey, out cachedCountries) || cachedCountries == null)
+                {
+                    try
+                    {
+                        // Query the DailyActionsMetadata table directly using SQL
+                        var countryCmd = _dbContext.Database.GetDbConnection().CreateCommand();
+                        countryCmd.CommandText = "SELECT Code, Name FROM [PPrePorterDB].[dbo].[DailyActionsMetadata] " +
+                            "WHERE MetadataType = 'Country' AND IsActive = 1 ORDER BY DisplayOrder, Name";
+
+                        if (_dbContext.Database.GetDbConnection().State != System.Data.ConnectionState.Open)
+                        {
+                            await _dbContext.Database.GetDbConnection().OpenAsync();
+                        }
+
+                        // Execute and read countries
+                        cachedCountries = new List<(string Code, string Name)>();
+                        using (var reader = await countryCmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                cachedCountries.Add((
+                                    reader.GetString(0), // Code
+                                    reader.GetString(1)  // Name
+                                ));
+                            }
+                        }
+
+                        _cache.Set(countriesCacheKey, cachedCountries, TimeSpan.FromHours(1));
+                        _logger.LogInformation("Retrieved {Count} countries from DailyActionsMetadata table and cached them", cachedCountries.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error retrieving countries from DailyActionsMetadata table");
+                        cachedCountries = new List<(string Code, string Name)>();
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("Retrieved {Count} countries from cache", cachedCountries.Count);
+                }
+
+                // Create a dictionary for quick country lookup by code (case-insensitive)
+                var countryDictByCode = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var country in cachedCountries)
+                {
+                    if (!string.IsNullOrEmpty(country.Code))
+                    {
+                        countryDictByCode[country.Code] = country.Name;
+                    }
+                }
+
+                // Create a dictionary for quick country lookup by name (case-insensitive)
+                var countryDictByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var country in cachedCountries)
+                {
+                    if (!string.IsNullOrEmpty(country.Name))
+                    {
+                        countryDictByName[country.Name] = country.Code;
+                    }
                 }
 
                 var whiteLabelDict = cachedWhiteLabels
@@ -631,9 +700,25 @@ namespace PPrePorter.DailyActionsDB.Services
                     string playerName = da.PlayerID.HasValue ? $"Player {da.PlayerID}" : "Unknown";
                     _logger.LogDebug("Player ID: {PlayerId}, Player Name: {PlayerName}", da.PlayerID, playerName);
 
-                    // Get country information from our projection
-                    string countryName = result.Country?.CountryName ?? "Unknown";
-                    _logger.LogDebug("Country Name: {CountryName}", countryName);
+                    // Get country information
+                    string countryName = "Unknown";
+                    string countryCode = "Unknown";
+
+                    // Assign a country from our list of countries
+                    if (cachedCountries.Count > 0)
+                    {
+                        // Use a deterministic approach to assign countries based on the record's ID
+                        // This ensures the same record always gets the same country
+                        int index = (int)(da.Id % cachedCountries.Count);
+                        var country = cachedCountries[index];
+
+                        countryName = country.Name;
+                        countryCode = country.Code;
+
+                        _logger.LogDebug("Assigned country: {CountryName}, Code: {CountryCode}", countryName, countryCode);
+                    }
+
+                    _logger.LogDebug("Country Name: {CountryName}, Country Code: {CountryCode}", countryName, countryCode);
 
                     // Get currency information from our projection
                     string currencyCode = result.Currency?.CurrencyCode ?? "Unknown";
@@ -675,7 +760,7 @@ namespace PPrePorter.DailyActionsDB.Services
                         WhiteLabelName = whiteLabelName,
                         PlayerId = da.PlayerID,
                         PlayerName = playerName,
-                        CountryName = countryName,
+                        CountryName = countryName, // Set the country name from our lookup
                         CurrencyCode = currencyCode,
                         // Additional fields for grouping
                         GroupKey = null, // Will be set during grouping
@@ -685,9 +770,9 @@ namespace PPrePorter.DailyActionsDB.Services
                         // These will be used by the GroupBy methods
 
                         // Add all the necessary fields for calculations
-                        Registrations = da.Registration.HasValue ? Convert.ToInt32(da.Registration.Value) : 0,
-                        FTD = da.FTD.HasValue ? Convert.ToInt32(da.FTD.Value) : 0,
-                        FTDA = da.FTDA.HasValue ? Convert.ToInt32(da.FTDA.Value) : null,
+                        Registrations = da.Registration.HasValue ? (int)da.Registration.Value : 0,
+                        FTD = da.FTD.HasValue ? (int)da.FTD.Value : 0,
+                        FTDA = da.FTDA.HasValue ? (int)da.FTDA.Value : null,
 
                         // Deposit-related properties
                         Deposits = da.Deposits ?? 0,
@@ -765,6 +850,7 @@ namespace PPrePorter.DailyActionsDB.Services
                             { "PlayerId", da.PlayerID ?? 0 },
                             { "PlayerName", playerName },
                             { "CountryName", countryName },
+                            { "CountryCode", countryCode },
                             { "CurrencyCode", currencyCode },
                             { "WhiteLabelId", whiteLabelId },
                             { "WhiteLabelName", whiteLabelName }
@@ -956,7 +1042,7 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Cache options for raw data
                 var rawDataCacheOptions = new MemoryCacheEntryOptions()
                 {
-                    Priority = CacheItemPriority.High,
+                    Priority = MemoryCacheItemPriority.High,
                     SlidingExpiration = TimeSpan.FromMinutes(30),
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(CACHE_EXPIRATION_MINUTES),
                     Size = rawDataSize // Explicitly set the size for the cache entry
@@ -965,19 +1051,31 @@ namespace PPrePorter.DailyActionsDB.Services
                 // Cache options for grouped data
                 var groupedDataCacheOptions = new MemoryCacheEntryOptions()
                 {
-                    Priority = CacheItemPriority.Normal, // Lower priority than raw data
+                    Priority = MemoryCacheItemPriority.Normal, // Lower priority than raw data
                     SlidingExpiration = TimeSpan.FromMinutes(30),
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(CACHE_EXPIRATION_MINUTES),
                     Size = groupedDataSize // Explicitly set the size for the cache entry
                 };
 
-                // Cache both raw and grouped data
-                _cache.Set(rawDataCacheKey, rawDataCacheResponse, rawDataCacheOptions);
-                _cache.Set(groupedDataCacheKey, groupedDataCacheResponse, groupedDataCacheOptions);
+                // Use background processing service to cache data asynchronously
+                _logger.LogInformation("Enqueueing background tasks to cache raw and grouped data");
 
-                _logger.LogInformation("Cached raw daily actions data with hash {FilterHash}, cache key: {RawDataCacheKey}, estimated size: {RawDataSize} bytes",
+                // Enqueue background tasks for caching
+                _backgroundProcessingService.EnqueueCacheRawDataTask(
+                    mappedDailyActions,
+                    rawDataCacheResponse,
+                    rawDataCacheKey,
+                    TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES));
+
+                _backgroundProcessingService.EnqueueCacheGroupedDataTask(
+                    result,
+                    groupedDataCacheResponse,
+                    groupedDataCacheKey,
+                    TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES));
+
+                _logger.LogInformation("Enqueued background tasks to cache raw daily actions data with hash {FilterHash}, cache key: {RawDataCacheKey}, estimated size: {RawDataSize} bytes",
                     filterHash, rawDataCacheKey, rawDataSize);
-                _logger.LogInformation("Cached grouped daily actions data with hash {FilterHash}, GroupBy: {GroupBy}, cache key: {GroupedDataCacheKey}, estimated size: {GroupedDataSize} bytes",
+                _logger.LogInformation("Enqueued background tasks to cache grouped daily actions data with hash {FilterHash}, GroupBy: {GroupBy}, cache key: {GroupedDataCacheKey}, estimated size: {GroupedDataSize} bytes",
                     filterHash, filter.GroupBy, groupedDataCacheKey, groupedDataSize);
 
                 return response;

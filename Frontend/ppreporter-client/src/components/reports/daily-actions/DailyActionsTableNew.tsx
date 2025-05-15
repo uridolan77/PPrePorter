@@ -44,53 +44,53 @@ const DailyActionsTableNew: React.FC<DailyActionsTableProps> = ({
         id: 'registrations',
         label: 'Registrations',
         align: 'right',
-        format: (value, row) => row.registrations
+        format: (value, row) => row.registrations !== undefined && row.registrations !== null ? row.registrations : 0
       },
       {
         id: 'ftd',
         label: 'FTD',
         align: 'right',
-        format: (value, row) => row.ftd
+        format: (value, row) => row.ftd !== undefined && row.ftd !== null ? row.ftd : 0
       },
       {
         id: 'deposits',
         label: 'Deposits',
         align: 'right',
-        format: (value, row) => row.deposits
+        format: (value, row) => row.deposits !== undefined && row.deposits !== null ? row.deposits : 0
       },
       {
         id: 'paidCashouts',
         label: 'Cashouts',
         align: 'right',
-        format: (value, row) => row.paidCashouts
+        format: (value, row) => row.paidCashouts !== undefined && row.paidCashouts !== null ? row.paidCashouts : 0
       },
       {
         id: 'ggrCasino',
         label: 'Casino GGR',
         align: 'right',
         type: 'currency',
-        format: (value, row) => row.ggrCasino.toFixed(2)
+        format: (value, row) => row.ggrCasino !== undefined && row.ggrCasino !== null ? row.ggrCasino.toFixed(2) : '0.00'
       },
       {
         id: 'ggrSport',
         label: 'Sport GGR',
         align: 'right',
         type: 'currency',
-        format: (value, row) => row.ggrSport.toFixed(2)
+        format: (value, row) => row.ggrSport !== undefined && row.ggrSport !== null ? row.ggrSport.toFixed(2) : '0.00'
       },
       {
         id: 'ggrLive',
         label: 'Live GGR',
         align: 'right',
         type: 'currency',
-        format: (value, row) => row.ggrLive.toFixed(2)
+        format: (value, row) => row.ggrLive !== undefined && row.ggrLive !== null ? row.ggrLive.toFixed(2) : '0.00'
       },
       {
         id: 'totalGGR',
         label: 'Total GGR',
         align: 'right',
         type: 'currency',
-        format: (value, row) => row.totalGGR.toFixed(2)
+        format: (value, row) => row.totalGGR !== undefined && row.totalGGR !== null ? row.totalGGR.toFixed(2) : '0.00'
       }
     ];
 

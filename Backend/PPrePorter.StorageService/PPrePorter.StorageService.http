@@ -1,6 +1,0 @@
-@PPrePorter.StorageService_HostAddress = http://localhost:5145
-
-GET {{PPrePorter.StorageService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

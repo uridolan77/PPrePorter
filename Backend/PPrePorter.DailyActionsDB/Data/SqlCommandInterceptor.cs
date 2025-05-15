@@ -93,8 +93,9 @@ namespace PPrePorter.DailyActionsDB.Data
                 return;
             }
 
-            // Check if the query has the FORCE_NOLOCK_ON_ALL_TABLES tag
-            if (command.CommandText.Contains("-- FORCE_NOLOCK_ON_ALL_TABLES", StringComparison.OrdinalIgnoreCase))
+            // Always add NOLOCK hints to SELECT queries, regardless of the tag
+            // This ensures all queries get NOLOCK hints
+            if (true) // Previously: if (command.CommandText.Contains("-- FORCE_NOLOCK_ON_ALL_TABLES", StringComparison.OrdinalIgnoreCase))
             {
                 string originalSql = command.CommandText;
 
@@ -129,8 +130,12 @@ namespace PPrePorter.DailyActionsDB.Data
                     // Log the transformation if it changed
                     if (originalSql != modifiedSql)
                     {
-                        _logger?.LogDebug("Added NOLOCK hints to SQL query. Original length: {OriginalLength}, Modified length: {ModifiedLength}",
+                        _logger?.LogInformation("Added NOLOCK hints to SQL query. Original length: {OriginalLength}, Modified length: {ModifiedLength}",
                             originalSql.Length, modifiedSql.Length);
+
+                        // Log the full SQL for debugging
+                        _logger?.LogDebug("Original SQL: {OriginalSql}", originalSql);
+                        _logger?.LogDebug("Modified SQL: {ModifiedSql}", modifiedSql);
 
                         // Log a sample of the transformation for debugging
                         if (_logger?.IsEnabled(LogLevel.Trace) == true)

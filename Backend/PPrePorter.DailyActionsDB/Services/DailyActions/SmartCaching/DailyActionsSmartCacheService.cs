@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MemoryCacheItemPriority = Microsoft.Extensions.Caching.Memory.CacheItemPriority;
 
 namespace PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching
 {
@@ -246,14 +247,14 @@ namespace PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching
             return (COLD_CACHE_KEY_PREFIX, TimeSpan.FromHours(COLD_CACHE_EXPIRATION_HOURS));
         }
 
-        private CacheItemPriority GetCachePriorityForTier(string tier)
+        private MemoryCacheItemPriority GetCachePriorityForTier(string tier)
         {
             return tier switch
             {
-                HOT_CACHE_KEY_PREFIX => CacheItemPriority.High,
-                WARM_CACHE_KEY_PREFIX => CacheItemPriority.Normal,
-                COLD_CACHE_KEY_PREFIX => CacheItemPriority.Low,
-                _ => CacheItemPriority.Normal
+                HOT_CACHE_KEY_PREFIX => MemoryCacheItemPriority.High,
+                WARM_CACHE_KEY_PREFIX => MemoryCacheItemPriority.Normal,
+                COLD_CACHE_KEY_PREFIX => MemoryCacheItemPriority.Low,
+                _ => MemoryCacheItemPriority.Normal
             };
         }
 

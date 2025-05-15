@@ -1,0 +1,263 @@
+    /// <inheritdoc />
+    public async Task<int> RemoveByTagAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
+        }
+        
+        int removed = 0;
+        var keysToRemove = new List<(string Key, string? Region)>();
+        
+        // Find all items with the specified tag
+        foreach (var kvp in _cache)
+        {
+            if (kvp.Value is CacheItemBase cacheItem && cacheItem.Tags.Contains(tag))
+            {
+                // Parse out the original key and region
+                string fullKey = kvp.Key;
+                string? itemRegion = null;
+                string itemKey = fullKey;
+                
+                int separatorIndex = fullKey.IndexOf(':');
+                if (separatorIndex > 0)
+                {
+                    itemRegion = fullKey.Substring(0, separatorIndex);
+                    itemKey = fullKey.Substring(separatorIndex + 1);
+                }
+                
+                keysToRemove.Add((itemKey, itemRegion));
+            }
+        }
+        
+        // Remove the items
+        foreach (var (key, itemRegion) in keysToRemove)
+        {
+            if (await RemoveAsync(key, itemRegion, cancellationToken))
+            {
+                removed++;
+            }
+        }
+        
+        return removed;
+    }
+    
+    /// <inheritdoc />
+    public Task<IEnumerable<string>> GetKeysAsync(string? region = null, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        IEnumerable<string> keys;
+        
+        if (region == null)
+        {
+            // Return all keys, stripped of region prefix
+            keys = _cache.Keys.Select(k => 
+            {
+                int separatorIndex = k.IndexOf(':');
+                return separatorIndex > 0 ? k.Substring(separatorIndex + 1) : k;
+            });
+        }
+        else
+        {
+            // Return only keys in the specified region, stripped of region prefix
+            string prefix = $"{region}:";
+            keys = _cache.Keys
+                .Where(k => k.StartsWith(prefix))
+                .Select(k => k.Substring(prefix.Length));
+        }
+        
+        return Task.FromResult(keys);
+    }
+    
+    /// <inheritdoc />
+    public Task<IEnumerable<string>> GetKeysByTagAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
+        }
+        
+        var keys = new List<string>();
+        
+        foreach (var kvp in _cache)
+        {
+            if (kvp.Value is CacheItemBase cacheItem && cacheItem.Tags.Contains(tag))
+            {
+                // Parse out the original key
+                string fullKey = kvp.Key;
+                string itemKey = fullKey;
+                
+                int separatorIndex = fullKey.IndexOf(':');
+                if (separatorIndex > 0)
+                {
+                    itemKey = fullKey.Substring(separatorIndex + 1);
+                }
+                
+                keys.Add(itemKey);
+            }
+        }
+        
+        return Task.FromResult(keys.AsEnumerable());
+    }
+    
+    /// <inheritdoc />
+    public async Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        await _statsLock.WaitAsync(cancellationToken);
+        try
+        {
+            // Update memory usage
+            if (_statistics.MemoryUsage != null)
+            {
+                _statistics.MemoryUsage.UsedBytes = GetCurrentCacheSize();
+            }
+            
+            // Create a copy to avoid returning a reference to the mutable statistics object
+            return new CacheStatistics
+            {
+                ProviderId = _statistics.ProviderId,
+                ItemCount = _statistics.ItemCount,
+                TotalSizeInBytes = _statistics.TotalSizeInBytes,
+                Hits = _statistics.Hits,
+                Misses = _statistics.Misses,
+                Evictions = _statistics.Evictions,
+                LastResetTime = _statistics.LastResetTime,
+                MemoryUsage = _statistics.MemoryUsage != null
+                    ? new MemoryUsage
+                    {
+                        AllocatedBytes = _statistics.MemoryUsage.AllocatedBytes,
+                        UsedBytes = _statistics.MemoryUsage.UsedBytes,
+                        MaxBytes = _statistics.MemoryUsage.MaxBytes
+                    }
+                    : null,
+                RegionStats = _statistics.RegionStats.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => new RegionStatistics
+                    {
+                        Region = kvp.Value.Region,
+                        ItemCount = kvp.Value.ItemCount,
+                        SizeInBytes = kvp.Value.SizeInBytes,
+                        Hits = kvp.Value.Hits,
+                        Misses = kvp.Value.Misses
+                    })
+            };
+        }
+        finally
+        {
+            _statsLock.Release();
+        }
+    }
+    
+    /// <inheritdoc />
+    public Task<bool> RefreshExpirationAsync(string key, TimeSpan? expiration = null, string? region = null, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        string fullKey = GetFullKey(key, region);
+        
+        if (_cache.TryGetValue(fullKey, out object? value) && value is CacheItemBase cacheItem)
+        {
+            // If already expired, return false
+            if (cacheItem.IsExpired)
+            {
+                return Task.FromResult(false);
+            }
+            
+            // Set new expiration time
+            cacheItem.ExpiresAt = expiration.HasValue 
+                ? DateTimeOffset.UtcNow.Add(expiration.Value) 
+                : DateTimeOffset.UtcNow.Add(_options.DefaultExpiration);
+            
+            return Task.FromResult(true);
+        }
+        
+        return Task.FromResult(false);
+    }
+    
+    /// <inheritdoc />
+    public Task<IDictionary<string, T?>> GetAllAsync<T>(string region, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        if (string.IsNullOrWhiteSpace(region))
+        {
+            throw new ArgumentException("Region cannot be null or empty", nameof(region));
+        }
+        
+        string prefix = $"{region}:";
+        var result = new Dictionary<string, T?>();
+        
+        foreach (var kvp in _cache)
+        {
+            if (kvp.Key.StartsWith(prefix) && kvp.Value is CacheItem<T> cacheItem)
+            {
+                if (!cacheItem.IsExpired)
+                {
+                    string key = kvp.Key.Substring(prefix.Length);
+                    result[key] = cacheItem.Value;
+                    cacheItem.RecordAccess();
+                }
+            }
+        }
+        
+        return Task.FromResult<IDictionary<string, T?>>(result);
+    }
+    
+    /// <inheritdoc />
+    public async Task<int> PerformMaintenanceAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        int removed = 0;
+        var keysToRemove = new List<(string Key, string? Region)>();
+        
+        // Find all expired items
+        foreach (var kvp in _cache)
+        {
+            if (kvp.Value is CacheItemBase cacheItem && cacheItem.IsExpired)
+            {
+                string fullKey = kvp.Key;
+                string? itemRegion = null;
+                string itemKey = fullKey;
+                
+                int separatorIndex = fullKey.IndexOf(':');
+                if (separatorIndex > 0)
+                {
+                    itemRegion = fullKey.Substring(0, separatorIndex);
+                    itemKey = fullKey.Substring(separatorIndex + 1);
+                }
+                
+                keysToRemove.Add((itemKey, itemRegion));
+            }
+        }
+        
+        // Remove expired items
+        foreach (var (key, itemRegion) in keysToRemove)
+        {
+            await RemoveAsync(key, itemRegion, cancellationToken);
+            removed++;
+        }
+        
+        // Check if we need to evict items due to size constraints
+        if (_options.InMemory.SizeLimit.HasValue && GetCurrentCacheSize() > _options.InMemory.SizeLimit.Value)
+        {
+            int evicted = EvictItems();
+            removed += evicted;
+        }
+        
+        _eventPublisher.Publish(new CacheMaintenanceEvent
+        {
+            ProviderId = ProviderId,
+            ItemsAffected = removed,
+            MaintenanceType = "Cleanup"
+        });
+        
+        return removed;
+    }

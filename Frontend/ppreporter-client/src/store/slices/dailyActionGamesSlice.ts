@@ -101,6 +101,35 @@ const dailyActionGamesSlice = createSlice({
           state.startDate = null;
           state.endDate = null;
           console.log('Daily Action Games Data processed from array payload:', state.data);
+        } else if (action.payload) {
+          // Try to extract data from any other structure
+          console.log('Trying to extract data from non-standard response structure');
+
+          // Check if it's an object with any array properties
+          const payloadObj = action.payload as Record<string, any>;
+          const arrayProps = Object.entries(payloadObj)
+            .filter(([_, value]) => Array.isArray(value))
+            .sort(([_, a], [__, b]) => (b as any[]).length - (a as any[]).length);
+
+          if (arrayProps.length > 0) {
+            // Use the largest array property
+            const [propName, propValue] = arrayProps[0];
+            console.log(`Found array property "${propName}" with ${propValue.length} items`);
+            state.data = propValue;
+            state.totalCount = propValue.length;
+          } else {
+            // Last resort: try to convert the object itself to an array
+            const extractedArray = Object.values(payloadObj).filter(item => item && typeof item === 'object');
+            if (extractedArray.length > 0) {
+              console.log(`Extracted ${extractedArray.length} items from object values`);
+              state.data = extractedArray;
+              state.totalCount = extractedArray.length;
+            } else {
+              console.warn('Could not extract any array data from response');
+              state.data = [];
+              state.totalCount = 0;
+            }
+          }
         } else {
           console.warn('Invalid data format received from API');
           state.data = [];

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Data;
 using System.Data.Common;
 
@@ -10,14 +12,17 @@ namespace PPrePorter.DailyActionsDB.Interceptors
     public class IsolationLevelInterceptor : DbCommandInterceptor
     {
         private readonly IsolationLevel _isolationLevel;
+        private readonly ILogger<IsolationLevelInterceptor> _logger;
 
         /// <summary>
         /// Creates a new instance of the IsolationLevelInterceptor
         /// </summary>
         /// <param name="isolationLevel">The isolation level to use for all commands</param>
-        public IsolationLevelInterceptor(IsolationLevel isolationLevel)
+        /// <param name="logger">Logger for diagnostic information</param>
+        public IsolationLevelInterceptor(IsolationLevel isolationLevel, ILogger<IsolationLevelInterceptor> logger = null)
         {
             _isolationLevel = isolationLevel;
+            _logger = logger;
         }
 
         /// <summary>
@@ -28,12 +33,20 @@ namespace PPrePorter.DailyActionsDB.Interceptors
             CommandEventData eventData,
             InterceptionResult<DbDataReader> result)
         {
-            // Set the transaction isolation level if there's no transaction
-            if (command.Transaction == null)
+            try
             {
-                command.Connection.EnlistTransaction(null);
-                var transaction = command.Connection.BeginTransaction(_isolationLevel);
-                command.Transaction = transaction;
+                // Set the transaction isolation level if there's no transaction
+                if (command.Transaction == null)
+                {
+                    _logger?.LogDebug("Setting isolation level to {IsolationLevel} for command", _isolationLevel);
+                    command.Connection.EnlistTransaction(null);
+                    var transaction = command.Connection.BeginTransaction(_isolationLevel);
+                    command.Transaction = transaction;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error setting isolation level to {IsolationLevel}", _isolationLevel);
             }
 
             return result;

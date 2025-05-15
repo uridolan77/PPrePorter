@@ -1,6 +1,5 @@
 import React, { useState, useMemo, ChangeEvent, MouseEvent } from 'react';
 import {
-  Box,
   Grid,
   Typography,
   CircularProgress,
@@ -18,6 +17,8 @@ import {
   SelectChangeEvent,
   Theme
 } from '@mui/material';
+import SimpleBox from '../../common/SimpleBox';
+import { createSx } from '../../../utils/styleUtils';
 import DownloadIcon from '@mui/icons-material/Download';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
@@ -145,7 +146,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
   // Handle error state
   if (error) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <SimpleBox sx={createSx({ p: 3, textAlign: 'center' })}>
         <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
         <Typography variant="h6" color="error" gutterBottom>
           Error Loading Performance Data
@@ -153,7 +154,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
         <Typography variant="body2" color="text.secondary">
           {error.message || "An unexpected error occurred. Please try again later."}
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
@@ -161,9 +162,9 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
   const renderPlayerDistributionChart = (): React.ReactNode => {
     if (isLoading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, height: 300 }}>
+        <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'center', p: 3, height: 300 })}>
           <CircularProgress />
-        </Box>
+        </SimpleBox>
       );
     }
 
@@ -194,14 +195,14 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
 
   return (
     <ErrorBoundary fallback={<EmptyState message="Something went wrong loading the performance data" icon={<ErrorOutlineIcon />} />}>
-      <Box>
+      <SimpleBox>
         {/* Performance Metrics Section */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={createSx({ mb: 4 })}>
+          <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 })}>
             <Typography variant="h5">
               Performance Metrics
             </Typography>
-            <Box>
+            <SimpleBox>
               <Tooltip title="Download report">
                 <IconButton size="small" sx={{ mr: 1 }}>
                   <DownloadIcon fontSize="small" />
@@ -212,14 +213,14 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
                   <SettingsIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Card
                 title="Revenue Trends"
                 action={
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <SimpleBox sx={createSx({ display: 'flex', alignItems: 'center' })}>
                     <FormControl size="small" sx={{ minWidth: 120 }}>
                       <InputLabel id="time-period-label">Period</InputLabel>
                       <Select
@@ -235,13 +236,13 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
                         <MenuItem value="quarter">Quarter</MenuItem>
                       </Select>
                     </FormControl>
-                  </Box>
+                  </SimpleBox>
                 }
               >
                 {isLoading && revenueData.length === 0 ? (
-                  <Box sx={{ p: 3 }}>
+                  <SimpleBox sx={createSx({ p: 3 })}>
                     <Skeleton variant="rectangular" height={300} />
-                  </Box>
+                  </SimpleBox>
                 ) : (
                   <CasinoRevenueChart
                     data={preparedRevenueData}
@@ -253,9 +254,9 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
             <Grid item xs={12} md={6}>
               <Card title="Player Distribution by Game">
                 {isLoading && playerDistributionData.length === 0 ? (
-                  <Box sx={{ p: 3 }}>
+                  <SimpleBox sx={createSx({ p: 3 })}>
                     <Skeleton variant="rectangular" height={300} />
-                  </Box>
+                  </SimpleBox>
                 ) : (
                   <TopGamesChart
                     data={playerDistributionData.map((item, index) => ({
@@ -275,15 +276,15 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
               </Card>
             </Grid>
           </Grid>
-        </Box>
+        </SimpleBox>
 
         {/* KPI Section */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={createSx({ mb: 4 })}>
+          <SimpleBox sx={createSx({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 })}>
             <Typography variant="h5">
               Key Performance Indicators
             </Typography>
-          </Box>
+          </SimpleBox>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={3}>
               <KPICard
@@ -323,8 +324,8 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({
               />
             </Grid>
           </Grid>
-        </Box>
-      </Box>
+        </SimpleBox>
+      </SimpleBox>
     </ErrorBoundary>
   );
 };

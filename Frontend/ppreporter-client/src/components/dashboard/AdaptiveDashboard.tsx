@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
   Grid,
   Paper,
   Typography,
@@ -12,6 +11,7 @@ import {
   useTheme,
   useMediaQuery
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import { useSelector, useDispatch } from 'react-redux';
 import CasinoRevenueChart from './CasinoRevenueChart';
 import PlayerRegistrationsChart from './PlayerRegistrationsChart';
@@ -172,7 +172,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
             borderRadius: 2
           }}
         >
-          <Box
+          <SimpleBox
             sx={{
               p: 2,
               display: 'flex',
@@ -180,7 +180,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
               alignItems: 'center'
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
               <Typography variant="h6" component="h2">
                 {title}
               </Typography>
@@ -192,9 +192,9 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
                   </IconButton>
                 </Tooltip>
               )}
-            </Box>
+            </SimpleBox>
 
-            <Box>
+            <SimpleBox>
               <IconButton
                 size="small"
                 onClick={() => toggleFullscreen(widgetId)}
@@ -205,12 +205,12 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
                   <FullscreenIcon fontSize="small" />
                 }
               </IconButton>
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
 
           <Divider />
 
-          <Box
+          <SimpleBox
             sx={{
               p: 2,
               flex: 1,
@@ -219,20 +219,20 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
             }}
           >
             {isLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <CircularProgress />
-              </Box>
+              </SimpleBox>
             ) : error ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <SimpleBox sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <ErrorOutlineIcon color="error" sx={{ fontSize: 48, mb: 2 }} />
                 <Typography color="error" variant="body2" align="center">
                   {error.message || 'An error occurred while loading data'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             ) : (
               content
             )}
-          </Box>
+          </SimpleBox>
         </Paper>
       </Grid>
     );
@@ -338,9 +338,9 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
   };
 
   return (
-    <Box sx={{ ...sx }}>
+    <SimpleBox sx={{ ...sx }}>
       {/* Dashboard Header */}
-      <Box
+      <SimpleBox
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -352,7 +352,7 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
           {tab.charAt(0).toUpperCase() + tab.slice(1)} Dashboard
         </Typography>
 
-        <Box>
+        <SimpleBox>
           <Tooltip title="Refresh data">
             <IconButton
               onClick={onRefresh}
@@ -371,12 +371,12 @@ const AdaptiveDashboard: React.FC<AdaptiveDashboardProps> = ({
               <SettingsIcon />
             </IconButton>
           </Tooltip>
-        </Box>
-      </Box>
+        </SimpleBox>
+      </SimpleBox>
 
       {/* Dashboard Content */}
       {renderDashboardContent()}
-    </Box>
+    </SimpleBox>
   );
 };
 

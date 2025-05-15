@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MemoryCacheItemPriority = Microsoft.Extensions.Caching.Memory.CacheItemPriority;
 
 namespace PPrePorter.DailyActionsDB.Services
 {
@@ -372,13 +373,13 @@ namespace PPrePorter.DailyActionsDB.Services
                             }
                         }
                         _logger.LogInformation("Retrieved {Count} trackers from DailyActionsMetadata table", trackers.Count);
-                        
+
                         _logger.LogInformation("Successfully retrieved all metadata from DailyActionsMetadata table");
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error querying DailyActionsMetadata table directly. Using fallback values.");
-                        
+
                         // Fallback values
                         languageDtos = new List<LanguageDto>
                         {
@@ -386,7 +387,7 @@ namespace PPrePorter.DailyActionsDB.Services
                             new LanguageDto { Id = 2, Code = "German", Name = "German" },
                             new LanguageDto { Id = 3, Code = "French", Name = "French" }
                         };
-                        
+
                         platforms = new List<string> { "WEB", "MOBILE" };
                         genders = new List<string> { "Male", "Female" };
                         statuses = new List<string> { "Active", "Inactive", "Blocked" };
@@ -429,7 +430,7 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 // Cache the result
                 var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetPriority(CacheItemPriority.High)
+                    .SetPriority(MemoryCacheItemPriority.High)
                     .SetSlidingExpiration(TimeSpan.FromMinutes(30))
                     .SetAbsoluteExpiration(TimeSpan.FromHours(1));
 

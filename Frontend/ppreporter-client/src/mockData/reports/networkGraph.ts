@@ -16,16 +16,16 @@ export const generatePlayerRelationshipNetwork = (
 ): GraphData => {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
-  
+
   // Generate player nodes
   for (let i = 0; i < nodeCount; i++) {
     // Determine player group (VIP level)
     const groups = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
     const group = groups[Math.floor(Math.random() * groups.length)];
-    
+
     // Determine player value (based on deposits)
     const value = Math.floor(Math.random() * 1000) + 100;
-    
+
     nodes.push({
       id: `player-${i + 1}`,
       name: `Player ${i + 1}`,
@@ -38,36 +38,36 @@ export const generatePlayerRelationshipNetwork = (
       registrationDate: new Date(Date.now() - Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000)).toISOString()
     });
   }
-  
+
   // Generate links between players (referrals, similar game preferences, etc.)
   const maxLinks = Math.floor(nodeCount * (nodeCount - 1) * linkDensity / 2);
-  
+
   for (let i = 0; i < maxLinks; i++) {
     const sourceIndex = Math.floor(Math.random() * nodeCount);
     let targetIndex = Math.floor(Math.random() * nodeCount);
-    
+
     // Ensure source and target are different
     while (targetIndex === sourceIndex) {
       targetIndex = Math.floor(Math.random() * nodeCount);
     }
-    
+
     const source = nodes[sourceIndex].id;
     const target = nodes[targetIndex].id;
-    
+
     // Check if link already exists
-    const linkExists = links.some(link => 
-      (link.source === source && link.target === target) || 
+    const linkExists = links.some(link =>
+      (link.source === source && link.target === target) ||
       (link.source === target && link.target === source)
     );
-    
+
     if (!linkExists) {
       // Determine relationship strength
       const value = Math.floor(Math.random() * 10) + 1;
-      
+
       // Determine relationship type
       const relationshipTypes = ['referral', 'similar_games', 'same_session', 'same_deposit_pattern', 'same_region'];
       const relationshipType = relationshipTypes[Math.floor(Math.random() * relationshipTypes.length)];
-      
+
       links.push({
         source,
         target,
@@ -77,7 +77,7 @@ export const generatePlayerRelationshipNetwork = (
       });
     }
   }
-  
+
   return { nodes, links };
 };
 
@@ -93,18 +93,18 @@ export const generateGameRelationshipNetwork = (
 ): GraphData => {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
-  
+
   // Game categories
   const categories = ['Slots', 'Table Games', 'Live Casino', 'Jackpot', 'Video Poker'];
-  
+
   // Generate game nodes
   for (let i = 0; i < nodeCount; i++) {
     // Determine game category
     const category = categories[Math.floor(Math.random() * categories.length)];
-    
+
     // Determine game popularity
     const value = Math.floor(Math.random() * 1000) + 100;
-    
+
     nodes.push({
       id: `game-${i + 1}`,
       name: `Game ${i + 1}`,
@@ -117,32 +117,32 @@ export const generateGameRelationshipNetwork = (
       releaseDate: new Date(Date.now() - Math.floor(Math.random() * 730 * 24 * 60 * 60 * 1000)).toISOString()
     });
   }
-  
+
   // Generate links between games (players who play both games)
   const maxLinks = Math.floor(nodeCount * (nodeCount - 1) * linkDensity / 2);
-  
+
   for (let i = 0; i < maxLinks; i++) {
     const sourceIndex = Math.floor(Math.random() * nodeCount);
     let targetIndex = Math.floor(Math.random() * nodeCount);
-    
+
     // Ensure source and target are different
     while (targetIndex === sourceIndex) {
       targetIndex = Math.floor(Math.random() * nodeCount);
     }
-    
+
     const source = nodes[sourceIndex].id;
     const target = nodes[targetIndex].id;
-    
+
     // Check if link already exists
-    const linkExists = links.some(link => 
-      (link.source === source && link.target === target) || 
+    const linkExists = links.some(link =>
+      (link.source === source && link.target === target) ||
       (link.source === target && link.target === source)
     );
-    
+
     if (!linkExists) {
       // Determine number of shared players
       const value = Math.floor(Math.random() * 100) + 10;
-      
+
       links.push({
         source,
         target,
@@ -152,7 +152,7 @@ export const generateGameRelationshipNetwork = (
       });
     }
   }
-  
+
   return { nodes, links };
 };
 
@@ -163,22 +163,39 @@ export const generateGameRelationshipNetwork = (
  */
 export const calculateNetworkMetrics = (data: GraphData): NetworkGraphMetrics => {
   const { nodes, links } = data;
-  
+
   // Calculate node degrees
   const nodeDegrees = new Map<string, number>();
-  
+
   links.forEach(link => {
-    const source = typeof link.source === 'string' ? link.source : link.source.id;
-    const target = typeof link.target === 'string' ? link.target : link.target.id;
-    
+    // Handle source safely
+    let source: string;
+    if (typeof link.source === 'string') {
+      source = link.source;
+    } else if (typeof link.source === 'object' && link.source !== null) {
+      source = (link.source as any).id || String(link.source);
+    } else {
+      source = String(link.source);
+    }
+
+    // Handle target safely
+    let target: string;
+    if (typeof link.target === 'string') {
+      target = link.target;
+    } else if (typeof link.target === 'object' && link.target !== null) {
+      target = (link.target as any).id || String(link.target);
+    } else {
+      target = String(link.target);
+    }
+
     nodeDegrees.set(source, (nodeDegrees.get(source) || 0) + 1);
     nodeDegrees.set(target, (nodeDegrees.get(target) || 0) + 1);
   });
-  
+
   // Find max degree and central nodes
   let maxDegree = 0;
   const centralNodes: GraphNode[] = [];
-  
+
   nodeDegrees.forEach((degree, nodeId) => {
     if (degree > maxDegree) {
       maxDegree = degree;
@@ -190,13 +207,13 @@ export const calculateNetworkMetrics = (data: GraphData): NetworkGraphMetrics =>
       if (node) centralNodes.push(node);
     }
   });
-  
+
   // Calculate average degree
   const averageDegree = Array.from(nodeDegrees.values()).reduce((sum, degree) => sum + degree, 0) / nodeDegrees.size;
-  
+
   // Calculate density
   const density = (2 * links.length) / (nodes.length * (nodes.length - 1));
-  
+
   return {
     totalNodes: nodes.length,
     totalLinks: links.length,

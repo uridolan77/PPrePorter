@@ -1,6 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import {
-  Box,
   Card,
   CardContent,
   Typography,
@@ -23,6 +22,7 @@ import {
   Divider,
   SelectChangeEvent
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 // Using type declaration file for @nivo/heatmap
 import { ResponsiveHeatMap } from '@nivo/heatmap';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -362,29 +362,29 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
 
   if (isLoading || heatmapLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
         <CircularProgress />
-      </Box>
+      </SimpleBox>
     );
   }
 
   if (heatmapError) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
         <Typography color="error">
           Error loading heatmap data: {heatmapError}
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
   if (!heatmapData || !heatmapData.data) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
         <Typography color="text.secondary">
           No heatmap data available
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
@@ -393,7 +393,7 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
   return (
     <Card elevation={0} sx={{ height: '100%' }}>
       <CardContent sx={{ height: '100%', p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" component="div">
             Multi-Variable Analysis
             <Tooltip title="Identify patterns and correlations across different metrics with this interactive heatmap">
@@ -403,7 +403,7 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
             </Tooltip>
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <SimpleBox sx={{ display: 'flex', gap: 2 }}>
             <TextField
               size="small"
               placeholder="Search..."
@@ -425,8 +425,8 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
             >
               Export Data
             </Button>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
 
         {/* Configuration controls */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -506,7 +506,7 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
 
         {/* Visualization settings */}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
-          <Box sx={{ minWidth: 180 }}>
+          <SimpleBox sx={{ minWidth: 180 }}>
             <Typography variant="caption" id="cell-size-slider" gutterBottom>
               Cell Size: {cellSize}px
             </Typography>
@@ -519,7 +519,7 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
               max={60}
               sx={{ width: 150 }}
             />
-          </Box>
+          </SimpleBox>
 
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel id="color-palette-label">
@@ -540,7 +540,7 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
             </Select>
           </FormControl>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             <FormControlLabel
               control={
                 <Switch
@@ -551,9 +551,9 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
               }
               label="Show Values"
             />
-          </Box>
+          </SimpleBox>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             <FormControlLabel
               control={
                 <Switch
@@ -564,9 +564,9 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
               }
               label="Reverse Colors"
             />
-          </Box>
+          </SimpleBox>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', border: `1px solid ${theme.palette.divider}`, borderRadius: 1, pl: 1 }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center', border: `1px solid ${theme.palette.divider}`, borderRadius: 1, pl: 1 }}>
             <Typography variant="caption" sx={{ mr: 1 }}>
               Zoom:
             </Typography>
@@ -579,11 +579,11 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
             <IconButton size="small" onClick={handleZoomIn} disabled={zoomLevel >= 2}>
               <ZoomInIcon fontSize="small" />
             </IconButton>
-          </Box>
+          </SimpleBox>
         </Stack>
 
         {/* Screen reader accessible description */}
-        <Box sx={{
+        <SimpleBox sx={{
           position: 'absolute',
           left: '-9999px',
           width: '1px',
@@ -593,16 +593,16 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
           role="region"
           aria-label="Multi-Variable Heatmap">
           {generateAccessibleDescription()}
-        </Box>
+        </SimpleBox>
 
         {filteredData.length === 0 ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height - 280, p: 2 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height - 280, p: 2 }}>
             <Typography color="text.secondary">
               No data matching your search criteria
             </Typography>
-          </Box>
+          </SimpleBox>
         ) : (
-          <Box
+          <SimpleBox
             sx={{
               height: height - 280,
               transform: `scale(${zoomLevel})`,
@@ -705,12 +705,12 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
                 console.log('Cell clicked:', cell);
               }}
             />
-          </Box>
+          </SimpleBox>
         )}
 
         <Divider sx={{ my: 2 }} />
 
-        <Box>
+        <SimpleBox>
           <Typography variant="subtitle2" gutterBottom>
             Insights
           </Typography>
@@ -723,7 +723,7 @@ const MultiVariableHeatmap: React.FC<MultiVariableHeatmapProps> = ({
               Click on any cell in the heatmap to see detailed insights.
             </Typography>
           )}
-        </Box>
+        </SimpleBox>
       </CardContent>
     </Card>
   );

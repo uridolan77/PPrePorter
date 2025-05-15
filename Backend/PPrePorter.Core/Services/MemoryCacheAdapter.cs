@@ -4,6 +4,7 @@ using PPrePorter.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MemoryCacheItemPriority = Microsoft.Extensions.Caching.Memory.CacheItemPriority;
 
 namespace PPrePorter.Core.Services
 {
@@ -83,7 +84,7 @@ namespace PPrePorter.Core.Services
             private TimeSpan? _absoluteExpirationRelativeToNow;
             private DateTimeOffset? _absoluteExpiration;
             private TimeSpan? _slidingExpiration;
-            private CacheItemPriority _priority = CacheItemPriority.Normal;
+            private MemoryCacheItemPriority _priority = MemoryCacheItemPriority.Normal;
             private readonly List<IDisposable> _expirationTokens = new List<IDisposable>();
             private readonly List<PostEvictionCallbackRegistration> _postEvictionCallbacks = new List<PostEvictionCallbackRegistration>();
 
@@ -119,7 +120,7 @@ namespace PPrePorter.Core.Services
                 set => _slidingExpiration = value;
             }
 
-            public CacheItemPriority Priority
+            public MemoryCacheItemPriority Priority
             {
                 get => _priority;
                 set => _priority = value;

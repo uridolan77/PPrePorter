@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Box,
   Table,
   TableBody,
   TableCell,
@@ -15,6 +14,7 @@ import {
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import SimpleBox from '../../../../components/common/SimpleBox';
 import { ColumnDef, HierarchicalGroup } from '../types';
 
 interface HierarchicalTableContentProps {
@@ -47,16 +47,16 @@ const HierarchicalTableContent: React.FC<HierarchicalTableContentProps> = ({
   // Handle expanding/collapsing a group
   const handleToggleGroup = async (group: HierarchicalGroup) => {
     const isExpanded = expandedGroups.includes(group.path);
-    
+
     if (!isExpanded && !group.childrenLoaded && group.hasChildren) {
       // If expanding and children not loaded yet, load them
       setLoadingGroups(prev => [...prev, group.path]);
-      
+
       try {
         // Get the next level in the hierarchy
         const childLevel = group.level + 1;
         const childGroupBy = childLevel < groupByLevels.length ? groupByLevels[childLevel] : null;
-        
+
         if (childGroupBy) {
           await onLoadChildren(group.path, childLevel, childGroupBy);
         }
@@ -64,7 +64,7 @@ const HierarchicalTableContent: React.FC<HierarchicalTableContentProps> = ({
         setLoadingGroups(prev => prev.filter(path => path !== group.path));
       }
     }
-    
+
     // Toggle the group expansion state
     onToggleGroup(group.path);
   };
@@ -75,24 +75,24 @@ const HierarchicalTableContent: React.FC<HierarchicalTableContentProps> = ({
     const isLoading = loadingGroups.includes(group.path);
     const hasNextLevel = group.level < groupByLevels.length - 1;
     const canExpand = group.hasChildren && hasNextLevel;
-    
+
     return (
       <React.Fragment key={group.path}>
-        <TableRow 
+        <TableRow
           hover
-          sx={{ 
-            backgroundColor: theme => 
+          sx={{
+            backgroundColor: theme =>
               `rgba(${theme.palette.primary.main}, ${0.05 + (group.level * 0.05)})`
           }}
         >
           {/* First cell with expand/collapse button */}
-          <TableCell 
-            sx={{ 
+          <TableCell
+            sx={{
               pl: 1 + (indent * 2),
               fontWeight: 'bold'
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
               {canExpand ? (
                 <IconButton
                   size="small"
@@ -108,17 +108,17 @@ const HierarchicalTableContent: React.FC<HierarchicalTableContentProps> = ({
                   )}
                 </IconButton>
               ) : (
-                <Box sx={{ width: 28 }} /> // Spacer for alignment
+                <SimpleBox sx={{ width: 28 }} /> // Spacer for alignment
               )}
               <Typography variant="body2" component="span">
                 {group.key}: {group.value}
               </Typography>
-            </Box>
+            </SimpleBox>
           </TableCell>
-          
+
           {/* Metrics cells */}
           {columns.filter(col => col.id !== groupByLevels[group.level]).map(column => (
-            <TableCell 
+            <TableCell
               key={column.id}
               align={column.align || 'left'}
             >
@@ -126,15 +126,15 @@ const HierarchicalTableContent: React.FC<HierarchicalTableContentProps> = ({
             </TableCell>
           ))}
         </TableRow>
-        
+
         {/* Render children if expanded */}
         {isExpanded && group.children && group.children.length > 0 && (
           <TableRow>
             <TableCell colSpan={columns.length} sx={{ p: 0, border: 0 }}>
               <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                <Box sx={{ pl: 2 }}>
+                <SimpleBox sx={{ pl: 2 }}>
                   {group.children.map(child => renderGroupRow(child, indent + 1))}
-                </Box>
+                </SimpleBox>
               </Collapse>
             </TableCell>
           </TableRow>
@@ -146,52 +146,62 @@ const HierarchicalTableContent: React.FC<HierarchicalTableContentProps> = ({
   // Render a metric value with appropriate formatting
   const renderMetricValue = (group: HierarchicalGroup, column: ColumnDef) => {
     const value = group.metrics[column.id];
-    
+
     if (value === undefined || value === null) {
       return '-';
     }
-    
+
     // Apply column formatting if available
     if (column.format) {
-      return column.format(value, group);
+      try {
+        return column.format(value, group);
+      } catch (error) {
+        console.error(`Error formatting value for column ${column.id}:`, error);
+        return '-';
+      }
     }
-    
+
     // Format based on column type
-    switch (column.type) {
-      case 'number':
-        return value.toLocaleString();
-      
-      case 'currency':
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD'
-        }).format(value);
-      
-      case 'percentage':
-        return `${value}%`;
-      
-      default:
-        return value.toString();
+    try {
+      switch (column.type) {
+        case 'number':
+          return value.toLocaleString();
+
+        case 'currency':
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+          }).format(value);
+
+        case 'percentage':
+          return `${value}%`;
+
+        default:
+          return String(value);
+      }
+    } catch (error) {
+      console.error(`Error formatting value for column ${column.id}:`, error);
+      return '-';
     }
   };
 
   // If no data, show empty message
   if (hierarchicalData.length === 0 && !loading) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <SimpleBox sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
           {emptyMessage}
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
   // If loading, show loading indicator
   if (loading && hierarchicalData.length === 0) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <SimpleBox sx={{ p: 3, textAlign: 'center' }}>
         <CircularProgress size={40} />
-      </Box>
+      </SimpleBox>
     );
   }
 
