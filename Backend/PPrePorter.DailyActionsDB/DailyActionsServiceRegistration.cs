@@ -9,6 +9,7 @@ using PPrePorter.DailyActionsDB.Extensions;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Interfaces.Metadata;
 using PPrePorter.DailyActionsDB.Repositories;
+using PPrePorter.DailyActionsDB.Repositories.Lookups;
 using PPrePorter.DailyActionsDB.Repositories.Metadata;
 using PPrePorter.DailyActionsDB.Services;
 using PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching;
@@ -102,6 +103,12 @@ namespace PPrePorter.DailyActionsDB
             // in the Infrastructure services registration
             services.AddScoped<IDailyActionsMetadataRepository, DailyActionsMetadataRepository>();
 
+            // Register the lookup repository
+            services.AddScoped<ILookupRepository, LookupRepository>();
+
+            // Register lookup services
+            services.AddLookupServices();
+
             // We'll implement the DailyActionRepository and DailyActionService later
             // services.AddScoped<IDailyActionRepository, DailyActionRepository>();
 
@@ -162,6 +169,9 @@ namespace PPrePorter.DailyActionsDB
                 var metadataService = provider.GetService<IMetadataService>(); // Optional service
                 var backgroundProcessingService = provider.GetRequiredService<Services.DailyActions.BackgroundProcessingService>();
 
+                // Get the lookup repository
+                var lookupRepository = provider.GetRequiredService<ILookupRepository>();
+
                 return new DailyActionsService(
                     logger,
                     cache,
@@ -169,6 +179,7 @@ namespace PPrePorter.DailyActionsDB
                     dbContext,
                     whiteLabelService,
                     metadataService,
+                    lookupRepository,
                     backgroundProcessingService);
             });
             services.AddScoped<IWhiteLabelService, WhiteLabelService>();

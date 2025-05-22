@@ -39,17 +39,47 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     setError('');
 
+    console.log('LoginPage.handleLogin called with:', {
+      username: formData.username,
+      passwordProvided: !!formData.password,
+      rememberMe: formData.rememberMe
+    });
+
+    // Validate credentials before proceeding
+    if (!formData.username || formData.username.trim() === '') {
+      setError('Username is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.password) {
+      setError('Password is required');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Call the login function from useAuth hook
-      const result = await login({
-        username: formData.username,
+      // Create a clean credentials object to ensure all required fields are present
+      const credentials: LoginCredentials = {
+        username: formData.username.trim(),
         password: formData.password,
-        rememberMe: formData.rememberMe
+        rememberMe: !!formData.rememberMe
+      };
+
+      console.log('Calling login with validated credentials:', {
+        username: credentials.username,
+        passwordLength: credentials.password ? credentials.password.length : 0,
+        rememberMe: credentials.rememberMe
       });
 
+      // Call the login function from useAuth hook
+      const result = await login(credentials);
+
+      console.log('Login successful, navigating to:', from);
       // Navigate to the page user tried to visit or dashboard
       navigate(from, { replace: true });
     } catch (err) {
+      console.error('Login error:', err);
       const error = err as Error;
       setError(error.message || 'Failed to login. Please check your credentials.');
     } finally {

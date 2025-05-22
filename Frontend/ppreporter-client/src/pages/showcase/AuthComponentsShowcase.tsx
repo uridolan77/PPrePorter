@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
-  Box,
   Container,
   Typography,
   Paper,
@@ -13,6 +12,7 @@ import {
   ListItemButton,
   Button
 } from '@mui/material';
+import SimpleBox from '../../components/common/SimpleBox';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // Import auth components
@@ -81,9 +81,9 @@ const componentCategories = [
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               This component would display a form for password recovery
             </Typography>
-            <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
+            <SimpleBox sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
               <Typography align="center">Forgot Password Form Placeholder</Typography>
-            </Box>
+            </SimpleBox>
           </Paper>
         )
       },
@@ -97,9 +97,9 @@ const componentCategories = [
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               This component would display a form for setting a new password
             </Typography>
-            <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
+            <SimpleBox sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
               <Typography align="center">Reset Password Form Placeholder</Typography>
-            </Box>
+            </SimpleBox>
           </Paper>
         )
       }
@@ -119,9 +119,9 @@ const componentCategories = [
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               This component would display and allow editing of user profile information
             </Typography>
-            <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
+            <SimpleBox sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
               <Typography align="center">User Profile Component Placeholder</Typography>
-            </Box>
+            </SimpleBox>
           </Paper>
         )
       },
@@ -135,9 +135,9 @@ const componentCategories = [
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               This component would display and allow management of user permissions
             </Typography>
-            <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
+            <SimpleBox sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 1 }}>
               <Typography align="center">User Permissions Component Placeholder</Typography>
-            </Box>
+            </SimpleBox>
           </Paper>
         )
       }
@@ -152,7 +152,7 @@ const componentCategories = [
 const AuthComponentsShowcase: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
+      <SimpleBox sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
         <Button
           component={RouterLink}
           to="/showcase"
@@ -164,7 +164,7 @@ const AuthComponentsShowcase: React.FC = () => {
         <Typography variant="h4" component="h1">
           Authentication Components
         </Typography>
-      </Box>
+      </SimpleBox>
 
       <Typography variant="body1" sx={{ mb: 4 }}>
         This showcase demonstrates the various authentication and user management components available in the application.
@@ -172,7 +172,7 @@ const AuthComponentsShowcase: React.FC = () => {
       </Typography>
 
       {componentCategories.map((category) => (
-        <Box key={category.id} sx={{ mb: 6 }}>
+        <SimpleBox key={category.id} sx={{ mb: 6 }}>
           <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
             {category.name}
           </Typography>
@@ -197,7 +197,7 @@ const AuthComponentsShowcase: React.FC = () => {
               </ListItem>
             ))}
           </List>
-        </Box>
+        </SimpleBox>
       ))}
     </Container>
   );

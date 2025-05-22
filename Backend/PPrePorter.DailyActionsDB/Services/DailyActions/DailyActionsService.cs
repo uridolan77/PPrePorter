@@ -10,6 +10,7 @@ using PPrePorter.DailyActionsDB.Models.DailyActions;
 using PPrePorter.DailyActionsDB.Models.DTOs;
 using PPrePorter.DailyActionsDB.Models.Metadata;
 using PPrePorter.DailyActionsDB.Models.Players;
+using PPrePorter.DailyActionsDB.Repositories.Lookups;
 using PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching;
 using PPrePorter.DailyActionsDB.Services.DailyActions;
 using System;
@@ -38,6 +39,7 @@ namespace PPrePorter.DailyActionsDB.Services
         private readonly DailyActionsDbContext _dbContext;
         private readonly IWhiteLabelService _whiteLabelService;
         private readonly IMetadataService? _metadataService;
+        private readonly ILookupRepository _lookupRepository;
         private readonly BackgroundProcessingService _backgroundProcessingService;
 
         // Cache keys
@@ -55,6 +57,7 @@ namespace PPrePorter.DailyActionsDB.Services
             DailyActionsDbContext dbContext,
             IWhiteLabelService whiteLabelService,
             IMetadataService? metadataService,
+            ILookupRepository lookupRepository,
             BackgroundProcessingService backgroundProcessingService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -63,10 +66,11 @@ namespace PPrePorter.DailyActionsDB.Services
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
             _metadataService = metadataService; // Can be null
+            _lookupRepository = lookupRepository ?? throw new ArgumentNullException(nameof(lookupRepository));
             _backgroundProcessingService = backgroundProcessingService ?? throw new ArgumentNullException(nameof(backgroundProcessingService));
 
-            _logger.LogInformation("DailyActionsService initialized with global cache service instance: {CacheHashCode}, smart cache instance: {SmartCacheHashCode}, DbContext instance: {DbContextHashCode}, background processing service instance: {BackgroundProcessingHashCode}",
-                _cache.GetHashCode(), _smartCache.GetHashCode(), _dbContext.GetHashCode(), _backgroundProcessingService.GetHashCode());
+            _logger.LogInformation("DailyActionsService initialized with global cache service instance: {CacheHashCode}, smart cache instance: {SmartCacheHashCode}, DbContext instance: {DbContextHashCode}, lookup repository instance: {LookupRepositoryHashCode}, background processing service instance: {BackgroundProcessingHashCode}",
+                _cache.GetHashCode(), _smartCache.GetHashCode(), _dbContext.GetHashCode(), _lookupRepository.GetHashCode(), _backgroundProcessingService.GetHashCode());
         }
 
         /// <inheritdoc/>

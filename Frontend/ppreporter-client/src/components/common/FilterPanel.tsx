@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Button,
   Chip,
   Divider,
@@ -17,6 +16,7 @@ import {
   Grid,
   SelectChangeEvent
 } from '@mui/material';
+import SimpleBox from './SimpleBox';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -86,56 +86,56 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 }) => {
   // State for uncontrolled expansion
   const [internalExpanded, setInternalExpanded] = useState<boolean>(defaultExpanded);
-  
+
   // Determine if component is controlled or uncontrolled
   const isControlled = controlledExpanded !== undefined;
   const expanded = isControlled ? controlledExpanded : internalExpanded;
-  
+
   // Get active filters count
   const activeFilters = Object.keys(values).filter(key => {
     const value = values[key];
     return value !== undefined && value !== null && value !== '';
   });
-  
+
   // Toggle expansion state
   const toggleExpand = (): void => {
     if (!isControlled) {
       setInternalExpanded(!internalExpanded);
     }
   };
-  
+
   // Handle filter change
   const handleFilterChange = (id: string, value: any): void => {
     if (onChange) {
       onChange(id, value);
     }
   };
-  
+
   // Handle apply filters
   const handleApplyFilters = (): void => {
     if (onApply) {
       onApply();
     }
   };
-  
+
   // Handle reset filters
   const handleResetFilters = (): void => {
     if (onReset) {
       onReset();
     }
   };
-  
+
   // Handle save filters
   const handleSaveFilters = (): void => {
     if (onFilterSave) {
       onFilterSave();
     }
   };
-  
+
   // Render filter input based on type
   const renderFilterInput = (filter: FilterDefinition): React.ReactNode => {
     const value = values[filter.id] !== undefined ? values[filter.id] : filter.defaultValue || '';
-    
+
     switch (filter.type) {
       case FilterType.SELECT:
         return (
@@ -159,7 +159,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </Select>
           </FormControl>
         );
-      
+
       case FilterType.DATE:
         return (
           <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -171,7 +171,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             />
           </LocalizationProvider>
         );
-      
+
       case FilterType.BOOLEAN:
         return (
           <FormControl fullWidth size="small">
@@ -191,7 +191,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </Select>
           </FormControl>
         );
-      
+
       case FilterType.NUMBER:
         return (
           <TextField
@@ -208,11 +208,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             }}
           />
         );
-      
+
       case FilterType.RANGE:
         // Range filter would be implemented here
         return (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', gap: 1 }}>
             <TextField
               label={`Min ${filter.label}`}
               type="number"
@@ -229,9 +229,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               size="small"
               sx={{ flex: 1 }}
             />
-          </Box>
+          </SimpleBox>
         );
-      
+
       // Default to text input
       default:
         return (
@@ -249,13 +249,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
   return (
     <Paper variant="outlined" sx={{ mb: 2, ...sx }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <SimpleBox sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
           <FilterListIcon sx={{ mr: 1 }} />
           <Typography variant="h6" component="div">
             {title}
           </Typography>
-          
+
           {activeFilters.length > 0 && (
             <Chip
               label={`${activeFilters.length} active`}
@@ -264,19 +264,19 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               sx={{ ml: 1 }}
             />
           )}
-        </Box>
-        
-        <Box>
+        </SimpleBox>
+
+        <SimpleBox>
           <IconButton onClick={toggleExpand} size="small">
             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
-        </Box>
-      </Box>
-      
+        </SimpleBox>
+      </SimpleBox>
+
       <Collapse in={expanded}>
         <Divider />
-        
-        <Box sx={{ p: 2 }}>
+
+        <SimpleBox sx={{ p: 2 }}>
           <Grid container spacing={2}>
             {filters.map((filter) => (
               <Grid item xs={12} sm={6} md={4} key={filter.id}>
@@ -284,30 +284,30 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               </Grid>
             ))}
           </Grid>
-          
+
           {activeFilters.length > 0 && (
-            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <SimpleBox sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               <Typography variant="body2" sx={{ mr: 1 }}>
                 Active filters:
               </Typography>
-              
+
               {activeFilters.map((key) => {
                 const filter = filters.find(f => f.id === key);
                 let displayValue = values[key];
-                
+
                 if (filter?.type === FilterType.SELECT && filter.options) {
                   const option = filter.options.find(o => o.value === displayValue);
                   displayValue = option ? option.label : displayValue;
                 }
-                
+
                 if (filter?.type === FilterType.BOOLEAN) {
                   displayValue = displayValue === 'true' ? 'Yes' : 'No';
                 }
-                
+
                 if (filter?.type === FilterType.DATE && displayValue instanceof Date) {
                   displayValue = displayValue.toLocaleDateString();
                 }
-                
+
                 return (
                   <Chip
                     key={key}
@@ -317,7 +317,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                   />
                 );
               })}
-              
+
               <Chip
                 label="Clear All"
                 onDelete={handleResetFilters}
@@ -325,22 +325,22 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                 size="small"
                 color="secondary"
               />
-            </Box>
+            </SimpleBox>
           )}
-        </Box>
-        
+        </SimpleBox>
+
         <Divider />
-        
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+
+        <SimpleBox sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
           <Button variant="outlined" onClick={handleResetFilters} startIcon={<ClearIcon />}>
             Reset
           </Button>
-          
+
           {onFilterSave && (
             <Tooltip title="Save these filters">
-              <Button 
-                variant="outlined" 
-                color="secondary" 
+              <Button
+                variant="outlined"
+                color="secondary"
                 onClick={handleSaveFilters}
                 startIcon={<SaveIcon />}
               >
@@ -348,16 +348,16 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               </Button>
             </Tooltip>
           )}
-          
-          <Button 
-            variant="contained" 
-            color="primary" 
+
+          <Button
+            variant="contained"
+            color="primary"
             onClick={handleApplyFilters}
             startIcon={<FilterListIcon />}
           >
             Apply Filters
           </Button>
-        </Box>
+        </SimpleBox>
       </Collapse>
     </Paper>
   );

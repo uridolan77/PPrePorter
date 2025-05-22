@@ -10,19 +10,36 @@ export const login = createAsyncThunk<
   ThunkConfig
 >(
   'auth/login',
-  async ({ username, email, password, rememberMe }, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      console.log('Login thunk called with:', { username, email, rememberMe });
+      console.log('Login thunk called with credentials:', {
+        username: credentials.username,
+        email: credentials.email,
+        passwordProvided: !!credentials.password,
+        rememberMe: credentials.rememberMe
+      });
 
-      // Support both username and email
-      const credentials: LoginCredentials = {
-        username: username || email || '',
-        password,
-        rememberMe
+      // Validate credentials
+      if ((!credentials.username && !credentials.email) || !credentials.password) {
+        throw new Error('Username/email and password are required');
+      }
+
+      // Ensure we have a valid credentials object
+      const validCredentials: LoginCredentials = {
+        username: credentials.username || credentials.email || '',
+        email: credentials.email,
+        password: credentials.password,
+        rememberMe: credentials.rememberMe || false
       };
 
-      console.log('Calling authService.login with credentials');
-      const response = await authService.login(credentials);
+      console.log('Calling authService.login with credentials:', {
+        username: validCredentials.username,
+        email: validCredentials.email,
+        passwordLength: validCredentials.password ? validCredentials.password.length : 0,
+        rememberMe: validCredentials.rememberMe
+      });
+
+      const response = await authService.login(validCredentials);
       console.log('Login thunk received response:', response);
 
       return response;

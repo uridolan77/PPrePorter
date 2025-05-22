@@ -1,6 +1,5 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import {
-  Box,
   TextField,
   Typography,
   Paper,
@@ -20,6 +19,7 @@ import {
   Tooltip,
   useTheme
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import SearchIcon from '@mui/icons-material/Search';
 import HistoryIcon from '@mui/icons-material/History';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -206,7 +206,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
         </Typography>
 
         {clarificationPrompts.map((prompt, index) => (
-          <Box key={index} sx={{ mb: 3 }}>
+          <SimpleBox key={index} sx={{ mb: 3 }}>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               {prompt.question}
             </Typography>
@@ -230,7 +230,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
             {index < clarificationPrompts.length - 1 && (
               <Divider sx={{ my: 2 }} />
             )}
-          </Box>
+          </SimpleBox>
         ))}
 
         <Button
@@ -246,7 +246,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
   };
 
   return (
-    <Box sx={{ width: fullWidth ? '100%' : 'auto', ...sx }}>
+    <SimpleBox sx={{ width: fullWidth ? '100%' : 'auto', ...sx }}>
       <Paper
         component="form"
         elevation={3}
@@ -339,7 +339,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
         </DialogTitle>
         <DialogContent>
           {recentQueries && recentQueries.length > 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <SimpleBox sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {recentQueries.map((historyItem, i) => (
                 <Button
                   key={i}
@@ -350,7 +350,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
                   {historyItem.query}
                 </Button>
               ))}
-            </Box>
+            </SimpleBox>
           ) : (
             <Typography>No recent queries</Typography>
           )}
@@ -378,7 +378,7 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
           <Typography variant="body2" sx={{ mb: 2 }}>
             Try asking questions like these:
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {exampleQueries.map((example, i) => (
               <Button
                 key={i}
@@ -389,10 +389,10 @@ const NaturalLanguageSearch: React.FC<NaturalLanguageSearchProps> = ({
                 {example}
               </Button>
             ))}
-          </Box>
+          </SimpleBox>
         </DialogContent>
       </Dialog>
-    </Box>
+    </SimpleBox>
   );
 };
 

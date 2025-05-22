@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Card,
   CardContent,
   Typography,
@@ -16,6 +15,7 @@ import {
   useTheme,
   alpha
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -556,9 +556,9 @@ const ContextualExplanation: React.FC<ContextualExplanationProps> = ({
     return (
       <Card className={className} variant="outlined">
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
             <CircularProgress size={24} />
-          </Box>
+          </SimpleBox>
         </CardContent>
       </Card>
     );
@@ -580,9 +580,9 @@ const ContextualExplanation: React.FC<ContextualExplanationProps> = ({
       }}
     >
       <CardContent sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
+            <SimpleBox
               sx={{
                 mr: 1.5,
                 display: 'flex',
@@ -592,12 +592,12 @@ const ContextualExplanation: React.FC<ContextualExplanationProps> = ({
               }}
             >
               {getInsightIcon()}
-            </Box>
+            </SimpleBox>
             <Typography variant="h6" component="div">
               {explanation.title}
             </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          </SimpleBox>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             {insightType === 'trend' && getTrendIcon()}
             <IconButton
               onClick={handleExpandClick}
@@ -615,42 +615,42 @@ const ContextualExplanation: React.FC<ContextualExplanationProps> = ({
                 }}
               />
             </IconButton>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
 
         <Typography variant="body2" color="text.secondary">
           {explanation.content}
         </Typography>
 
         <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <Box sx={{ mt: 2 }}>
+          <SimpleBox sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
               Key Insights:
             </Typography>
-            <Box component="ul" sx={{ pl: 2, mt: 0 }}>
+            <SimpleBox component="ul" sx={{ pl: 2, mt: 0 }}>
               {explanation.insights.map((insight, index) => (
-                <Box component="li" key={index} sx={{ mb: 0.5 }}>
+                <SimpleBox component="li" key={index} sx={{ mb: 0.5 }}>
                   <Typography variant="body2">{insight}</Typography>
-                </Box>
+                </SimpleBox>
               ))}
-            </Box>
+            </SimpleBox>
 
             <Typography variant="subtitle2" gutterBottom sx={{ mt: 1.5 }}>
               Recommendations:
             </Typography>
-            <Box component="ul" sx={{ pl: 2, mt: 0 }}>
+            <SimpleBox component="ul" sx={{ pl: 2, mt: 0 }}>
               {explanation.recommendations.map((recommendation, index) => (
-                <Box component="li" key={index} sx={{ mb: 0.5 }}>
+                <SimpleBox component="li" key={index} sx={{ mb: 0.5 }}>
                   <Typography variant="body2">{recommendation}</Typography>
-                </Box>
+                </SimpleBox>
               ))}
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
         </Collapse>
       </CardContent>
 
       {showDetailedView ? null : (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pb: 1 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pb: 1 }}>
           <Button
             size="small"
             onClick={onShowDetailedView}
@@ -658,7 +658,7 @@ const ContextualExplanation: React.FC<ContextualExplanationProps> = ({
           >
             Learn More
           </Button>
-        </Box>
+        </SimpleBox>
       )}
     </Card>
   );
