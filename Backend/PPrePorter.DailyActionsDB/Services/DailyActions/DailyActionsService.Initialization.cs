@@ -47,12 +47,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     _logger.LogInformation("INIT DATA LOADER: Loading data from database for date range {StartDate} to {EndDate}, whiteLabelId={WhiteLabelId}",
                         normalizedStart.ToString("yyyy-MM-dd"), normalizedEnd.ToString("yyyy-MM-dd"), wlId);
 
-                    // Build query with NOLOCK behavior
-                    var baseQuery = _dbContext.DailyActions
-                        .AsNoTracking();
-
-                    // Apply our new NOLOCK approach
-                    var query = QueryNoLockExtensions.WithForceNoLock(baseQuery)
+                    // Build query with NOLOCK hint
+                    var query = _dbContext.DailyActions
+                        .AsNoTracking()
+                        .WithSqlNoLock()
                         .Where(da => da.Date >= normalizedStart && da.Date <= normalizedEnd);
 
                     // Apply white label filter if specified
@@ -64,12 +62,12 @@ namespace PPrePorter.DailyActionsDB.Services
                     // Add ordering
                     query = query.OrderBy(da => da.Date).ThenBy(da => da.WhiteLabelID);
 
-                    // Execute query with NOLOCK behavior
+                    // Execute query with NOLOCK hint
                     var dbQueryStartTime = DateTime.UtcNow;
-                    var result = await QueryNoLockExtensions.ToListWithNoLockAsync(query);
+                    var result = await query.ToListWithSqlNoLock();
                     var dbQueryEndTime = DateTime.UtcNow;
 
-                    _logger.LogInformation("INIT DATA LOADER: Retrieved {Count} daily actions from database in {ElapsedMs:F2}ms",
+                    _logger.LogInformation("INIT DATA LOADER: Retrieved {Count} daily actions from database in {ElapsedMs}ms",
                         result.Count, (dbQueryEndTime - dbQueryStartTime).TotalMilliseconds);
 
                     return result;

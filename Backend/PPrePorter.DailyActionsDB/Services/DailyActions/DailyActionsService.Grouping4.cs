@@ -16,89 +16,18 @@ namespace PPrePorter.DailyActionsDB.Services
         /// </summary>
         private List<DailyActionDto> GroupByPlatform(List<DailyActionDto> dailyActions)
         {
+            // Since we don't have platform information in the DailyAction model,
+            // we'll create a single group for "Unknown" platform
             _logger.LogInformation("Grouping by platform with {Count} records", dailyActions.Count);
 
-            // Extract platform information from GroupData dictionary
-            var platformGroups = dailyActions
-                .GroupBy(da =>
-                {
-                    // Try to get platform from GroupData
-                    if (da.GroupData != null && da.GroupData.TryGetValue("PlatformName", out var platformObj) && platformObj != null)
-                    {
-                        return platformObj.ToString();
-                    }
-                    return "Unknown";
-                })
-                .Where(g => !string.IsNullOrEmpty(g.Key)) // Skip empty platforms
-                .ToList();
-
-            _logger.LogInformation("Creating {Count} platform groups", platformGroups.Count);
-
-            // Create a group for each platform
-            var result = new List<DailyActionDto>();
-
-            // Add a group for each platform
-            foreach (var group in platformGroups)
+            // Create a default group for all data
+            var result = new List<DailyActionDto>
             {
-                var platformName = group.Key;
-                var platformActions = group.ToList();
-
-                _logger.LogInformation("Creating platform group for {Platform} with {Count} records",
-                    platformName, platformActions.Count);
-
-                result.Add(new DailyActionDto
+                new DailyActionDto
                 {
                     Id = 0, // Not applicable for grouped data
                     Date = DateTime.UtcNow, // Not applicable for grouped data
                     WhiteLabelId = 0, // Not applicable for grouped data
-                    WhiteLabelName = "All White Labels",
-                    GroupKey = "Platform",
-                    GroupValue = platformName,
-
-                    // Aggregate metrics
-                    Registrations = platformActions.Sum(da => da.Registrations),
-                    FTD = platformActions.Sum(da => da.FTD),
-                    FTDA = platformActions.Sum(da => da.FTDA),
-
-                    // Deposit metrics
-                    Deposits = platformActions.Sum(da => da.Deposits),
-
-                    // Cashout metrics
-                    PaidCashouts = platformActions.Sum(da => da.PaidCashouts),
-
-                    // Casino metrics
-                    BetsCasino = platformActions.Sum(da => da.BetsCasino),
-                    WinsCasino = platformActions.Sum(da => da.WinsCasino),
-
-                    // Sport metrics
-                    BetsSport = platformActions.Sum(da => da.BetsSport),
-                    WinsSport = platformActions.Sum(da => da.WinsSport),
-
-                    // Live metrics
-                    BetsLive = platformActions.Sum(da => da.BetsLive),
-                    WinsLive = platformActions.Sum(da => da.WinsLive),
-
-                    // Bingo metrics
-                    BetsBingo = platformActions.Sum(da => da.BetsBingo),
-                    WinsBingo = platformActions.Sum(da => da.WinsBingo),
-
-                    // Calculate GGR values
-                    GGRCasino = platformActions.Sum(da => da.BetsCasino) - platformActions.Sum(da => da.WinsCasino),
-                    GGRSport = platformActions.Sum(da => da.BetsSport) - platformActions.Sum(da => da.WinsSport),
-                    GGRLive = platformActions.Sum(da => da.BetsLive) - platformActions.Sum(da => da.WinsLive),
-                    GGRBingo = platformActions.Sum(da => da.BetsBingo) - platformActions.Sum(da => da.WinsBingo),
-                    TotalGGR = platformActions.Sum(da => da.TotalGGR)
-                });
-            }
-
-            // If no groups were created, add a default "Unknown" group
-            if (result.Count == 0)
-            {
-                result.Add(new DailyActionDto
-                {
-                    Id = 0,
-                    Date = DateTime.UtcNow,
-                    WhiteLabelId = 0,
                     WhiteLabelName = "All White Labels",
                     GroupKey = "Platform",
                     GroupValue = "Unknown",
@@ -136,8 +65,8 @@ namespace PPrePorter.DailyActionsDB.Services
                     GGRLive = dailyActions.Sum(da => da.BetsLive) - dailyActions.Sum(da => da.WinsLive),
                     GGRBingo = dailyActions.Sum(da => da.BetsBingo) - dailyActions.Sum(da => da.WinsBingo),
                     TotalGGR = dailyActions.Sum(da => da.TotalGGR)
-                });
-            }
+                }
+            };
 
             _logger.LogInformation("Grouped by platform: returning {Count} groups", result.Count);
             return result;

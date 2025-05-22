@@ -3,7 +3,6 @@
  */
 import dailyActionsMockData from './dailyActions';
 import dailyActionsSummaryMockData from './dailyActionsSummary';
-import dailyActionGamesMockData from './dailyActionGames';
 import playerActivityMockData from './playerActivity';
 import revenueMockData from './revenue';
 import promotionalMockData from './promotional';
@@ -40,9 +39,6 @@ const getMockData = (endpoint: string, params?: any): any => {
   } else if (endpoint.includes('reports/daily-actions')) {
     console.log('[REPORTS MOCK] Using dailyActionsMockData.getData for general endpoint');
     result = dailyActionsMockData.getData(params);
-  } else if (endpoint.includes('reports/daily-action-games/data') || endpoint.includes('reports/daily-action-games')) {
-    console.log('[REPORTS MOCK] Using dailyActionGamesMockData.getData for daily action games');
-    result = dailyActionGamesMockData.getData(params);
   } else if (endpoint.includes('reports/player-activity')) {
     result = playerActivityMockData.getData(params);
   } else if (endpoint.includes('reports/revenue')) {
@@ -67,7 +63,6 @@ export default {
   getMockData,
   dailyActionsMockData,
   dailyActionsSummaryMockData,
-  dailyActionGamesMockData,
   playerActivityMockData,
   revenueMockData,
   promotionalMockData,

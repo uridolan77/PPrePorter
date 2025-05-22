@@ -5,13 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Data;
-using PPrePorter.DailyActionsDB.Extensions;
 using PPrePorter.DailyActionsDB.Interfaces;
 using PPrePorter.DailyActionsDB.Interfaces.Metadata;
 using PPrePorter.DailyActionsDB.Repositories;
 using PPrePorter.DailyActionsDB.Repositories.Metadata;
 using PPrePorter.DailyActionsDB.Services;
 using PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching;
+using System.Data;
 
 namespace PPrePorter.DailyActionsDB
 {
@@ -75,13 +75,14 @@ namespace PPrePorter.DailyActionsDB
                     options.EnableSensitiveDataLogging();
                 }
 
-                // Use both approaches for maximum compatibility
-                // 1. ReadUncommitted approach for isolation level
-                options.UseReadUncommitted(serviceProvider, applyToAllCommands: true);
+                // Add our improved SQL command interceptor to add NOLOCK hints to all tables in SELECT queries
+                options.AddInterceptors(new SqlCommandInterceptor(
+                    serviceProvider.GetService<ILogger<SqlCommandInterceptor>>()));
 
-                // 2. SQL modification approach for explicit NOLOCK hints
-                options.AddInterceptors(new SqlNoLockInterceptor(
-                    serviceProvider.GetService<ILogger<SqlNoLockInterceptor>>()));
+                // Add the IsolationLevelInterceptor to apply READ UNCOMMITTED isolation level to all queries
+                options.AddInterceptors(new IsolationLevelInterceptor(
+                    IsolationLevel.ReadUncommitted,
+                    serviceProvider.GetService<ILogger<IsolationLevelInterceptor>>()));
             }, 32); // Set pool size to 32
 
             // We've removed the simplified DbContext as part of code cleanup
@@ -132,25 +133,6 @@ namespace PPrePorter.DailyActionsDB
             // Register the smart cache service as a singleton
             services.AddSingleton<IDailyActionsSmartCacheService, DailyActionsSmartCacheService>();
 
-            // Register the AsyncCacheServiceAdapter as a singleton
-            services.AddSingleton<Services.AsyncCacheServiceAdapter>(provider =>
-            {
-                var cache = provider.GetRequiredService<IGlobalCacheService>();
-                var logger = provider.GetRequiredService<ILogger<Services.AsyncCacheServiceAdapter>>();
-
-                return new Services.AsyncCacheServiceAdapter(cache, logger);
-            });
-
-            // Register the background processing service as a singleton
-            services.AddSingleton<Services.DailyActions.BackgroundProcessingService>(provider =>
-            {
-                var cache = provider.GetRequiredService<IGlobalCacheService>();
-                var asyncCache = provider.GetRequiredService<Services.AsyncCacheServiceAdapter>();
-                var logger = provider.GetRequiredService<ILogger<Services.DailyActions.BackgroundProcessingService>>();
-
-                return new Services.DailyActions.BackgroundProcessingService(cache, asyncCache, logger);
-            });
-
             // Register the traditional DailyActionsService as a scoped service
             services.AddScoped<IDailyActionsService>(provider =>
             {
@@ -160,7 +142,6 @@ namespace PPrePorter.DailyActionsDB
                 var dbContext = provider.GetRequiredService<DailyActionsDbContext>();
                 var whiteLabelService = provider.GetRequiredService<IWhiteLabelService>();
                 var metadataService = provider.GetService<IMetadataService>(); // Optional service
-                var backgroundProcessingService = provider.GetRequiredService<Services.DailyActions.BackgroundProcessingService>();
 
                 return new DailyActionsService(
                     logger,
@@ -168,8 +149,7 @@ namespace PPrePorter.DailyActionsDB
                     smartCache,
                     dbContext,
                     whiteLabelService,
-                    metadataService,
-                    backgroundProcessingService);
+                    metadataService);
             });
             services.AddScoped<IWhiteLabelService, WhiteLabelService>();
             services.AddScoped<ICountryService, CountryService>();

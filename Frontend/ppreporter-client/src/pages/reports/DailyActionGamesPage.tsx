@@ -235,13 +235,8 @@ const DailyActionGamesPage: React.FC = () => {
     }
   }, [getQueryParams]);
 
-  // Enable mock data and fetch data on component mount
+  // Fetch data on component mount
   useEffect(() => {
-    // Enable mock data for UI testing
-    localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
-    console.log('Enabled mock data for UI testing on component mount');
-
-    // Fetch data
     fetchData();
   }, [fetchData]);
 
@@ -249,73 +244,54 @@ const DailyActionGamesPage: React.FC = () => {
    * Process games data to ensure it's in the correct format
    */
   const processGamesData = useCallback((rawGames: any): DailyActionGame[] => {
-    console.log('Processing games data:', rawGames);
-
     // Ensure games is an array
     let gamesArray: DailyActionGame[] = [];
 
     // If mock data is enabled, use local games data
     if (mockDataEnabled && localGamesData.length > 0) {
-      console.log('Using local mock data:', localGamesData);
       gamesArray = localGamesData;
     } else if (Array.isArray(rawGames)) {
       // If games is already an array, use it directly
-      console.log('Raw games is an array, using directly');
       gamesArray = rawGames as DailyActionGame[];
     } else if (rawGames && typeof rawGames === 'object') {
       // If games is an object, try to extract an array from it
-      console.log('Raw games is an object, trying to extract array');
       const gamesObj = rawGames as Record<string, any>;
-
       if (gamesObj.data && Array.isArray(gamesObj.data)) {
         // If games has a data property that is an array
-        console.log('Found data array in games object:', gamesObj.data);
         gamesArray = gamesObj.data as DailyActionGame[];
       } else {
         // Try to convert the object to an array
-        console.log('No data array found, trying to extract from object values');
         const extractedArray = Object.values(gamesObj).filter(item => item && typeof item === 'object');
         if (extractedArray.length > 0) {
-          console.log('Extracted array from object values:', extractedArray);
           gamesArray = extractedArray as DailyActionGame[];
         }
       }
     }
 
-    console.log('Games array before transformation:', gamesArray);
-
     // Transform the data to ensure it matches the expected format
-    const transformedArray = gamesArray.map((game: any, index: number) => {
-      const transformedGame = {
-        id: game.id || index + 1,
-        gameDate: game.gameDate || new Date().toISOString(),
-        playerId: typeof game.playerId === 'number' ? game.playerId : 0,
-        gameId: typeof game.gameId === 'number' ? game.gameId : 0,
-        platform: game.platform || 'Unknown',
-        realBetAmount: typeof game.realBetAmount === 'number' ? game.realBetAmount : 0,
-        realWinAmount: typeof game.realWinAmount === 'number' ? game.realWinAmount : 0,
-        bonusBetAmount: typeof game.bonusBetAmount === 'number' ? game.bonusBetAmount : 0,
-        bonusWinAmount: typeof game.bonusWinAmount === 'number' ? game.bonusWinAmount : 0,
-        netGamingRevenue: typeof game.netGamingRevenue === 'number' ? game.netGamingRevenue : 0,
-        numberOfRealBets: typeof game.numberOfRealBets === 'number' ? game.numberOfRealBets : 0,
-        numberOfBonusBets: typeof game.numberOfBonusBets === 'number' ? game.numberOfBonusBets : 0,
-        numberOfSessions: typeof game.numberOfSessions === 'number' ? game.numberOfSessions : 0,
-        numberOfRealWins: typeof game.numberOfRealWins === 'number' ? game.numberOfRealWins : 0,
-        numberOfBonusWins: typeof game.numberOfBonusWins === 'number' ? game.numberOfBonusWins : 0,
-        realBetAmountOriginal: typeof game.realBetAmountOriginal === 'number' ? game.realBetAmountOriginal : 0,
-        realWinAmountOriginal: typeof game.realWinAmountOriginal === 'number' ? game.realWinAmountOriginal : 0,
-        bonusBetAmountOriginal: typeof game.bonusBetAmountOriginal === 'number' ? game.bonusBetAmountOriginal : 0,
-        bonusWinAmountOriginal: typeof game.bonusWinAmountOriginal === 'number' ? game.bonusWinAmountOriginal : 0,
-        netGamingRevenueOriginal: typeof game.netGamingRevenueOriginal === 'number' ? game.netGamingRevenueOriginal : 0,
-        updateDate: game.updateDate || new Date().toISOString()
-      };
-
-      console.log(`Transformed game ${index}:`, transformedGame);
-      return transformedGame;
-    });
-
-    console.log('Final transformed array:', transformedArray);
-    return transformedArray;
+    return gamesArray.map((game: any, index: number) => ({
+      id: game.id || index + 1,
+      gameDate: game.gameDate || new Date().toISOString(),
+      playerId: typeof game.playerId === 'number' ? game.playerId : 0,
+      gameId: typeof game.gameId === 'number' ? game.gameId : 0,
+      platform: game.platform || 'Unknown',
+      realBetAmount: typeof game.realBetAmount === 'number' ? game.realBetAmount : 0,
+      realWinAmount: typeof game.realWinAmount === 'number' ? game.realWinAmount : 0,
+      bonusBetAmount: typeof game.bonusBetAmount === 'number' ? game.bonusBetAmount : 0,
+      bonusWinAmount: typeof game.bonusWinAmount === 'number' ? game.bonusWinAmount : 0,
+      netGamingRevenue: typeof game.netGamingRevenue === 'number' ? game.netGamingRevenue : 0,
+      numberOfRealBets: typeof game.numberOfRealBets === 'number' ? game.numberOfRealBets : 0,
+      numberOfBonusBets: typeof game.numberOfBonusBets === 'number' ? game.numberOfBonusBets : 0,
+      numberOfSessions: typeof game.numberOfSessions === 'number' ? game.numberOfSessions : 0,
+      numberOfRealWins: typeof game.numberOfRealWins === 'number' ? game.numberOfRealWins : 0,
+      numberOfBonusWins: typeof game.numberOfBonusWins === 'number' ? game.numberOfBonusWins : 0,
+      realBetAmountOriginal: typeof game.realBetAmountOriginal === 'number' ? game.realBetAmountOriginal : 0,
+      realWinAmountOriginal: typeof game.realWinAmountOriginal === 'number' ? game.realWinAmountOriginal : 0,
+      bonusBetAmountOriginal: typeof game.bonusBetAmountOriginal === 'number' ? game.bonusBetAmountOriginal : 0,
+      bonusWinAmountOriginal: typeof game.bonusWinAmountOriginal === 'number' ? game.bonusWinAmountOriginal : 0,
+      netGamingRevenueOriginal: typeof game.netGamingRevenueOriginal === 'number' ? game.netGamingRevenueOriginal : 0,
+      updateDate: game.updateDate || new Date().toISOString()
+    }));
   }, [mockDataEnabled, localGamesData]);
 
   /**
@@ -510,9 +486,9 @@ const DailyActionGamesPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Debug information - shown in development */}
+        {/* Debug information - only shown in development */}
         {process.env.NODE_ENV === 'development' && (
-          <SimpleBox sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+          <SimpleBox sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, display: 'none' }}>
             <Typography variant="subtitle2" gutterBottom>Debug Info:</Typography>
             <Typography variant="body2">Data type: {typeof games}</Typography>
             <Typography variant="body2">Is Array: {Array.isArray(games) ? 'Yes' : 'No'}</Typography>
@@ -592,30 +568,6 @@ const DailyActionGamesPage: React.FC = () => {
                   Disable Mock Data
                 </Button>
               )}
-              <Button
-                size="small"
-                variant="outlined"
-                color="primary"
-                onClick={() => {
-                  localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'true');
-                  console.log('Enabled mock data globally');
-                  fetchData();
-                }}
-              >
-                Enable Mock Data Globally
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                  localStorage.setItem('USE_MOCK_DATA_FOR_UI_TESTING', 'false');
-                  console.log('Disabled mock data globally');
-                  fetchData();
-                }}
-              >
-                Disable Mock Data Globally
-              </Button>
             </SimpleBox>
           </SimpleBox>
         )}

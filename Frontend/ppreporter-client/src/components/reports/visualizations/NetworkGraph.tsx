@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
+  Box,
   Typography,
   CircularProgress,
   Paper,
@@ -16,7 +17,6 @@ import {
   useTheme,
   alpha
 } from '@mui/material';
-import SimpleBox from '../../../components/common/SimpleBox';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -419,7 +419,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
   return (
     <Paper sx={{ height, display: 'flex', flexDirection: 'column' }}>
       {/* Controls */}
-      <SimpleBox sx={{ padding: 1, display: 'flex', flexWrap: 'wrap', gap: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
+      <Box sx={{ padding: 1, display: 'flex', flexWrap: 'wrap', gap: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
         {/* Search */}
         {enableSearch && (
           <TextField
@@ -444,11 +444,11 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
               value={selectedGroups}
               onChange={handleGroupSelection}
               renderValue={(selected) => (
-                <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {(selected as string[]).map((value) => (
                     <Chip key={value} label={value} size="small" />
                   ))}
-                </SimpleBox>
+                </Box>
               )}
               label="Groups"
             >
@@ -463,7 +463,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
 
         {/* Zoom controls */}
         {enableZoom && (
-          <SimpleBox sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
             <Tooltip title="Zoom In">
               <IconButton size="small" onClick={handleZoomIn}>
                 <ZoomInIcon fontSize="small" />
@@ -479,12 +479,12 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
                 <RestartAltIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </SimpleBox>
+          </Box>
         )}
-      </SimpleBox>
+      </Box>
 
       {/* Graph */}
-      <SimpleBox sx={{ flex: '1', position: 'relative' }}>
+      <Box sx={{ flex: '1', position: 'relative' }}>
         <ForceGraph2D
           ref={graphRef}
           graphData={filteredData()}
@@ -506,7 +506,7 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
           cooldownTicks={100}
           onEngineStop={() => graphRef.current?.zoomToFit(400)}
         />
-      </SimpleBox>
+      </Box>
 
       {/* Selected node/link info */}
       {(selectedNode || selectedLink) && (

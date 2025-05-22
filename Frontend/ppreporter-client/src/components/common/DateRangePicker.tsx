@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Paper, Typography, IconButton, Popover } from '@mui/material';
-import SimpleBox from './SimpleBox';
+import { Box, TextField, Button, Paper, Typography, IconButton, Popover } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -77,7 +76,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     const { start, end } = preset.getValue();
     setTempStartDate(start);
     setTempEndDate(end);
-
+    
     if (autoApplyPresets) {
       if (onChange) {
         onChange({ start, end });
@@ -107,8 +106,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             <ClearIcon fontSize="small" />
           </IconButton>
         ) : undefined}
-        sx={{
-          justifyContent: 'space-between',
+        sx={{ 
+          justifyContent: 'space-between', 
           minWidth: 200,
           textTransform: 'none'
         }}
@@ -116,7 +115,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       >
         {formatButtonText()}
       </Button>
-
+      
       <Popover
         id={id}
         open={open}
@@ -138,7 +137,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <Typography variant="subtitle1" gutterBottom>
           Select Date Range
         </Typography>
-
+        
         <Box sx={{ mb: 2 }}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -146,12 +145,12 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 label="Start Date"
                 value={tempStartDate}
                 onChange={(newValue) => setTempStartDate(newValue)}
-                slotProps={{
-                  textField: {
-                    size: 'small',
+                slotProps={{ 
+                  textField: { 
+                    size: 'small', 
                     fullWidth: true,
-                    helperText: tempStartDate ? format(tempStartDate, 'EEEE') : ''
-                  }
+                    helperText: tempStartDate ? format(tempStartDate, 'EEEE') : '' 
+                  } 
                 }}
               />
               <DatePicker
@@ -159,25 +158,25 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 value={tempEndDate}
                 onChange={(newValue) => setTempEndDate(newValue)}
                 minDate={tempStartDate}
-                slotProps={{
-                  textField: {
-                    size: 'small',
+                slotProps={{ 
+                  textField: { 
+                    size: 'small', 
                     fullWidth: true,
-                    helperText: tempEndDate ? format(tempEndDate, 'EEEE') : ''
-                  }
+                    helperText: tempEndDate ? format(tempEndDate, 'EEEE') : '' 
+                  } 
                 }}
               />
             </Box>
           </LocalizationProvider>
         </Box>
-
+        
         <Typography variant="subtitle2" gutterBottom>
           Presets
         </Typography>
-
+        
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
           {datePresets.map((preset, index) => (
-            <Button
+            <Button 
               key={index}
               size="small"
               variant="outlined"
@@ -187,7 +186,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             </Button>
           ))}
         </Box>
-
+        
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
           <Button variant="outlined" onClick={handleClose}>
             Cancel

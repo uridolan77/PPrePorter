@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using MemoryCacheItemPriority = Microsoft.Extensions.Caching.Memory.CacheItemPriority;
 using Microsoft.Extensions.Logging;
 using PPrePorter.Core.Interfaces;
 using PPrePorter.DailyActionsDB.Data;
@@ -11,7 +10,6 @@ using PPrePorter.DailyActionsDB.Models.DTOs;
 using PPrePorter.DailyActionsDB.Models.Metadata;
 using PPrePorter.DailyActionsDB.Models.Players;
 using PPrePorter.DailyActionsDB.Services.DailyActions.SmartCaching;
-using PPrePorter.DailyActionsDB.Services.DailyActions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +36,6 @@ namespace PPrePorter.DailyActionsDB.Services
         private readonly DailyActionsDbContext _dbContext;
         private readonly IWhiteLabelService _whiteLabelService;
         private readonly IMetadataService? _metadataService;
-        private readonly BackgroundProcessingService _backgroundProcessingService;
 
         // Cache keys
         private const string CACHE_KEY_PREFIX = "DailyActions_";
@@ -54,8 +51,7 @@ namespace PPrePorter.DailyActionsDB.Services
             IDailyActionsSmartCacheService smartCache,
             DailyActionsDbContext dbContext,
             IWhiteLabelService whiteLabelService,
-            IMetadataService? metadataService,
-            BackgroundProcessingService backgroundProcessingService)
+            IMetadataService? metadataService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -63,10 +59,9 @@ namespace PPrePorter.DailyActionsDB.Services
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _whiteLabelService = whiteLabelService ?? throw new ArgumentNullException(nameof(whiteLabelService));
             _metadataService = metadataService; // Can be null
-            _backgroundProcessingService = backgroundProcessingService ?? throw new ArgumentNullException(nameof(backgroundProcessingService));
 
-            _logger.LogInformation("DailyActionsService initialized with global cache service instance: {CacheHashCode}, smart cache instance: {SmartCacheHashCode}, DbContext instance: {DbContextHashCode}, background processing service instance: {BackgroundProcessingHashCode}",
-                _cache.GetHashCode(), _smartCache.GetHashCode(), _dbContext.GetHashCode(), _backgroundProcessingService.GetHashCode());
+            _logger.LogInformation("DailyActionsService initialized with global cache service instance: {CacheHashCode}, smart cache instance: {SmartCacheHashCode}, DbContext instance: {DbContextHashCode}",
+                _cache.GetHashCode(), _smartCache.GetHashCode(), _dbContext.GetHashCode());
         }
 
         /// <inheritdoc/>
@@ -92,12 +87,10 @@ namespace PPrePorter.DailyActionsDB.Services
                     _logger.LogInformation("DATA LOADER: Loading data from database for date range {StartDate} to {EndDate}, whiteLabelId={WhiteLabelId}",
                         normalizedStart.ToString("yyyy-MM-dd"), normalizedEnd.ToString("yyyy-MM-dd"), wlId);
 
-                    // Build query with NOLOCK behavior
-                    var baseQuery = _dbContext.DailyActions
-                        .AsNoTracking();
-
-                    // Apply our new NOLOCK approach
-                    var query = QueryNoLockExtensions.WithForceNoLock(baseQuery)
+                    // Build query with NOLOCK hint
+                    var query = _dbContext.DailyActions
+                        .AsNoTracking()
+                        .WithSqlNoLock()
                         .Where(da => da.Date >= normalizedStart && da.Date <= normalizedEnd);
 
                     // Apply white label filter if specified
@@ -110,12 +103,12 @@ namespace PPrePorter.DailyActionsDB.Services
                     // Add ordering
                     query = query.OrderBy(da => da.Date).ThenBy(da => da.WhiteLabelID);
 
-                    // Execute query with NOLOCK behavior
+                    // Execute query with NOLOCK hint
                     var dbQueryStartTime = DateTime.UtcNow;
-                    var result = await QueryNoLockExtensions.ToListWithNoLockAsync(query);
+                    var result = await query.ToListWithSqlNoLock();
                     var dbQueryEndTime = DateTime.UtcNow;
 
-                    _logger.LogInformation("DATA LOADER: Retrieved {Count} daily actions from database in {ElapsedMs:F2}ms",
+                    _logger.LogInformation("DATA LOADER: Retrieved {Count} daily actions from database in {ElapsedMs}ms",
                         result.Count, (dbQueryEndTime - dbQueryStartTime).TotalMilliseconds);
 
                     return result;
@@ -160,13 +153,12 @@ namespace PPrePorter.DailyActionsDB.Services
 
                 _logger.LogWarning("CACHE MISS: Getting daily action from database with ID {Id}, cache key: {CacheKey}", id, cacheKey);
 
-                // Get from database with NOLOCK behavior
-                var baseQuery = _dbContext.DailyActions
+                // Get from database with NOLOCK hint
+                var result = await _dbContext.DailyActions
                     .AsNoTracking()
-                    .Where(da => da.Id == id);
-
-                // Apply our new NOLOCK approach and execute
-                var result = await QueryNoLockExtensions.FirstOrDefaultWithNoLockAsync(baseQuery);
+                    .WithSqlNoLock()
+                    .Where(da => da.Id == id)
+                    .FirstOrDefaultAsync();
 
                 // Cache the result if not null
                 if (result != null)
@@ -175,7 +167,7 @@ namespace PPrePorter.DailyActionsDB.Services
                     long estimatedSize = 1000; // More accurate estimate for a single DailyAction object
 
                     var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetPriority(MemoryCacheItemPriority.High)
+                        .SetPriority(CacheItemPriority.High)
                         .SetSlidingExpiration(TimeSpan.FromMinutes(30))
                         .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
                         .SetSize(estimatedSize); // Explicitly set the size for the cache entry
@@ -244,12 +236,11 @@ namespace PPrePorter.DailyActionsDB.Services
         {
             try
             {
-                var baseQuery = _dbContext.DailyActions
+                var dailyAction = await _dbContext.DailyActions
                     .AsNoTracking()
-                    .Where(da => da.Id == id);
-
-                // Apply our new NOLOCK approach and execute
-                var dailyAction = await QueryNoLockExtensions.FirstOrDefaultWithNoLockAsync(baseQuery);
+                    .WithSqlNoLock()
+                    .Where(da => da.Id == id)
+                    .FirstOrDefaultAsync();
                 if (dailyAction == null)
                 {
                     return false;
@@ -377,14 +368,12 @@ namespace PPrePorter.DailyActionsDB.Services
                 parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@MaxRecords", maxTotalRecords));
             }
 
-            // Execute the query with NOLOCK behavior
-            var baseQuery = _dbContext.DailyActions
+            // Execute the query with NOLOCK hint
+            var result = await _dbContext.DailyActions
                 .FromSqlRaw(sql, parameters.ToArray())
-                .AsNoTracking();
-
-            // Apply our new NOLOCK approach and execute
-            var result = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                .AsNoTracking()
+                .WithSqlNoLock()
+                .ToListWithSqlNoLock();
 
             // Get total count
             var countSql = @"
@@ -500,7 +489,7 @@ namespace PPrePorter.DailyActionsDB.Services
 
             // Cache the result
             var cacheOptions = new MemoryCacheEntryOptions()
-                .SetPriority(MemoryCacheItemPriority.High)
+                .SetPriority(CacheItemPriority.High)
                 .SetSlidingExpiration(TimeSpan.FromMinutes(30))
                 .SetAbsoluteExpiration(TimeSpan.FromMinutes(CACHE_EXPIRATION_MINUTES))
                 .SetSize(mappedDailyActions.Count * 1000 + 2000); // Estimate size

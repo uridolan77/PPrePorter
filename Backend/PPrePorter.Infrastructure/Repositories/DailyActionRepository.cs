@@ -32,14 +32,11 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                // Create base query
-                var baseQuery = _dailyActionsDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
-                    .AsNoTracking();
-
-                // Apply NOLOCK behavior and execute
-                var dbDailyActions = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                    QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                    .AsNoTracking()
+                    .WithSqlNoLock()
+                    .ToListAsync();
 
                 // Convert to Core DailyAction entities
                 return dbDailyActions.Select(da => da.ToCore());
@@ -59,14 +56,11 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                // Create base query
-                var baseQuery = _dailyActionsDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.WhiteLabelID == whiteLabelId)
-                    .AsNoTracking();
-
-                // Apply NOLOCK behavior and execute
-                var dbDailyActions = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                    QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                    .AsNoTracking()
+                    .WithSqlNoLock()
+                    .ToListAsync();
 
                 // Convert to Core DailyAction entities
                 return dbDailyActions.Select(da => da.ToCore());
@@ -85,14 +79,11 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                // Create base query
-                var baseQuery = _dailyActionsDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
-                    .AsNoTracking();
-
-                // Apply NOLOCK behavior and execute
-                var dbDailyActions = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                    QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                    .AsNoTracking()
+                    .WithSqlNoLock()
+                    .ToListAsync();
 
                 // Convert to Core DailyAction entities
                 return dbDailyActions.Select(da => da.ToCore());
@@ -112,14 +103,11 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                // Create base query
-                var baseQuery = _dailyActionsDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate && whiteLabelIds.Contains((int)da.WhiteLabelID))
-                    .AsNoTracking();
-
-                // Apply NOLOCK behavior and execute
-                var dbDailyActions = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                    QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                    .AsNoTracking()
+                    .WithSqlNoLock()
+                    .ToListAsync();
 
                 // Convert to Core DailyAction entities
                 return dbDailyActions.Select(da => da.ToCore());
@@ -139,14 +127,11 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                // Create base query
-                var baseQuery = _dailyActionsDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate)
-                    .AsNoTracking();
-
-                // Apply NOLOCK behavior and execute
-                var dbDailyActions = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                    QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                    .AsNoTracking()
+                    .WithSqlNoLock()
+                    .ToListAsync();
 
                 // Convert to Core DailyAction entities
                 var dailyActions = dbDailyActions.Select(da => da.ToCore()).ToList();
@@ -168,14 +153,11 @@ namespace PPrePorter.Infrastructure.Repositories
         {
             try
             {
-                // Create base query
-                var baseQuery = _dailyActionsDbContext.DailyActions
+                var dbDailyActions = await _dailyActionsDbContext.DailyActions
                     .Where(da => da.Date >= startDate && da.Date <= endDate && da.WhiteLabelID == whiteLabelId)
-                    .AsNoTracking();
-
-                // Apply NOLOCK behavior and execute
-                var dbDailyActions = await QueryNoLockExtensions.ToListWithNoLockAsync(
-                    QueryNoLockExtensions.WithForceNoLock(baseQuery));
+                    .AsNoTracking()
+                    .WithSqlNoLock()
+                    .ToListAsync();
 
                 // Convert to Core DailyAction entities
                 var dailyActions = dbDailyActions.Select(da => da.ToCore()).ToList();

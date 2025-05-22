@@ -52,73 +52,68 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
         id: 'uniquePlayers',
         label: 'Unique Players',
         align: 'right',
-        format: (value, row: DailyAction) => row.uniquePlayers ? row.uniquePlayers.toLocaleString() : '0'
+        format: (value, row: DailyAction) => row.uniquePlayers.toLocaleString()
       },
       {
         id: 'newRegistrations',
         label: 'New Registrations',
         align: 'right',
-        format: (value, row: DailyAction) => row.newRegistrations ? row.newRegistrations.toLocaleString() : '0'
+        format: (value, row: DailyAction) => row.newRegistrations.toLocaleString()
       },
       {
         id: 'deposits',
         label: 'Deposits',
         align: 'right',
-        format: (value, row: DailyAction) => row.deposits !== undefined && row.deposits !== null ?
-          row.deposits.toLocaleString('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) : '£0.00'
+        format: (value, row: DailyAction) => row.deposits.toLocaleString('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
       },
       {
         id: 'withdrawals',
         label: 'Withdrawals',
         align: 'right',
-        format: (value, row: DailyAction) => row.withdrawals !== undefined && row.withdrawals !== null ?
-          row.withdrawals.toLocaleString('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) : '£0.00'
+        format: (value, row: DailyAction) => row.withdrawals.toLocaleString('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
       },
       {
         id: 'bets',
         label: 'Bets',
         align: 'right',
-        format: (value, row: DailyAction) => row.bets !== undefined && row.bets !== null ?
-          row.bets.toLocaleString('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) : '£0.00'
+        format: (value, row: DailyAction) => row.bets.toLocaleString('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
       },
       {
         id: 'wins',
         label: 'Wins',
         align: 'right',
-        format: (value, row: DailyAction) => row.wins !== undefined && row.wins !== null ?
-          row.wins.toLocaleString('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) : '£0.00'
+        format: (value, row: DailyAction) => row.wins.toLocaleString('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
       },
       {
         id: 'ggr',
         label: 'GGR',
         align: 'right',
-        format: (value, row: DailyAction) => row.ggr !== undefined && row.ggr !== null ?
-          row.ggr.toLocaleString('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) : '£0.00'
+        format: (value, row: DailyAction) => row.ggr.toLocaleString('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
       },
       {
         id: 'actions',
@@ -163,28 +158,24 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
         <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Average Bet Size</Typography>
           <Typography variant="body1">
-            {row.bets !== undefined && row.bets !== null ?
-              (row.bets / (row.betCount || 1)).toLocaleString('en-GB', {
-                style: 'currency',
-                currency: 'GBP',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              }) : '£0.00'
-            }
+            {(row.bets / (row.betCount || 1)).toLocaleString('en-GB', {
+              style: 'currency',
+              currency: 'GBP',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}
           </Typography>
         </div>
         <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Conversion Rate</Typography>
           <Typography variant="body1">
-            {row.conversionRate !== undefined && row.conversionRate !== null ?
-              `${row.conversionRate.toFixed(2)}%` : '3.2%'}
+            {row.conversionRate ? `${row.conversionRate.toFixed(2)}%` : '3.2%'}
           </Typography>
         </div>
         <div style={{ flex: 1 }}>
           <Typography variant="body2" color="text.secondary">Retention Rate</Typography>
           <Typography variant="body1">
-            {row.retentionRate !== undefined && row.retentionRate !== null ?
-              `${row.retentionRate.toFixed(2)}%` : '68.5%'}
+            {row.retentionRate ? `${row.retentionRate.toFixed(2)}%` : '68.5%'}
           </Typography>
         </div>
       </div>

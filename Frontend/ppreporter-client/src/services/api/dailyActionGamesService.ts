@@ -4,8 +4,7 @@ import { DailyActionGamesResponse, DailyActionGame } from '../../types/reports';
 import { API_ENDPOINTS } from '../../config/constants';
 
 // Fallback endpoint in case the import structure is different
-// Remove the '/api' prefix since the apiClient already includes it in the baseURL
-const DAILY_ACTION_GAMES_ENDPOINT = '/reports/daily-action-games';
+const DAILY_ACTION_GAMES_ENDPOINT = '/api/reports/daily-action-games';
 
 /**
  * Query parameters for daily action games
@@ -55,9 +54,7 @@ class DailyActionGamesService {
       try {
         // Check if the nested structure exists
         if (API_ENDPOINTS.REPORTS && API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES) {
-          // Remove the '/api' prefix if it exists to avoid duplication
-          const baseEndpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES.replace(/^\/api/, '');
-          endpoint = baseEndpoint + '/data';
+          endpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES + '/data';
           console.log('[DAILY_ACTION_GAMES_SERVICE] Using TypeScript structure endpoint');
         } else if ((API_ENDPOINTS as any).DAILY_ACTION_GAMES) {
           // Try the JavaScript structure
@@ -224,9 +221,7 @@ class DailyActionGamesService {
       try {
         // Check if the nested structure exists
         if (API_ENDPOINTS.REPORTS && API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES) {
-          // Remove the '/api' prefix if it exists to avoid duplication
-          const baseEndpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES.replace(/^\/api/, '');
-          endpoint = baseEndpoint + '/export';
+          endpoint = API_ENDPOINTS.REPORTS.DAILY_ACTION_GAMES + '/export';
           console.log('[DAILY_ACTION_GAMES_SERVICE] Using TypeScript structure endpoint for export');
         } else if ((API_ENDPOINTS as any).DAILY_ACTION_GAMES) {
           // Try the JavaScript structure
