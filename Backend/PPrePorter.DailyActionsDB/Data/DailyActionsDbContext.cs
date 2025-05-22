@@ -471,7 +471,6 @@ namespace PPrePorter.DailyActionsDB.Data
                 _logger?.LogInformation("- common.tbl_Interactions_ScoreChecks");
                 _logger?.LogInformation("- common.tbl_Leaderboards");
                 _logger?.LogInformation("- common.tbl_Withdrawal_requests");
-                _logger?.LogInformation("- common.tbl_Metadata");
 
                 // Dbo schema tables
                 _logger?.LogInformation("- dbo.Games");

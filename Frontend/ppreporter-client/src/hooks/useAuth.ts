@@ -5,9 +5,11 @@ import {
   register as registerAction,
   resetPassword as resetPasswordAction,
   forgotPassword as forgotPasswordAction,
+  refreshToken as refreshTokenAction,
+  loginWithGoogle as loginWithGoogleAction,
+  loginWithMicrosoft as loginWithMicrosoftAction,
   selectAuth
 } from '../store/slices/authSlice';
-import authService from '../services/authService';
 import {
   User,
   LoginCredentials,
@@ -99,19 +101,10 @@ export const useAuth = (): UseAuthReturn => {
    */
   const login = async (credentials: LoginCredentials): Promise<User> => {
     try {
-      console.log('useAuth.login called with credentials:', credentials);
+      console.log('useAuth.login called with credentials:', { username: credentials.username, rememberMe: credentials.rememberMe });
 
-      // Ensure credentials object has all required properties
-      if (!credentials.password) {
-        throw new Error('Password is required');
-      }
-
-      // Dispatch the login action with complete credentials
-      const resultAction = await dispatch(loginAction({
-        username: credentials.username,
-        password: credentials.password,
-        rememberMe: credentials.rememberMe || false
-      }));
+      // Dispatch the login action
+      const resultAction = await dispatch(loginAction(credentials));
       console.log('Login action result:', resultAction);
 
       // Check if the action was fulfilled
@@ -224,8 +217,15 @@ export const useAuth = (): UseAuthReturn => {
    */
   const refreshToken = async (): Promise<User> => {
     try {
-      // Call the service directly since the action is not exported
-      return await authService.refreshToken();
+      const resultAction = await dispatch(refreshTokenAction());
+      if (refreshTokenAction.fulfilled.match(resultAction)) {
+        return resultAction.payload;
+      } else {
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Token refresh failed';
+        throw new Error(errorMessage);
+      }
     } catch (error) {
       throw error;
     }
@@ -237,8 +237,15 @@ export const useAuth = (): UseAuthReturn => {
    */
   const loginWithGoogle = async (): Promise<User> => {
     try {
-      // Call the service directly since the action is not exported
-      return await authService.loginWithGoogle();
+      const resultAction = await dispatch(loginWithGoogleAction());
+      if (loginWithGoogleAction.fulfilled.match(resultAction)) {
+        return resultAction.payload;
+      } else {
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Google login failed';
+        throw new Error(errorMessage);
+      }
     } catch (error) {
       throw error;
     }
@@ -250,8 +257,15 @@ export const useAuth = (): UseAuthReturn => {
    */
   const loginWithMicrosoft = async (): Promise<User> => {
     try {
-      // Call the service directly since the action is not exported
-      return await authService.loginWithMicrosoft();
+      const resultAction = await dispatch(loginWithMicrosoftAction());
+      if (loginWithMicrosoftAction.fulfilled.match(resultAction)) {
+        return resultAction.payload;
+      } else {
+        const errorMessage = typeof resultAction.payload === 'string'
+          ? resultAction.payload
+          : 'Microsoft login failed';
+        throw new Error(errorMessage);
+      }
     } catch (error) {
       throw error;
     }

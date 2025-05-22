@@ -139,9 +139,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           Select Date Range
         </Typography>
 
-        <SimpleBox sx={{ mb: 2 }}>
+        <Box sx={{ mb: 2 }}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <SimpleBox sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <DatePicker
                 label="Start Date"
                 value={tempStartDate}
@@ -167,15 +167,15 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   }
                 }}
               />
-            </SimpleBox>
+            </Box>
           </LocalizationProvider>
-        </SimpleBox>
+        </Box>
 
         <Typography variant="subtitle2" gutterBottom>
           Presets
         </Typography>
 
-        <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
           {datePresets.map((preset, index) => (
             <Button
               key={index}
@@ -186,16 +186,16 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
               {preset.label}
             </Button>
           ))}
-        </SimpleBox>
+        </Box>
 
-        <SimpleBox sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
           <Button variant="outlined" onClick={handleClose}>
             Cancel
           </Button>
           <Button variant="contained" color="primary" onClick={handleApply}>
             Apply
           </Button>
-        </SimpleBox>
+        </Box>
       </Popover>
     </div>
   );

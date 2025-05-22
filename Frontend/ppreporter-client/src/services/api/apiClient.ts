@@ -2,15 +2,12 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, In
 import mockDataService from '../../mockData';
 
 // Constants
-// In development, use relative URLs to leverage the proxy in setupProxy.js
-// In production, use the full URL from environment variables
-const isProduction = process.env.NODE_ENV === 'production';
-const API_URL = isProduction
-  ? (process.env.REACT_APP_API_URL || 'https://localhost:7075')
-  : ''; // Empty string means use relative URLs that will go through the proxy
+// Always use the full URL to avoid client calling itself
+// This ensures we're always pointing to the actual API server
+const API_URL = process.env.REACT_APP_API_URL || 'https://localhost:7075';
 
 // Log the API URL being used
-console.log('API URL configured as:', API_URL || 'Using proxy with relative URLs');
+console.log('API URL configured as:', API_URL);
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
@@ -36,16 +33,15 @@ if (FORCE_REAL_API_CALLS) {
 // Function to check API availability without automatically enabling mock data
 const checkApiAvailability = async () => {
   try {
-    // Use the proxy path for health check in development
-    const healthCheckUrl = isProduction ? `${API_URL}/api/health` : '/api/health';
-    console.log('Checking API availability at:', healthCheckUrl);
+    // Use the base URL for health check
+    console.log('Checking API availability at:', `${API_URL}/api/health`);
 
     // Create an AbortController to timeout the request
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     // Try to ping the API server with a timeout
-    const response = await fetch(healthCheckUrl, {
+    const response = await fetch(`${API_URL}/api/health`, {
       method: 'HEAD',
       cache: 'no-cache',
       credentials: 'include',
@@ -76,8 +72,7 @@ checkApiAvailability();
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  // In development, use relative URLs to leverage the proxy in package.json
-  baseURL: isProduction ? API_URL : '/api',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json; v=1.0', // Add API version to match Swagger
@@ -89,53 +84,8 @@ const apiClient: AxiosInstance = axios.create({
 // Add a mock data interceptor
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
-    // Log request details with more information
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
-
-    // Special handling for auth endpoints to avoid logging sensitive data
-    const isAuthEndpoint = config.url?.includes('/auth/');
-
-    if (isAuthEndpoint) {
-      if (config.data && typeof config.data === 'object') {
-        // Create a sanitized version of the data for logging
-        const sanitizedData = { ...config.data };
-        if (sanitizedData.password) {
-          sanitizedData.password = '********';
-        }
-        console.log('Request data (sanitized for auth endpoint):', sanitizedData);
-      } else {
-        console.log('Auth endpoint request with non-object data');
-      }
-    } else {
-      console.log('Request data (before):', config.data);
-    }
-
-    // Log request data in a more detailed way
-    if (config.method?.toLowerCase() === 'post') {
-      if (typeof config.data === 'string') {
-        try {
-          const parsedData = JSON.parse(config.data);
-          // Sanitize password if present
-          if (parsedData.password) {
-            const sanitizedData = { ...parsedData, password: '********' };
-            console.log('Parsed request data (string, sanitized):', sanitizedData);
-          } else {
-            console.log('Parsed request data (string):', parsedData);
-          }
-        } catch (e) {
-          console.log('Could not parse request data as JSON, raw data length:',
-            typeof config.data === 'string' ? config.data.length : 'unknown');
-        }
-      } else if (typeof config.data === 'object') {
-        // Sanitize password if present
-        if (config.data && config.data.password) {
-          const sanitizedData = { ...config.data, password: '********' };
-          console.log('Request data (object, sanitized):', sanitizedData);
-        } else {
-          console.log('Request data (object):', config.data);
-        }
-      }
-    }
+    // Log request details
+    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
 
     const token = localStorage.getItem(TOKEN_KEY);
     if (token && config.headers) {
@@ -164,36 +114,15 @@ apiClient.interceptors.request.use(
         // Get the URL path without the base URL
         const url = config.url || '';
         const method = config.method || 'get';
-        // Ensure we have a proper object for the data
-        let data = {};
-        if (config.data) {
-          if (typeof config.data === 'string') {
-            try {
-              data = JSON.parse(config.data);
-            } catch (e) {
-              console.error('Failed to parse request data as JSON:', e);
-              data = { rawData: config.data }; // Use as-is if parsing fails
-            }
-          } else {
-            data = config.data; // Use object directly
-          }
-        }
+        const data = config.data ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) : {};
 
         console.log('[API CLIENT] Preparing mock data for:', url);
         console.log('[API CLIENT] Method:', method);
         console.log('[API CLIENT] Params:', method.toLowerCase() === 'get' ? config.params : data);
 
-        // Extract the endpoint from the URL
-        // In development with proxy, the URL is already relative
-        // In production, we need to remove the base URL
-        let endpoint = url;
-        if (isProduction && API_URL) {
-          endpoint = url.replace(API_URL, '');
-        }
-        // Make sure the endpoint starts with a slash
-        if (!endpoint.startsWith('/')) {
-          endpoint = '/' + endpoint;
-        }
+        // Extract the endpoint from the URL (remove the base URL)
+        const baseUrl = process.env.REACT_APP_API_URL || 'https://localhost:7075';
+        const endpoint = url.replace(baseUrl, '');
         console.log('[API CLIENT] Extracted endpoint:', endpoint);
 
         // Add a custom property to the config to store the mock data
@@ -225,12 +154,6 @@ apiClient.interceptors.request.use(
 // Add a mock data response interceptor
 apiClient.interceptors.response.use(
   async (response: AxiosResponse): Promise<AxiosResponse> => {
-    // Ensure response has headers property to prevent "Cannot read properties of undefined (reading 'headers')" error
-    if (!response.headers) {
-      console.log('[API CLIENT RESPONSE] Adding empty headers object to response');
-      response.headers = {};
-    }
-
     // Check if we should use mock data
     let useMockData = localStorage.getItem('USE_MOCK_DATA_FOR_UI_TESTING') === 'true';
 
@@ -260,23 +183,6 @@ apiClient.interceptors.response.use(
           // Override the response with mock data
           response.data = mockData;
 
-          // Ensure all required properties exist
-          if (!response.headers) {
-            response.headers = {};
-          }
-
-          if (!response.status) {
-            response.status = 200;
-          }
-
-          if (!response.statusText) {
-            response.statusText = 'OK';
-          }
-
-          if (!response.config) {
-            response.config = {} as any;
-          }
-
           // Special handling for daily action games endpoint
           if (mockDataInfo.url.includes('reports/daily-action-games')) {
             console.log('[API CLIENT RESPONSE] Special handling for daily action games endpoint');
@@ -302,12 +208,6 @@ apiClient.interceptors.response.use(
       } catch (mockError) {
         console.error('[API CLIENT RESPONSE] Error generating mock data for successful response:', mockError);
       }
-    }
-
-    // Final check to ensure headers property exists
-    if (!response.headers) {
-      console.log('[API CLIENT RESPONSE] Adding empty headers object to response (final check)');
-      response.headers = {};
     }
 
     return response;
@@ -341,39 +241,20 @@ apiClient.interceptors.response.use(
         if (mockData) {
           console.log('[API CLIENT RESPONSE] Mock data response for error:', mockData);
 
-          // Create a complete mock response with all required properties
-          const mockResponse = {
+          // Return a mock response
+          return Promise.resolve({
             data: mockData,
             status: 200,
             statusText: 'OK',
             headers: {},
-            config: error.config || {},
-            request: {}, // Add empty request object
-          };
-
-          // Log the mock response structure
-          console.log('[API CLIENT RESPONSE] Created mock response with structure:', {
-            hasData: !!mockResponse.data,
-            hasStatus: !!mockResponse.status,
-            hasStatusText: !!mockResponse.statusText,
-            hasHeaders: !!mockResponse.headers,
-            hasConfig: !!mockResponse.config,
-            hasRequest: !!mockResponse.request
+            config: error.config,
           });
-
-          return Promise.resolve(mockResponse);
         } else {
           console.warn('[API CLIENT RESPONSE] No mock data returned for error:', mockDataInfo.url);
         }
       } catch (mockError) {
         console.error('[API CLIENT RESPONSE] Error generating mock data for error:', mockError);
       }
-    }
-
-    // If error.response exists but doesn't have headers, add them
-    if (error.response && !error.response.headers) {
-      console.log('[API CLIENT RESPONSE] Adding empty headers object to error response');
-      error.response.headers = {};
     }
 
     // If we couldn't generate mock data or mock data is disabled, reject with the original error
@@ -386,22 +267,10 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => {
     console.log('API Response:', response.status, response.config.url, response.data);
 
-    // Ensure response has headers property to prevent "Cannot read properties of undefined (reading 'headers')" error
-    if (!response.headers) {
-      console.log('[API CLIENT TOKEN REFRESH] Adding empty headers object to response');
-      response.headers = {};
-    }
-
     // We've already handled mock data in the previous interceptor
     return response;
   },
   async (error: AxiosError): Promise<any> => {
-    // Ensure error.response has headers property if it exists
-    if (error.response && !error.response.headers) {
-      console.log('[API CLIENT TOKEN REFRESH] Adding empty headers object to error response');
-      error.response.headers = {};
-    }
-
     // This interceptor is for token refresh, not for mock data
     // The mock data interceptor is already handling errors
     // Only proceed with token refresh if mock data is disabled
@@ -440,17 +309,10 @@ apiClient.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        // Call token refresh endpoint using the proxy in development
-        const refreshUrl = isProduction ? `${API_URL}/api/auth/refresh-token` : '/api/auth/refresh-token';
-        const response = await axios.post(refreshUrl, {
+        // Call token refresh endpoint
+        const response = await axios.post(`${API_URL}/api/auth/refresh-token`, {
           refreshToken,
         });
-
-        // Ensure response has headers property
-        if (!response.headers) {
-          console.log('[API CLIENT TOKEN REFRESH] Adding empty headers object to refresh token response');
-          response.headers = {};
-        }
 
         const { token, newRefreshToken } = response.data;
 
@@ -468,14 +330,6 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch (refreshError) {
-        console.error('[API CLIENT TOKEN REFRESH] Token refresh error:', refreshError);
-
-        // Ensure refreshError.response has headers property if it exists
-        if ((refreshError as any).response && !(refreshError as any).response.headers) {
-          console.log('[API CLIENT TOKEN REFRESH] Adding empty headers object to refresh error response');
-          (refreshError as any).response.headers = {};
-        }
-
         // Refresh failed, force logout
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);

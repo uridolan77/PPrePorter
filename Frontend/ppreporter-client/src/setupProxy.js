@@ -21,10 +21,7 @@ module.exports = function(app) {
     onProxyReq: (proxyReq, req, res) => {
       // Add any custom headers needed for the API
       proxyReq.setHeader('X-Forwarded-Proto', 'https');
-
-      // Set the Origin header to match the target server
-      // This is important for CORS preflight requests
-      proxyReq.setHeader('Origin', 'https://localhost:7075');
+      proxyReq.setHeader('Origin', 'http://localhost:3001');
 
       // Add a custom header to identify proxy requests
       proxyReq.setHeader('X-Proxy-Request', 'true');
@@ -66,15 +63,13 @@ module.exports = function(app) {
       },
       onProxyRes: (proxyRes, req, res) => {
         // Add CORS headers to the response
-        proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:3002';
+        proxyRes.headers['Access-Control-Allow-Origin'] = '*';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS';
-        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With';
+        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-        proxyRes.headers['Access-Control-Max-Age'] = '86400'; // 24 hours
 
         // Log proxy response
         console.log(`[PROXY RESPONSE] ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
-        console.log(`[PROXY RESPONSE HEADERS] ${JSON.stringify(proxyRes.headers)}`);
       }
     })
   );
@@ -87,15 +82,13 @@ module.exports = function(app) {
       // No path rewrite needed for swagger
       onProxyRes: (proxyRes, req, res) => {
         // Add CORS headers to the response
-        proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:3002';
+        proxyRes.headers['Access-Control-Allow-Origin'] = '*';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS';
-        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With';
+        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-        proxyRes.headers['Access-Control-Max-Age'] = '86400'; // 24 hours
 
         // Log proxy response
         console.log(`[PROXY RESPONSE] ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
-        console.log(`[PROXY RESPONSE HEADERS] ${JSON.stringify(proxyRes.headers)}`);
       }
     })
   );
@@ -111,11 +104,10 @@ module.exports = function(app) {
       timeout: 5000, // 5 seconds
       onProxyRes: (proxyRes, req, res) => {
         // Add CORS headers to the response
-        proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:3002';
+        proxyRes.headers['Access-Control-Allow-Origin'] = '*';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS';
-        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With';
+        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-        proxyRes.headers['Access-Control-Max-Age'] = '86400'; // 24 hours
 
         // Log proxy response with more details
         console.log(`[PROXY RESPONSE] ${req.method} ${req.url} -> ${proxyRes.statusCode}`);

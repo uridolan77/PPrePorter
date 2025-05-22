@@ -65,15 +65,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
   logoUrl = '/logo.png',
   sx
 }) => {
-  // Initialize form data with default values
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
     password: '',
     rememberMe: false
   });
-
-  // Log initial form data for debugging
-  console.log('Initial form data:', formData);
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formErrors, setFormErrors] = useState<LoginFormErrors>({});
@@ -81,31 +77,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value, checked, type } = e.target;
 
-    console.log(`Field '${name}' changed:`, {
-      type,
-      value: type === 'checkbox' ? checked : value,
-      previousValue: formData[name as keyof LoginFormData]
-    });
-
-    // Update form data with new value
-    const updatedFormData = {
+    setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
-    };
-
-    // Ensure we're not setting empty values
-    if (name === 'username' && value.trim() === '') {
-      console.warn('Empty username detected in handleChange');
-    }
-
-    if (name === 'password' && value === '') {
-      console.warn('Empty password detected in handleChange');
-    }
-
-    setFormData(updatedFormData);
-    console.log('Updated form data:', {
-      ...updatedFormData,
-      password: updatedFormData.password ? '********' : ''
     });
 
     // Clear validation error when field is edited
@@ -143,42 +117,18 @@ const LoginForm: React.FC<LoginFormProps> = ({
     e.stopPropagation();
 
     console.log('Form submit event prevented');
-    console.log('Form data at submission:', formData);
-
-    // Get form values directly from the form element as a backup
-    const formElement = e.currentTarget;
-    const usernameInput = formElement.querySelector('input[name="username"]') as HTMLInputElement;
-    const passwordInput = formElement.querySelector('input[name="password"]') as HTMLInputElement;
-    const rememberMeInput = formElement.querySelector('input[name="rememberMe"]') as HTMLInputElement;
-
-    // Use direct form values if available, otherwise use state
-    const username = usernameInput?.value || formData.username;
-    const password = passwordInput?.value || formData.password;
-    const rememberMe = rememberMeInput ? rememberMeInput.checked : formData.rememberMe;
-
-    console.log('Direct form values:', { username, password, rememberMe });
 
     const errors = validate();
 
     if (Object.keys(errors).length === 0) {
       if (onSubmit) {
-        // Ensure we have a valid credentials object with all required fields
-        const validCredentials = {
-          username: username.trim(),
-          password: password,
-          rememberMe: rememberMe
-        };
-
-        console.log('Form is valid, calling onSubmit with credentials:', validCredentials);
-
-        // Call the onSubmit handler with the validated form data
+        console.log('Form is valid, calling onSubmit');
+        // Call the onSubmit handler with the form data
         // This will be handled by the parent component
-        onSubmit(validCredentials);
-      } else {
-        console.warn('No onSubmit handler provided to LoginForm');
+        onSubmit(formData);
       }
     } else {
-      console.log('Form has validation errors:', errors);
+      console.log('Form has errors:', errors);
       setFormErrors(errors);
     }
 
@@ -212,43 +162,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <Box
         component="form"
         onSubmit={(e) => {
-          console.log('Form onSubmit triggered with form data:', formData);
-
-          // Log the actual form element values directly
-          const formElement = e.currentTarget;
-          const usernameInput = formElement.querySelector('input[name="username"]') as HTMLInputElement;
-          const passwordInput = formElement.querySelector('input[name="password"]') as HTMLInputElement;
-          const rememberMeInput = formElement.querySelector('input[name="rememberMe"]') as HTMLInputElement;
-
-          // Check if form values match state
-          const formValues = {
-            username: usernameInput?.value || 'not found',
-            password: passwordInput?.value || 'not found',
-            rememberMe: rememberMeInput?.checked || false
-          };
-
-          console.log('Direct form element values:', formValues);
-          console.log('State values:', formData);
-
-          // Update form data state with direct values if they don't match
-          if (formValues.username !== 'not found' && formValues.username !== formData.username) {
-            console.log('Updating username in state to match form element');
-            setFormData(prev => ({ ...prev, username: formValues.username }));
-          }
-
-          if (formValues.password !== 'not found' && formValues.password !== formData.password) {
-            console.log('Updating password in state to match form element');
-            setFormData(prev => ({ ...prev, password: formValues.password }));
-          }
-
           handleSubmit(e);
-          // Explicitly return false to prevent form submission
-          return false;
+          return false; // Explicitly return false to prevent form submission
         }}
-        id="login-form"
-        name="login-form"
         noValidate
-        autoComplete="on"
+        autoComplete="off"
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -287,7 +205,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <TextField
           label="Username or Email"
           name="username"
-          id="username"
           value={formData.username}
           onChange={handleChange}
           fullWidth
@@ -300,10 +217,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
               </InputAdornment>
             ),
           }}
-          inputProps={{
-            autoComplete: "username",
-            form: "login-form"
-          }}
           disabled={loading}
           required
         />
@@ -312,7 +225,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <TextField
           label="Password"
           name="password"
-          id="password"
           type={showPassword ? 'text' : 'password'}
           value={formData.password}
           onChange={handleChange}
@@ -337,10 +249,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
               </InputAdornment>
             ),
           }}
-          inputProps={{
-            autoComplete: "current-password",
-            form: "login-form"
-          }}
           disabled={loading}
           required
         />
@@ -351,14 +259,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
             control={
               <Checkbox
                 name="rememberMe"
-                id="rememberMe"
                 checked={formData.rememberMe}
                 onChange={handleChange}
                 color="primary"
                 disabled={loading}
-                inputProps={{
-                  form: "login-form"
-                }}
               />
             }
             label="Remember me"
@@ -386,33 +290,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
           fullWidth
           disabled={loading}
           sx={{ mt: 2 }}
-          onClick={(e) => {
-            // Additional check to ensure form data is valid before submission
-            console.log('Submit button clicked, current form data:', {
-              ...formData,
-              password: formData.password ? '********' : ''
-            });
-
-            // If form data is empty, try to get values directly from form elements
-            if (!formData.username || !formData.password) {
-              console.warn('Form data is incomplete, attempting to get values directly from form elements');
-              const formElement = document.getElementById('login-form') as HTMLFormElement;
-              if (formElement) {
-                const usernameInput = formElement.querySelector('input[name="username"]') as HTMLInputElement;
-                const passwordInput = formElement.querySelector('input[name="password"]') as HTMLInputElement;
-
-                if (usernameInput && !formData.username) {
-                  console.log('Setting username from form element:', usernameInput.value);
-                  setFormData(prev => ({ ...prev, username: usernameInput.value }));
-                }
-
-                if (passwordInput && !formData.password) {
-                  console.log('Setting password from form element');
-                  setFormData(prev => ({ ...prev, password: passwordInput.value }));
-                }
-              }
-            }
-          }}
         >
           {loading ? <CircularProgress size={24} /> : 'Sign In'}
         </Button>
