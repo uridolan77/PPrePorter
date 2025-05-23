@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Box } from '@mui/material';
 
 /**
@@ -29,7 +29,7 @@ const convertSpacing = (value: any): string | undefined => {
  * SimpleBox component
  * A simple replacement for MUI Box that avoids TypeScript union type issues
  */
-const SimpleBox: React.FC<SimpleBoxProps> = (props) => {
+const SimpleBox = forwardRef<HTMLDivElement, SimpleBoxProps>((props, ref) => {
   const { component, sx, style, children, ...otherProps } = props;
 
   // Create a simplified inline style object from sx prop
@@ -84,14 +84,17 @@ const SimpleBox: React.FC<SimpleBoxProps> = (props) => {
     const elementProps = {
       ...otherProps,
       style: inlineStyle,
-      as: component
+      as: component,
+      ref
     };
 
     return <div {...elementProps}>{children}</div>;
   }
 
   // Otherwise, render a regular div
-  return <div style={inlineStyle} {...otherProps}>{children}</div>;
-};
+  return <div style={inlineStyle} ref={ref} {...otherProps}>{children}</div>;
+});
+
+SimpleBox.displayName = 'SimpleBox';
 
 export default SimpleBox;

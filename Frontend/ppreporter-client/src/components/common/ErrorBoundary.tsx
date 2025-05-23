@@ -1,8 +1,9 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Typography, Button } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { ErrorBoundaryProps, ErrorBoundaryState, ErrorState } from '../../types/common';
+import SimpleBox from './SimpleBox';
 
 /**
  * ErrorBoundary component
@@ -54,7 +55,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
       // Default fallback UI
       return (
-        <Box sx={{ p: 3, textAlign: 'center' }}>
+        <SimpleBox sx={{ p: 3, textAlign: 'center' }}>
           <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
           <Typography variant="h6" color="error" gutterBottom>
             Something went wrong
@@ -69,7 +70,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           >
             Try Again
           </Button>
-        </Box>
+        </SimpleBox>
       );
     }
 

@@ -1,8 +1,5 @@
-import axios from 'axios';
 import { format } from 'date-fns';
-
-// Base API URL
-const API_URL = 'https://localhost:7075/api';
+import apiClient from './apiClient';
 
 // Date format for API requests
 const API_DATE_FORMAT = 'yyyy-MM-dd';
@@ -38,7 +35,7 @@ const integratedReportsService = {
     filters: Record<string, any> = {}
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/reports/daily-action-games/data`, {
+      const response = await apiClient.get('/reports/daily-action-games/data', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -65,7 +62,7 @@ const integratedReportsService = {
     filters: Record<string, any> = {}
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/reports/players/data`, {
+      const response = await apiClient.get('/reports/players/data', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -92,7 +89,7 @@ const integratedReportsService = {
     filters: Record<string, any> = {}
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/reports/games/data`, {
+      const response = await apiClient.get('/reports/games/data', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -117,7 +114,7 @@ const integratedReportsService = {
     endDate: Date | string | null
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/summary`, {
+      const response = await apiClient.get('/Dashboard/summary', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate)
@@ -143,7 +140,7 @@ const integratedReportsService = {
     interval: 'daily' | 'weekly' | 'monthly' = 'daily'
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/revenue-chart`, {
+      const response = await apiClient.get('/Dashboard/revenue-chart', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -170,7 +167,7 @@ const integratedReportsService = {
     interval: 'daily' | 'weekly' | 'monthly' = 'daily'
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/registrations-chart`, {
+      const response = await apiClient.get('/Dashboard/registrations-chart', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -197,7 +194,7 @@ const integratedReportsService = {
     limit: number = 10
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/top-games`, {
+      const response = await apiClient.get('/Dashboard/top-games', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -224,7 +221,7 @@ const integratedReportsService = {
     limit: number = 10
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/recent-transactions`, {
+      const response = await apiClient.get('/Dashboard/recent-transactions', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -251,7 +248,7 @@ const integratedReportsService = {
     metric: string = 'bets'
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/heatmap`, {
+      const response = await apiClient.get('/Dashboard/heatmap', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -278,7 +275,7 @@ const integratedReportsService = {
     segments: string[] = []
   ) => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/segment-comparison`, {
+      const response = await apiClient.get('/Dashboard/segment-comparison', {
         params: {
           startDate: formatDateForApi(startDate),
           endDate: formatDateForApi(endDate),
@@ -299,7 +296,7 @@ const integratedReportsService = {
    */
   saveUserPreferences: async (preferences: any) => {
     try {
-      const response = await axios.post(`${API_URL}/Dashboard/user-preferences`, preferences);
+      const response = await apiClient.post('/Dashboard/user-preferences', preferences);
       return response.data;
     } catch (error) {
       console.error('Error saving user preferences:', error);
@@ -313,7 +310,7 @@ const integratedReportsService = {
    */
   getUserPreferences: async () => {
     try {
-      const response = await axios.get(`${API_URL}/Dashboard/user-preferences`);
+      const response = await apiClient.get('/Dashboard/user-preferences');
       return response.data;
     } catch (error) {
       console.error('Error fetching user preferences:', error);

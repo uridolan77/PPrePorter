@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box } from '@mui/material';
 import { TabPanelProps } from '../../types/common';
+import SimpleBox from './SimpleBox';
 
 /**
  * TabPanel component that displays content based on the active tab
@@ -15,7 +15,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
   ...other
 }) => {
   const isSelected = value === index;
-  
+
   return (
     <div
       role="tabpanel"
@@ -26,9 +26,9 @@ const TabPanel: React.FC<TabPanelProps> = ({
       {...other}
     >
       {isSelected && (
-        <Box sx={{ p: 3, ...sx }}>
+        <SimpleBox sx={{ p: 3, ...sx }}>
           {children}
-        </Box>
+        </SimpleBox>
       )}
     </div>
   );

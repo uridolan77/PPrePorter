@@ -21,6 +21,7 @@ import {
   useTheme,
   SelectChangeEvent
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import UpdateIcon from '@mui/icons-material/Update';
@@ -206,7 +207,7 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
 
       {/* Appearance Tab */}
       {activeTab === 0 && (
-        <Box>
+        <SimpleBox>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth sx={{ mb: 3 }}>
@@ -254,7 +255,7 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
               <Typography gutterBottom>
                 Contrast Level
               </Typography>
-              <Box sx={{ px: 2 }}>
+              <SimpleBox sx={{ px: 2 }}>
                 <Slider
                   value={preferences.colorScheme.contrastLevel}
                   onChange={handleSliderChange('colorScheme', 'contrastLevel')}
@@ -268,14 +269,14 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                   max={1.5}
                   valueLabelDisplay="auto"
                 />
-              </Box>
+              </SimpleBox>
             </Grid>
 
             <Grid item xs={12} sm={6}>
               <Typography variant="subtitle2" gutterBottom>
                 Color Scheme
               </Typography>
-              <Box sx={{ mb: 2 }}>
+              <SimpleBox sx={{ mb: 2 }}>
                 <Typography variant="body2" gutterBottom>
                   Primary Color
                 </Typography>
@@ -284,8 +285,8 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                   onChangeComplete={(color) => handleColorChange(color.hex, 'primaryColor')}
                   triangle="hide"
                 />
-              </Box>
-              <Box>
+              </SimpleBox>
+              <SimpleBox>
                 <Typography variant="body2" gutterBottom>
                   Secondary Color
                 </Typography>
@@ -294,8 +295,8 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                   onChangeComplete={(color) => handleColorChange(color.hex, 'secondaryColor')}
                   triangle="hide"
                 />
-              </Box>
-              <Box sx={{ mt: 2 }}>
+              </SimpleBox>
+              <SimpleBox sx={{ mt: 2 }}>
                 <Typography variant="body2" gutterBottom>
                   Positive Color
                 </Typography>
@@ -304,15 +305,15 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                   onChangeComplete={(color) => handleColorChange(color.hex, 'positiveColor')}
                   triangle="hide"
                 />
-              </Box>
+              </SimpleBox>
             </Grid>
           </Grid>
-        </Box>
+        </SimpleBox>
       )}
 
       {/* Charts Tab */}
       {activeTab === 1 && (
-        <Box>
+        <SimpleBox>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth sx={{ mb: 3 }}>
@@ -326,10 +327,10 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                 >
                   {chartTypes.map((type) => (
                     <MenuItem key={type.value} value={type.value}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                         {type.icon}
                         <Typography sx={{ ml: 1 }}>{type.label}</Typography>
-                      </Box>
+                      </SimpleBox>
                     </MenuItem>
                   ))}
                 </Select>
@@ -346,10 +347,10 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                 >
                   {chartTypes.map((type) => (
                     <MenuItem key={type.value} value={type.value}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                         {type.icon}
                         <Typography sx={{ ml: 1 }}>{type.label}</Typography>
-                      </Box>
+                      </SimpleBox>
                     </MenuItem>
                   ))}
                 </Select>
@@ -368,10 +369,10 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
                 >
                   {chartTypes.map((type) => (
                     <MenuItem key={type.value} value={type.value}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                         {type.icon}
                         <Typography sx={{ ml: 1 }}>{type.label}</Typography>
-                      </Box>
+                      </SimpleBox>
                     </MenuItem>
                   ))}
                 </Select>
@@ -393,12 +394,12 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
               </FormControl>
             </Grid>
           </Grid>
-        </Box>
+        </SimpleBox>
       )}
 
 
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, gap: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, gap: 2 }}>
         <Button
           variant="outlined"
           onClick={onCancel}
@@ -415,7 +416,7 @@ const DashboardPreferences: React.FC<DashboardPreferencesProps> = ({
         >
           {loading ? 'Saving...' : 'Save Preferences'}
         </Button>
-      </Box>
+      </SimpleBox>
     </Paper>
   );
 };

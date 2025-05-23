@@ -1,12 +1,9 @@
 import React from 'react';
 import {
-  Box,
   Grid,
   Typography,
   Paper,
   Button,
-  IconButton,
-  Tooltip,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -21,6 +18,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import ClearIcon from '@mui/icons-material/Clear';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import { CommonProps } from '../../types/common';
+import SimpleBox from '../common/SimpleBox';
 
 interface User {
   firstName?: string;
@@ -72,12 +70,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             borderRadius: 2
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             <ErrorOutlineIcon sx={{ mr: 2, fontSize: 32 }} />
             <Typography variant="h6">
               Something went wrong loading the dashboard header
             </Typography>
-          </Box>
+          </SimpleBox>
         </Paper>
       }
     >
@@ -102,7 +100,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </Typography>
         </Grid>
         <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
             <Button
               variant="contained"
               color="secondary"
@@ -179,7 +177,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <ListItemText>Reset Filters</ListItemText>
               </MenuItem>
             </Menu>
-          </Box>
+          </SimpleBox>
         </Grid>
       </Grid>
     </Paper>

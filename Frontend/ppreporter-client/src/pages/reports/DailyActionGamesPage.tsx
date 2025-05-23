@@ -51,6 +51,11 @@ const DailyActionGamesPage: React.FC = () => {
   const filters = useSelector(selectDailyActionGamesFilters);
   const totalCount = useSelector(selectDailyActionGamesTotalCount);
 
+  // Debug: Log Redux state
+  console.log('[COMPONENT] Redux state - games:', games, 'loading:', loading, 'error:', error);
+  console.log('[COMPONENT] Games type:', typeof games, 'Is array:', Array.isArray(games));
+  console.log('[COMPONENT] Games length:', Array.isArray(games) ? games.length : 'N/A');
+
   // Local state
   const [startDate, setStartDate] = useState<Date | null>(
     filters?.startDate ? parseISO(filters.startDate) : new Date(new Date().setDate(new Date().getDate() - 1))
@@ -241,60 +246,6 @@ const DailyActionGamesPage: React.FC = () => {
   }, [fetchData]);
 
   /**
-   * Process games data to ensure it's in the correct format
-   */
-  const processGamesData = useCallback((rawGames: any): DailyActionGame[] => {
-    // Ensure games is an array
-    let gamesArray: DailyActionGame[] = [];
-
-    // If mock data is enabled, use local games data
-    if (mockDataEnabled && localGamesData.length > 0) {
-      gamesArray = localGamesData;
-    } else if (Array.isArray(rawGames)) {
-      // If games is already an array, use it directly
-      gamesArray = rawGames as DailyActionGame[];
-    } else if (rawGames && typeof rawGames === 'object') {
-      // If games is an object, try to extract an array from it
-      const gamesObj = rawGames as Record<string, any>;
-      if (gamesObj.data && Array.isArray(gamesObj.data)) {
-        // If games has a data property that is an array
-        gamesArray = gamesObj.data as DailyActionGame[];
-      } else {
-        // Try to convert the object to an array
-        const extractedArray = Object.values(gamesObj).filter(item => item && typeof item === 'object');
-        if (extractedArray.length > 0) {
-          gamesArray = extractedArray as DailyActionGame[];
-        }
-      }
-    }
-
-    // Transform the data to ensure it matches the expected format
-    return gamesArray.map((game: any, index: number) => ({
-      id: game.id || index + 1,
-      gameDate: game.gameDate || new Date().toISOString(),
-      playerId: typeof game.playerId === 'number' ? game.playerId : 0,
-      gameId: typeof game.gameId === 'number' ? game.gameId : 0,
-      platform: game.platform || 'Unknown',
-      realBetAmount: typeof game.realBetAmount === 'number' ? game.realBetAmount : 0,
-      realWinAmount: typeof game.realWinAmount === 'number' ? game.realWinAmount : 0,
-      bonusBetAmount: typeof game.bonusBetAmount === 'number' ? game.bonusBetAmount : 0,
-      bonusWinAmount: typeof game.bonusWinAmount === 'number' ? game.bonusWinAmount : 0,
-      netGamingRevenue: typeof game.netGamingRevenue === 'number' ? game.netGamingRevenue : 0,
-      numberOfRealBets: typeof game.numberOfRealBets === 'number' ? game.numberOfRealBets : 0,
-      numberOfBonusBets: typeof game.numberOfBonusBets === 'number' ? game.numberOfBonusBets : 0,
-      numberOfSessions: typeof game.numberOfSessions === 'number' ? game.numberOfSessions : 0,
-      numberOfRealWins: typeof game.numberOfRealWins === 'number' ? game.numberOfRealWins : 0,
-      numberOfBonusWins: typeof game.numberOfBonusWins === 'number' ? game.numberOfBonusWins : 0,
-      realBetAmountOriginal: typeof game.realBetAmountOriginal === 'number' ? game.realBetAmountOriginal : 0,
-      realWinAmountOriginal: typeof game.realWinAmountOriginal === 'number' ? game.realWinAmountOriginal : 0,
-      bonusBetAmountOriginal: typeof game.bonusBetAmountOriginal === 'number' ? game.bonusBetAmountOriginal : 0,
-      bonusWinAmountOriginal: typeof game.bonusWinAmountOriginal === 'number' ? game.bonusWinAmountOriginal : 0,
-      netGamingRevenueOriginal: typeof game.netGamingRevenueOriginal === 'number' ? game.netGamingRevenueOriginal : 0,
-      updateDate: game.updateDate || new Date().toISOString()
-    }));
-  }, [mockDataEnabled, localGamesData]);
-
-  /**
    * Calculate summary statistics from games data
    */
   const calculateSummary = useCallback((gamesData: DailyActionGame[]) => ({
@@ -306,8 +257,24 @@ const DailyActionGamesPage: React.FC = () => {
     totalSessions: gamesData.reduce((sum, g) => sum + (g.numberOfSessions || 0), 0)
   }), []);
 
-  // Process games data
-  const gamesArray = useMemo(() => processGamesData(games), [games, processGamesData]);
+  // Use games data directly from Redux (selector already returns the correct array)
+  const gamesArray = useMemo(() => {
+    console.log('Raw games from Redux:', games);
+    console.log('Games type:', typeof games);
+    console.log('Games is array:', Array.isArray(games));
+    console.log('Games length:', Array.isArray(games) ? games.length : 'N/A');
+
+    // If mock data is enabled, use local games data
+    if (mockDataEnabled && localGamesData.length > 0) {
+      console.log('Using mock data:', localGamesData);
+      return localGamesData;
+    }
+
+    // The selector already returns an array, so use it directly
+    const result = Array.isArray(games) ? games : [];
+    console.log('Final games array length:', result.length);
+    return result;
+  }, [games, mockDataEnabled, localGamesData]);
 
   // Calculate summary
   const summary = useMemo(() => calculateSummary(gamesArray), [gamesArray, calculateSummary]);
@@ -486,91 +453,70 @@ const DailyActionGamesPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Debug information - only shown in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <SimpleBox sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, display: 'none' }}>
-            <Typography variant="subtitle2" gutterBottom>Debug Info:</Typography>
-            <Typography variant="body2">Data type: {typeof games}</Typography>
-            <Typography variant="body2">Is Array: {Array.isArray(games) ? 'Yes' : 'No'}</Typography>
-            <Typography variant="body2">Length: {Array.isArray(games) ? games.length : 'N/A'}</Typography>
-            <Typography variant="body2">Games Array Length: {gamesArray.length}</Typography>
-            <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-              {error ? `Error: ${error}` : 'No error'}
-            </Typography>
-            <SimpleBox sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => console.log('Games data:', games)}
-              >
-                Log Games Data
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => console.log('Games array:', gamesArray)}
-              >
-                Log Games Array
-              </Button>
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                onClick={fetchData}
-              >
-                Fetch Data
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="secondary"
-                onClick={() => {
-                  const mockData = Array.from({ length: 10 }, (_, i) => ({
-                    id: i + 1,
-                    gameDate: new Date().toISOString(),
-                    playerId: 1000 + i,
-                    gameId: 2000 + i,
-                    platform: 'Web',
-                    realBetAmount: 100 + i * 10,
-                    realWinAmount: 50 + i * 5,
-                    bonusBetAmount: 20 + i * 2,
-                    bonusWinAmount: 10 + i,
-                    netGamingRevenue: 60 + i * 5,
-                    numberOfRealBets: 5 + i,
-                    numberOfBonusBets: 2 + i,
-                    numberOfSessions: 1,
-                    numberOfRealWins: 3 + i,
-                    numberOfBonusWins: 1 + i,
-                    realBetAmountOriginal: 100 + i * 10,
-                    realWinAmountOriginal: 50 + i * 5,
-                    bonusBetAmountOriginal: 20 + i * 2,
-                    bonusWinAmountOriginal: 10 + i,
-                    netGamingRevenueOriginal: 60 + i * 5,
-                    updateDate: new Date().toISOString()
-                  }));
-                  setLocalGamesData(mockData);
-                  setMockDataEnabled(true);
-                  console.log('Generated and applied mock data:', mockData);
-                }}
-              >
-                Use Mock Data
-              </Button>
-              {mockDataEnabled && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  onClick={() => {
-                    setMockDataEnabled(false);
-                    console.log('Disabled mock data, reverting to API data');
-                  }}
-                >
-                  Disable Mock Data
-                </Button>
-              )}
-            </SimpleBox>
-          </SimpleBox>
-        )}
+        {/* Temporary debug info */}
+        <SimpleBox sx={{ mb: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+          <Typography variant="body2">
+            Debug: Games array length: {gamesArray.length} | Loading: {loading ? 'Yes' : 'No'} | Error: {error || 'None'}
+          </Typography>
+          <Typography variant="body2">
+            Raw games type: {typeof games} | Is array: {Array.isArray(games) ? 'Yes' : 'No'} | Raw length: {Array.isArray(games) ? games.length : 'N/A'}
+          </Typography>
+          <Typography variant="body2">
+            Raw games preview: {JSON.stringify(games).substring(0, 100)}...
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => {
+              console.log('Manual fetch triggered');
+              console.log('Current games state:', games);
+              fetchData();
+            }}
+            sx={{ mt: 1, mr: 1 }}
+          >
+            Manual Fetch
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            color="secondary"
+            onClick={() => {
+              const testData = [
+                {
+                  id: 1,
+                  gameDate: new Date().toISOString(),
+                  playerId: 12345,
+                  gameId: 67890,
+                  platform: 'Web',
+                  realBetAmount: 100,
+                  realWinAmount: 50,
+                  bonusBetAmount: 20,
+                  bonusWinAmount: 10,
+                  netGamingRevenue: 60,
+                  numberOfRealBets: 5,
+                  numberOfBonusBets: 2,
+                  numberOfSessions: 1,
+                  numberOfRealWins: 3,
+                  numberOfBonusWins: 1,
+                  realBetAmountOriginal: 100,
+                  realWinAmountOriginal: 50,
+                  bonusBetAmountOriginal: 20,
+                  bonusWinAmountOriginal: 10,
+                  netGamingRevenueOriginal: 60,
+                  updateDate: new Date().toISOString()
+                }
+              ];
+              setLocalGamesData(testData);
+              setMockDataEnabled(true);
+              console.log('Test data applied:', testData);
+            }}
+            sx={{ mt: 1 }}
+          >
+            Test Table
+          </Button>
+        </SimpleBox>
+
+
 
         <EnhancedTable
           columns={columns}

@@ -1,6 +1,7 @@
 import React, { memo, useMemo, useEffect } from 'react';
-import { Box, CircularProgress, Typography, useTheme, useMediaQuery } from '@mui/material';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, ComposedChart } from 'recharts';
+import { CircularProgress, Typography, useTheme, useMediaQuery } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
+import { ResponsiveContainer, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, ComposedChart } from 'recharts';
 import { formatDate } from '../../utils/formatters';
 import { RegistrationData } from '../../types/redux';
 import { useDispatch } from 'react-redux';
@@ -19,7 +20,7 @@ interface PlayerRegistrationsChartProps {
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <Box
+      <SimpleBox
         sx={{
           bgcolor: 'background.paper',
           p: 1.5,
@@ -40,7 +41,7 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
             First Time Deposits: {payload[1].value}
           </Typography>
         )}
-      </Box>
+      </SimpleBox>
     );
   }
 
@@ -83,24 +84,24 @@ const PlayerRegistrationsChart: React.FC<PlayerRegistrationsChartProps> = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
         <CircularProgress />
-      </Box>
+      </SimpleBox>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
         <Typography variant="body1" color="text.secondary">
           No registration data available
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height }}>
+    <SimpleBox sx={{ width: '100%', height }}>
       <ResponsiveContainer>
         <ComposedChart
           data={chartData}
@@ -153,7 +154,7 @@ const PlayerRegistrationsChart: React.FC<PlayerRegistrationsChartProps> = ({
           )}
         </ComposedChart>
       </ResponsiveContainer>
-    </Box>
+    </SimpleBox>
   );
 };
 

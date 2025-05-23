@@ -12,7 +12,7 @@ import apiClient from '../apiClient';
  */
 const getContextualExplorer = async (params: any): Promise<any> => {
   try {
-    const response = await apiClient.post('/api/Dashboard/contextual-explorer', params);
+    const response = await apiClient.post('/Dashboard/contextual-explorer', params);
     return response.data;
   } catch (error) {
     throw error;

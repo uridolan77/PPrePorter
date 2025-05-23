@@ -15,22 +15,22 @@ if ((API_ENDPOINTS as any).GEOGRAPHIC) {
 } else if (API_ENDPOINTS.REPORTS) {
   // Using the TypeScript structure
   GEOGRAPHIC_ENDPOINTS = {
-    GET_DATA: '/api/reports/geographic/data',
-    GET_METADATA: '/api/reports/geographic/metadata',
-    GET_SUMMARY: '/api/reports/geographic/summary',
-    EXPORT: '/api/reports/geographic/export',
-    SAVE_CONFIG: '/api/reports/geographic/config/save',
-    GET_CONFIGS: '/api/reports/geographic/config/list'
+    GET_DATA: '/reports/geographic/data',
+    GET_METADATA: '/reports/geographic/metadata',
+    GET_SUMMARY: '/reports/geographic/summary',
+    EXPORT: '/reports/geographic/export',
+    SAVE_CONFIG: '/reports/geographic/config/save',
+    GET_CONFIGS: '/reports/geographic/config/list'
   };
 } else {
   // Fallback to hardcoded endpoints if neither structure is available
   GEOGRAPHIC_ENDPOINTS = {
-    GET_DATA: '/api/reports/geographic/data',
-    GET_METADATA: '/api/reports/geographic/metadata',
-    GET_SUMMARY: '/api/reports/geographic/summary',
-    EXPORT: '/api/reports/geographic/export',
-    SAVE_CONFIG: '/api/reports/geographic/config/save',
-    GET_CONFIGS: '/api/reports/geographic/config/list'
+    GET_DATA: '/reports/geographic/data',
+    GET_METADATA: '/reports/geographic/metadata',
+    GET_SUMMARY: '/reports/geographic/summary',
+    EXPORT: '/reports/geographic/export',
+    SAVE_CONFIG: '/reports/geographic/config/save',
+    GET_CONFIGS: '/reports/geographic/config/list'
   };
 }
 

@@ -301,9 +301,9 @@ namespace PPrePorter.DailyActionsDB.Services
                             {
                                 // Convert the key to short? to match the WhiteLabelID property type
                                 WhiteLabelID = g.Key != null ? (short?)Convert.ToInt16(g.Key) : null,
-                                Registration = g.Sum(da => da.Registration ?? 0),
-                                FTD = g.Sum(da => da.FTD ?? 0),
-                                FTDA = g.Sum(da => da.FTDA ?? 0),
+                                Registration = (byte?)Math.Min(255, g.Sum(da => da.Registration ?? 0)),
+                                FTD = (byte?)Math.Min(255, g.Sum(da => da.FTD ?? 0)),
+                                FTDA = (byte?)Math.Min(255, g.Sum(da => da.FTDA ?? 0)),
                                 Deposits = g.Sum(da => da.Deposits ?? 0),
                                 PaidCashouts = g.Sum(da => da.PaidCashouts ?? 0),
                                 BetsCasino = g.Sum(da => da.BetsCasino ?? 0),

@@ -25,12 +25,12 @@ if ((API_ENDPOINTS as any).FINANCIAL) {
 } else {
   // Fallback to hardcoded endpoints if neither structure is available
   FINANCIAL_ENDPOINTS = {
-    GET_DATA: '/api/reports/financial/data',
-    GET_METADATA: '/api/reports/financial/metadata',
-    GET_SUMMARY: '/api/reports/financial/summary',
-    EXPORT: '/api/reports/financial/export',
-    SAVE_CONFIG: '/api/reports/financial/config/save',
-    GET_CONFIGS: '/api/reports/financial/config/list'
+    GET_DATA: '/reports/financial/data',
+    GET_METADATA: '/reports/financial/metadata',
+    GET_SUMMARY: '/reports/financial/summary',
+    EXPORT: '/reports/financial/export',
+    SAVE_CONFIG: '/reports/financial/config/save',
+    GET_CONFIGS: '/reports/financial/config/list'
   };
 }
 

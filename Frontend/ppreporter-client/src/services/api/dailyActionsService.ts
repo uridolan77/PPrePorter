@@ -81,18 +81,18 @@ if ((API_ENDPOINTS as any).DAILY_ACTIONS) {
 } else {
   // Fallback to hardcoded endpoints if neither structure is available
   DAILY_ACTIONS_ENDPOINTS = {
-    GET_DATA: '/api/reports/daily-actions/data',
-    FILTERED_DATA: '/api/reports/daily-actions/filtered-data',
-    FILTERED_GROUPED: '/api/reports/daily-actions/filtered-grouped',
-    FILTER: '/api/reports/daily-actions/filtered-data', // Alias for backward compatibility
-    GET_METADATA: '/api/reports/daily-actions/metadata',
-    GET_SUMMARY: '/api/reports/daily-actions/summary',
-    NL_QUERY: '/api/reports/daily-actions/nl-query',
-    EXPORT: '/api/reports/daily-actions/export',
-    SAVE_CONFIG: '/api/reports/daily-actions/config/save',
-    GET_CONFIGS: '/api/reports/daily-actions/config/list',
-    DRILL_DOWN: '/api/reports/daily-actions/drill-down',
-    HIERARCHICAL_DATA: '/api/reports/daily-actions/hierarchical-data'
+    GET_DATA: '/reports/daily-actions/data',
+    FILTERED_DATA: '/reports/daily-actions/filtered-data',
+    FILTERED_GROUPED: '/reports/daily-actions/filtered-grouped',
+    FILTER: '/reports/daily-actions/filtered-data', // Alias for backward compatibility
+    GET_METADATA: '/reports/daily-actions/metadata',
+    GET_SUMMARY: '/reports/daily-actions/summary',
+    NL_QUERY: '/reports/daily-actions/nl-query',
+    EXPORT: '/reports/daily-actions/export',
+    SAVE_CONFIG: '/reports/daily-actions/config/save',
+    GET_CONFIGS: '/reports/daily-actions/config/list',
+    DRILL_DOWN: '/reports/daily-actions/drill-down',
+    HIERARCHICAL_DATA: '/reports/daily-actions/hierarchical-data'
   };
   console.log('[DAILY_ACTIONS_SERVICE] Using fallback structure:', DAILY_ACTIONS_ENDPOINTS);
 }
@@ -405,7 +405,7 @@ class DailyActionsService extends ApiService {
     try {
       // Add hierarchical-data endpoint to DAILY_ACTIONS_ENDPOINTS if it doesn't exist
       if (!DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA) {
-        DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA = '/api/reports/daily-actions/hierarchical-data';
+        DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA = '/reports/daily-actions/hierarchical-data';
       }
 
       const endpoint = DAILY_ACTIONS_ENDPOINTS.HIERARCHICAL_DATA;

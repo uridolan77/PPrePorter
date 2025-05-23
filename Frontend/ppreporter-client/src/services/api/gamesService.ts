@@ -19,8 +19,8 @@ import { ApiResponse } from '../../types/api';
  */
 const getGames = async (params: GamesQueryParams = {}): Promise<ApiResponse<Game[]>> => {
   try {
-    console.log('[GAMES_SERVICE] Using API endpoint: /api/games');
-    const response = await apiClient.get<ApiResponse<Game[]>>('/api/games', { params });
+    console.log('[GAMES_SERVICE] Using API endpoint: /games');
+    const response = await apiClient.get<ApiResponse<Game[]>>('/games', { params });
     return response.data;
   } catch (error) {
     throw error;
@@ -34,8 +34,8 @@ const getGames = async (params: GamesQueryParams = {}): Promise<ApiResponse<Game
  */
 const getGameById = async (id: string): Promise<Game> => {
   try {
-    console.log(`[GAMES_SERVICE] Using API endpoint: /api/games/${id}`);
-    const response = await apiClient.get<Game>(`/api/games/${id}`);
+    console.log(`[GAMES_SERVICE] Using API endpoint: /games/${id}`);
+    const response = await apiClient.get<Game>(`/games/${id}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -50,8 +50,8 @@ const getGameById = async (id: string): Promise<Game> => {
  */
 const getGamePerformance = async (id: string, params: GamePerformanceQueryParams = {}): Promise<GamePerformance> => {
   try {
-    console.log(`[GAMES_SERVICE] Using API endpoint: /api/games/${id}/performance`);
-    const response = await apiClient.get<GamePerformance>(`/api/games/${id}/performance`, { params });
+    console.log(`[GAMES_SERVICE] Using API endpoint: /games/${id}/performance`);
+    const response = await apiClient.get<GamePerformance>(`/games/${id}/performance`, { params });
     return response.data;
   } catch (error) {
     throw error;
@@ -65,8 +65,8 @@ const getGamePerformance = async (id: string, params: GamePerformanceQueryParams
  */
 const getTopGames = async (params: TopGamesQueryParams = {}): Promise<Game[]> => {
   try {
-    console.log('[GAMES_SERVICE] Using API endpoint: /api/games/top');
-    const response = await apiClient.get<Game[]>('/api/games/top', { params });
+    console.log('[GAMES_SERVICE] Using API endpoint: /games/top');
+    const response = await apiClient.get<Game[]>('/games/top', { params });
     return response.data;
   } catch (error) {
     throw error;
@@ -79,8 +79,8 @@ const getTopGames = async (params: TopGamesQueryParams = {}): Promise<Game[]> =>
  */
 const getGameCategories = async (): Promise<GameCategory[]> => {
   try {
-    console.log('[GAMES_SERVICE] Using API endpoint: /api/games/categories');
-    const response = await apiClient.get<GameCategory[]>('/api/games/categories');
+    console.log('[GAMES_SERVICE] Using API endpoint: /games/categories');
+    const response = await apiClient.get<GameCategory[]>('/games/categories');
     return response.data;
   } catch (error) {
     throw error;
@@ -93,8 +93,8 @@ const getGameCategories = async (): Promise<GameCategory[]> => {
  */
 const getGameProviders = async (): Promise<GameProvider[]> => {
   try {
-    console.log('[GAMES_SERVICE] Using API endpoint: /api/games/providers');
-    const response = await apiClient.get<GameProvider[]>('/api/games/providers');
+    console.log('[GAMES_SERVICE] Using API endpoint: /games/providers');
+    const response = await apiClient.get<GameProvider[]>('/games/providers');
     return response.data;
   } catch (error) {
     throw error;
@@ -108,8 +108,8 @@ const getGameProviders = async (): Promise<GameProvider[]> => {
  */
 const getGamePlayerDemographics = async (id: string): Promise<PlayerDemographics> => {
   try {
-    console.log(`[GAMES_SERVICE] Using API endpoint: /api/games/${id}/player-demographics`);
-    const response = await apiClient.get<PlayerDemographics>(`/api/games/${id}/player-demographics`);
+    console.log(`[GAMES_SERVICE] Using API endpoint: /games/${id}/player-demographics`);
+    const response = await apiClient.get<PlayerDemographics>(`/games/${id}/player-demographics`);
     return response.data;
   } catch (error) {
     throw error;
@@ -124,8 +124,8 @@ const getGamePlayerDemographics = async (id: string): Promise<PlayerDemographics
  */
 const getGameSessions = async (id: string, params: GamePerformanceQueryParams = {}): Promise<GameSession[]> => {
   try {
-    console.log(`[GAMES_SERVICE] Using API endpoint: /api/games/${id}/sessions`);
-    const response = await apiClient.get<GameSession[]>(`/api/games/${id}/sessions`, { params });
+    console.log(`[GAMES_SERVICE] Using API endpoint: /games/${id}/sessions`);
+    const response = await apiClient.get<GameSession[]>(`/games/${id}/sessions`, { params });
     return response.data;
   } catch (error) {
     throw error;
@@ -139,8 +139,8 @@ const getGameSessions = async (id: string, params: GamePerformanceQueryParams = 
  */
 const exportGames = async (params: GamesQueryParams = {}): Promise<Blob> => {
   try {
-    console.log('[GAMES_SERVICE] Using API endpoint: /api/games/export');
-    const response = await apiClient.get('/api/games/export', {
+    console.log('[GAMES_SERVICE] Using API endpoint: /games/export');
+    const response = await apiClient.get('/games/export', {
       params,
       responseType: 'blob'
     });

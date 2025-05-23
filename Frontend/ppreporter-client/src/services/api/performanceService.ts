@@ -15,22 +15,22 @@ if ((API_ENDPOINTS as any).PERFORMANCE) {
 } else if (API_ENDPOINTS.REPORTS) {
   // Using the TypeScript structure
   PERFORMANCE_ENDPOINTS = {
-    GET_DATA: '/api/reports/performance/data',
-    GET_METADATA: '/api/reports/performance/metadata',
-    GET_SUMMARY: '/api/reports/performance/summary',
-    EXPORT: '/api/reports/performance/export',
-    SAVE_CONFIG: '/api/reports/performance/config/save',
-    GET_CONFIGS: '/api/reports/performance/config/list'
+    GET_DATA: '/reports/performance/data',
+    GET_METADATA: '/reports/performance/metadata',
+    GET_SUMMARY: '/reports/performance/summary',
+    EXPORT: '/reports/performance/export',
+    SAVE_CONFIG: '/reports/performance/config/save',
+    GET_CONFIGS: '/reports/performance/config/list'
   };
 } else {
   // Fallback to hardcoded endpoints if neither structure is available
   PERFORMANCE_ENDPOINTS = {
-    GET_DATA: '/api/reports/performance/data',
-    GET_METADATA: '/api/reports/performance/metadata',
-    GET_SUMMARY: '/api/reports/performance/summary',
-    EXPORT: '/api/reports/performance/export',
-    SAVE_CONFIG: '/api/reports/performance/config/save',
-    GET_CONFIGS: '/api/reports/performance/config/list'
+    GET_DATA: '/reports/performance/data',
+    GET_METADATA: '/reports/performance/metadata',
+    GET_SUMMARY: '/reports/performance/summary',
+    EXPORT: '/reports/performance/export',
+    SAVE_CONFIG: '/reports/performance/config/save',
+    GET_CONFIGS: '/reports/performance/config/list'
   };
 }
 

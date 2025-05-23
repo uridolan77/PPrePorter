@@ -93,8 +93,11 @@ namespace PPrePorter.DailyActionsDB.Data
                 return;
             }
 
-            // Check if the query has the FORCE_NOLOCK_ON_ALL_TABLES tag
-            if (command.CommandText.Contains("-- FORCE_NOLOCK_ON_ALL_TABLES", StringComparison.OrdinalIgnoreCase))
+            _logger?.LogDebug("SqlCommandInterceptor: Processing SELECT query");
+
+            // Apply NOLOCK hints to all SELECT queries
+            // Check if the query already has NOLOCK hints to avoid double processing
+            if (!command.CommandText.Contains("WITH (NOLOCK)", StringComparison.OrdinalIgnoreCase))
             {
                 string originalSql = command.CommandText;
 
