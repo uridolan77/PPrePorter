@@ -153,7 +153,7 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
                                 <Tooltip title={stickyColumns.includes(column.id) ? "Unpin column" : "Pin column"}>
                                   <IconButton
                                     size="small"
-                                    onClick={(e) => {
+                                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                                       e.stopPropagation();
                                       handleStickyChange(column.id);
                                     }}
@@ -193,7 +193,7 @@ const ColumnManagement: React.FC<ColumnManagementProps> = ({
                 <Tooltip title={stickyColumns.includes(column.id) ? "Unpin column" : "Pin column"}>
                   <IconButton
                     size="small"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       handleStickyChange(column.id);
                     }}

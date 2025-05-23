@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Grid,
-  Box,
   IconButton,
   Menu,
   MenuItem,
@@ -19,8 +18,10 @@ import {
   InputLabel,
   Select,
   SelectChangeEvent,
-  TextField
+  TextField,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../../../components/common/SimpleBox';
 import KPICard from '../../common/KPICard';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -479,9 +480,9 @@ const ConfigurableSummaryCards: React.FC<ConfigurableSummaryCardsProps> = ({
           <Typography variant="body2" color="text.secondary" paragraph>
             Select a new metric to replace {metricToReplace ? availableMetrics.find(m => m.id === metricToReplace)?.label : ''}
             {availableMetricsDialog.length === 0 && (
-              <Box sx={{ mt: 1, color: 'error.main' }}>
+              <SimpleBox sx={{ mt: 1, color: 'error.main' }}>
                 No available metrics to choose from. All metrics are already selected.
-              </Box>
+              </SimpleBox>
             )}
           </Typography>
 
@@ -501,7 +502,7 @@ const ConfigurableSummaryCards: React.FC<ConfigurableSummaryCardsProps> = ({
                     variant="outlined"
                     fullWidth
                     startIcon={metric.icon}
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
                       console.log('Metric button clicked:', metricId);
@@ -515,14 +516,14 @@ const ConfigurableSummaryCards: React.FC<ConfigurableSummaryCardsProps> = ({
                     }}
                     sx={{ justifyContent: 'flex-start', textAlign: 'left', py: 1 }}
                   >
-                    <Box>
+                    <SimpleBox>
                       <Typography variant="body2" component="div">
                         {metric.label}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {metric.description}
                       </Typography>
-                    </Box>
+                    </SimpleBox>
                   </Button>
                 </Grid>
               );

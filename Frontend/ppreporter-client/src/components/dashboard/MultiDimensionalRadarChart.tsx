@@ -1,6 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import {
-  Box,
   Card,
   CardContent,
   Typography,
@@ -19,8 +18,10 @@ import {
   Stack,
   TextField,
   InputAdornment,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import {
   Radar,
   RadarChart,
@@ -255,9 +256,9 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
     const { payload } = props;
 
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', mt: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', mt: 2 }}>
         {payload.map((entry, index) => (
-          <Box
+          <SimpleBox
             key={`entity-legend-${index}`}
             sx={{
               display: 'flex',
@@ -266,7 +267,7 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
               my: 0.5
             }}
           >
-            <Box
+            <SimpleBox
               sx={{
                 width: 10,
                 height: 10,
@@ -277,16 +278,16 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
             <Typography variant="body2" color="text.secondary">
               {entry.value}
             </Typography>
-          </Box>
+          </SimpleBox>
         ))}
-      </Box>
+      </SimpleBox>
     );
   };
 
   // Create controls toolbar
   const renderControls = (): React.ReactNode => {
     return (
-      <Box sx={{ mb: 3 }}>
+      <SimpleBox sx={{ mb: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1 }}>
             <InputLabel id="metrics-select-label">Metrics</InputLabel>
@@ -340,12 +341,12 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
           />
         </Stack>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+        <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           <FormControlLabel
             control={
               <Switch
                 checked={normalizeData}
-                onChange={(e) => setNormalizeData(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNormalizeData(e.target.checked)}
                 size="small"
               />
             }
@@ -356,7 +357,7 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
             control={
               <Switch
                 checked={showLabels}
-                onChange={(e) => setShowLabels(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowLabels(e.target.checked)}
                 size="small"
               />
             }
@@ -367,14 +368,14 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
             control={
               <Switch
                 checked={highContrastMode}
-                onChange={(e) => setHighContrastMode(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHighContrastMode(e.target.checked)}
                 size="small"
               />
             }
             label="High contrast"
           />
-        </Box>
-      </Box>
+        </SimpleBox>
+      </SimpleBox>
     );
   };
 
@@ -383,9 +384,9 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <CircularProgress />
-          </Box>
+          </SimpleBox>
         </CardContent>
       </Card>
     );
@@ -396,23 +397,23 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" component="div">
               {title}
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <SimpleBox sx={{ display: 'flex', gap: 1 }}>
               <Tooltip title="Refresh data">
                 <IconButton size="small" onClick={onRefresh}>
                   <RefreshIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
 
           {renderControls()}
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+          <SimpleBox sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No data to display
             </Typography>
@@ -421,7 +422,7 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
                 selectedEntities.length === 0 ? 'Please select entities to compare.' :
                 'No data matches the current selection.'}
             </Typography>
-          </Box>
+          </SimpleBox>
         </CardContent>
       </Card>
     );
@@ -431,8 +432,8 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
     <Card elevation={1}>
       <CardContent>
         {/* Header with title and controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="h6" component="div">
               {title}
             </Typography>
@@ -441,9 +442,9 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
                 <InfoOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </SimpleBox>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Refresh data">
               <IconButton size="small" onClick={onRefresh}>
                 <RefreshIcon fontSize="small" />
@@ -455,14 +456,14 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
                 <FileDownloadIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
 
         {/* Configuration controls */}
         {renderControls()}
 
         {/* Radar chart */}
-        <Box sx={{ height: 400 }}>
+        <SimpleBox sx={{ height: 400 }}>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart
               cx="50%"
@@ -519,7 +520,7 @@ const MultiDimensionalRadarChart: React.FC<MultiDimensionalRadarChartProps> = ({
               <Legend content={() => null} />
             </RadarChart>
           </ResponsiveContainer>
-        </Box>
+        </SimpleBox>
 
         {/* Context information */}
         <Paper

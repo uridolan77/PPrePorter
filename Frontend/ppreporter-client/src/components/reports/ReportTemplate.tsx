@@ -260,7 +260,7 @@ const ReportTemplate: React.FC<ReportTemplateProps> = ({
               control={
                 <Switch
                   checked={currentTemplate.isPublic}
-                  onChange={(e) => handleTemplateChange('isPublic', e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTemplateChange('isPublic', e.target.checked)}
                   color="primary"
                 />
               }

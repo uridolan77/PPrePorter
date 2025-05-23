@@ -425,7 +425,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
               control={
                 <Switch
                   checked={normalizedMode}
-                  onChange={(e) => setNormalizedMode(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNormalizedMode(e.target.checked)}
                   size="small"
                 />
               }
@@ -436,7 +436,7 @@ const SegmentComparisonGrid: React.FC<SegmentComparisonGridProps> = ({
               control={
                 <Switch
                   checked={showDataLabels}
-                  onChange={(e) => setShowDataLabels(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowDataLabels(e.target.checked)}
                   size="small"
                 />
               }

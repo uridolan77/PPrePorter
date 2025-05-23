@@ -1,7 +1,6 @@
 import React, { useState, useRef, MouseEvent, ChangeEvent } from 'react';
 import { useTheme } from '@mui/material/styles';
 import {
-  Box,
   Typography,
   IconButton,
   TextField,
@@ -22,8 +21,10 @@ import {
   Skeleton,
   Badge,
   SelectChangeEvent,
-  Zoom
+  Zoom,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../../common/SimpleBox';
 import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
@@ -97,7 +98,7 @@ const ChartContainer = styled(Paper)(({ theme }) => ({
   flexDirection: 'column'
 }));
 
-const SearchContainer = styled(Box)(({ theme }) => ({
+const SearchContainer = styled(SimpleBox)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   backgroundColor: theme.palette.background.paper,
@@ -109,7 +110,7 @@ const SearchContainer = styled(Box)(({ theme }) => ({
   maxWidth: 400
 }));
 
-const ToolbarContainer = styled(Box)(({ theme }) => ({
+const ToolbarContainer = styled(SimpleBox)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -117,7 +118,7 @@ const ToolbarContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2)
 }));
 
-const FilterContainer = styled(Box)(({ theme }) => ({
+const FilterContainer = styled(SimpleBox)(({ theme }) => ({
   padding: theme.spacing(2),
   marginBottom: theme.spacing(2),
   display: 'flex',
@@ -380,7 +381,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
   // Render natural language search
   const renderNaturalLanguageSearch = (): React.ReactNode => {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: 500 }}>
+      <SimpleBox sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: 500 }}>
         <SearchContainer>
           <IconButton size="small">
             <PsychologyIcon />
@@ -417,7 +418,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
         >
           {isNlProcessing ? <CircularProgress size={20} /> : 'Ask'}
         </Button>
-      </Box>
+      </SimpleBox>
     );
   };
 
@@ -630,14 +631,14 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
   const renderContent = (): React.ReactNode => {
     if (isLoading) {
       return (
-        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Box sx={{ width: '100%' }}>
+        <SimpleBox sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <SimpleBox sx={{ width: '100%' }}>
             <Skeleton variant="rectangular" width="100%" height={300} />
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <SimpleBox sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
               <Skeleton width="60%" height={30} />
-            </Box>
-          </Box>
-        </Box>
+            </SimpleBox>
+          </SimpleBox>
+        </SimpleBox>
       );
     }
 
@@ -663,11 +664,11 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
         return renderTableView(chartProps);
       default:
         return (
-          <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <SimpleBox sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography variant="body1" color="text.secondary">
               Select a chart type to visualize data
             </Typography>
-          </Box>
+          </SimpleBox>
         );
     }
   };
@@ -712,8 +713,8 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
               {label}
             </Typography>
             {payload.map((entry: any, index: number) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                <Box
+              <SimpleBox key={index} sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                <SimpleBox
                   sx={{
                     width: 12,
                     height: 12,
@@ -727,9 +728,9 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                     ? entry.value.toLocaleString(undefined, { maximumFractionDigits: 2 })
                     : entry.value}
                 </Typography>
-              </Box>
+              </SimpleBox>
             ))}
-            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between' }}>
+            <SimpleBox sx={{ mt: 1, display: 'flex', justifyContent: 'space-between' }}>
               <Button
                 size="small"
                 startIcon={<ZoomInIcon fontSize="small" />}
@@ -741,7 +742,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
               <Button
                 size="small"
                 startIcon={<NotesIcon fontSize="small" />}
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.stopPropagation();
                   handleCreateAnnotation(e);
                 }}
@@ -749,7 +750,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
               >
                 Add Note
               </Button>
-            </Box>
+            </SimpleBox>
           </Paper>
         </Zoom>
       );
@@ -826,11 +827,11 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
             onChange={handleMetricsChange}
             size="small"
             renderValue={(selected) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {(selected as string[]).map((value) => (
                   <Chip key={value} label={value} size="small" />
                 ))}
-              </Box>
+              </SimpleBox>
             )}
           >
             {getAvailableMetrics().map((metric) => (
@@ -850,10 +851,10 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
           >
             {CHART_TYPES.map((type) => (
               <MenuItem key={type.id} value={type.id}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box sx={{ mr: 1 }}>{type.icon}</Box>
+                <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
+                  <SimpleBox sx={{ mr: 1 }}>{type.icon}</SimpleBox>
                   {type.name}
-                </Box>
+                </SimpleBox>
               </MenuItem>
             ))}
           </Select>
@@ -874,8 +875,8 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
       }}
       ref={chartContainerRef}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
           {currentView !== 'overview' && (
             <Tooltip title="Back">
               <IconButton onClick={navigateBack} sx={{ mr: 1 }}>
@@ -895,9 +896,9 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
             {currentView === 'overview' ? 'Data Explorer' :
              currentView === 'detail' ? 'Detail View' : 'Data Analysis'}
           </Typography>
-        </Box>
+        </SimpleBox>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
           <Tooltip title="Previous View">
             <span>
               <IconButton
@@ -949,7 +950,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
               </IconButton>
             </Tooltip>
           </Badge>
-          <Box sx={{ mx: 0.5, display: 'flex', border: `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
+          <SimpleBox sx={{ mx: 0.5, display: 'flex', border: `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
             <Tooltip title="Zoom Out">
               <IconButton onClick={handleZoomOut} size="small" disabled={zoomLevel <= 0.5}>
                 <ZoomOutIcon fontSize="small" />
@@ -965,12 +966,12 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                 <ZoomInIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
-      </Box>
+          </SimpleBox>
+        </SimpleBox>
+      </SimpleBox>
 
       {whatIfScenarioActive && (
-        <Box
+        <SimpleBox
           sx={{
             mb: 2,
             p: 1,
@@ -981,12 +982,12 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
             alignItems: 'center'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             <InsightsIcon sx={{ mr: 1, color: theme.palette.info.dark }} />
             <Typography variant="body2" color="info.dark">
               What-If Scenario Active
             </Typography>
-          </Box>
+          </SimpleBox>
           <Button
             size="small"
             variant="outlined"
@@ -995,13 +996,13 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
           >
             Reset
           </Button>
-        </Box>
+        </SimpleBox>
       )}
 
       <ToolbarContainer>
-        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+        <SimpleBox sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           {/* Add Natural Language Search toggle and UI */}
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: 500 }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: 500 }}>
             <FormControlLabel
               control={
                 <Switch
@@ -1012,7 +1013,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                   {isNaturalLanguageMode ? (
                     <PsychologyIcon fontSize="small" sx={{ mr: 0.5 }} />
                   ) : (
@@ -1021,7 +1022,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                   <Typography variant="body2">
                     {isNaturalLanguageMode ? "Natural Language" : "Regular Search"}
                   </Typography>
-                </Box>
+                </SimpleBox>
               }
             />
 
@@ -1043,7 +1044,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                 />
               </SearchContainer>
             )}
-          </Box>
+          </SimpleBox>
 
           <IconButton
             onClick={handleFilterToggle}
@@ -1098,12 +1099,12 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
               </Menu>
             </>
           )}
-        </Box>
+        </SimpleBox>
       </ToolbarContainer>
 
       {/* Add Clarification UI */}
       {clarificationNeeded && nlResults && (
-        <Box sx={{
+        <SimpleBox sx={{
           mb: 2,
           p: 2,
           backgroundColor: theme.palette.background.paper,
@@ -1115,9 +1116,9 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
             I need clarification to process your query
           </Typography>
 
-          <Box sx={{ mt: 1 }}>
+          <SimpleBox sx={{ mt: 1 }}>
             {nlResults.clarificationQuestions && nlResults.clarificationQuestions.map((question, index) => (
-              <Box key={index} sx={{ mb: 2 }}>
+              <SimpleBox key={index} sx={{ mb: 2 }}>
                 <Typography variant="body2" gutterBottom>
                   {question.text}
                 </Typography>
@@ -1148,7 +1149,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                 )}
 
                 {question.type === 'boolean' && (
-                  <Box sx={{ mt: 1 }}>
+                  <SimpleBox sx={{ mt: 1 }}>
                     <Button
                       variant={clarificationResponses[question.id] === true ? "contained" : "outlined"}
                       size="small"
@@ -1164,13 +1165,13 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
                     >
                       No
                     </Button>
-                  </Box>
+                  </SimpleBox>
                 )}
-              </Box>
+              </SimpleBox>
             ))}
-          </Box>
+          </SimpleBox>
 
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <SimpleBox sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               variant="outlined"
               size="small"
@@ -1194,8 +1195,8 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
               ) : null}
               Submit
             </Button>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
       )}
 
       {/* Add error message */}
@@ -1214,7 +1215,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
       {renderFilters()}
 
       {/* Main content area */}
-      <Box
+      <SimpleBox
         sx={{
           flexGrow: 1,
           minHeight: 400,
@@ -1251,7 +1252,7 @@ const ContextualDataExplorer: React.FC<ContextualDataExplorerProps> = ({
             )}
           </motion.div>
         </AnimatePresence>
-      </Box>
+      </SimpleBox>
 
       {/* Dialogs */}
       <NLHelpDialog

@@ -134,7 +134,7 @@ const HierarchicalGroupingSelector: React.FC<HierarchicalGroupingSelectorProps> 
             control={
               <Switch
                 checked={enableHierarchical}
-                onChange={(e) => onEnableHierarchicalChange(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onEnableHierarchicalChange(e.target.checked)}
                 color="primary"
                 size="small"
               />
@@ -257,13 +257,13 @@ const HierarchicalGroupingSelector: React.FC<HierarchicalGroupingSelectorProps> 
                 <ListItem
                   key={option.id}
                   button
-                  onClick={(e) => handleAddGrouping(option.id, e)}
+                  onClick={(e: React.MouseEvent<HTMLDivElement>) => handleAddGrouping(option.id, e)}
                 >
                   <ListItemText primary={option.name} />
                   <ListItemSecondaryAction>
                     <IconButton
                       edge="end"
-                      onClick={(e) => handleAddGrouping(option.id, e)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleAddGrouping(option.id, e)}
                       size="small"
                       color="primary"
                     >

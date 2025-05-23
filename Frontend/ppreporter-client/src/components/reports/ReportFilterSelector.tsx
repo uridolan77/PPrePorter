@@ -28,6 +28,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { CommonProps } from '../../types/common';
+import SimpleBox from '../common/SimpleBox';
 
 // Type definitions
 export interface Operator {
@@ -248,7 +249,7 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                 />
               </Stack>
             ) : (
-              <Box sx={{ mt: 2 }}>
+              <SimpleBox sx={{ mt: 2 }}>
                 <DatePicker
                   label="Value"
                   value={filter.value as Date | null}
@@ -258,7 +259,7 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                   }}
                   slotProps={{ textField: { fullWidth: true, size: "small" } }}
                 />
-              </Box>
+              </SimpleBox>
             )}
           </LocalizationProvider>
         );
@@ -361,8 +362,8 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+    <SimpleBox>
+      <SimpleBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h6">
           Define Filters
         </Typography>
@@ -375,7 +376,7 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
         >
           Add Filter
         </Button>
-      </Box>
+      </SimpleBox>
 
       {!dataSource && (
         <Alert severity="warning" sx={{ mb: 3 }}>
@@ -401,14 +402,14 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
             <Divider sx={{ my: 1 }} />
 
             {filters.length === 0 ? (
-              <Box sx={{ py: 2, textAlign: 'center' }}>
+              <SimpleBox sx={{ py: 2, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
                   No filters applied yet.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Click "Add Filter" to create your first filter.
                 </Typography>
-              </Box>
+              </SimpleBox>
             ) : (
               <Stack spacing={1} sx={{ mt: 2 }}>
                 {filters.map((filter) => (
@@ -425,14 +426,14 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                     onClick={() => setActiveFilter(filter.id)}
                   >
                     <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="body2">
                           {formatFilterDisplay(filter)}
                         </Typography>
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             handleRemoveFilter(filter.id);
                           }}
@@ -440,7 +441,7 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Box>
+                      </SimpleBox>
                     </CardContent>
                   </Card>
                 ))}
@@ -453,7 +454,7 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
         <Grid item xs={12} md={8}>
           <Paper variant="outlined" sx={{ p: 3 }}>
             {activeFilter ? (
-              <Box>
+              <SimpleBox>
                 <Typography variant="subtitle1" gutterBottom>
                   Edit Filter
                 </Typography>
@@ -471,14 +472,14 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                       >
                         {filterFields.map((field) => (
                           <MenuItem key={field.id} value={field.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                               {field.name}
                               {field.description && (
                                 <Tooltip title={field.description} arrow>
                                   <InfoOutlinedIcon fontSize="small" color="action" sx={{ ml: 1 }} />
                                 </Tooltip>
                               )}
-                            </Box>
+                            </SimpleBox>
                           </MenuItem>
                         ))}
                       </Select>
@@ -511,9 +512,9 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                     </Grid>
                   )}
                 </Grid>
-              </Box>
+              </SimpleBox>
             ) : (
-              <Box sx={{ py: 4, textAlign: 'center' }}>
+              <SimpleBox sx={{ py: 4, textAlign: 'center' }}>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                   Select a filter to edit or create a new one.
                 </Typography>
@@ -525,12 +526,12 @@ const ReportFilterSelector: React.FC<ReportFilterSelectorProps> = ({
                 >
                   Add Filter
                 </Button>
-              </Box>
+              </SimpleBox>
             )}
           </Paper>
         </Grid>
       </Grid>
-    </Box>
+    </SimpleBox>
   );
 };
 

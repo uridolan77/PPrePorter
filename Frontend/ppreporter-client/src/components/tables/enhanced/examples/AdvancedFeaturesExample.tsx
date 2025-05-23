@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Container, Paper, Typography, Tab, Tabs } from '@mui/material';
+import { Container, Paper, Typography, Tab, Tabs } from '@mui/material';
+import SimpleBox from '../../../common/SimpleBox';
 import {
   EnhancedTable,
   ExportFormat,
@@ -421,7 +422,7 @@ const AdvancedFeaturesExample: React.FC = () => {
               }
             }}
             renderRowDetail={(row) => (
-              <Box sx={{ p: 2 }}>
+              <SimpleBox sx={{ p: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
                   {row.product} Details
                 </Typography>
@@ -437,7 +438,7 @@ const AdvancedFeaturesExample: React.FC = () => {
                 <Typography variant="body2">
                   <strong>Total Sale:</strong> ${(row.quantity * row.unitPrice * (1 - row.discount / 100)).toFixed(2)}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )}
           />
         )}

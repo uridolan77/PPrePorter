@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Typography,
   Paper,
   Grid,
@@ -21,8 +20,10 @@ import {
   Alert,
   Chip,
   TextField,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../../components/common/SimpleBox';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -277,7 +278,7 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
   };
 
   return (
-    <Box>
+    <SimpleBox>
       <Typography variant="h6" gutterBottom>
         Select Columns
       </Typography>
@@ -292,20 +293,20 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
         {/* Available columns */}
         <Grid item xs={12} md={4}>
           <Paper variant="outlined" sx={{ height: '100%' }}>
-            <Box sx={{ p: 2 }}>
+            <SimpleBox sx={{ p: 2 }}>
               <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                 <ViewColumnIcon sx={{ mr: 1 }} />
                 Available Columns
               </Typography>
-            </Box>
+            </SimpleBox>
             <Divider />
 
             {availableColumns.length === 0 ? (
-              <Box sx={{ p: 2, textAlign: 'center' }}>
+              <SimpleBox sx={{ p: 2, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
                   No columns available in the selected data source.
                 </Typography>
-              </Box>
+              </SimpleBox>
             ) : (
               <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
                 {availableColumns.map((column) => (
@@ -328,14 +329,14 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                   >
                     <ListItemText
                       primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                           {column.name}
                           {column.description && (
                             <Tooltip title={column.description} arrow>
                               <InfoOutlinedIcon fontSize="small" color="action" sx={{ ml: 1 }} />
                             </Tooltip>
                           )}
-                        </Box>
+                        </SimpleBox>
                       }
                       secondary={column.type}
                     />
@@ -349,22 +350,22 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
         {/* Selected columns */}
         <Grid item xs={12} md={8}>
           <Paper variant="outlined">
-            <Box sx={{ p: 2 }}>
+            <SimpleBox sx={{ p: 2 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Selected Columns ({selectedColumns.length})
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Drag to reorder columns. Configure visibility, width, and aggregation functions.
               </Typography>
-            </Box>
+            </SimpleBox>
             <Divider />
 
             {selectedColumns.length === 0 ? (
-              <Box sx={{ p: 3, textAlign: 'center' }}>
+              <SimpleBox sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
                   No columns selected yet. Add columns from the available list.
                 </Typography>
-              </Box>
+              </SimpleBox>
             ) : (
               <List sx={{ maxHeight: 400, overflow: 'auto' }}>
                 {selectedColumns.map((column, index) => {
@@ -379,7 +380,7 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
 
                         <ListItemText
                           primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                               {column.name}
                               {column.aggregation && (
                                 <Chip
@@ -389,15 +390,15 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                                   sx={{ ml: 1 }}
                                 />
                               )}
-                            </Box>
+                            </SimpleBox>
                           }
                           secondary={
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
+                            <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
                               <FormControlLabel
                                 control={
                                   <Switch
                                     checked={column.visible}
-                                    onChange={(e) => handleVisibilityChange(column.id, e.target.checked)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleVisibilityChange(column.id, e.target.checked)}
                                     size="small"
                                   />
                                 }
@@ -447,7 +448,7 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                                   </Select>
                                 </FormControl>
                               )}
-                            </Box>
+                            </SimpleBox>
                           }
                         />
 
@@ -497,7 +498,7 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                   Sort By
                 </Typography>
 
-                <Box sx={{ mt: 2 }}>
+                <SimpleBox sx={{ mt: 2 }}>
                   <Grid container spacing={2}>
                     <Grid item xs={8}>
                       <FormControl fullWidth size="small">
@@ -533,7 +534,7 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                       </FormControl>
                     </Grid>
                   </Grid>
-                </Box>
+                </SimpleBox>
               </Paper>
             </Grid>
 
@@ -544,7 +545,7 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                   Group By
                 </Typography>
 
-                <Box sx={{ mt: 2 }}>
+                <SimpleBox sx={{ mt: 2 }}>
                   <FormControl fullWidth size="small">
                     <InputLabel id="group-column-label">Column</InputLabel>
                     <Select
@@ -561,13 +562,13 @@ const ReportColumnSelector: React.FC<ReportColumnSelectorProps> = ({
                       ))}
                     </Select>
                   </FormControl>
-                </Box>
+                </SimpleBox>
               </Paper>
             </Grid>
           </Grid>
         </Grid>
       </Grid>
-    </Box>
+    </SimpleBox>
   );
 };
 

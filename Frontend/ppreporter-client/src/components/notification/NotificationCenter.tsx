@@ -1,7 +1,6 @@
 import React, { useState, useEffect, MouseEvent } from 'react';
 import {
   Badge,
-  Box,
   IconButton,
   Popover,
   List,
@@ -13,8 +12,10 @@ import {
   Divider,
   Button,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -146,7 +147,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
           sx: { width: 320, maxHeight: 500 }
         }}
       >
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <SimpleBox sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Notifications</Typography>
 
           {unreadCount > 0 && (
@@ -158,20 +159,20 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
               Mark all as read
             </Button>
           )}
-        </Box>
+        </SimpleBox>
 
         <Divider />
 
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress size={24} />
-          </Box>
+          </SimpleBox>
         ) : notifications.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <SimpleBox sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               No notifications
             </Typography>
-          </Box>
+          </SimpleBox>
         ) : (
           <List sx={{ p: 0 }}>
             {notifications.map((notification) => (
@@ -219,7 +220,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     <IconButton
                       edge="end"
                       size="small"
-                      onClick={(event) => handleDelete(event, notification)}
+                      onClick={(event: React.MouseEvent<HTMLButtonElement>) => handleDelete(event, notification)}
                     >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
@@ -232,11 +233,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         )}
 
         {notifications.length > 0 && (
-          <Box sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
+          <SimpleBox sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
             <Button size="small" href="/notifications">
               View all notifications
             </Button>
-          </Box>
+          </SimpleBox>
         )}
       </Popover>
     </>

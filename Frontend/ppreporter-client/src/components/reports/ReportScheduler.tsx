@@ -36,6 +36,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { ReportSchedulerProps, Schedule, Report } from '../../types/reportScheduler';
+import SimpleBox from '../common/SimpleBox';
 
 /**
  * Component for scheduling reports for automated delivery
@@ -67,28 +68,28 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
     includeLogo: schedule?.includeLogo ?? true,
     includeDataAttachment: schedule?.includeDataAttachment ?? false
   });
-  
+
   const [newRecipient, setNewRecipient] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  
+
   // Handle schedule field change
   const handleChange = <K extends keyof Schedule>(field: K, value: Schedule[K]): void => {
     setCurrentSchedule({
       ...currentSchedule,
       [field]: value
     });
-    
+
     // Clear any validation errors
     if (error) {
       setError(null);
     }
   };
-  
+
   // Handle frequency change
   const handleFrequencyChange = (event: SelectChangeEvent<string>): void => {
     const frequency = event.target.value as Schedule['frequency'];
     handleChange('frequency', frequency);
-    
+
     // Reset related fields based on frequency
     if (frequency === 'daily') {
       handleChange('dayOfWeek', null);
@@ -101,34 +102,34 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       handleChange('dayOfMonth', 1);
     }
   };
-  
+
   // Handle adding a recipient
   const handleAddRecipient = (): void => {
     if (!newRecipient) return;
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newRecipient)) {
       setError('Please enter a valid email address');
       return;
     }
-    
+
     // Check if already added
     if (currentSchedule.recipients.includes(newRecipient)) {
       setError('This recipient has already been added');
       return;
     }
-    
+
     handleChange('recipients', [...currentSchedule.recipients, newRecipient]);
     setNewRecipient('');
     setError(null);
   };
-  
+
   // Handle removing a recipient
   const handleRemoveRecipient = (recipient: string): void => {
     handleChange('recipients', currentSchedule.recipients.filter(r => r !== recipient));
   };
-  
+
   // Handle saving the schedule
   const handleSave = (): void => {
     // Validate required fields
@@ -136,19 +137,19 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       setError('Please provide a name for this schedule');
       return;
     }
-    
+
     if (currentSchedule.recipients.length === 0) {
       setError('Please add at least one recipient');
       return;
     }
-    
+
     // Prepare the schedule object
     const finalSchedule: Schedule = {
       ...currentSchedule,
       reportId: report.id,
       endDate: currentSchedule.hasEndDate ? currentSchedule.endDate : null
     };
-    
+
     if (onSave) {
       onSave(finalSchedule);
     }
@@ -175,7 +176,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       </FormControl>
     );
   };
-  
+
   // Render day of month selection
   const renderDayOfMonthSelector = (): React.ReactNode => {
     return (
@@ -195,7 +196,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       </FormControl>
     );
   };
-  
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Dialog
@@ -208,7 +209,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
         <DialogTitle id="schedule-dialog-title">
           {schedule ? 'Edit Schedule' : 'New Schedule'}: {report.name}
         </DialogTitle>
-        
+
         <DialogContent dividers>
           <Grid container spacing={3}>
             {/* Left Column */}
@@ -216,7 +217,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
               <Typography variant="subtitle1" gutterBottom>
                 Schedule Details
               </Typography>
-              
+
               <TextField
                 label="Schedule Name"
                 value={currentSchedule.name}
@@ -226,19 +227,19 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                 margin="normal"
                 placeholder="e.g., Weekly Sales Report"
               />
-              
+
               <FormControlLabel
                 control={
                   <Switch
                     checked={currentSchedule.enabled}
-                    onChange={(e) => handleChange('enabled', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('enabled', e.target.checked)}
                     color="primary"
                   />
                 }
                 label="Enable this schedule"
                 sx={{ mt: 1, mb: 1 }}
               />
-              
+
               <FormControl fullWidth margin="normal">
                 <InputLabel>Frequency</InputLabel>
                 <Select
@@ -252,11 +253,11 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                   <MenuItem value="quarterly">Quarterly</MenuItem>
                 </Select>
               </FormControl>
-              
+
               {currentSchedule.frequency === 'weekly' && renderDayOfWeekSelector()}
               {currentSchedule.frequency === 'monthly' && renderDayOfMonthSelector()}
-              
-              <Box sx={{ mt: 2 }}>
+
+              <SimpleBox sx={{ mt: 2 }}>
                 <TimePicker
                   label="Time"
                   value={currentSchedule.time}
@@ -269,9 +270,9 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                     }
                   }}
                 />
-              </Box>
-              
-              <Box sx={{ mt: 3 }}>
+              </SimpleBox>
+
+              <SimpleBox sx={{ mt: 3 }}>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <DatePicker
@@ -286,9 +287,9 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <SimpleBox sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -298,7 +299,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                         }
                         label="Set End Date"
                       />
-                      
+
                       {currentSchedule.hasEndDate && (
                         <DatePicker
                           label="End Date"
@@ -313,16 +314,16 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                           disabled={!currentSchedule.hasEndDate}
                         />
                       )}
-                    </Box>
+                    </SimpleBox>
                   </Grid>
                 </Grid>
-              </Box>
-              
-              <Box sx={{ mt: 3 }}>
+              </SimpleBox>
+
+              <SimpleBox sx={{ mt: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
                   Export Options
                 </Typography>
-                
+
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Export Format</InputLabel>
                   <Select
@@ -335,7 +336,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                     <MenuItem value="csv">CSV File</MenuItem>
                   </Select>
                 </FormControl>
-                
+
                 <FormGroup>
                   <FormControlLabel
                     control={
@@ -363,27 +364,27 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                       />
                     }
                     label={
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography>Include raw data attachment</Typography>
                         <Tooltip title="Attach raw data in Excel/CSV format in addition to the report">
                           <IconButton size="small">
                             <InfoOutlinedIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      </Box>
+                      </SimpleBox>
                     }
                   />
                 </FormGroup>
-              </Box>
+              </SimpleBox>
             </Grid>
-            
+
             {/* Right Column */}
             <Grid item xs={12} md={6}>
               <Typography variant="subtitle1" gutterBottom>
                 Recipients
               </Typography>
-              
-              <Box sx={{ mb: 2 }}>
+
+              <SimpleBox sx={{ mb: 2 }}>
                 <TextField
                   label="Add Email Recipient"
                   value={newRecipient}
@@ -405,32 +406,32 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                     }
                   }}
                 />
-                
+
                 {error && (
                   <Alert severity="error" sx={{ mt: 1 }}>
                     {error}
                   </Alert>
                 )}
-              </Box>
-              
-              <Paper 
-                variant="outlined" 
-                sx={{ 
-                  p: 2, 
-                  minHeight: 150, 
-                  maxHeight: 250, 
+              </SimpleBox>
+
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  minHeight: 150,
+                  maxHeight: 250,
                   overflow: 'auto',
                   bgcolor: currentSchedule.recipients.length === 0 ? 'action.hover' : 'background.paper'
                 }}
               >
                 {currentSchedule.recipients.length === 0 ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <SimpleBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                     <Typography color="text.secondary" align="center">
                       No recipients added yet. Add at least one recipient to send the report to.
                     </Typography>
-                  </Box>
+                  </SimpleBox>
                 ) : (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {currentSchedule.recipients.map((recipient) => (
                       <Chip
                         key={recipient}
@@ -440,16 +441,16 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                         variant="outlined"
                       />
                     ))}
-                  </Box>
+                  </SimpleBox>
                 )}
               </Paper>
-              
+
               <Divider sx={{ my: 3 }} />
-              
+
               <Typography variant="subtitle1" gutterBottom>
                 Email Customization
               </Typography>
-              
+
               <TextField
                 label="Email Subject"
                 value={currentSchedule.emailSubject}
@@ -457,7 +458,7 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                 fullWidth
                 margin="normal"
               />
-              
+
               <TextField
                 label="Email Message"
                 value={currentSchedule.emailBody}
@@ -468,22 +469,22 @@ const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                 margin="normal"
                 placeholder="Enter a message to include in the email body..."
               />
-              
-              <Box sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
+
+              <SimpleBox sx={{ mt: 3, display: 'flex', alignItems: 'center' }}>
                 <ScheduleIcon color="action" sx={{ mr: 1 }} />
                 <Typography variant="body2" color="text.secondary">
-                  This report will be automatically generated and sent to {currentSchedule.recipients.length} recipient{currentSchedule.recipients.length !== 1 ? 's' : ''} 
+                  This report will be automatically generated and sent to {currentSchedule.recipients.length} recipient{currentSchedule.recipients.length !== 1 ? 's' : ''}
                   {currentSchedule.frequency === 'daily' && ' every day'}
                   {currentSchedule.frequency === 'weekly' && ` every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][currentSchedule.dayOfWeek || 0]}`}
                   {currentSchedule.frequency === 'monthly' && ` on day ${currentSchedule.dayOfMonth} of each month`}
-                  {currentSchedule.frequency === 'quarterly' && ' once every three months'} 
+                  {currentSchedule.frequency === 'quarterly' && ' once every three months'}
                   {currentSchedule.time && ` at ${currentSchedule.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}.
                 </Typography>
-              </Box>
+              </SimpleBox>
             </Grid>
           </Grid>
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={onClose} disabled={loading}>
             Cancel

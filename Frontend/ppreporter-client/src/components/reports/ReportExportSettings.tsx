@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Box,
   Typography,
   FormControl,
   InputLabel,
@@ -19,8 +18,10 @@ import {
   AccordionSummary,
   AccordionDetails,
   Tooltip,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../../components/common/SimpleBox';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -201,7 +202,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.paginate ?? true}
-                    onChange={(e) => handleFormatOptionChange('paginate', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('paginate', e.target.checked)}
                   />
                 }
                 label="Include Page Numbers"
@@ -218,7 +219,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.freezeHeaders ?? true}
-                    onChange={(e) => handleFormatOptionChange('freezeHeaders', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('freezeHeaders', e.target.checked)}
                   />
                 }
                 label="Freeze Header Row"
@@ -230,7 +231,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.autoFilter ?? true}
-                    onChange={(e) => handleFormatOptionChange('autoFilter', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('autoFilter', e.target.checked)}
                   />
                 }
                 label="Enable Auto Filters"
@@ -242,7 +243,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.separateSheets ?? false}
-                    onChange={(e) => handleFormatOptionChange('separateSheets', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('separateSheets', e.target.checked)}
                   />
                 }
                 label="Create Separate Sheets for Tables"
@@ -254,7 +255,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.fitToPage ?? true}
-                    onChange={(e) => handleFormatOptionChange('fitToPage', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('fitToPage', e.target.checked)}
                   />
                 }
                 label="Fit Tables to Page Width"
@@ -305,7 +306,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.includeHeaders ?? true}
-                    onChange={(e) => handleFormatOptionChange('includeHeaders', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('includeHeaders', e.target.checked)}
                   />
                 }
                 label="Include Column Headers"
@@ -317,7 +318,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.quoteStrings ?? true}
-                    onChange={(e) => handleFormatOptionChange('quoteStrings', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('quoteStrings', e.target.checked)}
                   />
                 }
                 label='Quote String Values'
@@ -349,7 +350,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 control={
                   <Switch
                     checked={exportSettings.customOptions?.wrapInArray ?? true}
-                    onChange={(e) => handleFormatOptionChange('wrapInArray', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormatOptionChange('wrapInArray', e.target.checked)}
                   />
                 }
                 label="Wrap Records in Array"
@@ -364,7 +365,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
   };
 
   return (
-    <Box>
+    <SimpleBox>
       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
         <InsertDriveFileIcon sx={{ mr: 1 }} />
         Export Settings
@@ -382,11 +383,11 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                 label="Export Format"
                 onChange={(e) => handleSettingChange('format', e.target.value)}
                 startAdornment={
-                  <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                  <SimpleBox sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
                     {exportSettings.format === 'pdf' && <PictureAsPdfIcon />}
                     {exportSettings.format === 'excel' && <TableChartIcon />}
                     {(exportSettings.format === 'csv' || exportSettings.format === 'json') && <CodeIcon />}
-                  </Box>
+                  </SimpleBox>
                 }
               >
                 <MenuItem value="pdf">PDF Document</MenuItem>
@@ -423,7 +424,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
               control={
                 <Switch
                   checked={exportSettings.includeCharts}
-                  onChange={(e) => handleSettingChange('includeCharts', e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingChange('includeCharts', e.target.checked)}
                 />
               }
               label="Include Charts"
@@ -435,7 +436,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
               control={
                 <Switch
                   checked={exportSettings.includeTables}
-                  onChange={(e) => handleSettingChange('includeTables', e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingChange('includeTables', e.target.checked)}
                 />
               }
               label="Include Data Tables"
@@ -447,7 +448,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
               control={
                 <Switch
                   checked={exportSettings.includeFilters}
-                  onChange={(e) => handleSettingChange('includeFilters', e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingChange('includeFilters', e.target.checked)}
                 />
               }
               label="Include Applied Filters"
@@ -459,7 +460,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
               control={
                 <Switch
                   checked={exportSettings.includeMetadata}
-                  onChange={(e) => handleSettingChange('includeMetadata', e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingChange('includeMetadata', e.target.checked)}
                 />
               }
               label="Include Report Metadata"
@@ -552,7 +553,7 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
           {/* Email recipients */}
           {exportSettings.deliveryMethod === 'email' && (
             <Grid item xs={12}>
-              <Box sx={{ mb: 2 }}>
+              <SimpleBox sx={{ mb: 2 }}>
                 <TextField
                   id="email-recipient-input"
                   label="Add Recipient Email"
@@ -577,11 +578,11 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                     ),
                   }}
                 />
-              </Box>
+              </SimpleBox>
 
-              <Box>
+              <SimpleBox>
                 {exportSettings.emailRecipients?.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {exportSettings.emailRecipients.map((recipient) => (
                       <Chip
                         key={recipient}
@@ -590,13 +591,13 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
                         onDelete={() => handleRemoveRecipient(recipient)}
                       />
                     ))}
-                  </Box>
+                  </SimpleBox>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
                     No recipients added yet.
                   </Typography>
                 )}
-              </Box>
+              </SimpleBox>
             </Grid>
           )}
 
@@ -616,13 +617,13 @@ const ReportExportSettings: React.FC<ReportExportSettingsProps> = ({
         </Grid>
       </Paper>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+      <SimpleBox sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
         <InfoIcon color="info" fontSize="small" sx={{ mr: 1 }} />
         <Typography variant="caption" color="text.secondary">
           Export settings can be saved as defaults in your profile preferences.
         </Typography>
-      </Box>
-    </Box>
+      </SimpleBox>
+    </SimpleBox>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import {
-  Box,
   Card,
   CardContent,
   Typography,
@@ -18,8 +17,10 @@ import {
   Stack,
   ToggleButtonGroup,
   ToggleButton,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../common/SimpleBox';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
@@ -225,26 +226,26 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
 
   if (isLoading || heatmapLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height }}>
         <CircularProgress />
-      </Box>
+      </SimpleBox>
     );
   }
 
   if (heatmapError) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height, p: 2 }}>
         <Typography color="error">
           Error loading heatmap data: {heatmapError}
         </Typography>
-      </Box>
+      </SimpleBox>
     );
   }
 
   return (
     <Card elevation={0} sx={{ height: '100%' }}>
       <CardContent sx={{ height: '100%', p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" component="div">
             Multi-Dimensional Heatmap
             <Tooltip title="Visualizes patterns and correlations across two dimensions with color intensity representing the metric value">
@@ -254,7 +255,7 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
             </Tooltip>
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Zoom Out">
               <IconButton onClick={handleZoomOut} disabled={zoomLevel <= 0.6}>
                 <ZoomOutIcon />
@@ -270,10 +271,10 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
                 <FileDownloadIcon />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
 
-        <Box sx={{ mb: 3 }}>
+        <SimpleBox sx={{ mb: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel id="primary-dimension-label">Primary Dimension</InputLabel>
@@ -323,9 +324,9 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
               </Select>
             </FormControl>
           </Stack>
-        </Box>
+        </SimpleBox>
 
-        <Box sx={{ mb: 2 }}>
+        <SimpleBox sx={{ mb: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
             <Typography variant="body2">Color Scheme:</Typography>
             <ToggleButtonGroup
@@ -346,7 +347,7 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
               control={
                 <Switch
                   checked={invertScale}
-                  onChange={(e) => setInvertScale(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInvertScale(e.target.checked)}
                   size="small"
                 />
               }
@@ -359,14 +360,14 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
               control={
                 <Switch
                   checked={showLabels}
-                  onChange={(e) => setShowLabels(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowLabels(e.target.checked)}
                   size="small"
                 />
               }
               label="Show Cell Labels"
             />
 
-            <Box sx={{ display: 'flex', alignItems: 'center', width: 200 }}>
+            <SimpleBox sx={{ display: 'flex', alignItems: 'center', width: 200 }}>
               <Typography variant="body2" sx={{ mr: 1, whiteSpace: 'nowrap' }}>
                 Cell Size:
               </Typography>
@@ -379,14 +380,14 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
                 size="small"
                 aria-label="Cell size"
               />
-            </Box>
+            </SimpleBox>
           </Stack>
-        </Box>
+        </SimpleBox>
 
         {/* Screen reader accessible data table */}
         {generateAccessibleTable()}
 
-        <Box
+        <SimpleBox
           ref={containerRef}
           sx={{
             height: height - 200,
@@ -471,7 +472,7 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
               ]}
             />
           ) : (
-            <Box sx={{
+            <SimpleBox sx={{
               height: '100%',
               display: 'flex',
               alignItems: 'center',
@@ -485,9 +486,9 @@ const MultiDimensionalHeatmap: React.FC<MultiDimensionalHeatmapProps> = ({
               <Typography variant="body2" color="text.secondary">
                 Try changing the dimensions or metric
               </Typography>
-            </Box>
+            </SimpleBox>
           )}
-        </Box>
+        </SimpleBox>
       </CardContent>
     </Card>
   );

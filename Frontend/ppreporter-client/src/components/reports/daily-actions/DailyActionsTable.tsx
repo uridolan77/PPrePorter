@@ -123,7 +123,7 @@ const DailyActionsTable: React.FC<DailyActionsTableProps> = ({
           <Tooltip title="View Details">
             <IconButton
               size="small"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 onViewDetails(row);
               }}

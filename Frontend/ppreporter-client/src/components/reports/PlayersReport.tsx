@@ -1,7 +1,6 @@
 // filepath: c:\dev\PPrePorter\Frontend\ppreporter-client\src\components\reports\PlayersReport.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
   Grid,
   Typography,
   Tabs,
@@ -18,10 +17,12 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
+  Box as MuiBox,
   SelectChangeEvent,
   Paper
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import SimpleBox from '../../components/common/SimpleBox';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import DateRangePicker from '../common/DateRangePicker';
 import { CommonProps } from '../../types/common';
@@ -336,13 +337,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Player Summary',
             description: 'Key player metrics and overview statistics',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Player summary metrics would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading player summary data...' :
                     'Displays key player metrics like total players, acquisitions, churn rate, and lifetime value.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -350,13 +351,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Player Activity',
             description: 'Recent player activity and engagement metrics',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Player activity charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading player activity data...' :
                     'Displays player activity trends, session metrics, and engagement statistics.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -364,13 +365,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Revenue Metrics',
             description: 'Player revenue and financial performance',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Revenue metrics charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading revenue metrics...' :
                     'Displays player revenue trends, ARPU, conversion rates, and deposit statistics.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           }
         ];
@@ -382,13 +383,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Player Demographics',
             description: 'Demographic breakdown of player base',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Demographics charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading demographic data...' :
                     'Displays player demographics including age, gender, location, and device usage.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -396,13 +397,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Player Segmentation',
             description: 'Player segments based on behavior and value',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Segmentation charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading segmentation data...' :
                     'Displays player segments including VIP distribution, player value tiers, and behavioral clusters.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           }
         ];
@@ -414,13 +415,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Game Preferences',
             description: 'Player game preferences and playing patterns',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Game preferences charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading game preference data...' :
                     'Displays player game preferences, favorite games, playing patterns, and time distribution.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -428,13 +429,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Betting Patterns',
             description: 'Analysis of player betting behavior',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Betting patterns charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading betting pattern data...' :
                     'Displays player betting patterns, average bet sizes, risk profiles, and volatility preferences.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -442,13 +443,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Session Analysis',
             description: 'Detailed player session metrics',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Session analysis charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading session analysis data...' :
                     'Displays player session metrics including duration, frequency, time of day, and platform usage.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           }
         ];
@@ -460,13 +461,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Retention Curves',
             description: 'Player retention over time',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Retention curves would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading retention data...' :
                     'Displays player retention curves, cohort analysis, and retention by segment.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -474,13 +475,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Churn Analysis',
             description: 'Player churn patterns and prediction',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Churn analysis charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading churn analysis data...' :
                     'Displays player churn metrics, at-risk players, and churn prediction indicators.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -488,13 +489,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Reactivation Metrics',
             description: 'Player reactivation success metrics',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Reactivation metrics would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading reactivation data...' :
                     'Displays player reactivation metrics, reactivation campaign performance, and player return patterns.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           }
         ];
@@ -506,13 +507,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Player Value Analysis',
             description: 'Comprehensive player value metrics',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Player value charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading player value data...' :
                     'Displays player value metrics including LTV, player worth, and value distribution.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -520,13 +521,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Revenue Contribution',
             description: 'Player revenue contribution by segment',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Revenue contribution charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading revenue contribution data...' :
                     'Displays player revenue contribution by segment, Pareto analysis, and revenue concentration.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -534,13 +535,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Player Profitability',
             description: 'Player profitability metrics',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Profitability charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading profitability data...' :
                     'Displays player profitability metrics, cost per acquisition, and ROI by segment.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           }
         ];
@@ -552,13 +553,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Predictive Models',
             description: 'AI-powered player predictions',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Predictive models would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading predictive model data...' :
                     'Displays AI-powered predictions including churn risk, conversion likelihood, and future value.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -566,13 +567,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Anomaly Detection',
             description: 'Unusual player behavior patterns',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Anomaly detection charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading anomaly detection data...' :
                     'Displays unusual player behavior patterns, outlier detection, and risk indicators.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           },
           {
@@ -580,13 +581,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             title: 'Cohort Analysis',
             description: 'Detailed player cohort comparison',
             content: (
-              <Box p={2}>
+              <SimpleBox p={2}>
                 {/* Cohort analysis charts would go here */}
                 <Typography variant="body1">
                   {loading ? 'Loading cohort analysis data...' :
                     'Displays player cohort metrics, comparison between acquisition groups, and trend analysis.'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             )
           }
         ];
@@ -638,7 +639,7 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
 
   // Render the Players Report with ReportViewer
   return (
-    <Box sx={{ width: '100%', ...sx }}>
+    <SimpleBox sx={{ width: '100%', ...sx }}>
       {/* Natural Language Query Panel */}
       <NaturalLanguageQueryPanel
         onSearch={handleQuerySubmit}
@@ -653,13 +654,13 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
       />
 
       {/* Report Configuration Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <SimpleBox sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h5" component="h1">
           <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
           Players Report
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <SimpleBox sx={{ display: 'flex', gap: 2 }}>
           {/* View Mode Selection */}
           <TextField
             select
@@ -718,7 +719,7 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             control={
               <Switch
                 checked={showInsights}
-                onChange={(e) => setShowInsights(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowInsights(e.target.checked)}
                 size="small"
               />
             }
@@ -727,7 +728,7 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
           />
 
           {/* Save View */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             <TextField
               size="small"
               placeholder="Name this view"
@@ -742,12 +743,12 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             >
               <SaveAltIcon />
             </IconButton>
-          </Box>
-        </Box>
-      </Box>
+          </SimpleBox>
+        </SimpleBox>
+      </SimpleBox>
 
       {/* Report Navigation Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <SimpleBox sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -791,21 +792,21 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-      </Box>
+      </SimpleBox>
 
       {/* AI-generated Insights Panel (only shown when insights are enabled) */}
       {showInsights && playerInsights.length > 0 && (
         <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <InsightsIcon color="primary" sx={{ mr: 1 }} />
             <Typography variant="h6" component="h2">
               Key Insights
             </Typography>
-          </Box>
+          </SimpleBox>
           <Grid container spacing={2}>
             {playerInsights.map(insight => (
               <Grid item xs={12} md={4} key={insight.id}>
-                <Box
+                <SimpleBox
                   sx={{
                     p: 2,
                     bgcolor: 'background.paper',
@@ -821,7 +822,7 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     {insight.description}
                   </Typography>
-                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                  <SimpleBox sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
                     <Chip
                       size="small"
                       color={insight.change > 0 ? "success" : "error"}
@@ -831,8 +832,8 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
                     <Typography variant="caption" color="text.secondary">
                       {insight.metric}
                     </Typography>
-                  </Box>
-                </Box>
+                  </SimpleBox>
+                </SimpleBox>
               </Grid>
             ))}
           </Grid>
@@ -874,12 +875,12 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
           subheader={nlQuery}
           sx={{ mt: 3 }}
         >
-          <Box p={2}>
+          <SimpleBox p={2}>
             {/* Query results would be displayed here */}
             <Typography variant="body1">
               Query results will be displayed here based on the natural language query execution.
             </Typography>
-          </Box>
+          </SimpleBox>
         </Card>
       )}
 
@@ -890,7 +891,7 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
           subheader="Compare metrics across different player segments or time periods"
           sx={{ mt: 3 }}
         >
-          <Box p={2}>
+          <SimpleBox p={2}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" gutterBottom>Primary Segment</Typography>
@@ -959,12 +960,12 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
                 </Button>
               </Grid>
             </Grid>
-            <Box sx={{ mt: 3 }}>
+            <SimpleBox sx={{ mt: 3 }}>
               <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary' }}>
                 Comparison results will be displayed here after running the comparison.
               </Typography>
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
         </Card>
       )}
 
@@ -975,7 +976,7 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
           subheader="Personalize your players report view"
           sx={{ mt: 3 }}
         >
-          <Box p={2}>
+          <SimpleBox p={2}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={4}>
                 <Typography variant="subtitle1" gutterBottom>Visible Sections</Typography>
@@ -1017,10 +1018,10 @@ const PlayersReport: React.FC<PlayersReportProps> = ({
                 </Button>
               </Grid>
             </Grid>
-          </Box>
+          </SimpleBox>
         </Card>
       )}
-    </Box>
+    </SimpleBox>
   );
 };
 

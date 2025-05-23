@@ -322,7 +322,7 @@ const ParallelCoordinatesPlot: React.FC<ParallelCoordinatesPlotProps> = ({
             control={
               <Switch
                 checked={brushEnabled}
-                onChange={(e) => setBrushEnabled(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBrushEnabled(e.target.checked)}
                 size="small"
               />
             }

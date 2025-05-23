@@ -1196,7 +1196,7 @@ const DashboardWidget: React.FC<DashboardWidgetProps> = ({
           {customizeMode && (
             <IconButton
               size="small"
-              onClick={(e) => onMenuOpen && onMenuOpen(e, widget.id)}
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => onMenuOpen && onMenuOpen(e, widget.id)}
               aria-label="widget options"
             >
               <MoreVertIcon />

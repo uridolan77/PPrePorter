@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
   Card,
   CardContent,
   Typography,
@@ -14,6 +13,7 @@ import {
   Tooltip,
   Button,
   Paper,
+  Box as MuiBox,
   Switch,
   FormControlLabel,
   Stack,
@@ -51,6 +51,7 @@ import { formatPercentage, formatCurrency, formatNumber } from '../../utils/form
 import { alpha } from '@mui/material/styles';
 import { MicroSparkline } from './MicroCharts';
 import { CommonProps } from '../../types/common';
+import SimpleBox from '../common/SimpleBox';
 import {
   Metric,
   Entity,
@@ -427,8 +428,8 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
             if (isHistorical) return null;
 
             return (
-              <Box key={`tooltip-item-${index}`} sx={{ mb: 0.5, display: 'flex', alignItems: 'center' }}>
-                <Box
+              <SimpleBox key={`tooltip-item-${index}`} sx={{ mb: 0.5, display: 'flex', alignItems: 'center' }}>
+                <SimpleBox
                   component="span"
                   sx={{
                     display: 'inline-block',
@@ -447,7 +448,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                     ? `${entry.value?.toFixed(1)}%`
                     : formatValue(entry.value, metricId)}
                 </Typography>
-              </Box>
+              </SimpleBox>
             );
           })}
 
@@ -469,11 +470,11 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                 if (!history || !Array.isArray(history)) return null;
 
                 return (
-                  <Box key={`trend-${index}`} sx={{ mb: 1 }}>
+                  <SimpleBox key={`trend-${index}`} sx={{ mb: 1 }}>
                     <Typography variant="caption" sx={{ display: 'block', color: entityColor }}>
                       {entityName}
                     </Typography>
-                    <Box sx={{ mt: 0.5 }}>
+                    <SimpleBox sx={{ mt: 0.5 }}>
                       <MicroSparkline
                         data={history.map((val: number, i: number) => ({ value: val, label: `${i+1}` }))}
                         width={200}
@@ -482,8 +483,8 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                         showArea={true}
                         accessibilityLabel={`${entityName} trend for ${label}`}
                       />
-                    </Box>
-                  </Box>
+                    </SimpleBox>
+                  </SimpleBox>
                 );
               })}
             </>
@@ -500,7 +501,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
     const { payload } = props;
 
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', mt: 2 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', mt: 2 }}>
         {payload.map((entry: any, index: number) => {
           const isBenchmark = entry.value.includes('Benchmark');
 
@@ -530,16 +531,16 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
             />
           );
         })}
-      </Box>
+      </SimpleBox>
     );
   };
 
   // Create controls toolbar with enhanced grouping
   const renderControls = () => {
     return (
-      <Box sx={{ mb: 3 }}>
+      <SimpleBox sx={{ mb: 3 }}>
         {/* Metric group tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <SimpleBox sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs
             value={selectedGroup}
             onChange={handleGroupChange}
@@ -550,20 +551,20 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
               <Tab
                 key={tab.id}
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                     {tab.label}
                     <Chip
                       size="small"
                       label={tab.count}
                       sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
                     />
-                  </Box>
+                  </SimpleBox>
                 }
                 value={tab.id}
               />
             ))}
           </Tabs>
-        </Box>
+        </SimpleBox>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: 1 }}>
@@ -618,13 +619,13 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
           />
         </Stack>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 1, md: 0 } }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 1, md: 0 } }}>
             <FormControlLabel
               control={
                 <Switch
                   checked={normalizeData}
-                  onChange={(e) => setNormalizeData(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNormalizeData(e.target.checked)}
                   size="small"
                 />
               }
@@ -635,7 +636,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
               control={
                 <Switch
                   checked={showLabels}
-                  onChange={(e) => setShowLabels(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowLabels(e.target.checked)}
                   size="small"
                 />
               }
@@ -646,15 +647,15 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
               control={
                 <Switch
                   checked={showBenchmarks}
-                  onChange={(e) => setShowBenchmarks(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowBenchmarks(e.target.checked)}
                   size="small"
                 />
               }
               label="Benchmarks"
             />
-          </Box>
+          </SimpleBox>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', gap: 1 }}>
             <Button
               size="small"
               startIcon={<TuneIcon />}
@@ -672,8 +673,8 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
             <IconButton onClick={() => onExport('png')} size="small">
               <FileDownloadIcon />
             </IconButton>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
 
         <Collapse in={advancedSettingsOpen}>
           <Paper variant="outlined" sx={{ mt: 2, p: 2 }}>
@@ -706,7 +707,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                   control={
                     <Switch
                       checked={showHistoricalTrends}
-                      onChange={(e) => setShowHistoricalTrends(e.target.checked)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowHistoricalTrends(e.target.checked)}
                     />
                   }
                   label="Show Trends"
@@ -722,7 +723,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                   min={0}
                   max={0.5}
                   step={0.05}
-                  onChange={(e, newValue) => setOpacityLevel(newValue as number)}
+                  onChange={(_event: Event, newValue: number | number[]) => setOpacityLevel(newValue as number)}
                   valueLabelDisplay="auto"
                   valueLabelFormat={(value) => `${value * 100}%`}
                 />
@@ -737,7 +738,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                   min={1}
                   max={5}
                   step={0.5}
-                  onChange={(e, newValue) => setStrokeWidth(newValue as number)}
+                  onChange={(_event: Event, newValue: number | number[]) => setStrokeWidth(newValue as number)}
                   valueLabelDisplay="auto"
                   valueLabelFormat={(value) => `${value}px`}
                 />
@@ -748,7 +749,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                   control={
                     <Switch
                       checked={highContrastMode}
-                      onChange={(e) => setHighContrastMode(e.target.checked)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHighContrastMode(e.target.checked)}
                     />
                   }
                   label="High Contrast Mode (for accessibility)"
@@ -757,7 +758,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
             </Grid>
           </Paper>
         </Collapse>
-      </Box>
+      </SimpleBox>
     );
   };
 
@@ -765,7 +766,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
   return (
     <Card sx={{ ...sx }}>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" component="h2">
             {title}
             <Tooltip title="Multi-dimensional analysis of key metrics across different entities">
@@ -775,7 +776,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
             </Tooltip>
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
             {/* Group by button */}
             <Tooltip title="Group metrics by category">
               <IconButton size="small" sx={{ mr: 1 }}>
@@ -789,31 +790,31 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                 <CompareArrowsIcon />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
 
         {/* Controls */}
         {renderControls()}
 
         {/* Loading state */}
         {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <SimpleBox sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
-          </Box>
+          </SimpleBox>
         )}
 
         {/* No data state */}
         {!isLoading && (!filteredData || filteredData.length === 0) && (
-          <Box sx={{ textAlign: 'center', p: 4 }}>
+          <SimpleBox sx={{ textAlign: 'center', p: 4 }}>
             <Typography color="text.secondary">
               No data available. Please select different metrics or entities.
             </Typography>
-          </Box>
+          </SimpleBox>
         )}
 
         {/* Radar Chart */}
         {!isLoading && filteredData && filteredData.length > 0 && (
-          <Box sx={{ height: 500, width: '100%' }}>
+          <SimpleBox sx={{ height: 500, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart
                 cx="50%"
@@ -880,7 +881,7 @@ const AdvancedRadarChart: React.FC<AdvancedRadarChartProps> = ({
                 <RechartsTooltip content={<CustomTooltip />} />
               </RadarChart>
             </ResponsiveContainer>
-          </Box>
+          </SimpleBox>
         )}
       </CardContent>
     </Card>

@@ -417,7 +417,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                     <InputAdornment position="end">
                       <IconButton
                         size="small"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.stopPropagation();
                           handleClearSearch();
                         }}

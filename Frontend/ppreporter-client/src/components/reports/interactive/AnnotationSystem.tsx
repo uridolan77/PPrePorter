@@ -1,6 +1,5 @@
 import React, { useState, useCallback, createContext, useContext, ReactNode } from 'react';
 import {
-  Box,
   Typography,
   IconButton,
   Tooltip,
@@ -20,8 +19,10 @@ import {
   useTheme,
   Badge,
   Chip,
-  Avatar
+  Avatar,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from '../../../components/common/SimpleBox';
 import CommentIcon from '@mui/icons-material/Comment';
 import AddCommentIcon from '@mui/icons-material/AddComment';
 import EditIcon from '@mui/icons-material/Edit';
@@ -73,7 +74,7 @@ interface AnnotationContextProviderProps {
  */
 export const AnnotationContextProvider: React.FC<AnnotationContextProviderProps> = ({ children }) => {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
-  
+
   // Add a new annotation
   const addAnnotation = useCallback((annotation: Omit<Annotation, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
@@ -83,10 +84,10 @@ export const AnnotationContextProvider: React.FC<AnnotationContextProviderProps>
       createdAt: now,
       updatedAt: now
     };
-    
+
     setAnnotations(prev => [...prev, newAnnotation]);
   }, []);
-  
+
   // Update an annotation
   const updateAnnotation = useCallback((id: string, text: string, type: Annotation['type']) => {
     setAnnotations(prev => prev.map(annotation => {
@@ -101,24 +102,24 @@ export const AnnotationContextProvider: React.FC<AnnotationContextProviderProps>
       return annotation;
     }));
   }, []);
-  
+
   // Delete an annotation
   const deleteAnnotation = useCallback((id: string) => {
     setAnnotations(prev => prev.filter(annotation => annotation.id !== id));
   }, []);
-  
+
   // Get annotations for a chart
   const getAnnotationsForChart = useCallback((chartId: string) => {
     return annotations.filter(annotation => annotation.chartId === chartId);
   }, [annotations]);
-  
+
   // Get annotations for a data point
   const getAnnotationsForDataPoint = useCallback((chartId: string, dataPointId: string | number) => {
     return annotations.filter(
       annotation => annotation.chartId === chartId && annotation.dataPointId === dataPointId
     );
   }, [annotations]);
-  
+
   // Context value
   const value: AnnotationContextState = {
     annotations,
@@ -128,7 +129,7 @@ export const AnnotationContextProvider: React.FC<AnnotationContextProviderProps>
     getAnnotationsForChart,
     getAnnotationsForDataPoint
   };
-  
+
   return (
     <AnnotationContext.Provider value={value}>
       {children}
@@ -169,15 +170,15 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
 }) => {
   const theme = useTheme();
   const { addAnnotation, updateAnnotation, deleteAnnotation } = useAnnotationContext();
-  
+
   const [newAnnotationText, setNewAnnotationText] = useState<string>('');
   const [newAnnotationType, setNewAnnotationType] = useState<Annotation['type']>('comment');
   const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
-  
+
   // Handle add annotation
   const handleAddAnnotation = () => {
     if (!newAnnotationText.trim()) return;
-    
+
     addAnnotation({
       chartId,
       dataPointId,
@@ -185,48 +186,48 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
       author: 'Current User', // Would come from auth context in a real app
       type: newAnnotationType
     });
-    
+
     // Reset form
     setNewAnnotationText('');
     setNewAnnotationType('comment');
   };
-  
+
   // Handle edit annotation
   const handleEditAnnotation = (annotation: Annotation) => {
     setEditingAnnotation(annotation);
     setNewAnnotationText(annotation.text);
     setNewAnnotationType(annotation.type);
   };
-  
+
   // Handle save edit
   const handleSaveEdit = () => {
     if (!editingAnnotation || !newAnnotationText.trim()) return;
-    
+
     updateAnnotation(editingAnnotation.id, newAnnotationText, newAnnotationType);
-    
+
     // Reset form
     setEditingAnnotation(null);
     setNewAnnotationText('');
     setNewAnnotationType('comment');
   };
-  
+
   // Handle cancel edit
   const handleCancelEdit = () => {
     setEditingAnnotation(null);
     setNewAnnotationText('');
     setNewAnnotationType('comment');
   };
-  
+
   // Handle delete annotation
   const handleDeleteAnnotation = (id: string) => {
     deleteAnnotation(id);
-    
+
     // If deleting the annotation being edited, reset form
     if (editingAnnotation && editingAnnotation.id === id) {
       handleCancelEdit();
     }
   };
-  
+
   // Get annotation type icon
   const getAnnotationTypeIcon = (type: Annotation['type']) => {
     switch (type) {
@@ -240,11 +241,11 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
         return <CommentIcon fontSize="small" />;
     }
   };
-  
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">
             Annotations for {dataPointLabel}
           </Typography>
@@ -255,7 +256,7 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
           >
             <CloseIcon />
           </IconButton>
-        </Box>
+        </SimpleBox>
       </DialogTitle>
       <DialogContent dividers>
         {/* Existing annotations */}
@@ -264,19 +265,19 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
             {existingAnnotations.map((annotation) => (
               <React.Fragment key={annotation.id}>
                 <ListItem alignItems="flex-start">
-                  <Box sx={{ mr: 1, mt: 0.5 }}>
+                  <SimpleBox sx={{ mr: 1, mt: 0.5 }}>
                     {getAnnotationTypeIcon(annotation.type)}
-                  </Box>
+                  </SimpleBox>
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="subtitle2">
                           {annotation.author}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {formatDate(new Date(annotation.createdAt), 'MMM dd, yyyy HH:mm')}
                         </Typography>
-                      </Box>
+                      </SimpleBox>
                     }
                     secondary={
                       <Typography
@@ -316,15 +317,15 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
             ))}
           </List>
         ) : (
-          <Box sx={{ py: 2, textAlign: 'center' }}>
+          <SimpleBox sx={{ py: 2, textAlign: 'center' }}>
             <Typography color="text.secondary">
               No annotations yet. Add one below.
             </Typography>
-          </Box>
+          </SimpleBox>
         )}
-        
+
         {/* Add/Edit annotation form */}
-        <Box sx={{ mt: 2 }}>
+        <SimpleBox sx={{ mt: 2 }}>
           <Typography variant="subtitle2" gutterBottom>
             {editingAnnotation ? 'Edit Annotation' : 'Add Annotation'}
           </Typography>
@@ -338,7 +339,7 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
             variant="outlined"
             size="small"
           />
-          <Box sx={{ display: 'flex', mt: 1, gap: 1 }}>
+          <SimpleBox sx={{ display: 'flex', mt: 1, gap: 1 }}>
             <Chip
               icon={<CommentIcon />}
               label="Comment"
@@ -360,8 +361,8 @@ export const AnnotationDialog: React.FC<AnnotationDialogProps> = ({
               color={newAnnotationType === 'insight' ? 'primary' : 'default'}
               variant={newAnnotationType === 'insight' ? 'filled' : 'outlined'}
             />
-          </Box>
-        </Box>
+          </SimpleBox>
+        </SimpleBox>
       </DialogContent>
       <DialogActions>
         {editingAnnotation ? (
@@ -417,37 +418,37 @@ export const AnnotationMarker: React.FC<AnnotationMarkerProps> = ({
 }) => {
   const theme = useTheme();
   const { getAnnotationsForDataPoint } = useAnnotationContext();
-  
+
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  
+
   // Get annotations for this data point
   const annotations = getAnnotationsForDataPoint(chartId, dataPointId);
-  
+
   // Handle marker click
   const handleMarkerClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  
+
   // Handle popover close
   const handlePopoverClose = () => {
     setAnchorEl(null);
   };
-  
+
   // Handle dialog open
   const handleDialogOpen = () => {
     setDialogOpen(true);
     handlePopoverClose();
   };
-  
+
   // Handle dialog close
   const handleDialogClose = () => {
     setDialogOpen(false);
   };
-  
+
   // Popover open state
   const open = Boolean(anchorEl);
-  
+
   return (
     <>
       <Badge
@@ -474,7 +475,7 @@ export const AnnotationMarker: React.FC<AnnotationMarkerProps> = ({
           <CommentIcon sx={{ fontSize: 14 }} />
         </Avatar>
       </Badge>
-      
+
       <Popover
         open={open}
         anchorEl={anchorEl}
@@ -492,7 +493,7 @@ export const AnnotationMarker: React.FC<AnnotationMarkerProps> = ({
           <Typography variant="subtitle2" gutterBottom>
             {dataPointLabel}
           </Typography>
-          
+
           {annotations.length > 0 ? (
             <>
               <Typography variant="body2" gutterBottom>
@@ -519,15 +520,15 @@ export const AnnotationMarker: React.FC<AnnotationMarkerProps> = ({
               No annotations yet. Add one now.
             </Typography>
           )}
-          
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+
+          <SimpleBox sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
             <Button size="small" onClick={handleDialogOpen}>
               {annotations.length > 0 ? 'View All' : 'Add Annotation'}
             </Button>
-          </Box>
+          </SimpleBox>
         </Paper>
       </Popover>
-      
+
       <AnnotationDialog
         open={dialogOpen}
         onClose={handleDialogClose}

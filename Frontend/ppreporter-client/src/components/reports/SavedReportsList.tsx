@@ -42,6 +42,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { formatDistanceToNow } from 'date-fns';
 import { CommonProps } from '../../types/common';
+import SimpleBox from '../common/SimpleBox';
 
 // Report interface
 export interface SavedReport {
@@ -108,26 +109,26 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('lastModified');
   const [sortMenuAnchorEl, setSortMenuAnchorEl] = useState<HTMLElement | null>(null);
-  
+
   // Handle report menu open
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, report: SavedReport): void => {
     event.stopPropagation();
     setMenuAnchorEl(event.currentTarget);
     setSelectedReport(report);
   };
-  
+
   // Handle report menu close
   const handleMenuClose = (): void => {
     setMenuAnchorEl(null);
   };
-  
+
   // Handle report click
   const handleReportClick = (report: SavedReport): void => {
     if (onViewReport) {
       onViewReport(report);
     }
   };
-  
+
   // Handle edit click
   const handleEditClick = (event: React.MouseEvent<HTMLElement>, report: SavedReport): void => {
     event.stopPropagation();
@@ -136,13 +137,13 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
     }
     handleMenuClose();
   };
-  
+
   // Handle delete click
   const handleDeleteClick = (): void => {
     setDeleteDialogOpen(true);
     handleMenuClose();
   };
-  
+
   // Handle delete confirm
   const handleDeleteConfirm = (): void => {
     if (selectedReport && onDeleteReport) {
@@ -150,7 +151,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
     }
     setDeleteDialogOpen(false);
   };
-  
+
   // Handle duplicate click
   const handleDuplicateClick = (): void => {
     if (selectedReport && onDuplicateReport) {
@@ -158,7 +159,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
     }
     handleMenuClose();
   };
-  
+
   // Handle share click
   const handleShareClick = (): void => {
     if (selectedReport && onShareReport) {
@@ -166,7 +167,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
     }
     handleMenuClose();
   };
-  
+
   // Handle favorite toggle
   const handleFavoriteToggle = (event: React.MouseEvent<HTMLElement>, report: SavedReport): void => {
     event.stopPropagation();
@@ -174,7 +175,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
       onFavoriteToggle(report, !report.favorite);
     }
   };
-  
+
   // Handle search change
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const value = event.target.value;
@@ -183,17 +184,17 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
       onSearch(value);
     }
   };
-  
+
   // Handle sort menu open
   const handleSortMenuOpen = (event: React.MouseEvent<HTMLElement>): void => {
     setSortMenuAnchorEl(event.currentTarget);
   };
-  
+
   // Handle sort menu close
   const handleSortMenuClose = (): void => {
     setSortMenuAnchorEl(null);
   };
-  
+
   // Handle sort change
   const handleSortChange = (sortKey: string): void => {
     setSortBy(sortKey);
@@ -202,14 +203,14 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
     }
     handleSortMenuClose();
   };
-  
+
   // Render report card
   const renderReportCard = (report: SavedReport): React.ReactNode => {
     return (
-      <Card 
-        sx={{ 
-          height: '100%', 
-          display: 'flex', 
+      <Card
+        sx={{
+          height: '100%',
+          display: 'flex',
           flexDirection: 'column',
           transition: 'transform 0.2s, box-shadow 0.2s',
           '&:hover': {
@@ -218,45 +219,45 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           }
         }}
       >
-        <CardActionArea 
+        <CardActionArea
           onClick={() => handleReportClick(report)}
           sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
         >
           <CardHeader
             title={
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <SimpleBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="h6" noWrap sx={{ maxWidth: 200 }}>
                   {report.name}
                 </Typography>
                 <IconButton
                   size="small"
-                  onClick={(e) => handleFavoriteToggle(e, report)}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleFavoriteToggle(e, report)}
                   color={report.favorite ? 'primary' : 'default'}
                 >
                   {report.favorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
                 </IconButton>
-              </Box>
+              </SimpleBox>
             }
             subheader={
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+              <SimpleBox sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                 <FolderIcon fontSize="small" sx={{ mr: 0.5, color: 'text.secondary', fontSize: '1rem' }} />
                 <Typography variant="body2" color="text.secondary" noWrap>
                   {report.category || 'Uncategorized'}
                 </Typography>
-              </Box>
+              </SimpleBox>
             }
           />
-          
+
           <CardContent sx={{ flexGrow: 1, pt: 0 }}>
             {report.description && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {report.description.length > 100 
-                  ? `${report.description.substring(0, 100)}...` 
+                {report.description.length > 100
+                  ? `${report.description.substring(0, 100)}...`
                   : report.description}
               </Typography>
             )}
-            
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+
+            <SimpleBox sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
               {report.tags?.map((tag) => (
                 <Chip
                   key={tag}
@@ -266,7 +267,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
                   sx={{ fontSize: '0.7rem' }}
                 />
               ))}
-              
+
               {report.scheduled && (
                 <Chip
                   icon={<ScheduleIcon fontSize="small" />}
@@ -277,7 +278,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
                   sx={{ fontSize: '0.7rem' }}
                 />
               )}
-              
+
               {report.shared && (
                 <Chip
                   icon={<ShareIcon fontSize="small" />}
@@ -288,18 +289,18 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
                   sx={{ fontSize: '0.7rem' }}
                 />
               )}
-            </Box>
+            </SimpleBox>
           </CardContent>
         </CardActionArea>
-        
+
         <Divider />
-        
+
         <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
           <Typography variant="caption" color="text.secondary">
             Updated {formatDistanceToNow(new Date(report.lastModified), { addSuffix: true })}
           </Typography>
-          
-          <Box>
+
+          <SimpleBox>
             <Tooltip title="View Report">
               <IconButton
                 size="small"
@@ -308,34 +309,34 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
                 <VisibilityIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            
+
             <Tooltip title="Edit Report">
               <IconButton
                 size="small"
-                onClick={(e) => handleEditClick(e, report)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleEditClick(e, report)}
               >
                 <EditIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            
+
             <Tooltip title="More Options">
               <IconButton
                 size="small"
-                onClick={(e) => handleMenuOpen(e, report)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleMenuOpen(e, report)}
               >
                 <MoreVertIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
+          </SimpleBox>
         </CardActions>
       </Card>
     );
   };
-  
+
   return (
-    <Box sx={sx}>
+    <SimpleBox sx={sx}>
       {/* Header with search and actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <TextField
           placeholder="Search reports..."
           variant="outlined"
@@ -351,8 +352,8 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           }}
           sx={{ width: 300 }}
         />
-        
-        <Box sx={{ display: 'flex', gap: 1 }}>
+
+        <SimpleBox sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
             startIcon={<SortIcon />}
@@ -361,7 +362,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           >
             Sort: {sortOptions[sortBy]}
           </Button>
-          
+
           {onCreateReport && (
             <Button
               variant="contained"
@@ -371,16 +372,16 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
               Create Report
             </Button>
           )}
-        </Box>
-      </Box>
-      
+        </SimpleBox>
+      </SimpleBox>
+
       {/* Loading state */}
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
-        </Box>
+        </SimpleBox>
       )}
-      
+
       {/* Error state */}
       {error && (
         <Paper sx={{ p: 3, mb: 3, bgcolor: 'error.light' }}>
@@ -389,7 +390,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           </Typography>
         </Paper>
       )}
-      
+
       {/* Empty state */}
       {!loading && !error && reports.length === 0 && (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
@@ -410,7 +411,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           )}
         </Paper>
       )}
-      
+
       {/* Reports grid */}
       {!loading && !error && reports.length > 0 && (
         <Grid container spacing={3}>
@@ -421,7 +422,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           ))}
         </Grid>
       )}
-      
+
       {/* Report actions menu */}
       <Menu
         anchorEl={menuAnchorEl}
@@ -460,7 +461,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           <ListItemText>Delete</ListItemText>
         </MenuItem>
       </Menu>
-      
+
       {/* Sort menu */}
       <Menu
         anchorEl={sortMenuAnchorEl}
@@ -477,7 +478,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           </MenuItem>
         ))}
       </Menu>
-      
+
       {/* Delete confirmation dialog */}
       <Dialog
         open={deleteDialogOpen}
@@ -498,7 +499,7 @@ const SavedReportsList: React.FC<SavedReportsListProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SimpleBox>
   );
 };
 

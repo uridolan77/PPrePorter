@@ -151,7 +151,7 @@ const KPICard: React.FC<KPICardProps> = ({
           {onMoreClick && (
             <IconButton
               size="small"
-              onClick={(event) => onMoreClick(event)}
+              onClick={(event: React.MouseEvent<HTMLButtonElement>) => onMoreClick(event)}
               sx={{ marginRight: -1 }}
             >
               <MoreVertIcon fontSize="small" />

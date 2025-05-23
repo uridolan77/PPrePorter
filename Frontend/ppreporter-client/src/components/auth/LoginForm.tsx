@@ -161,7 +161,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
     >
       <Box
         component="form"
-        onSubmit={(e) => {
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           handleSubmit(e);
           return false; // Explicitly return false to prevent form submission
         }}

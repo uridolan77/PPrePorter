@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
-  Box,
   Paper,
   Table,
   TableBody,
@@ -20,8 +19,10 @@ import {
   Tooltip,
   alpha,
   FormControlLabel,
-  Switch
+  Switch,
+  Box as MuiBox
 } from '@mui/material';
+import SimpleBox from './SimpleBox';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -173,7 +174,7 @@ function DataGrid<T extends Record<string, any>>({
       <div style={style}>
         <TableRow
           hover
-          onClick={(event) => handleRowClick(event, row)}
+          onClick={(event: React.MouseEvent<HTMLTableRowElement>) => handleRowClick(event, row)}
           role="checkbox"
           aria-checked={isItemSelected}
           tabIndex={-1}
@@ -186,7 +187,7 @@ function DataGrid<T extends Record<string, any>>({
               <Checkbox
                 color="primary"
                 checked={isItemSelected}
-                onClick={(event) => handleSelectClick(event, row[idField])}
+                onClick={(event: React.MouseEvent<HTMLButtonElement>) => handleSelectClick(event, row[idField])}
                 inputProps={{
                   'aria-labelledby': labelId,
                 }}
@@ -214,7 +215,7 @@ function DataGrid<T extends Record<string, any>>({
   }, [columns, handleRowClick, handleSelectClick, idField, isSelected, onRowClick, onSelectRows, selectable]);
 
   return (
-    <Box sx={{ width: '100%', ...sx }}>
+    <SimpleBox sx={{ width: '100%', ...sx }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
         <Toolbar
           sx={{
@@ -287,9 +288,9 @@ function DataGrid<T extends Record<string, any>>({
                 sx={{ ml: 1 }}
               />
               {actions && (
-                <Box sx={{ display: 'flex' }}>
+                <SimpleBox sx={{ display: 'flex' }}>
                   {actions}
-                </Box>
+                </SimpleBox>
               )}
             </>
           )}
@@ -344,9 +345,9 @@ function DataGrid<T extends Record<string, any>>({
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + (selectable ? 1 : 0) + (onRowClick ? 1 : 0)} align="center">
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <SimpleBox sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                       <CircularProgress />
-                    </Box>
+                    </SimpleBox>
                   </TableCell>
                 </TableRow>
               ) : data.length === 0 ? (
@@ -361,7 +362,7 @@ function DataGrid<T extends Record<string, any>>({
                 // Virtualized view for large datasets
                 <TableRow>
                   <TableCell colSpan={columns.length + (selectable ? 1 : 0) + (onRowClick ? 1 : 0)} padding="none">
-                    <Box sx={{ height: virtualizedHeight }}>
+                    <SimpleBox sx={{ height: virtualizedHeight }}>
                       <VirtualizedList
                         data={displayData}
                         renderRow={renderRow}
@@ -370,7 +371,7 @@ function DataGrid<T extends Record<string, any>>({
                         loading={loading}
                         emptyMessage={emptyMessage}
                       />
-                    </Box>
+                    </SimpleBox>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -382,7 +383,7 @@ function DataGrid<T extends Record<string, any>>({
                   return (
                     <TableRow
                       hover
-                      onClick={(event) => handleRowClick(event, row)}
+                      onClick={(event: React.MouseEvent<HTMLTableRowElement>) => handleRowClick(event, row)}
                       role="checkbox"
                       aria-checked={isItemSelected}
                       tabIndex={-1}
@@ -395,7 +396,7 @@ function DataGrid<T extends Record<string, any>>({
                           <Checkbox
                             color="primary"
                             checked={isItemSelected}
-                            onClick={(event) => handleSelectClick(event, row[idField])}
+                            onClick={(event: React.MouseEvent<HTMLButtonElement>) => handleSelectClick(event, row[idField])}
                             inputProps={{
                               'aria-labelledby': labelId,
                             }}
@@ -441,7 +442,7 @@ function DataGrid<T extends Record<string, any>>({
           />
         )}
       </Paper>
-    </Box>
+    </SimpleBox>
   );
 }
 

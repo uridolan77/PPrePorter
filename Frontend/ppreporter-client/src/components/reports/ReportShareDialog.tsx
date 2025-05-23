@@ -50,6 +50,7 @@ import {
   Permission,
   SnackbarState
 } from '../../types/sharing';
+import SimpleBox from '../common/SimpleBox';
 
 /**
  * ReportShareDialog component for sharing reports with users or generating public links
@@ -196,16 +197,16 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
       PaperProps={{ sx: { borderRadius: 2 } }}
     >
       <DialogTitle sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Share Report</Typography>
           <IconButton edge="end" onClick={onClose} aria-label="close">
             <CloseIcon />
           </IconButton>
-        </Box>
+        </SimpleBox>
       </DialogTitle>
 
       <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
+        <SimpleBox sx={{ p: 2, bgcolor: 'background.paper' }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
             {report.title || report.name || 'Report'}
           </Typography>
@@ -214,7 +215,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
               {report.description}
             </Typography>
           )}
-        </Box>
+        </SimpleBox>
 
         <Tabs
           value={activeTab}
@@ -228,7 +229,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
 
         {/* Share with People Tab */}
         {activeTab === 0 && (
-          <Box sx={{ p: 3 }}>
+          <SimpleBox sx={{ p: 3 }}>
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
@@ -239,7 +240,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
               Add people
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+            <SimpleBox sx={{ display: 'flex', gap: 2, mb: 3 }}>
               <TextField
                 placeholder="Search users..."
                 size="small"
@@ -273,19 +274,19 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
               >
                 Add
               </Button>
-            </Box>
+            </SimpleBox>
 
             <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto', mb: 3 }}>
               {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <SimpleBox sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                   <CircularProgress size={24} />
-                </Box>
+                </SimpleBox>
               ) : filteredAvailableUsers.length === 0 ? (
-                <Box sx={{ p: 2, textAlign: 'center' }}>
+                <SimpleBox sx={{ p: 2, textAlign: 'center' }}>
                   <Typography color="text.secondary">
                     {searchTerm ? 'No users found matching your search' : 'No users available to add'}
                   </Typography>
-                </Box>
+                </SimpleBox>
               ) : (
                 <List disablePadding>
                   {filteredAvailableUsers.map((user) => {
@@ -316,7 +317,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
               )}
             </Paper>
 
-            <Box sx={{ mb: 2 }}>
+            <SimpleBox sx={{ mb: 2 }}>
               <Typography variant="subtitle1" gutterBottom>
                 People with access
               </Typography>
@@ -339,7 +340,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                         <FormControl size="small" sx={{ minWidth: 100, mr: 1 }}>
                           <select
                             value={user.permission}
-                            onChange={(e) => handleUserPermissionChange(user, e.target.value as Permission)}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleUserPermissionChange(user, e.target.value as Permission)}
                             style={{
                               padding: '5px 10px',
                               borderRadius: '4px',
@@ -363,20 +364,20 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                   )}
                 </List>
               </Paper>
-            </Box>
-          </Box>
+            </SimpleBox>
+          </SimpleBox>
         )}
 
         {/* Public Access Tab */}
         {activeTab === 1 && (
-          <Box sx={{ p: 3 }}>
+          <SimpleBox sx={{ p: 3 }}>
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
               </Alert>
             )}
 
-            <Box sx={{ mb: 3 }}>
+            <SimpleBox sx={{ mb: 3 }}>
               <FormControlLabel
                 control={
                   <Switch
@@ -386,7 +387,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                   />
                 }
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                     {tempPublicState ? (
                       <PublicIcon color="primary" sx={{ mr: 1 }} />
                     ) : (
@@ -395,7 +396,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                     <Typography>
                       {tempPublicState ? 'Public access enabled' : 'Private report'}
                     </Typography>
-                  </Box>
+                  </SimpleBox>
                 }
               />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mt: 0.5 }}>
@@ -403,11 +404,11 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                   ? 'Anyone with the link can view this report without logging in'
                   : 'Only users with explicit access can view this report'}
               </Typography>
-            </Box>
+            </SimpleBox>
 
             {tempPublicState && (
               <>
-                <Box sx={{ mb: 3 }}>
+                <SimpleBox sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Public link
                   </Typography>
@@ -438,14 +439,14 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                       ),
                     }}
                   />
-                </Box>
+                </SimpleBox>
 
-                <Box>
+                <SimpleBox>
                   <Typography variant="subtitle2" gutterBottom>
                     Link expiration
                   </Typography>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <SimpleBox sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <FormControlLabel
                         control={
                           <Switch
@@ -466,7 +467,7 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                           disabled={loading}
                         />
                       )}
-                    </Box>
+                    </SimpleBox>
                   </LocalizationProvider>
 
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -474,10 +475,10 @@ const ReportShareDialog: React.FC<ReportShareDialogProps> = ({
                       ? `The link will expire on ${tempExpirationDate.toLocaleDateString()}`
                       : 'The link will not expire'}
                   </Typography>
-                </Box>
+                </SimpleBox>
               </>
             )}
-          </Box>
+          </SimpleBox>
         )}
       </DialogContent>
 

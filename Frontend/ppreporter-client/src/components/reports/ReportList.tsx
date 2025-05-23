@@ -40,6 +40,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Pagination from '../common/Pagination';
 import { ReportListProps, ReportSortOption } from '../../types/reportList';
 import { Report } from '../../types/reportsData';
+import SimpleBox from '../common/SimpleBox';
 
 /**
  * ReportList component for displaying a list of reports with search, filtering, and sorting
@@ -216,9 +217,9 @@ const ReportList: React.FC<ReportListProps> = ({
   };
 
   return (
-    <Box>
+    <SimpleBox>
       {/* Header with search and filters */}
-      <Box sx={{ mb: 3 }}>
+      <SimpleBox sx={{ mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={4}>
             <TextField
@@ -238,7 +239,7 @@ const ReportList: React.FC<ReportListProps> = ({
           </Grid>
 
           <Grid item xs={12} sm={6} md={8}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+            <SimpleBox sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
               <Button
                 variant="outlined"
                 startIcon={<FilterListIcon />}
@@ -267,23 +268,23 @@ const ReportList: React.FC<ReportListProps> = ({
                   Create Report
                 </Button>
               )}
-            </Box>
+            </SimpleBox>
           </Grid>
         </Grid>
-      </Box>
+      </SimpleBox>
 
       {/* Error message */}
       {error && (
-        <Box sx={{ mb: 3 }}>
+        <SimpleBox sx={{ mb: 3 }}>
           <Typography color="error">{error}</Typography>
-        </Box>
+        </SimpleBox>
       )}
 
       {/* Reports grid */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+        <SimpleBox sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
           <CircularProgress />
-        </Box>
+        </SimpleBox>
       ) : reports.length === 0 ? (
         <Paper
           variant="outlined"
@@ -327,16 +328,16 @@ const ReportList: React.FC<ReportListProps> = ({
                 onClick={() => handleViewReport(report)}
               >
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Typography variant="subtitle1" component="h3" noWrap sx={{ fontWeight: 'medium' }}>
                       {report.name}
                     </Typography>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                       <Tooltip title={report.isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
                         <IconButton
                           size="small"
-                          onClick={(e) => handleToggleFavorite(e, report)}
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleToggleFavorite(e, report)}
                           color={report.isFavorite ? 'primary' : 'default'}
                         >
                           {report.isFavorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
@@ -346,13 +347,13 @@ const ReportList: React.FC<ReportListProps> = ({
                       {showActions && (
                         <IconButton
                           size="small"
-                          onClick={(e) => handleMenuOpen(e, report)}
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleMenuOpen(e, report)}
                         >
                           <MoreVertIcon fontSize="small" />
                         </IconButton>
                       )}
-                    </Box>
-                  </Box>
+                    </SimpleBox>
+                  </SimpleBox>
 
                   {report.category && (
                     <Chip
@@ -368,22 +369,22 @@ const ReportList: React.FC<ReportListProps> = ({
                       : report.description}
                   </Typography>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 'auto' }}>
+                  <SimpleBox sx={{ display: 'flex', justifyContent: 'space-between', mt: 'auto' }}>
                     <Typography variant="caption" color="text.secondary">
                       Updated {formatDistanceToNow(new Date(report.updatedAt), { addSuffix: true })}
                     </Typography>
 
                     {report.viewCount !== undefined && (
                       <Tooltip title="Number of views">
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <SimpleBox sx={{ display: 'flex', alignItems: 'center' }}>
                           <VisibilityIcon fontSize="small" sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
                           <Typography variant="caption" color="text.secondary">
                             {report.viewCount}
                           </Typography>
-                        </Box>
+                        </SimpleBox>
                       </Tooltip>
                     )}
-                  </Box>
+                  </SimpleBox>
                 </CardContent>
 
                 <Divider />
@@ -401,7 +402,7 @@ const ReportList: React.FC<ReportListProps> = ({
                     <Button
                       size="small"
                       startIcon={<EditIcon />}
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         setActiveReport(report);
                         handleEditReport();
@@ -419,7 +420,7 @@ const ReportList: React.FC<ReportListProps> = ({
 
       {/* Pagination */}
       {!loading && reports.length > 0 && (
-        <Box sx={{ mt: 4 }}>
+        <SimpleBox sx={{ mt: 4 }}>
           <Pagination
             count={totalCount}
             page={page}
@@ -427,7 +428,7 @@ const ReportList: React.FC<ReportListProps> = ({
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />
-        </Box>
+        </SimpleBox>
       )}
 
       {/* Report Actions Menu */}
@@ -534,7 +535,7 @@ const ReportList: React.FC<ReportListProps> = ({
           <Button onClick={handleConfirmDelete} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SimpleBox>
   );
 };
 

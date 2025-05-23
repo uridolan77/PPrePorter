@@ -13,6 +13,7 @@ import {
 import { ColumnDef, KeyboardNavigationConfig, RowDetailRenderer, StickyColumnsConfig } from '../types';
 import Sorting from './Sorting';
 import { ExpandButton, ExpandedRow } from './ExpandableRows';
+import SimpleBox from '../../../common/SimpleBox';
 
 interface TableContentProps {
   data: any[];
@@ -139,7 +140,7 @@ const TableContent: React.FC<TableContentProps> = ({
           <Link
             href={url}
             target={column.linkConfig.openInNewTab ? '_blank' : '_self'}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             rel="noopener noreferrer"
             sx={{ textDecoration: 'none', color: 'primary.main' }}
           >
@@ -164,7 +165,7 @@ const TableContent: React.FC<TableContentProps> = ({
   // If no data, show empty message
   if (!Array.isArray(data) || data.length === 0) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <SimpleBox sx={{ p: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
           {emptyMessage}
         </Typography>
@@ -173,7 +174,7 @@ const TableContent: React.FC<TableContentProps> = ({
             Debug: Data is {Array.isArray(data) ? 'an empty array' : `not an array (${typeof data})`}
           </Typography>
         )}
-      </Box>
+      </SimpleBox>
     );
   }
 

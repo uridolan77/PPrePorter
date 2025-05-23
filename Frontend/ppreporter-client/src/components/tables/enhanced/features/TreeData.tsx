@@ -8,6 +8,7 @@ import {
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TreeDataConfig } from '../types';
+import SimpleBox from '../../../common/SimpleBox';
 
 interface TreeNodeProps {
   row: any;
@@ -30,13 +31,13 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   hasChildren
 }) => {
   const indent = level * (config.levelIndent || 20);
-  
+
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', pl: indent / 8 }}>
+    <SimpleBox sx={{ display: 'flex', alignItems: 'center', pl: indent / 8 }}>
       {hasChildren ? (
         <IconButton
           size="small"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             e.stopPropagation();
             onToggle();
           }}
@@ -45,7 +46,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           {expanded ? <ExpandMoreIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
         </IconButton>
       ) : (
-        <Box sx={{ width: 28 }} /> // Spacer for leaf nodes
+        <SimpleBox sx={{ width: 28 }} /> // Spacer for leaf nodes
       )}
       <Typography
         variant="body2"
@@ -74,7 +75,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           {row._treeNodeCount}
         </Typography>
       )}
-    </Box>
+    </SimpleBox>
   );
 };
 
@@ -90,7 +91,7 @@ export const processTreeData = (
   if (!config.enabled || !config.childField) {
     return data;
   }
-  
+
   // Create a map of all nodes
   const nodeMap = new Map<string, any>();
   data.forEach(node => {
@@ -103,19 +104,19 @@ export const processTreeData = (
       _treeExpanded: expandedNodes.includes(node[idField])
     });
   });
-  
+
   // Build the tree structure
   const rootNodes: any[] = [];
-  
+
   data.forEach(node => {
     const nodeId = node[idField];
     const children = node[config.childField];
-    
+
     if (Array.isArray(children) && children.length > 0) {
       const treeNode = nodeMap.get(nodeId);
       if (treeNode) {
         treeNode._treeNodeCount = children.length;
-        
+
         children.forEach((childId: string) => {
           const childNode = nodeMap.get(childId);
           if (childNode) {
@@ -127,20 +128,20 @@ export const processTreeData = (
       }
     }
   });
-  
+
   // Identify root nodes (nodes without parents)
   nodeMap.forEach((node, nodeId) => {
     if (!node._treeParent) {
       rootNodes.push(node);
     }
   });
-  
+
   // Flatten the tree for display
   const flattenedTree: any[] = [];
-  
+
   const flattenNode = (node: any) => {
     flattenedTree.push(node);
-    
+
     if (node._treeExpanded && node._treeChildren.length > 0) {
       node._treeChildren.forEach((childId: string) => {
         const childNode = nodeMap.get(childId);
@@ -150,9 +151,9 @@ export const processTreeData = (
       });
     }
   };
-  
+
   rootNodes.forEach(flattenNode);
-  
+
   return flattenedTree;
 };
 
